@@ -1,0 +1,65 @@
+{
+  "database_name": "GestioneOrdiniClienti",
+  "tables": [
+    {
+      "table_name": "AnagraficaClienti",
+      "description": "Contiene le informazioni anagrafiche dei clienti.",
+      "columns": [
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo univoco del cliente" },
+        { "name": "RagioneSociale", "type": "varchar(50)", "description": "Nome o ragione sociale del cliente" },
+        { "name": "Citta", "type": "varchar(50)", "description": "Città del cliente" },
+        { "name": "Provincia", "type": "varchar(2)", "description": "Sigla della provincia del cliente" }
+      ],
+      "primary_key": ["CodiceCliente"]
+    },
+    {
+      "table_name": "TestataOrdiniClienti",
+      "description": "Contiene l’intestazione degli ordini effettuati dai clienti.",
+      "columns": [
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo del cliente che ha effettuato l’ordine" },
+        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero identificativo dell’ordine" },
+        { "name": "DataOrdine", "type": "datetime", "description": "Data in cui l’ordine è stato effettuato" },
+        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’ordine" },
+        { "name": "CodiceAgente", "type": "smallint", "description": "Identificativo dell’agente di vendita associato all’ordine" },
+        { "name": "TotaleColli", "type": "int", "description": "Numero totale dei colli ordinati" }
+      ],
+      "primary_key": ["NumeroOrdine"],
+      "foreign_keys": [
+        {
+          "column": "CodiceCliente",
+          "references": {
+            "table": "AnagraficaClienti",
+            "column": "CodiceCliente"
+          }
+        }
+      ]
+    },
+    {
+      "table_name": "RigheOrdiniClienti",
+      "description": "Contiene le singole righe (dettagli) degli ordini cliente.",
+      "columns": [
+        { "name": "Id", "type": "int", "description": "Identificativo univoco della riga ordine" },
+        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero dell’ordine associato alla riga" },
+        { "name": "NumeroRigaOrdine", "type": "int", "description": "Numero progressivo della riga nell’ordine" },
+        { "name": "CodiceArticolo", "type": "varchar(50)", "description": "Codice identificativo dell’articolo ordinato" },
+        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’articolo" },
+        { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell’articolo" },
+        { "name": "DescrizioneArticolo", "type": "nvarchar(50)", "description": "Descrizione dell’articolo" },
+        { "name": "NumeroColli", "type": "decimal(27,9)", "description": "Numero di colli ordinati" },
+        { "name": "Quantita", "type": "decimal(27,9)", "description": "Quantità ordinata" },
+        { "name": "Prezzo", "type": "decimal(24,6)", "description": "Prezzo unitario dell’articolo" },
+        { "name": "ValoreRiga", "type": "money", "description": "Valore totale della riga ordine" }
+      ],
+      "primary_key": ["Id"],
+      "foreign_keys": [
+        {
+          "column": "NumeroOrdine",
+          "references": {
+            "table": "TestataOrdiniClienti",
+            "column": "NumeroOrdine"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AiDocMaster</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AiDocMaster.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="feed-theme">
+    <div class="d-flex flex-column min-vh-100">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark">
+                <div class="container">
+                    <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                        <span class="brand-text">AiDocMaster</span>
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarMain">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+                            </li>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Grafici" asp-action="Index">Grafici</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="GestioneOrdini" asp-action="Index">Gestione Ordini</a>
+                                </li>
+                            }
+                            
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="documentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Documenti
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="documentDropdown">
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Index">
+                                            <i class="bi bi-files"></i> Tutti i documenti
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Create">
+                                            <i class="bi bi-file-earmark-plus"></i> Carica nuovo documento
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Index" asp-route-filter="my">
+                                            <i class="bi bi-person-lines-fill"></i> I miei documenti
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Statistics" asp-action="Index">
+                                            <i class="bi bi-bar-chart-fill"></i> Statistiche documenti
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                                {
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Amministrazione
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
+                                            <li><a class="dropdown-item" asp-controller="Category" asp-action="Index">
+                                                <i class="bi bi-tags"></i> Gestione categorie
+                                            </a></li>
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <li><a class="dropdown-item" asp-controller="UserManagement" asp-action="Index">
+                                                    <i class="bi bi-people"></i> Gestione utenti
+                                                </a></li>
+                                                <li><a class="dropdown-item" asp-controller="RoleManagement" asp-action="Index">
+                                                    <i class="bi bi-shield-lock"></i> Gestione ruoli
+                                                </a></li>
+                                                <li><a class="dropdown-item" asp-controller="AISettings" asp-action="Index">
+                                                    <i class="bi bi-robot"></i> Impostazioni AI
+                                                </a></li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                        
+                        <ul class="navbar-nav">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-person-circle"></i> @(User.Identity?.Name ?? "Utente")
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userDropdown">
+                                        <li>
+                                            <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link btn btn-outline-light btn-sm px-3 me-2" asp-controller="Account" asp-action="Login">
+                                        Login
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link btn btn-primary btn-sm px-3" asp-controller="Account" asp-action="Register">
+                                        Registrati
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main" class="flex-grow-1 py-4">
+            <div class="container">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer class="footer py-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">AiDocMaster</h5>
+                        <p class="mb-0">Sistema di gestione documenti aziendali</p>
+                        <div class="footer-links mt-3">
+                            <a asp-controller="Home" asp-action="Index">Home</a>
+                            <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a asp-controller="Home" asp-action="About">Chi siamo</a>
+                            <a asp-controller="Home" asp-action="Contact">Contatti</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-2">&copy; @DateTime.Now.Year - AiDocMaster</p>
+                        <p class="mb-0 text-muted">Tutti i diritti riservati</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Pulsante Torna in alto -->
+    <div class="scroll-to-top" id="scrollToTop">
+        <i class="bi bi-arrow-up"></i>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script>
+        // Script per gestire l'header fisso e il pulsante "Torna in alto"
+        $(document).ready(function() {
+            var header = $('header');
+            var scrollToTop = $('#scrollToTop');
+            
+            // Gestione dello scroll
+            $(window).scroll(function() {
+                if ($(this).scrollTop() > 50) {
+                    header.addClass('scrolled');
+                    scrollToTop.addClass('visible');
+                } else {
+                    header.removeClass('scrolled');
+                    scrollToTop.removeClass('visible');
+                }
+            });
+            
+            // Funzione per tornare in alto
+            scrollToTop.click(function() {
+                $('html, body').animate({scrollTop: 0}, 500);
+                return false;
+            });
+        });
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

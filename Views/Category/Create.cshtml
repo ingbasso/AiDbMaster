@@ -1,0 +1,88 @@
+@model AiDbMaster.Models.DocumentCategory
+
+@{
+    ViewData["Title"] = "Crea Categoria";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Category" asp-action="Index">Categorie</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Crea</li>
+        </ol>
+    </nav>
+
+    <div class="content-container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-tag-fill me-2"></i>Crea Nuova Categoria</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="Name" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                    <input asp-for="Name" class="form-control" placeholder="Nome della categoria" />
+                                </div>
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="Description" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                                    <textarea asp-for="Description" class="form-control" rows="4" placeholder="Descrizione dettagliata della categoria"></textarea>
+                                </div>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="form-group mt-4 d-flex justify-content-between">
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Torna alla Lista
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Salva Categoria
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informazioni</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 text-center">
+                            <i class="bi bi-tags text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <p>Le categorie ti permettono di organizzare i documenti in gruppi logici per facilitarne la ricerca e la gestione.</p>
+                        <p class="mb-0">Esempi di categorie:</p>
+                        <ul>
+                            <li>Contratti</li>
+                            <li>Fatture</li>
+                            <li>Documenti HR</li>
+                            <li>Manuali</li>
+                            <li>Progetti</li>
+                        </ul>
+                        <div class="alert alert-primary mt-3">
+                            <i class="bi bi-lightbulb me-2"></i> Consiglio: Crea categorie specifiche ma non troppo dettagliate per mantenere una struttura organizzativa efficiente.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+} 

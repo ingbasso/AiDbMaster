@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Log di Mistral AI";
+}
+
+<div class="container mt-4">
+    <h1>Log di Mistral AI</h1>
+    
+    <div class="row mb-4">
+        <div class="col">
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Torna alle Impostazioni
+            </a>
+            <a asp-action="ViewMistralLogs" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise"></i> Aggiorna
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Log delle interazioni con Mistral AI</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> I log mostrano le richieste inviate a Mistral AI e le risposte ricevute.
+            </div>
+            
+            <div class="bg-dark text-light p-3 rounded" style="max-height: 600px; overflow-y: auto; white-space: pre-wrap; font-family: monospace;">
+@ViewBag.Logs
+            </div>
+        </div>
+    </div>
+</div> 

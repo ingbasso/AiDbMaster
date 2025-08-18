@@ -1,0 +1,292 @@
+@{
+    ViewData["Title"] = "Statistiche Documenti";
+}
+
+<div class="container">
+    <h1 class="my-4"><i class="bi bi-bar-chart-fill me-2"></i>Statistiche Documenti</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Riepilogo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded shadow-sm" style="background-color: #f8f9fa; border-color: #dee2e6 !important; border-width: 2px !important;">
+                                <h3 class="text-dark">@ViewBag.TotalDocuments</h3>
+                                <p class="mb-0 text-dark fw-bold">Documenti Totali</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded shadow-sm" style="background-color: #f0f8ff; border-color: #dee2e6 !important; border-width: 2px !important;">
+                                <h3 class="text-dark">@ViewBag.PieChartData.Labels.Length</h3>
+                                <p class="mb-0 text-dark fw-bold">Tipi di File</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded shadow-sm" style="background-color: #f0fff0; border-color: #dee2e6 !important; border-width: 2px !important;">
+                                <h3 class="text-dark">@ViewBag.CategoryChartData.Labels.Length</h3>
+                                <p class="mb-0 text-dark fw-bold">Categorie</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart-fill me-2"></i>Distribuzione Tipi di File (Grafico a Torta)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Distribuzione Tipi di File (Istogramma)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ol me-2"></i>Top 10 Categorie</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Documenti Confidenziali</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="confidentialChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Legenda Tipi di File</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var label in ViewBag.PieChartData.Labels)
+                        {
+                            var index = Array.IndexOf(ViewBag.PieChartData.Labels, label);
+                            var color = ViewBag.PieChartData.Colors[index];
+                            var count = ViewBag.PieChartData.Data[index];
+                            
+                            <div class="col-md-2 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 20px; height: 20px; background-color: @color; margin-right: 10px; border-radius: 4px;"></div>
+                                    <div>
+                                        <strong>
+                                            @{
+                                                var iconClass = label switch
+                                                {
+                                                    "PDF" => "bi bi-file-earmark-pdf",
+                                                    "DOCX" => "bi bi-file-earmark-word",
+                                                    "TXT" => "bi bi-file-earmark-text",
+                                                    "EMAIL" => "bi bi-envelope",
+                                                    "EXCEL" => "bi bi-file-earmark-excel",
+                                                    "OTHER" => "bi bi-file-earmark",
+                                                    _ => "bi bi-file"
+                                                };
+                                            }
+                                            <i class="@iconClass me-1"></i> @label
+                                        </strong>
+                                        <div class="small text-muted">@count documenti</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dati per il grafico a torta
+            const pieData = {
+                labels: @Html.Raw(Json.Serialize(ViewBag.PieChartData.Labels)),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(ViewBag.PieChartData.Data)),
+                    backgroundColor: @Html.Raw(Json.Serialize(ViewBag.PieChartData.Colors)),
+                    borderWidth: 1
+                }]
+            };
+            
+            // Configurazione grafico a torta
+            const pieConfig = {
+                type: 'pie',
+                data: pieData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribuzione dei tipi di file'
+                        }
+                    }
+                }
+            };
+            
+            // Crea grafico a torta
+            new Chart(
+                document.getElementById('pieChart'),
+                pieConfig
+            );
+            
+            // Dati per l'istogramma
+            const barData = {
+                labels: @Html.Raw(Json.Serialize(ViewBag.BarChartData.Labels)),
+                datasets: [{
+                    label: 'Numero di documenti',
+                    data: @Html.Raw(Json.Serialize(ViewBag.BarChartData.Data)),
+                    backgroundColor: @Html.Raw(Json.Serialize(ViewBag.BarChartData.Colors)),
+                    borderWidth: 1
+                }]
+            };
+            
+            // Configurazione istogramma
+            const barConfig = {
+                type: 'bar',
+                data: barData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Numero di documenti per tipo di file'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Crea istogramma
+            new Chart(
+                document.getElementById('barChart'),
+                barConfig
+            );
+            
+            // Dati per il grafico delle categorie
+            const categoryData = {
+                labels: @Html.Raw(Json.Serialize(ViewBag.CategoryChartData.Labels)),
+                datasets: [{
+                    label: 'Numero di documenti',
+                    data: @Html.Raw(Json.Serialize(ViewBag.CategoryChartData.Data)),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            };
+            
+            // Configurazione grafico categorie
+            const categoryConfig = {
+                type: 'bar',
+                data: categoryData,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top 10 categorie per numero di documenti'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Crea grafico categorie
+            new Chart(
+                document.getElementById('categoryChart'),
+                categoryConfig
+            );
+            
+            // Dati per il grafico dei documenti confidenziali
+            const confidentialData = {
+                labels: @Html.Raw(Json.Serialize(ViewBag.ConfidentialChartData.Labels)),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(ViewBag.ConfidentialChartData.Data)),
+                    backgroundColor: @Html.Raw(Json.Serialize(ViewBag.ConfidentialChartData.Colors)),
+                    borderWidth: 1
+                }]
+            };
+            
+            // Configurazione grafico documenti confidenziali
+            const confidentialConfig = {
+                type: 'doughnut',
+                data: confidentialData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Documenti confidenziali vs non confidenziali'
+                        }
+                    }
+                }
+            };
+            
+            // Crea grafico documenti confidenziali
+            new Chart(
+                document.getElementById('confidentialChart'),
+                confidentialConfig
+            );
+        });
+    </script>
+} 

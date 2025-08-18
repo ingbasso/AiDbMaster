@@ -1,0 +1,73 @@
+@model AiDbMaster.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Accedi";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="content-container">
+                <div class="text-center mb-4">
+                    <h2 class="text-dark"><i class="bi bi-box-arrow-in-right me-2"></i>@ViewData["Title"]</h2>
+                    <p class="text-muted">Inserisci le tue credenziali per accedere</p>
+                </div>
+                
+                <form asp-controller="Account" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" autocomplete="off">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    
+                    <div class="form-group mb-4">
+                        <label asp-for="Email" class="form-label text-dark fw-bold"></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" placeholder="Inserisci la tua email" autocomplete="off" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <label asp-for="Password" class="form-label text-dark fw-bold"></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" class="form-control" placeholder="Inserisci la tua password" autocomplete="new-password" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label text-dark"></label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Accedi
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4" />
+                
+                <div class="text-center">
+                    <p class="text-dark">Non hai un account? <a asp-action="Register" class="text-primary fw-bold">Registrati</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Script per pulire i campi del form al caricamento della pagina
+        $(document).ready(function() {
+            // Pulisce tutti i campi del form
+            $('form')[0].reset();
+            
+            // Imposta il focus sul primo campo
+            $('#Email').focus();
+        });
+    </script>
+} 

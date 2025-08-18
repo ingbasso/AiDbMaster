@@ -1,0 +1,486 @@
+@model IEnumerable<AiDbMaster.Models.Document>
+
+@{
+    ViewData["Title"] = "Documenti";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Documenti</li>
+        </ol>
+    </nav>
+
+    <div class="content-container">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i> @TempData["InfoMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-files me-2"></i>Gestione Documenti</h2>
+            <div class="d-flex gap-2">
+                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                {
+                    <form asp-action="CatalogDocuments" method="post" id="catalogForm">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-info" title="Cataloga i documenti dalle cartelle monitorate">
+                            <i class="bi bi-robot me-2"></i> Cataloga Documenti
+                        </button>
+                    </form>
+                }
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-robot me-2"></i> Nuovo Documento
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cerca documenti..." />
+                            <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-funnel"></i> Filtra
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="filterDropdown">
+                                    <li><a class="dropdown-item" href="#" data-filter="all">Tutti i documenti</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="pdf">PDF</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="docx">Word</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="txt">Testo</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="email">Email</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="excel">Excel</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="confidential">Confidenziali</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>@Html.DisplayNameFor(model => model.Name)</th>
+                                    <th>@Html.DisplayNameFor(model => model.FileType)</th>
+                                    <th>@Html.DisplayNameFor(model => model.Category)</th>
+                                    <th>@Html.DisplayNameFor(model => model.UploadDate)</th>
+                                    <th>@Html.DisplayNameFor(model => model.UploadedBy)</th>
+                                    <th>@Html.DisplayNameFor(model => model.IsConfidential)</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model) {
+                                    <tr class="document-row @(item.IsConfidential ? "table-warning" : "")" 
+                                        data-type="@item.FileType.ToString().ToLower()" 
+                                        data-confidential="@item.IsConfidential.ToString().ToLower()">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @{
+                                                    string iconClass = item.FileType switch
+                                                    {
+                                                        DocumentType.PDF => "bi bi-file-earmark-pdf text-danger",
+                                                        DocumentType.DOCX => "bi bi-file-earmark-word text-primary",
+                                                        DocumentType.TXT => "bi bi-file-earmark-text text-secondary",
+                                                        DocumentType.EMAIL => "bi bi-envelope text-success",
+                                                        DocumentType.EXCEL => "bi bi-file-earmark-excel text-success",
+                                                        _ => "bi bi-file-earmark"
+                                                    };
+                                                }
+                                                <i class="@iconClass me-2 fs-5"></i>
+                                                <span>@item.Name</span>
+                                            </div>
+                                        </td>
+                                        <td>@Html.DisplayFor(modelItem => item.FileType)</td>
+                                        <td>
+                                            @if (item.Category != null)
+                                            {
+                                                <span class="category-pill">@item.Category.Name</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>@item.UploadDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@($"{item.UploadedBy?.FirstName} {item.UploadedBy?.LastName}")</td>
+                                        <td>
+                                            @if (item.IsConfidential)
+                                            {
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-lock-fill"></i> Confidenziale
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-unlock"></i> Standard
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="Dettagli">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success" title="Scarica">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                                                {
+                                                    <a asp-action="Permissions" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Permessi">
+                                                        <i class="bi bi-people"></i>
+                                                    </a>
+                                                }
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-5 text-center">
+                        <i class="bi bi-files text-primary" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Nessun documento disponibile</h4>
+                        <p class="text-muted">Carica un nuovo documento per iniziare.</p>
+                        <a asp-action="Create" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Carica il primo documento
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aggiungi il popup di catalogazione -->
+<div class="modal fade" id="catalogModal" tabindex="-1" aria-labelledby="catalogModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="catalogModalLabel">Catalogazione Documenti</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div id="catalogProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        Log di catalogazione
+                    </div>
+                    <div class="card-body">
+                        <div id="catalogLog" class="log-container">
+                            <div class="log-entry">Connessione al server in corso...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="catalogSummary" class="alert alert-info mt-3" style="display: none;">
+                    <h5>Riepilogo Catalogazione</h5>
+                    <p id="catalogSummaryText"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeCatalogButton" class="btn btn-secondary" data-bs-dismiss="modal" disabled>Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Aggiungi il riferimento a SignalR da CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Funzione di ricerca
+            $("#searchInput").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $(".document-row").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+            
+            // Filtri per tipo di documento
+            $("[data-filter]").click(function(e) {
+                e.preventDefault();
+                var filter = $(this).data("filter");
+                
+                if (filter === "all") {
+                    $(".document-row").show();
+                } else if (filter === "confidential") {
+                    $(".document-row").hide();
+                    $(".document-row[data-confidential='true']").show();
+                } else {
+                    $(".document-row").hide();
+                    $(".document-row[data-type='" + filter + "']").show();
+                }
+                
+                $("#filterDropdown").text($(this).text());
+            });
+            
+            // Configurazione SignalR
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/catalogHub")
+                .withAutomaticReconnect([0, 1000, 5000, 10000]) // Riprova dopo 0s, 1s, 5s, 10s
+                .build();
+            
+            // Variabile per tenere traccia dello stato della connessione
+            let isConnected = false;
+                
+            // Gestione degli eventi SignalR
+            connection.on("ReceiveUpdate", function(message, messageType) {
+                // Aggiungi il messaggio al log con la classe appropriata
+                let cssClass = "log-entry";
+                if (messageType === "error") {
+                    cssClass += " error";
+                } else if (messageType === "warning") {
+                    cssClass += " warning";
+                } else if (messageType === "success") {
+                    cssClass += " success";
+                }
+                
+                $("#catalogLog").append(`<div class="${cssClass}">${message}</div>`);
+                
+                // Scorri automaticamente verso il basso
+                var logContainer = document.getElementById("catalogLog");
+                logContainer.scrollTop = logContainer.scrollHeight;
+            });
+            
+            connection.on("ReceiveProgress", function(processed, total) {
+                // Aggiorna la barra di progresso
+                var percentage = Math.round((processed / total) * 100);
+                $("#catalogProgress").css("width", percentage + "%").attr("aria-valuenow", percentage);
+                $("#catalogProgress").text(percentage + "%");
+            });
+            
+            connection.on("ReceiveCompleted", function(processed, errors, summary) {
+                // Mostra il riepilogo
+                $("#catalogSummaryText").html(summary.replace(/\n/g, '<br>'));
+                $("#catalogSummary").show();
+                
+                // Abilita il pulsante di chiusura
+                $("#closeCatalogButton").prop("disabled", false);
+                
+                // Imposta la barra di progresso al 100%
+                $("#catalogProgress").css("width", "100%").attr("aria-valuenow", 100);
+                $("#catalogProgress").text("100%");
+                
+                // Cambia il colore della barra in base al risultato
+                if (errors > 0) {
+                    $("#catalogProgress").removeClass("bg-primary").addClass("bg-warning");
+                } else {
+                    $("#catalogProgress").removeClass("bg-primary").addClass("bg-success");
+                }
+            });
+            
+            connection.on("ReceiveLogFilePath", function(logFilePath) {
+                // Aggiungi un link per scaricare il file di log
+                $("#catalogSummary").append(`
+                    <div class="mt-2">
+                        <small class="text-muted">Un file di log dettagliato è stato salvato sul server in: ${logFilePath}</small>
+                    </div>
+                `);
+            });
+            
+            // Gestione degli eventi di connessione
+            connection.onreconnecting(error => {
+                isConnected = false;
+                $("#catalogLog").append(`<div class="log-entry warning">Connessione persa. Tentativo di riconnessione in corso...</div>`);
+                console.warn('Connessione SignalR persa. Tentativo di riconnessione...', error);
+            });
+            
+            connection.onreconnected(connectionId => {
+                isConnected = true;
+                $("#catalogLog").append(`<div class="log-entry success">Riconnessione al server riuscita!</div>`);
+                console.log('Riconnessione SignalR riuscita:', connectionId);
+            });
+            
+            connection.onclose(error => {
+                isConnected = false;
+                $("#catalogLog").append(`<div class="log-entry error">Connessione al server chiusa. Ricarica la pagina per riconnetterti.</div>`);
+                $("#closeCatalogButton").prop("disabled", false);
+                console.error('Connessione SignalR chiusa:', error);
+            });
+            
+            // Avvia la connessione SignalR
+            connection.start().then(function() {
+                isConnected = true;
+                console.log("SignalR Connected");
+                $("#catalogLog").append('<div class="log-entry success">Connessione al server stabilita</div>');
+            }).catch(function(err) {
+                console.error(err.toString());
+                $("#catalogLog").append(`<div class="log-entry error">Errore di connessione: ${err.toString()}</div>`);
+                $("#closeCatalogButton").prop("disabled", false);
+            });
+            
+            // Mostra il popup quando si clicca sul pulsante di catalogazione
+            $("#catalogForm").on("submit", function(e) {
+                e.preventDefault();
+                
+                // Mostra il modal
+                var catalogModal = new bootstrap.Modal(document.getElementById('catalogModal'));
+                catalogModal.show();
+                
+                // Resetta lo stato del modal
+                $("#catalogProgress").css("width", "0%").attr("aria-valuenow", 0);
+                $("#catalogProgress").text("");
+                $("#catalogProgress").removeClass("bg-warning bg-success").addClass("bg-primary");
+                $("#catalogLog").html('<div class="log-entry">Avvio della catalogazione...</div>');
+                $("#catalogSummary").hide();
+                $("#closeCatalogButton").prop("disabled", true);
+                
+                // Verifica se la connessione SignalR è attiva
+                if (!isConnected) {
+                    $("#catalogLog").append(`<div class="log-entry error">Errore: Connessione al server non attiva. Ricarica la pagina e riprova.</div>`);
+                    $("#closeCatalogButton").prop("disabled", false);
+                    return;
+                }
+                
+                // Invia la richiesta di catalogazione
+                $.ajax({
+                    url: $(this).attr("action"),
+                    type: "POST",
+                    data: $(this).serialize(),
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.success) {
+                            $("#catalogLog").append(`<div class="log-entry success">Server: ${response.message}</div>`);
+                            $("#catalogLog").append(`<div class="log-entry">In attesa di aggiornamenti dal server...</div>`);
+                        } else {
+                            $("#catalogLog").append(`<div class="log-entry error">Errore: ${response.message}</div>`);
+                            $("#closeCatalogButton").prop("disabled", false);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $("#catalogLog").append(`<div class="log-entry error">Errore durante l'invio della richiesta: ${error}</div>`);
+                        $("#closeCatalogButton").prop("disabled", false);
+                    }
+                });
+            });
+            
+            // Gestione del pulsante di chiusura
+            $("#closeCatalogButton").on("click", function() {
+                var modalElement = document.getElementById('catalogModal');
+                var catalogModal = bootstrap.Modal.getInstance(modalElement);
+                if (catalogModal) {
+                    catalogModal.hide();
+                } else {
+                    // Fallback se l'istanza non è disponibile
+                    $(modalElement).modal('hide');
+                }
+            });
+        });
+    </script>
+    
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            font-family: monospace;
+            color: #212529;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin-bottom: 0.25rem;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 0.25rem;
+            color: #212529;
+            word-wrap: break-word;
+        }
+        
+        .log-entry.error {
+            color: #dc3545;
+            font-weight: bold;
+            background-color: rgba(220, 53, 69, 0.1);
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+        }
+
+        .log-entry.warning {
+            color: #fd7e14;
+            font-weight: bold;
+            background-color: rgba(253, 126, 20, 0.1);
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+        }
+
+        .log-entry.success {
+            color: #198754;
+            font-weight: bold;
+            background-color: rgba(25, 135, 84, 0.1);
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+        }
+    </style>
+} 

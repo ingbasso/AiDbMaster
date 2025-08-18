@@ -1,0 +1,63 @@
+@model IEnumerable<AiDbMaster.ViewModels.RoleViewModel>
+
+@{
+    ViewData["Title"] = "Gestione Ruoli";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Gestione Ruoli</h3>
+                    <div class="card-tools">
+                        <a asp-action="Create" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Nuovo Ruolo
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nome Ruolo</th>
+                                <th>Numero Utenti</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var role in Model)
+                            {
+                                <tr>
+                                    <td>@role.Name</td>
+                                    <td>@role.UserCount</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Modifica
+                                            </a>
+                                            <form asp-action="Delete" asp-route-id="@role.Id" method="post" 
+                                                  onsubmit="return confirm('Sei sicuro di voler eliminare questo ruolo?');" 
+                                                  style="display: inline;">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i> Elimina
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

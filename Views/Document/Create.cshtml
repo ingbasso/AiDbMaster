@@ -1,0 +1,173 @@
+@model AiDbMaster.ViewModels.DocumentCreateViewModel
+
+@{
+    ViewData["Title"] = "Carica Documento";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Document" asp-action="Index">Documenti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="content-container">
+        <div class="row">
+            <!-- Menu laterale -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark me-2"></i>Menu Documenti</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <a asp-controller="Document" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="bi bi-files me-2"></i> Tutti i documenti
+                        </a>
+                        <a asp-controller="Document" asp-action="Create" class="list-group-item list-group-item-action active">
+                            <i class="bi bi-file-earmark-plus me-2"></i> Carica nuovo documento
+                        </a>
+                        <a asp-controller="Document" asp-action="Index" asp-route-filter="my" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-lines-fill me-2"></i> I miei documenti
+                        </a>
+                    </div>
+                </div>
+                
+                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Amministrazione</h5>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <a asp-controller="Category" asp-action="Index" class="list-group-item list-group-item-action">
+                                <i class="bi bi-tags me-2"></i> Gestione categorie
+                            </a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="UserManagement" asp-action="Index" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-people me-2"></i> Gestione utenti
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <!-- Contenuto principale -->
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-plus me-2"></i>Carica Nuovo Documento</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" enctype="multipart/form-data">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="Name" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-file-earmark"></i></span>
+                                    <input asp-for="Name" class="form-control" placeholder="Nome del documento" />
+                                </div>
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="Description" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Descrizione dettagliata del documento"></textarea>
+                                </div>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="CategoryId" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                    <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.Categories">
+                                        <option value="">-- Seleziona una categoria --</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="CategoryId" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="File" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-upload"></i></span>
+                                    <input asp-for="File" type="file" class="form-control" />
+                                </div>
+                                <span asp-validation-for="File" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Formati supportati: PDF, DOCX, TXT, Email, Excel e altri formati di documenti.
+                                </small>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label asp-for="Tags" class="control-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-tags"></i></span>
+                                    <input asp-for="Tags" class="form-control" placeholder="Inserisci i tag separati da virgola" />
+                                </div>
+                                <span asp-validation-for="Tags" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Esempio: contratto, cliente, 2023
+                                </small>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-4">
+                                <input asp-for="IsConfidential" class="form-check-input" />
+                                <label asp-for="IsConfidential" class="form-check-label fw-bold"></label>
+                                <span asp-validation-for="IsConfidential" class="text-danger"></span>
+                                <div class="mt-1">
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-shield-lock me-1"></i> I documenti confidenziali saranno accessibili solo agli utenti con permessi specifici.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle-fill me-2"></i> Assicurati di compilare tutti i campi obbligatori e di selezionare il file da caricare.
+                            </div>
+                            
+                            <div class="form-group mt-4 d-flex justify-content-between">
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Torna alla Lista
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-upload"></i> Carica Documento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informazioni</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-file-earmark-text text-primary me-3" style="font-size: 2rem;"></i>
+                            <div>
+                                <h5 class="mb-1">Gestione Documenti</h5>
+                                <p class="mb-0 text-muted">Carica, organizza e condividi i tuoi documenti aziendali</p>
+                            </div>
+                        </div>
+                        <p>Carica qui i tuoi documenti aziendali. Puoi assegnare una categoria, aggiungere tag per facilitare la ricerca e impostare il documento come confidenziale se contiene informazioni sensibili.</p>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> I documenti confidenziali saranno accessibili solo agli utenti con permessi specifici.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+} 

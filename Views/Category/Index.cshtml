@@ -1,0 +1,124 @@
+@model IEnumerable<AiDbMaster.Models.DocumentCategory>
+
+@{
+    ViewData["Title"] = "Gestione Categorie";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Categorie</li>
+        </ol>
+    </nav>
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-tags me-2"></i>Gestione Categorie</h2>
+            <div>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nuova Categoria
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-0">Elenco Categorie</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cerca categorie..." />
+                            <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>@Html.DisplayNameFor(model => model.Name)</th>
+                                    <th>@Html.DisplayNameFor(model => model.Description)</th>
+                                    <th>Documenti</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="category-row">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-tag-fill me-2 text-primary"></i>
+                                                <span>@Html.DisplayFor(modelItem => item.Name)</span>
+                                            </div>
+                                        </td>
+                                        <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                                        <td>
+                                            @if (item.Documents != null)
+                                            {
+                                                <span class="badge bg-primary">@item.Documents.Count</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">0</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="Dettagli">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a asp-action="Documents" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success" title="Documenti">
+                                                    <i class="bi bi-files"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-5 text-center">
+                        <i class="bi bi-tags text-primary" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Nessuna categoria disponibile</h4>
+                        <p class="text-muted">Crea una nuova categoria per iniziare a organizzare i tuoi documenti.</p>
+                        <a asp-action="Create" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Crea la prima categoria
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $("#searchInput").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $(".category-row").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+    </script>
+} 

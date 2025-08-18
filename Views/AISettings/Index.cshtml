@@ -1,0 +1,214 @@
+@model AiDbMaster.ViewModels.AISettingsViewModel
+
+@{
+    ViewData["Title"] = "Impostazioni AI";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Impostazioni AI</li>
+        </ol>
+    </nav>
+
+    <div class="content-container">
+        <h2 class="text-dark mb-4"><i class="bi bi-robot me-2"></i>Impostazioni Assistente AI</h2>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Configurazione Mistral AI</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="SaveSettings" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="MistralApiKey" class="form-label text-dark fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                    <input asp-for="MistralApiKey" class="form-control" placeholder="Inserisci la chiave API di Mistral AI" />
+                                </div>
+                                <span asp-validation-for="MistralApiKey" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Puoi ottenere una chiave API registrandoti su <a href="https://mistral.ai" target="_blank">mistral.ai</a>
+                                </small>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="MistralApiEndpoint" class="form-label text-dark fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-link"></i></span>
+                                    <input asp-for="MistralApiEndpoint" class="form-control" placeholder="Endpoint API di Mistral AI" />
+                                </div>
+                                <span asp-validation-for="MistralApiEndpoint" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="MistralModelName" class="form-label text-dark fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                                    <input asp-for="MistralModelName" class="form-control" placeholder="Nome del modello Mistral AI" />
+                                </div>
+                                <span asp-validation-for="MistralModelName" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Modelli disponibili: mistral-large-latest, mistral-medium-latest, mistral-small-latest
+                                </small>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-2"></i> Salva Impostazioni
+                                </button>
+                                <button type="button" class="btn btn-info" id="testConnectionBtn" onclick="document.getElementById('testConnectionForm').submit();">
+                                    <i class="bi bi-lightning me-2"></i> Testa Connessione
+                                </button>
+                            </div>
+                        </form>
+
+                        <form asp-action="TestAIConnection" method="post" id="testConnectionForm" class="d-none">
+                            @Html.AntiForgeryToken()
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-folder-fill me-2"></i>Monitoraggio Cartelle</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="SaveSettings" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="DefaultUserId" class="form-label text-dark fw-bold"></label>
+                                <select asp-for="DefaultUserId" class="form-select">
+                                    <option value="">-- Seleziona un utente --</option>
+                                    @foreach (var user in Model.AvailableUsers)
+                                    {
+                                        <option value="@user.Id">@user.FullName (@user.Email)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="DefaultUserId" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Questo utente sarà impostato come proprietario dei documenti elaborati automaticamente
+                                </small>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="MonitoredFolders" class="form-label text-dark fw-bold"></label>
+                                <div id="foldersContainer">
+                                    @for (int i = 0; i < Model.MonitoredFolders.Count; i++)
+                                    {
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="bi bi-folder"></i></span>
+                                            <input type="text" name="MonitoredFolders[@i]" class="form-control" value="@Model.MonitoredFolders[i]" />
+                                            <button type="button" class="btn btn-outline-danger remove-folder">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                    @if (Model.MonitoredFolders.Count == 0)
+                                    {
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="bi bi-folder"></i></span>
+                                            <input type="text" name="MonitoredFolders[0]" class="form-control" placeholder="C:\Percorso\Alla\Cartella" />
+                                            <button type="button" class="btn btn-outline-danger remove-folder">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addFolderBtn">
+                                    <i class="bi bi-plus-circle me-2"></i> Aggiungi Cartella
+                                </button>
+                            </div>
+
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-2"></i> Salva Impostazioni
+                                </button>
+                                <a asp-action="ViewMistralLogs" class="btn btn-info ms-2">
+                                    <i class="bi bi-file-text me-2"></i> Visualizza Log Mistral
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informazioni</h5>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Assistente AI</h5>
+                        <p>L'assistente AI utilizza Mistral AI per analizzare automaticamente i documenti e suggerire categorie e tag in base al contenuto.</p>
+                        
+                        <h5 class="mb-3 mt-4">Monitoraggio Cartelle</h5>
+                        <p>Il sistema può monitorare automaticamente le cartelle specificate e processare i nuovi documenti che vengono aggiunti.</p>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> Dopo aver modificato le impostazioni, potrebbe essere necessario riavviare l'applicazione per applicare le modifiche.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function() {
+            // Aggiungi cartella
+            $("#addFolderBtn").click(function() {
+                var index = $("#foldersContainer .input-group").length;
+                var newFolder = `
+                    <div class="input-group mb-2">
+                        <span class="input-group-text"><i class="bi bi-folder"></i></span>
+                        <input type="text" name="MonitoredFolders[${index}]" class="form-control" placeholder="C:\\Percorso\\Alla\\Cartella" />
+                        <button type="button" class="btn btn-outline-danger remove-folder">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+                $("#foldersContainer").append(newFolder);
+            });
+            
+            // Rimuovi cartella
+            $(document).on("click", ".remove-folder", function() {
+                if ($("#foldersContainer .input-group").length > 1) {
+                    $(this).closest(".input-group").remove();
+                    // Rinumera gli indici
+                    $("#foldersContainer .input-group").each(function(index) {
+                        $(this).find("input").attr("name", `MonitoredFolders[${index}]`);
+                    });
+                } else {
+                    // Se è l'ultimo elemento, pulisci solo il valore
+                    $(this).closest(".input-group").find("input").val("");
+                }
+            });
+        });
+    </script>
+} 

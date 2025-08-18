@@ -1,0 +1,83 @@
+@model AiDbMaster.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Crea Nuovo Utente";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-person-plus"></i> @ViewData["Title"]
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Compila il form per creare un nuovo utente nel sistema. 
+                        L'utente riceverà una email con le credenziali di accesso.
+                    </div>
+
+                    <form asp-action="Register" method="post" autocomplete="off">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="FirstName" class="form-label text-dark fw-bold"></label>
+                                    <input asp-for="FirstName" class="form-control" />
+                                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="LastName" class="form-label text-dark fw-bold"></label>
+                                    <input asp-for="LastName" class="form-control" />
+                                    <span asp-validation-for="LastName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Email" class="form-label text-dark fw-bold"></label>
+                            <input asp-for="Email" class="form-control" autocomplete="off" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Password" class="form-label text-dark fw-bold"></label>
+                                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                                    <span asp-validation-for="Password" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="ConfirmPassword" class="form-label text-dark fw-bold"></label>
+                                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i> Crea Utente
+                            </button>
+                            <a asp-controller="UserManagement" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Torna alla lista
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+} 

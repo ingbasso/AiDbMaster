@@ -1,0 +1,82 @@
+@model IEnumerable<AiDbMaster.ViewModels.UserViewModel>
+
+@{
+    ViewData["Title"] = "Gestione Utenti";
+}
+
+<div class="container">
+    <h1>@ViewData["Title"]</h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="mb-3">
+        <a asp-controller="Account" asp-action="Register" class="btn btn-primary">Crea Nuovo Utente</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Cognome</th>
+                            <th>Email</th>
+                            <th>Ruoli</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.Email</td>
+                                <td>@string.Join(", ", user.Roles ?? new List<string>() { "Nessun ruolo" })</td>
+                                <td>
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="badge bg-success">Attivo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inattivo</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-primary" title="Modifica Utente">
+                                            <i class="bi bi-pencil"></i> Modifica
+                                        </a>
+                                        <a asp-action="ChangePassword" asp-route-id="@user.Id" class="btn btn-sm btn-warning" title="Cambia Password">
+                                            <i class="bi bi-key"></i> Password
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Sei sicuro di voler eliminare questo utente?');" style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Elimina Utente">
+                                                <i class="bi bi-trash"></i> Elimina
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div> 

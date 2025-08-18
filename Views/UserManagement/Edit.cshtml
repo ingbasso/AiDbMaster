@@ -1,0 +1,105 @@
+@model AiDbMaster.ViewModels.EditUserViewModel
+
+@{
+    ViewData["Title"] = "Modifica Utente";
+}
+
+<div class="container">
+    <h1>@ViewData["Title"]</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="UserName" />
+
+                        <div class="form-group mb-3">
+                            <label asp-for="FirstName" class="form-label"></label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label asp-for="IsActive" class="form-check-label"></label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Ruoli</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Seleziona i ruoli da assegnare all'utente. 
+                                L'utente avrà accesso a tutte le funzionalità associate ai ruoli selezionati.
+                            </div>
+                            <div class="list-group">
+                                @if (Model.Roles != null && Model.Roles.Count > 0)
+                                {
+                                    @for (int i = 0; i < Model.Roles.Count; i++)
+                                    {
+                                        <div class="list-group-item">
+                                            <div class="form-check">
+                                                <input type="hidden" asp-for="@Model.Roles[i].Name" />
+                                                <input asp-for="@Model.Roles[i].IsSelected" class="form-check-input" />
+                                                <label asp-for="@Model.Roles[i].IsSelected" class="form-check-label">
+                                                    @Model.Roles[i].Name
+                                                    @if (Model.Roles[i].Name == "Admin")
+                                                    {
+                                                        <span class="badge bg-danger ms-2">Accesso completo</span>
+                                                    }
+                                                    else if (Model.Roles[i].Name == "Manager")
+                                                    {
+                                                        <span class="badge bg-warning ms-2">Gestione documenti</span>
+                                                    }
+                                                    else if (Model.Roles[i].Name == "Employee")
+                                                    {
+                                                        <span class="badge bg-info ms-2">Accesso base</span>
+                                                    }
+                                                    else if (Model.Roles[i].Name == "User")
+                                                    {
+                                                        <span class="badge bg-secondary ms-2">Utente standard</span>
+                                                    }
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i> Nessun ruolo disponibile. 
+                                        Contattare l'amministratore di sistema.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Salva</button>
+                            <a asp-action="Index" class="btn btn-secondary">Annulla</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+} 

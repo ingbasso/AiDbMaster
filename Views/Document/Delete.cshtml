@@ -1,0 +1,84 @@
+@model AiDbMaster.Models.Document
+
+@{
+    ViewData["Title"] = "Elimina Documento";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Document" asp-action="Index">Documenti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Elimina</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4><i class="bi bi-exclamation-triangle-fill me-2"></i>Conferma eliminazione</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-circle-fill me-2"></i>
+                <strong>Attenzione:</strong> Questa operazione non può essere annullata. Sei sicuro di voler eliminare questo documento?
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="text-danger">Dettagli documento</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4 text-dark">Nome:</dt>
+                        <dd class="col-sm-8 fw-bold text-dark">@Model.Name</dd>
+                        
+                        <dt class="col-sm-4 text-dark">Tipo file:</dt>
+                        <dd class="col-sm-8 text-dark">@Model.FileType</dd>
+                        
+                        <dt class="col-sm-4 text-dark">Categoria:</dt>
+                        <dd class="col-sm-8 text-dark">@(Model.Category?.Name ?? "Nessuna categoria")</dd>
+                        
+                        <dt class="col-sm-4 text-dark">Caricato da:</dt>
+                        <dd class="col-sm-8 text-dark">@($"{Model.UploadedBy?.FirstName} {Model.UploadedBy?.LastName}")</dd>
+                        
+                        <dt class="col-sm-4 text-dark">Data caricamento:</dt>
+                        <dd class="col-sm-8 text-dark">@Model.UploadDate.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    @if (Model.IsConfidential)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-lock-fill me-2"></i>
+                            <strong>Documento confidenziale</strong>
+                        </div>
+                    }
+                    
+                    <h5 class="text-danger">Descrizione</h5>
+                    <p class="text-dark">@(string.IsNullOrEmpty(Model.Description) ? "Nessuna descrizione disponibile" : Model.Description)</p>
+                    
+                    @if (!string.IsNullOrEmpty(Model.Tags))
+                    {
+                        <h5 class="text-danger">Tags</h5>
+                        <div>
+                            @foreach (var tag in Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <span class="badge bg-secondary me-1 text-white">@tag</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Torna alla lista
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Conferma eliminazione
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,156 @@
+@model AiDbMaster.Models.Document
+
+@{
+    ViewData["Title"] = "Dettagli Documento";
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Dettagli Documento</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Modifica
+                </a>
+                <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-success">
+                    <i class="bi bi-download"></i> Scarica
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna alla Lista
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        @{
+                            string iconClass = Model.FileType switch
+                            {
+                                DocumentType.PDF => "bi bi-file-earmark-pdf text-danger",
+                                DocumentType.DOCX => "bi bi-file-earmark-word text-primary",
+                                DocumentType.TXT => "bi bi-file-earmark-text text-secondary",
+                                DocumentType.EMAIL => "bi bi-envelope text-success",
+                                DocumentType.EXCEL => "bi bi-file-earmark-excel text-success",
+                                _ => "bi bi-file-earmark"
+                            };
+                        }
+                        <i class="@iconClass me-2"></i>
+                        @Model.Name
+                    </h5>
+                    @if (Model.IsConfidential)
+                    {
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-lock-fill"></i> Confidenziale
+                        </span>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3 fw-bold">Descrizione:</div>
+                        <div class="col-md-9">@(string.IsNullOrEmpty(Model.Description) ? "Nessuna descrizione" : Model.Description)</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3 fw-bold">Categoria:</div>
+                        <div class="col-md-9">
+                            @if (Model.Category != null)
+                            {
+                                <a asp-controller="Category" asp-action="Details" asp-route-id="@Model.CategoryId">
+                                    @Model.Category.Name
+                                </a>
+                            }
+                            else
+                            {
+                                <span>Nessuna categoria</span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3 fw-bold">Tipo File:</div>
+                        <div class="col-md-9">@Html.DisplayFor(model => model.FileType)</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3 fw-bold">Dimensione:</div>
+                        <div class="col-md-9">
+                            @if (Model.FileSize < 1024)
+                            {
+                                <span>@Model.FileSize KB</span>
+                            }
+                            else
+                            {
+                                <span>@(Math.Round((double)Model.FileSize / 1024, 2)) MB</span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3 fw-bold">Tags:</div>
+                        <div class="col-md-9">
+                            @if (!string.IsNullOrEmpty(Model.Tags))
+                            {
+                                @foreach (var tag in Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span class="badge bg-info text-dark me-1">@tag.Trim()</span>
+                                }
+                            }
+                            else
+                            {
+                                <span>Nessun tag</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Informazioni</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-5 fw-bold">Caricato da:</div>
+                        <div class="col-7">@($"{Model.UploadedBy?.FirstName} {Model.UploadedBy?.LastName}")</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-5 fw-bold">Data caricamento:</div>
+                        <div class="col-7">@Model.UploadDate.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                    
+                    @if (Model.LastModifiedDate.HasValue)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-5 fw-bold">Ultima modifica:</div>
+                            <div class="col-7">@Model.LastModifiedDate.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Permessi</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Gestisci chi può accedere a questo documento.</p>
+                        <a asp-action="Permissions" asp-route-id="@Model.Id" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-people"></i> Gestisci Permessi
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6c63ff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#ff6584" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="primary-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6c63ff"/>
+      <stop offset="100%" stop-color="#4a44b3"/>
+    </linearGradient>
+    <linearGradient id="accent-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6584"/>
+      <stop offset="100%" stop-color="#ff4f70"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background shape -->
+  <rect x="0" y="0" width="800" height="600" fill="url(#bg-gradient)" rx="20" ry="20"/>
+  
+  <!-- Main document folder -->
+  <g transform="translate(400, 300) scale(1.2)">
+    <!-- Folder background -->
+    <path d="M-150,-100 H50 L80,-70 H150 V120 H-150 Z" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="2"/>
+    <path d="M-150,-70 H150 V120 H-150 Z" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="2"/>
+    
+    <!-- Documents in folder -->
+    <g transform="translate(-100, 0)">
+      <!-- Document 1 - PDF -->
+      <rect x="-30" y="-50" width="60" height="80" fill="white" stroke="#e0e0e0" stroke-width="1" rx="3" ry="3"/>
+      <rect x="-20" y="-40" width="40" height="5" fill="#ff6584" rx="2" ry="2"/>
+      <rect x="-20" y="-30" width="40" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <rect x="-20" y="-20" width="30" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <circle cx="15" cy="15" r="15" fill="url(#accent-gradient)"/>
+      <text x="15" y="20" font-family="Arial" font-size="14" fill="white" text-anchor="middle">PDF</text>
+    </g>
+    
+    <g transform="translate(0, 10)">
+      <!-- Document 2 - DOCX -->
+      <rect x="-30" y="-50" width="60" height="80" fill="white" stroke="#e0e0e0" stroke-width="1" rx="3" ry="3"/>
+      <rect x="-20" y="-40" width="40" height="5" fill="#6c63ff" rx="2" ry="2"/>
+      <rect x="-20" y="-30" width="40" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <rect x="-20" y="-20" width="30" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <circle cx="15" cy="15" r="15" fill="url(#primary-gradient)"/>
+      <text x="15" y="20" font-family="Arial" font-size="12" fill="white" text-anchor="middle">DOC</text>
+    </g>
+    
+    <g transform="translate(100, -10)">
+      <!-- Document 3 - EXCEL -->
+      <rect x="-30" y="-50" width="60" height="80" fill="white" stroke="#e0e0e0" stroke-width="1" rx="3" ry="3"/>
+      <rect x="-20" y="-40" width="40" height="5" fill="#4caf50" rx="2" ry="2"/>
+      <rect x="-20" y="-30" width="40" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <rect x="-20" y="-20" width="30" height="5" fill="#e0e0e0" rx="2" ry="2"/>
+      <circle cx="15" cy="15" r="15" fill="#4caf50"/>
+      <text x="15" y="20" font-family="Arial" font-size="12" fill="white" text-anchor="middle">XLS</text>
+    </g>
+  </g>
+  
+  <!-- Floating elements -->
+  <g transform="translate(150, 150)">
+    <!-- Category tag -->
+    <rect x="-60" y="-20" width="120" height="40" fill="url(#primary-gradient)" rx="20" ry="20"/>
+    <text x="0" y="5" font-family="Arial" font-size="16" fill="white" text-anchor="middle">Categorie</text>
+  </g>
+  
+  <g transform="translate(650, 200)">
+    <!-- Search icon -->
+    <circle cx="0" cy="0" r="40" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+    <circle cx="0" cy="0" r="25" fill="none" stroke="url(#primary-gradient)" stroke-width="4"/>
+    <line x1="18" y1="18" x2="35" y2="35" stroke="url(#primary-gradient)" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  
+  <g transform="translate(200, 450)">
+    <!-- Lock icon for security -->
+    <rect x="-30" y="-40" width="60" height="60" fill="white" stroke="#e0e0e0" stroke-width="2" rx="10" ry="10"/>
+    <rect x="-20" y="-10" width="40" height="25" fill="url(#accent-gradient)" rx="5" ry="5"/>
+    <circle cx="0" cy="-15" r="10" fill="none" stroke="url(#accent-gradient)" stroke-width="4"/>
+    <line x1="0" y1="-25" x2="0" y2="-15" stroke="url(#accent-gradient)" stroke-width="4"/>
+  </g>
+  
+  <g transform="translate(600, 450)">
+    <!-- Upload icon -->
+    <circle cx="0" cy="0" r="40" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+    <line x1="0" y1="20" x2="0" y2="-10" stroke="url(#primary-gradient)" stroke-width="4" stroke-linecap="round"/>
+    <polyline points="-15,0 0,-15 15,0" fill="none" stroke="url(#primary-gradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="10" fill="url(#primary-gradient)" opacity="0.7"/>
+  <circle cx="700" cy="100" r="15" fill="url(#accent-gradient)" opacity="0.7"/>
+  <circle cx="100" cy="500" r="15" fill="url(#primary-gradient)" opacity="0.7"/>
+  <circle cx="700" cy="500" r="10" fill="url(#accent-gradient)" opacity="0.7"/>
+  
+  <!-- Abstract connecting lines -->
+  <path d="M100,100 C200,150 300,50 400,100 S600,150 700,100" fill="none" stroke="url(#primary-gradient)" stroke-width="2" opacity="0.5"/>
+  <path d="M100,500 C200,450 300,550 400,500 S600,450 700,500" fill="none" stroke="url(#accent-gradient)" stroke-width="2" opacity="0.5"/>
+</svg>

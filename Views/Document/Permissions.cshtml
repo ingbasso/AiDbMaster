@@ -1,0 +1,155 @@
+@model AiDbMaster.ViewModels.DocumentPermissionsViewModel
+
+@{
+    ViewData["Title"] = "Gestione Permessi";
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Gestione Permessi</h2>
+            <h5 class="text-muted">Documento: @Model.DocumentName</h5>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Details" asp-route-id="@Model.DocumentId" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Torna ai Dettagli
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Permessi Attuali</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.Permissions != null && Model.Permissions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Utente</th>
+                                        <th>Tipo Permesso</th>
+                                        <th>Data Concessione</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var permission in Model.Permissions)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (permission.User != null)
+                                                {
+                                                    @($"{permission.User.FirstName} {permission.User.LastName}")
+                                                }
+                                                else
+                                                {
+                                                    <span>Utente non disponibile</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var badgeClass = permission.PermissionType switch
+                                                    {
+                                                        PermissionType.Read => "bg-info",
+                                                        PermissionType.Edit => "bg-primary",
+                                                        PermissionType.Delete => "bg-warning",
+                                                        PermissionType.FullControl => "bg-danger",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                }
+                                                <span class="badge @badgeClass">@permission.PermissionType</span>
+                                            </td>
+                                            <td>@permission.GrantedDate.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <form asp-action="RevokePermission" method="post" onsubmit="return confirm('Sei sicuro di voler revocare questo permesso?');">
+                                                    <input type="hidden" name="documentId" value="@Model.DocumentId" />
+                                                    <input type="hidden" name="userId" value="@permission.UserId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-x-circle"></i> Revoca
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center">
+                            <p class="mb-0">Nessun permesso specifico assegnato.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Concedi Nuovo Permesso</h5>
+                </div>
+                <div class="card-body">
+                @if (   Model.AvailableUsers != null && Model.AvailableUsers.Any())
+                    {
+                        <form asp-action="GrantPermission" method="post">
+                            <input type="hidden" name="DocumentId" value="@Model.DocumentId" />
+                            
+                            <div class="form-group mb-3">
+                                <label for="UserId" class="form-label">Utente</label>
+                                <select name="UserId" id="UserId" class="form-select" required>
+                                    <option value="">-- Seleziona un utente --</option>
+                                    @foreach (var user in Model.AvailableUsers)
+                                    {
+                                        <option value="@user.Id">@($"{user.FirstName} {user.LastName} ({user.Email})")</option>
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="PermissionType" class="form-label">Tipo Permesso</label>
+                                <select name="PermissionType" id="PermissionType" class="form-select" required>
+                                    <option value="@PermissionType.Read">Lettura</option>
+                                    <option value="@PermissionType.Edit">Modifica</option>
+                                    <option value="@PermissionType.Delete">Eliminazione</option>
+                                    <option value="@PermissionType.FullControl">Gestione Completa</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-plus-circle"></i> Concedi Permesso
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <p>Tutti gli utenti hanno già dei permessi per questo documento.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Informazioni sui Permessi</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Lettura:</strong> L'utente può visualizzare e scaricare il documento.</p>
+                    <p><strong>Modifica:</strong> L'utente può modificare le informazioni del documento.</p>
+                    <p><strong>Eliminazione:</strong> L'utente può eliminare il documento.</p>
+                    <p><strong>Gestione Completa:</strong> L'utente ha controllo completo sul documento, inclusa la gestione dei permessi.</p>
+                    <hr />
+                    <p class="mb-0"><strong>Nota:</strong> Gli amministratori e i manager hanno sempre
+</div>
+            </div>
+        </div>
+    </div>
+</div> 

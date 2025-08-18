@@ -1,0 +1,1268 @@
+@{
+    ViewData["Title"] = "Grafici";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+}
+
+<div class="container mt-4">
+    <h2>Grafici</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="form-group mb-3">
+                <label for="naturalLanguageInput">Descrivi cosa vuoi vedere (in italiano):</label>
+                <textarea class="form-control" id="naturalLanguageInput" rows="2" placeholder="Es: Mostrami il fatturato totale per agente nel 2023"></textarea>
+            </div>
+
+            <div class="form-group mb-3" style="display: none;">
+                <label for="promptInput">Prompt inviato all'AI:</label>
+                <textarea class="form-control" id="promptInput" rows="4" readonly></textarea>
+            </div>
+
+            <div class="form-group mb-3" style="display: none;">
+                <label for="testoInput">Query SQL generata:</label>
+                <textarea class="form-control" id="testoInput" rows="4" readonly></textarea>
+            </div>
+            
+            <div class="mt-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-primary" id="startRecording">
+                        <i class="bi bi-mic-fill"></i> Richiesta
+                    </button>
+                    <button class="btn btn-danger" id="stopRecording" style="display: none;">
+                        <i class="bi bi-stop-fill"></i> Fine Richiesta
+                    </button>
+                    <button class="btn btn-success" id="executeQuery">
+                        <i class="bi bi-play-fill"></i> Crea Dashboard
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-warning" id="clearQuery">
+                        <i class="bi bi-trash-fill"></i> Cancella Query
+                    </button>
+                </div>
+                <button class="btn btn-info" id="generateQuery" style="display: none;">
+                    <i class="bi bi-magic"></i> Genera Query
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template per la finestra del grafico -->
+<template id="graphWindowTemplate">
+    <div class="floating-window">
+        <div class="window-header bg-primary text-white">
+            <h5 class="window-title"></h5>
+            <div class="window-controls">
+                <button type="button" class="btn btn-light btn-sm me-2 minimize-window">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <button type="button" class="btn btn-light btn-sm me-2 maximize-window">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+                <button type="button" class="btn btn-light btn-sm me-2" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                    <i class="bi bi-arrow-up-circle"></i> Torna in alto
+                </button>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close"></button>
+            </div>
+        </div>
+        <div class="window-body">
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="chart-container" style="position: relative; height:60vh; width:100%">
+                        <canvas></canvas>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="kpi-container">
+                        <h5 class="mb-4">Indicatori Chiave di Performance</h5>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="left">
+                                <div class="card-body">
+                                    <h6 class="card-title">Crescita</h6>
+                                    <h3 class="kpi-value mb-0">0%</h3>
+                                </div>
+                            </div>
+                            <div class="card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="left">
+                                <div class="card-body">
+                                    <h6 class="card-title">Efficienza</h6>
+                                    <h3 class="kpi-value mb-0">0%</h3>
+                                </div>
+                            </div>
+                            <div class="card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="left">
+                                <div class="card-body">
+                                    <h6 class="card-title">Distribuzione</h6>
+                                    <h3 class="kpi-value mb-0">0%</h3>
+                                </div>
+                            </div>
+                            <div class="card bg-warning text-white" data-bs-toggle="tooltip" data-bs-placement="left">
+                                <div class="card-body">
+                                    <h6 class="card-title">Performance</h6>
+                                    <h3 class="kpi-value mb-0">0%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="window-footer">
+            <div class="w-100">
+                <div class="alert alert-info mb-3">
+                    <h6 class="alert-heading">Analisi dei Dati</h6>
+                    <p class="data-analysis mb-0"></p>
+                </div>
+                <button type="button" class="btn btn-secondary close-window">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+    /* Stili per permettere l'interazione con la pagina principale */
+    .container {
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn, input, textarea {
+        position: relative;
+        z-index: 2;
+    }
+
+    .floating-window {
+        position: fixed;
+        width: 80%;
+        max-width: 1200px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh;
+        transition: all 0.3s ease;
+    }
+
+    .floating-window.minimized {
+        height: 50px;
+        overflow: hidden;
+    }
+
+    .floating-window.maximized {
+        width: 95% !important;
+        height: 95vh !important;
+        top: 2.5vh !important;
+        left: 2.5% !important;
+        transform: none !important;
+        z-index: 2000 !important;
+    }
+
+    .window-header {
+        padding: 1rem;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: move;
+        user-select: none;
+    }
+
+    .window-body {
+        padding: 1rem;
+        overflow-y: auto;
+        flex-grow: 1;
+        transition: all 0.3s ease;
+    }
+
+    .window-footer {
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .window-controls {
+        display: flex;
+        align-items: center;
+    }
+
+    .window-controls .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        z-index: 2001;
+    }
+
+    .kpi-container {
+        height: 60vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .kpi-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .kpi-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .kpi-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    
+    .kpi-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateX(-5px);
+    }
+
+    #top {
+        scroll-margin-top: 20px;
+    }
+
+    .chart-list-item {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .chart-list-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Stili per il contenuto principale */
+    .form-group {
+        position: relative;
+        z-index: 2;
+    }
+
+    .form-control {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Stili per i tooltip */
+    .tooltip {
+        z-index: 3000;
+    }
+
+    /* Stili per i pulsanti nella barra degli strumenti */
+    .mt-3 .btn {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Stili per i messaggi di errore */
+    #errorMessage {
+        position: relative;
+        z-index: 2;
+    }
+</style>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Riferimenti agli elementi dell'interfaccia
+        const naturalLanguageInput = document.getElementById('naturalLanguageInput');
+        const promptInput = document.getElementById('promptInput');
+        const textArea = document.getElementById('testoInput');
+        const errorMessage = document.getElementById('errorMessage');
+        const startButton = document.getElementById('startRecording');
+        const stopButton = document.getElementById('stopRecording');
+        const executeButton = document.getElementById('executeQuery');
+        const clearButton = document.getElementById('clearQuery');
+        const generateButton = document.getElementById('generateQuery');
+
+        let chartCounter = 0;
+        let currentData = null;
+        const activeCharts = new Map();
+
+        // Inizializzazione del riconoscimento vocale
+        let recognition = null;
+        
+        // Controlla se il browser supporta il riconoscimento vocale
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'it-IT';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                console.log('Riconoscimento vocale avviato');
+                startButton.innerHTML = '<i class="bi bi-mic-fill"></i> Registrazione in corso...';
+                startButton.disabled = true;
+            };
+
+            recognition.onresult = function(event) {
+                console.log('Risultato riconoscimento vocale ricevuto');
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Aggiorna il campo di testo con il transcript finale e interim
+                naturalLanguageInput.value = finalTranscript + interimTranscript;
+                console.log('Testo riconosciuto:', finalTranscript + interimTranscript);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Errore di riconoscimento vocale:', event.error);
+                let errorMessage = 'Errore del riconoscimento vocale: ';
+                switch(event.error) {
+                    case 'no-speech':
+                        errorMessage += 'Nessun parlato rilevato. Riprova.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage += 'Impossibile accedere al microfono.';
+                        break;
+                    case 'not-allowed':
+                        errorMessage += 'Permesso microfono negato.';
+                        break;
+                    case 'network':
+                        errorMessage += 'Errore di rete.';
+                        break;
+                    default:
+                        errorMessage += event.error;
+                }
+                alert(errorMessage);
+                stopRecording();
+            };
+
+            recognition.onend = function() {
+                console.log('Riconoscimento vocale terminato');
+                stopRecording();
+            };
+        } else {
+            console.error('Il browser non supporta il riconoscimento vocale');
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="bi bi-mic-mute-fill"></i> Non supportato';
+            startButton.title = 'Il tuo browser non supporta il riconoscimento vocale';
+        }
+
+        function createNewChartWindow() {
+            const template = document.getElementById('graphWindowTemplate');
+            const windowElement = template.content.cloneNode(true);
+            const windowId = `graphWindow_${chartCounter++}`;
+            const floatingWindow = windowElement.querySelector('.floating-window');
+            floatingWindow.id = windowId;
+            
+            // Posiziona la finestra in modo casuale ma visibile
+            const randomX = Math.random() * (window.innerWidth - 1200) * 0.2;
+            const randomY = Math.random() * (window.innerHeight - 600) * 0.2;
+            floatingWindow.style.left = `${randomX}px`;
+            floatingWindow.style.top = `${randomY}px`;
+
+            // Gestione della chiusura
+            const closeWindow = () => {
+                const chart = activeCharts.get(windowId);
+                if (chart) {
+                    chart.destroy();
+                    activeCharts.delete(windowId);
+                }
+                // Rimuovi tutti i tooltip
+                const tooltips = floatingWindow.querySelectorAll('[data-bs-toggle="tooltip"]');
+                tooltips.forEach(tooltip => {
+                    const bsTooltip = bootstrap.Tooltip.getInstance(tooltip);
+                    if (bsTooltip) {
+                        bsTooltip.dispose();
+                    }
+                });
+                floatingWindow.remove();
+            };
+
+            // Aggiungi gli event listener per la chiusura
+            const closeButtons = floatingWindow.querySelectorAll('.btn-close, .close-window');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', closeWindow);
+            });
+
+            // Gestione del tasto ESC
+            const handleEscKey = (e) => {
+                if (e.key === 'Escape' && floatingWindow.classList.contains('maximized')) {
+                    closeWindow();
+                }
+            };
+            document.addEventListener('keydown', handleEscKey);
+
+            // Aggiungi gli event listener per minimizzare/massimizzare
+            const minimizeButton = floatingWindow.querySelector('.minimize-window');
+            const maximizeButton = floatingWindow.querySelector('.maximize-window');
+            
+            minimizeButton.addEventListener('click', () => {
+                floatingWindow.classList.toggle('minimized');
+                minimizeButton.querySelector('i').classList.toggle('bi-dash-lg');
+                minimizeButton.querySelector('i').classList.toggle('bi-arrows-angle-expand');
+            });
+
+            maximizeButton.addEventListener('click', () => {
+                floatingWindow.classList.toggle('maximized');
+                maximizeButton.querySelector('i').classList.toggle('bi-arrows-fullscreen');
+                maximizeButton.querySelector('i').classList.toggle('bi-arrows-angle-contract');
+                
+                // Porta la finestra in primo piano quando viene massimizzata
+                if (floatingWindow.classList.contains('maximized')) {
+                    floatingWindow.style.zIndex = '2000';
+                } else {
+                    floatingWindow.style.zIndex = '1000';
+                }
+            });
+
+            // Rendi la finestra trascinabile
+            makeWindowDraggable(floatingWindow);
+
+            // Aggiungi la finestra al documento
+            document.body.appendChild(floatingWindow);
+
+            // Rimuovi l'event listener quando la finestra viene chiusa
+            floatingWindow.addEventListener('remove', () => {
+                document.removeEventListener('keydown', handleEscKey);
+            });
+
+            return floatingWindow;
+        }
+
+        function makeWindowDraggable(windowElement) {
+            const header = windowElement.querySelector('.window-header');
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            const dragStart = (e) => {
+                if (e.target.closest('.btn')) return;
+                
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === header || header.contains(e.target)) {
+                    isDragging = true;
+                    // Porta la finestra in primo piano durante il trascinamento
+                    windowElement.style.zIndex = '2000';
+                }
+            };
+
+            const drag = (e) => {
+                if (isDragging && !windowElement.classList.contains('maximized')) {
+                    e.preventDefault();
+                    
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    setTranslate(currentX, currentY, windowElement);
+                }
+            };
+
+            const dragEnd = (e) => {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                // Ripristina lo z-index originale se non è massimizzata
+                if (!windowElement.classList.contains('maximized')) {
+                    windowElement.style.zIndex = '1000';
+                }
+            };
+
+            const setTranslate = (xPos, yPos, el) => {
+                el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+            };
+
+            header.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+
+            // Rimuovi gli event listener quando la finestra viene chiusa
+            windowElement.addEventListener('remove', () => {
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+            });
+        }
+
+        function createChart(sqlQuery) {
+            if (!currentData || currentData.length === 0) return;
+
+            const windowElement = createNewChartWindow();
+            const chartType = determineChartType(currentData, Object.keys(currentData[0]), sqlQuery);
+            
+            if (chartType === 'map') {
+                createMap(windowElement);
+            } else {
+                const ctx = windowElement.querySelector('canvas').getContext('2d');
+                const columns = Object.keys(currentData[0]);
+                if (columns.length < 2) {
+                    alert('I dati devono avere almeno due colonne per creare un grafico');
+                    return;
+                }
+
+                // Analisi dei dati per determinare il tipo di grafico più appropriato
+                const chartData = prepareChartData(currentData, columns, chartType);
+
+                // Genera titoli significativi
+                const titles = generateTitles(columns, chartType, naturalLanguageInput.value);
+                
+                // Aggiorna il titolo della finestra
+                windowElement.querySelector('.window-title').textContent = titles.modalTitle;
+
+                // Genera e mostra l'analisi dei dati
+                generateDataAnalysis(currentData, columns, chartType, windowElement);
+
+                // Crea il grafico
+                const chart = new Chart(ctx, {
+                    type: chartType,
+                    data: chartData,
+                    options: getChartOptions(chartType, columns, titles)
+                });
+
+                // Salva il riferimento al grafico
+                activeCharts.set(windowElement.id, chart);
+
+                // Calcola e mostra i KPI
+                const values = currentData.map(row => parseFloat(row[columns[1]]));
+                const labels = currentData.map(row => row[columns[0]]);
+                calculateKPIs(values, labels, chartType, windowElement);
+
+                // Inizializza i tooltip
+                initializeTooltips(windowElement);
+
+                // Pulisci i campi di input dopo la creazione del grafico
+                naturalLanguageInput.value = '';
+                promptInput.value = '';
+                textArea.value = '';
+            }
+        }
+
+        function generateDataAnalysis(data, columns, chartType, windowElement) {
+            const values = data.map(row => parseFloat(row[columns[1]]));
+            const labels = data.map(row => row[columns[0]]);
+            
+            // Calcola statistiche base
+            const total = values.reduce((a, b) => a + b, 0);
+            const avg = total / values.length;
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            const maxIndex = values.indexOf(max);
+            const minIndex = values.indexOf(min);
+
+            // Calcola KPI
+            calculateKPIs(values, labels, chartType, windowElement);
+
+            // Genera l'analisi in base al tipo di grafico
+            let analysis = '';
+            
+            switch (chartType) {
+                case 'pie':
+                case 'doughnut':
+                    analysis = `L'analisi della distribuzione mostra che il valore totale è ${total.toLocaleString('it-IT')}. `;
+                    analysis += `La categoria "${labels[maxIndex]}" rappresenta la quota maggiore con ${max.toLocaleString('it-IT')} (${((max/total)*100).toFixed(1)}%), `;
+                    analysis += `mentre "${labels[minIndex]}" ha il valore più basso con ${min.toLocaleString('it-IT')} (${((min/total)*100).toFixed(1)}%). `;
+                    analysis += `La media per categoria è ${avg.toLocaleString('it-IT')}.`;
+                    break;
+
+                case 'line':
+                    analysis = `L'andamento temporale mostra un valore totale di ${total.toLocaleString('it-IT')}. `;
+                    analysis += `Il picco massimo si registra in "${labels[maxIndex]}" con ${max.toLocaleString('it-IT')}, `;
+                    analysis += `mentre il valore minimo è in "${labels[minIndex]}" con ${min.toLocaleString('it-IT')}. `;
+                    analysis += `La media del periodo è ${avg.toLocaleString('it-IT')}.`;
+                    break;
+
+                case 'bar':
+                case 'horizontalBar':
+                    analysis = `L'analisi per categoria mostra un totale di ${total.toLocaleString('it-IT')}. `;
+                    analysis += `"${labels[maxIndex]}" ha il valore più alto con ${max.toLocaleString('it-IT')}, `;
+                    analysis += `mentre "${labels[minIndex]}" ha il valore più basso con ${min.toLocaleString('it-IT')}. `;
+                    analysis += `La media per categoria è ${avg.toLocaleString('it-IT')}.`;
+                    break;
+            }
+
+            // Aggiungi osservazioni sulla distribuzione
+            const stdDev = Math.sqrt(values.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / values.length);
+            const cv = (stdDev / avg) * 100; // Coefficiente di variazione
+
+            if (cv > 50) {
+                analysis += ` I dati mostrano una significativa variabilità (CV: ${cv.toFixed(1)}%).`;
+            } else if (cv > 20) {
+                analysis += ` I dati presentano una moderata variabilità (CV: ${cv.toFixed(1)}%).`;
+            } else {
+                analysis += ` I dati mostrano una distribuzione relativamente uniforme (CV: ${cv.toFixed(1)}%).`;
+            }
+
+            // Aggiorna il testo dell'analisi nella finestra
+            windowElement.querySelector('.data-analysis').textContent = analysis;
+        }
+
+        function initializeTooltips(windowElement) {
+            const tooltipTriggerList = [].slice.call(windowElement.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover'
+                });
+            });
+        }
+
+        function startRecording() {
+            if (!recognition) {
+                alert('Il riconoscimento vocale non è supportato dal tuo browser. Prova con Chrome, Firefox o Edge.');
+                return;
+            }
+            
+            try {
+                console.log('Avvio registrazione...');
+                naturalLanguageInput.value = ''; // Pulisce il campo prima di iniziare
+                recognition.start();
+                startButton.style.display = 'none';
+                stopButton.style.display = 'inline-block';
+            } catch (error) {
+                console.error('Errore nell\'avvio della registrazione:', error);
+                alert('Impossibile avviare la registrazione. Assicurati di aver dato i permessi per il microfono.');
+                resetRecordingButtons();
+            }
+        }
+
+        function stopRecording() {
+            if (!recognition) {
+                return;
+            }
+            
+            try {
+                console.log('Arresto registrazione...');
+                recognition.stop();
+            } catch (error) {
+                console.error('Errore nell\'arresto della registrazione:', error);
+            }
+            resetRecordingButtons();
+        }
+
+        function resetRecordingButtons() {
+            startButton.style.display = 'inline-block';
+            stopButton.style.display = 'none';
+            startButton.innerHTML = '<i class="bi bi-mic-fill"></i> Richiesta';
+            startButton.disabled = false;
+        }
+
+        function generateTitles(columns, chartType, naturalQuery) {
+            // Mappa dei tipi di grafico in italiano
+            const chartTypeNames = {
+                'pie': 'Grafico a Torta',
+                'doughnut': 'Grafico a Ciambella',
+                'bar': 'Grafico a Barre',
+                'horizontalBar': 'Grafico a Barre Orizzontali',
+                'line': 'Grafico a Linee'
+            };
+
+            // Estrai il tipo di grafico dal nome
+            const chartTypeName = chartTypeNames[chartType] || 'Grafico';
+
+            // Crea un titolo significativo basato sulle colonne e la query naturale
+            let title = '';
+            if (naturalQuery) {
+                // Usa la query naturale come base per il titolo
+                title = naturalQuery.charAt(0).toUpperCase() + naturalQuery.slice(1);
+            } else {
+                // Crea un titolo basato sulle colonne
+                title = `${columns[1]} per ${columns[0]}`;
+            }
+
+            return {
+                modalTitle: `${chartTypeName}: ${title}`,
+                chartTitle: title
+            };
+        }
+
+        async function generateQuery() {
+            const query = naturalLanguageInput.value.trim();
+            if (!query) {
+                showError('Inserisci una descrizione di cosa vuoi vedere');
+                return;
+            }
+
+            try {
+                generateButton.disabled = true;
+                const response = await fetch('/AIQuery/ConvertToSQL', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        query: query, 
+                        source: 'grafici' 
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Errore HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    // Rimuovi tutti i tipi di commenti SQL
+                    const cleanQuery = result.query
+                        .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '') // Rimuove commenti /* */ e //
+                        .replace(/--.*$/gm, '') // Rimuove commenti --
+                        .replace(/^\s*[\r\n]/gm, '') // Rimuove righe vuote
+                        .trim();
+                    textArea.value = cleanQuery;
+                    promptInput.value = result.prompt || 'Prompt non disponibile';
+                    errorMessage.style.display = 'none';
+                } else {
+                    showError(result.error || 'Errore nella generazione della query');
+                }
+            } catch (error) {
+                showError('Errore durante la generazione della query: ' + error.message);
+            } finally {
+                generateButton.disabled = false;
+            }
+        }
+
+        async function executeQuery() {
+            const query = textArea.value.trim();
+            if (!query) {
+                showError('Inserisci una query SQL');
+                return;
+            }
+
+            try {
+                executeButton.disabled = true;
+                const response = await fetch('/Grafici/ExecuteQuery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(query)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    currentData = result.data;
+                    createChart(query);
+                } else {
+                    showError(result.error);
+                }
+            } catch (error) {
+                showError('Errore nell\'esecuzione della query: ' + error.message);
+            } finally {
+                executeButton.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function clearQuery() {
+            naturalLanguageInput.value = '';
+            promptInput.value = '';
+            textArea.value = '';
+            errorMessage.style.display = 'none';
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+        }
+
+        function determineChartType(data, columns, sqlQuery) {
+            // Prima controlla se c'è un suggerimento nella query SQL o naturale
+            const suggestedType = extractChartTypeFromSQL(sqlQuery, naturalLanguageInput.value);
+            if (suggestedType) {
+                return suggestedType;
+            }
+
+            // Se non c'è suggerimento, usa la logica automatica
+            const numRows = data.length;
+            const numColumns = columns.length;
+            const firstValue = data[0][columns[1]];
+            const isNumeric = !isNaN(parseFloat(firstValue));
+            const isDate = !isNaN(Date.parse(firstValue));
+            const uniqueValues = new Set(data.map(row => row[columns[0]])).size;
+
+            // Controlla se i dati contengono coordinate geografiche
+            const hasCoordinates = columns.some(col => 
+                col.toLowerCase().includes('lat') || 
+                col.toLowerCase().includes('long') ||
+                col.toLowerCase().includes('latitude') ||
+                col.toLowerCase().includes('longitude')
+            );
+
+            if (hasCoordinates) {
+                return 'map';
+            }
+
+            // Logica di adattamento automatico esistente
+            if (numColumns === 2) {
+                if (uniqueValues <= 5 && isNumeric) {
+                    return 'pie';
+                }
+                if (isDate) {
+                    return 'line';
+                }
+                return 'bar';
+            } else if (numColumns === 3) {
+                return 'bar';
+            } else if (numColumns > 3) {
+                return 'line';
+            }
+
+            return 'bar';
+        }
+
+        function extractChartTypeFromSQL(sqlQuery, naturalQuery) {
+            if (!sqlQuery && !naturalQuery) return null;
+
+            // Dizionario più completo di termini e loro varianti
+            const chartTypes = {
+                'torta': {
+                    type: 'pie',
+                    keywords: ['torta', 'pie', 'circolare', 'circular', 'distribuzione', 'distribution', 'percentuale', 'percentage']
+                },
+                'ciambella': {
+                    type: 'doughnut',
+                    keywords: ['ciambella', 'doughnut', 'anello', 'ring', 'circolare vuoto', 'hollow circle']
+                },
+                'barre': {
+                    type: 'bar',
+                    keywords: ['barre', 'bar', 'colonne', 'columns', 'verticale', 'vertical', 'istogramma', 'histogram']
+                },
+                'barre orizzontali': {
+                    type: 'horizontalBar',
+                    keywords: ['barre orizzontali', 'horizontal bar', 'orizzontale', 'horizontal', 'barre laterali', 'side bars']
+                },
+                'linee': {
+                    type: 'line',
+                    keywords: ['linee', 'line', 'lineare', 'linear', 'andamento', 'trend', 'evoluzione', 'evolution', 'temporale', 'time series']
+                }
+            };
+
+            // Funzione per analizzare un testo
+            function analyzeText(text) {
+                if (!text) return null;
+                
+                const textLower = text.toLowerCase();
+                
+                // Cerca corrispondenze per ogni tipo di grafico
+                for (const [chartName, chartInfo] of Object.entries(chartTypes)) {
+                    // Verifica se il testo contiene una delle parole chiave
+                    const hasKeyword = chartInfo.keywords.some(keyword => 
+                        textLower.includes(keyword.toLowerCase())
+                    );
+
+                    // Verifica se il testo contiene una negazione
+                    const hasNegation = textLower.includes('non') || 
+                                      textLower.includes('no') || 
+                                      textLower.includes('not');
+
+                    // Se trova una corrispondenza e non c'è negazione
+                    if (hasKeyword && !hasNegation) {
+                        return chartInfo.type;
+                    }
+                }
+                return null;
+            }
+
+            // Prima controlla la query SQL
+            if (sqlQuery) {
+                const sqlType = analyzeText(sqlQuery);
+                if (sqlType) {
+                    return sqlType;
+                }
+            }
+
+            // Se non trova nulla nella query SQL, controlla la query naturale
+            if (naturalQuery) {
+                const naturalType = analyzeText(naturalQuery);
+                if (naturalType) {
+                    return naturalType;
+                }
+            }
+
+            return null;
+        }
+
+        function isChartTypeAppropriate(chartType, data, columns) {
+            const numRows = data.length;
+            const uniqueValues = new Set(data.map(row => row[columns[0]])).size;
+            const isNumeric = !isNaN(parseFloat(data[0][columns[1]]));
+            const isDate = !isNaN(Date.parse(data[0][columns[1]]));
+
+            switch (chartType) {
+                case 'pie':
+                case 'doughnut':
+                    // I grafici a torta sono appropriati per pochi valori categorici
+                    return uniqueValues <= 8 && isNumeric;
+                case 'line':
+                    // I grafici a linee sono appropriati per dati temporali o sequenziali
+                    return isDate || numRows > 5;
+                case 'bar':
+                case 'horizontalBar':
+                    // I grafici a barre sono appropriati per la maggior parte dei dati
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        function prepareChartData(data, columns, chartType) {
+            // Ordina i dati se la prima colonna contiene mesi
+            const sortedData = sortDataByMonth(data, columns[0]);
+            
+            if (columns.length === 2) {
+                // Grafico semplice con due colonne
+                const labels = sortedData.map(row => row[columns[0]]);
+                const values = sortedData.map(row => {
+                    const val = row[columns[1]];
+                    return typeof val === 'number' ? val : parseFloat(val);
+                });
+
+                const colors = generateColors(values.length);
+
+                return {
+                    labels: labels,
+                    datasets: [{
+                        label: columns[1],
+                        data: values,
+                        backgroundColor: colors.map(color => `${color}80`),
+                        borderColor: colors,
+                        borderWidth: 1,
+                        fill: chartType === 'line' ? false : undefined
+                    }]
+                };
+            } else {
+                // Grafico con multiple serie
+                const labels = sortedData.map(row => row[columns[0]]);
+                const datasets = columns.slice(1).map((column, index) => {
+                    const values = sortedData.map(row => {
+                        const val = row[column];
+                        return typeof val === 'number' ? val : parseFloat(val);
+                    });
+                    const color = generateColors(columns.length - 1)[index];
+
+                    return {
+                        label: column,
+                        data: values,
+                        backgroundColor: `${color}80`,
+                        borderColor: color,
+                        borderWidth: 1,
+                        fill: chartType === 'line' ? false : undefined
+                    };
+                });
+
+                return {
+                    labels: labels,
+                    datasets: datasets
+                };
+            }
+        }
+
+        function sortDataByMonth(data, columnName) {
+            // Mappa dei mesi in italiano
+            const monthMap = {
+                'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4,
+                'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8,
+                'settembre': 9, 'ottobre': 10, 'novembre': 11, 'dicembre': 12
+            };
+
+            // Mappa dei mesi in inglese
+            const englishMonthMap = {
+                'january': 1, 'february': 2, 'march': 3, 'april': 4,
+                'may': 5, 'june': 6, 'july': 7, 'august': 8,
+                'september': 9, 'october': 10, 'november': 11, 'december': 12
+            };
+
+            // Funzione per ottenere il numero del mese
+            function getMonthNumber(monthName) {
+                const lowerMonth = monthName.toLowerCase();
+                return monthMap[lowerMonth] || englishMonthMap[lowerMonth] || 0;
+            }
+
+            // Verifica se la colonna contiene mesi
+            const firstValue = data[0][columnName].toLowerCase();
+            const isMonthColumn = monthMap[firstValue] || englishMonthMap[firstValue];
+
+            if (isMonthColumn) {
+                // Ordina i dati in base al numero del mese
+                return [...data].sort((a, b) => {
+                    const monthA = getMonthNumber(a[columnName]);
+                    const monthB = getMonthNumber(b[columnName]);
+                    return monthA - monthB;
+                });
+            }
+
+            // Se non è una colonna di mesi, restituisci i dati non ordinati
+            return data;
+        }
+
+        function getChartOptions(chartType, columns, titles) {
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: titles.chartTitle,
+                        font: {
+                            size: 20
+                        }
+                    },
+                    legend: {
+                        display: columns.length > 2,
+                        position: 'top'
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            };
+
+            // Configurazioni specifiche per tipo di grafico
+            const specificOptions = getChartSpecificOptions(chartType, columns);
+
+            return { ...options, ...specificOptions };
+        }
+
+        function getChartSpecificOptions(chartType, columns) {
+            const options = {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: columns.length === 2,
+                            text: columns.length === 2 ? columns[1] : 'Valori'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: columns[0]
+                        }
+                    }
+                }
+            };
+
+            // Configurazioni specifiche per tipo di grafico
+            switch (chartType) {
+                case 'pie':
+                case 'doughnut':
+                    return {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                case 'line':
+                    return {
+                        ...options,
+                        elements: {
+                            line: {
+                                tension: 0.4
+                            }
+                        }
+                    };
+                default:
+                    return options;
+            }
+        }
+
+        function generateColors(count) {
+            const baseColors = [
+                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                '#5a5c69', '#6610f2', '#6f42c1', '#fd7e14', '#20c9a6'
+            ];
+
+            if (count <= baseColors.length) {
+                return baseColors.slice(0, count);
+            }
+
+            // Genera colori aggiuntivi se necessario
+            const colors = [...baseColors];
+            for (let i = baseColors.length; i < count; i++) {
+                const hue = (i * 137.508) % 360; // Numero aureo per distribuzione uniforme
+                colors.push(`hsl(${hue}, 70%, 50%)`);
+            }
+
+            return colors;
+        }
+
+        function calculateKPIs(values, labels, chartType, windowElement) {
+            // Calcola la crescita (confronto tra ultimi due valori)
+            const growth = values.length > 1 ? 
+                ((values[values.length - 1] - values[values.length - 2]) / values[values.length - 2] * 100) : 0;
+            
+            // Calcola l'efficienza (rapporto tra media e massimo)
+            const efficiency = (values.reduce((a, b) => a + b, 0) / values.length) / Math.max(...values) * 100;
+            
+            // Calcola la distribuzione (1 - coefficiente di variazione normalizzato)
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const stdDev = Math.sqrt(values.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / values.length);
+            const distribution = Math.max(0, 100 - (stdDev / avg * 100));
+            
+            // Calcola la performance (rapporto tra minimo e massimo)
+            const performance = (Math.min(...values) / Math.max(...values)) * 100;
+
+            // Aggiorna i KPI nel DOM della finestra corrente
+            const kpiCards = windowElement.querySelectorAll('.kpi-value');
+            kpiCards[0].textContent = `${growth.toFixed(1)}%`;
+            kpiCards[1].textContent = `${efficiency.toFixed(1)}%`;
+            kpiCards[2].textContent = `${distribution.toFixed(1)}%`;
+            kpiCards[3].textContent = `${performance.toFixed(1)}%`;
+
+            // Aggiungi classi di colore in base ai valori
+            const cards = windowElement.querySelectorAll('.card');
+            updateKPIColors(cards[0], growth);
+            updateKPIColors(cards[1], efficiency);
+            updateKPIColors(cards[2], distribution);
+            updateKPIColors(cards[3], performance);
+        }
+
+        function updateKPIColors(card, value) {
+            // Rimuovi le classi di colore esistenti
+            card.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+            
+            // Aggiungi la classe di colore appropriata
+            if (value >= 70) {
+                card.classList.add('bg-success');
+            } else if (value >= 40) {
+                card.classList.add('bg-warning');
+            } else {
+                card.classList.add('bg-danger');
+            }
+        }
+
+        // Event Listeners
+        startButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+        executeButton.addEventListener('click', async function (e) {
+            e.preventDefault();
+            // Prima genera la query
+            await generateQuery();
+            // Poi esegui la query
+            await executeQuery();
+        });
+        clearButton.addEventListener('click', clearQuery);
+        generateButton.addEventListener('click', generateQuery);
+
+        // Inizializza i tooltip
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover'
+                });
+            });
+        });
+
+        // Funzione per pulire tutte le finestre aperte
+        function cleanupAllWindows() {
+            activeCharts.forEach((chart, windowId) => {
+                const window = document.getElementById(windowId);
+                if (window) {
+                    chart.destroy();
+                    window.remove();
+                }
+            });
+            activeCharts.clear();
+        }
+
+        // Aggiungi la pulizia quando si cambia pagina
+        window.addEventListener('beforeunload', cleanupAllWindows);
+
+        function createMap(windowElement) {
+            const columns = Object.keys(currentData[0]);
+            const latColumn = columns.find(col => 
+                col.toLowerCase().includes('lat') || 
+                col.toLowerCase().includes('latitude')
+            );
+            const longColumn = columns.find(col => 
+                col.toLowerCase().includes('long') || 
+                col.toLowerCase().includes('longitude')
+            );
+            const valueColumn = columns.find(col => 
+                !col.toLowerCase().includes('lat') && 
+                !col.toLowerCase().includes('long') &&
+                !col.toLowerCase().includes('latitude') &&
+                !col.toLowerCase().includes('longitude')
+            );
+
+            if (!latColumn || !longColumn || !valueColumn) {
+                alert('Dati geografici non validi. Sono necessarie colonne per latitudine e longitudine.');
+                return;
+            }
+
+            // Crea il contenitore per la mappa
+            const mapContainer = windowElement.querySelector('.chart-container');
+            mapContainer.innerHTML = '<div id="map" style="height: 100%; width: 100%;"></div>';
+
+            // Inizializza la mappa
+            const map = L.map('map').setView([41.9028, 12.4964], 6); // Centrata sull'Italia
+
+            // Aggiungi il layer OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Aggiungi i marker sulla mappa
+            currentData.forEach(row => {
+                const lat = parseFloat(row[latColumn]);
+                const lng = parseFloat(row[longColumn]);
+                const value = parseFloat(row[valueColumn]);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: Math.sqrt(value) / 2,
+                        fillColor: '#4e73df',
+                        color: '#fff',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    marker.bindPopup(`
+                        <strong>${row[columns[0]]}</strong><br>
+                        Valore: ${value.toLocaleString('it-IT')}
+                    `);
+                }
+            });
+
+            // Aggiorna il titolo della finestra
+            windowElement.querySelector('.window-title').textContent = `Mappa: ${valueColumn}`;
+
+            // Genera e mostra l'analisi dei dati
+            generateDataAnalysis(currentData, columns, 'map', windowElement);
+        }
+    </script>
+} 
