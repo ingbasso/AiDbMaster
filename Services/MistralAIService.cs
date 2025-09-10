@@ -155,7 +155,7 @@ Rispondi SOLO in formato JSON con la seguente struttura:
                 
                 // Prima prova a estrarre e deserializzare il JSON
                 string jsonContent = ExtractJsonFromResponse(aiResponse);
-                DocumentAnalysisResult analysisResult = null;
+                DocumentAnalysisResult? analysisResult = null;
                 
                 try
                 {
@@ -170,7 +170,7 @@ Rispondi SOLO in formato JSON con la seguente struttura:
                     // Prova a deserializzare il JSON
                     try
                     {
-                        analysisResult = System.Text.Json.JsonSerializer.Deserialize<DocumentAnalysisResult>(jsonContent, jsonOptions);
+                        analysisResult = System.Text.Json.JsonSerializer.Deserialize<DocumentAnalysisResult>(jsonContent, jsonOptions) ?? new DocumentAnalysisResult();
                         if (analysisResult != null && !string.IsNullOrEmpty(analysisResult.Categoria))
                         {
                             LogToFile("Deserializzazione JSON completata con successo");
@@ -178,7 +178,7 @@ Rispondi SOLO in formato JSON con la seguente struttura:
                         else
                         {
                             LogToFile("Deserializzazione JSON ha restituito un oggetto non valido");
-                            analysisResult = null;
+                            analysisResult = new DocumentAnalysisResult();
                         }
                     }
                     catch (Exception jsonEx)

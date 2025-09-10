@@ -37,7 +37,7 @@ namespace AiDbMaster.Controllers
                 var schema = JsonSerializer.Deserialize<DatabaseSchema>(schemaJson);
 
                 // Crea il prompt per l'AI
-                var prompt = CreatePrompt(schema, request.Query, request.Source);
+                var prompt = CreatePrompt(schema!, request.Query, request.Source);
 
                 // Chiamata a Mistral AI per generare la query
                 var sqlQuery = await GenerateSQLQuery(prompt);
@@ -196,42 +196,42 @@ Regole da seguire:
 
     public class ConvertToSQLRequest
     {
-        public string Query { get; set; }
-        public string Source { get; set; }
+        public required string Query { get; set; }
+        public required string Source { get; set; }
     }
 
     public class DatabaseSchema
     {
-        public string table_name { get; set; }
-        public List<Column> columns { get; set; }
-        public List<Table> tables { get; set; }
+        public required string table_name { get; set; }
+        public required List<Column> columns { get; set; }
+        public required List<Table> tables { get; set; }
     }
 
     public class Table
     {
-        public string table_name { get; set; }
-        public string description { get; set; }
-        public List<Column> columns { get; set; }
-        public List<string> primary_key { get; set; }
-        public List<ForeignKey> foreign_keys { get; set; }
+        public required string table_name { get; set; }
+        public required string description { get; set; }
+        public required List<Column> columns { get; set; }
+        public required List<string> primary_key { get; set; }
+        public required List<ForeignKey> foreign_keys { get; set; }
     }
 
     public class ForeignKey
     {
-        public string column { get; set; }
-        public Reference references { get; set; }
+        public required string column { get; set; }
+        public required Reference references { get; set; }
     }
 
     public class Reference
     {
-        public string table { get; set; }
-        public string column { get; set; }
+        public required string table { get; set; }
+        public required string column { get; set; }
     }
 
     public class Column
     {
-        public string name { get; set; }
-        public string type { get; set; }
-        public string description { get; set; }
+        public required string name { get; set; }
+        public required string type { get; set; }
+        public required string description { get; set; }
     }
 } 

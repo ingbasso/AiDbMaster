@@ -1,0 +1,268 @@
+@model AiDbMaster.Models.StatoOP
+
+@{
+    ViewData["Title"] = "Dettagli Stato OP";
+    var colorClass = Model?.CodiceStato?.ToUpper() switch
+    {
+        "ES" => "bg-info",      // Emesso - Blu
+        "PR" => "bg-warning",   // Produzione - Giallo
+        "CH" => "bg-success",   // Chiuso - Verde
+        "SO" => "bg-secondary", // Sospeso - Grigio
+        "AN" => "bg-danger",    // Annullato - Rosso
+        _ => "bg-primary"       // Default - Blu primario
+    };
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-eye me-2"></i>Dettagli Stato OP</h2>
+            <div>
+                <a asp-action="Edit" asp-route-id="@Model?.IdStato" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Modifica
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Card principale con i dati -->
+                <div class="card">
+                    <div class="card-header @colorClass text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-flag"></i> Informazioni Stato OP
+                            <span class="badge bg-light text-dark ms-2">ID: @Model?.IdStato</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-muted">Ordine</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge bg-dark fs-4">@Model?.Ordine</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-muted">Codice Stato</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge @colorClass fs-4">@Model?.CodiceStato</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Descrizione Stato</label>
+                                <div class="form-control-plaintext">
+                                    <strong class="fs-4">@Model?.DescrizioneStato</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Stato Attuale</label>
+                                <div class="form-control-plaintext">
+                                    @if (Model?.Attivo == true)
+                                    {
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Attivo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary fs-6">
+                                            <i class="bi bi-pause-circle"></i> Inattivo
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Ordini Collegati</label>
+                                <div class="form-control-plaintext">
+                                    @if (Model?.OrdiniProduzione?.Any() == true)
+                                    {
+                                        <span class="badge bg-info fs-6">
+                                            <i class="bi bi-list-task"></i> @Model.OrdiniProduzione.Count ordini
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Nessun ordine collegato</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informazioni aggiuntive per stati specifici -->
+                        @if (Model?.CodiceStato != null)
+                        {
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label class="form-label text-muted">Informazioni Stato</label>
+                                    <div class="form-control-plaintext">
+                                        <div class="alert alert-light">
+                                            <i class="bi bi-info-circle"></i>
+                                            @switch (Model.CodiceStato.ToUpper())
+                                            {
+                                                case "ES":
+                                                    <text><strong>Emesso:</strong> Ordine creato e pronto per essere preso in carico</text>
+                                                    break;
+                                                case "PR":
+                                                    <text><strong>Produzione:</strong> Ordine attualmente in lavorazione</text>
+                                                    break;
+                                                case "CH":
+                                                    <text><strong>Chiuso:</strong> Ordine completato con successo</text>
+                                                    break;
+                                                case "SO":
+                                                    <text><strong>Sospeso:</strong> Ordine temporaneamente fermo</text>
+                                                    break;
+                                                case "AN":
+                                                    <text><strong>Annullato:</strong> Ordine cancellato</text>
+                                                    break;
+                                                default:
+                                                    <text><strong>Stato personalizzato:</strong> @Model.DescrizioneStato</text>
+                                                    break;
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Card azioni rapide -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2 d-md-flex">
+                            <a asp-action="Edit" asp-route-id="@Model?.IdStato" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Modifica Stato
+                            </a>
+                            <a asp-action="Create" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Nuovo Stato
+                            </a>
+                            <a asp-action="Reorder" class="btn btn-outline-warning">
+                                <i class="bi bi-arrow-up-down"></i> Riordina Stati
+                            </a>
+                            @if (Model?.OrdiniProduzione?.Any() != true)
+                            {
+                                <a asp-action="Delete" asp-route-id="@Model?.IdStato" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Elimina
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Card statistiche -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="bi bi-graph-up"></i> Statistiche</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">ID Univoco</small>
+                            <div class="fw-bold">#@Model?.IdStato</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Posizione nell'Ordine</small>
+                            <div class="fw-bold">@Model?.Ordine° posizione</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <small class="text-muted">Lunghezza Descrizione</small>
+                            <div class="fw-bold">@(Model?.DescrizioneStato?.Length ?? 0) caratteri</div>
+                        </div>
+
+                        @if (Model?.OrdiniProduzione?.Any() == true)
+                        {
+                            <div class="mb-3">
+                                <small class="text-muted">Ordini Totali</small>
+                                <div class="fw-bold text-primary">@Model.OrdiniProduzione.Count</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Ultimo Ordine</small>
+                                <div class="fw-bold text-info">
+                                    @Model.OrdiniProduzione.Max(o => o.DataInizioOP).ToString("dd/MM/yyyy")
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Primo Ordine</small>
+                                <div class="fw-bold text-success">
+                                    @Model.OrdiniProduzione.Min(o => o.DataInizioOP).ToString("dd/MM/yyyy")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Card tipo stato -->
+                <div class="card mt-4">
+                    <div class="card-header @colorClass text-white">
+                        <h6 class="mb-0"><i class="bi bi-shield"></i> Tipo Stato</h6>
+                    </div>
+                    <div class="card-body">
+                        @{
+                            var isSystemState = new[] { "ES", "PR", "CH", "SO", "AN" }.Contains(Model?.CodiceStato?.ToUpper());
+                        }
+                        
+                        @if (isSystemState)
+                        {
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-shield-exclamation"></i>
+                                <strong>Stato di Sistema</strong><br>
+                                Questo stato è parte del sistema base e ha protezioni speciali.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-gear"></i>
+                                <strong>Stato Personalizzato</strong><br>
+                                Questo stato è stato creato per esigenze specifiche.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Card navigazione -->
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bi bi-compass"></i> Navigazione</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a asp-action="Index" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-flag"></i> Tutti gli Stati
+                            </a>
+                            <a asp-action="Index" asp-route-attivo="true" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-check-circle"></i> Solo Attivi
+                            </a>
+                            @if (Model?.CodiceStato != null)
+                            {
+                                <a asp-action="Index" asp-route-codiceStato="@Model.CodiceStato" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-funnel"></i> Stesso Codice
+                                </a>
+                            }
+                            <a asp-action="Reorder" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-arrow-up-down"></i> Riordina
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

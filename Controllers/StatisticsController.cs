@@ -52,7 +52,7 @@ namespace AiDbMaster.Controllers
             // Ottieni statistiche sulle categorie
             var categoryStats = await _context.Documents
                 .Include(d => d.Category)
-                .GroupBy(d => d.Category.Name)
+                .GroupBy(d => d.Category!.Name)
                 .Select(g => new
                 {
                     CategoryName = g.Key,

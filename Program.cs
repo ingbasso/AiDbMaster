@@ -6,8 +6,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using System.Net.Http.Headers;
+using Syncfusion.Licensing;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Registrazione della licenza Syncfusion
+var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
+if (!string.IsNullOrEmpty(syncfusionLicenseKey))
+{
+    SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
+}
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -38,6 +46,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<PermissionService>();
+builder.Services.AddScoped<LavorazioniService>();
+builder.Services.AddScoped<CentriLavoroService>();
+builder.Services.AddScoped<OperatoriService>();
+builder.Services.AddScoped<StatiOPService>();
 
 // Registrazione del servizio HttpClient per Mistral AI
 builder.Services.AddHttpClient<MistralAIService>();
@@ -80,7 +92,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ProductionCorsPolicy", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Security:AllowedOrigins").Get<string[]>() ?? 
-                            new[] { "https://www.aidocmaster.it", "https://aidocmaster.it" };
+                            new[] { "https://www.aidbmaster.it", "https://aidbmaster.it" };
         
         policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()

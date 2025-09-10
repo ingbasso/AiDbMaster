@@ -1,0 +1,177 @@
+@model AiDbMaster.ViewModels.CreateOperatoreViewModel
+
+@{
+    ViewData["Title"] = "Nuovo Operatore";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person-plus me-2"></i>Nuovo Operatore</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dati Operatore</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CodiceOperatore" class="form-label">
+                                        Codice Operatore <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="CodiceOperatore" class="form-control" placeholder="Es: OP001, MARIO..." maxlength="10" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Codice univoco, massimo 10 caratteri
+                                    </div>
+                                    <span asp-validation-for="CodiceOperatore" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Nome" class="form-label">
+                                        Nome <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="Nome" class="form-control" placeholder="Mario" maxlength="50" required />
+                                    <span asp-validation-for="Nome" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Cognome" class="form-label">
+                                        Cognome <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="Cognome" class="form-control" placeholder="Rossi" maxlength="50" required />
+                                    <span asp-validation-for="Cognome" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Email" class="form-label">Email</label>
+                                    <input asp-for="Email" class="form-control" type="email" placeholder="mario.rossi@azienda.it" maxlength="100" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Email per comunicazioni (opzionale)
+                                    </div>
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Telefono" class="form-label">Telefono</label>
+                                    <input asp-for="Telefono" class="form-control" type="tel" placeholder="+39 123 456 7890" maxlength="20" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Numero di telefono (opzionale)
+                                    </div>
+                                    <span asp-validation-for="Telefono" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="DataAssunzione" class="form-label">Data Assunzione</label>
+                                    <input asp-for="DataAssunzione" class="form-control" type="date" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Data di inizio lavoro (opzionale)
+                                    </div>
+                                    <span asp-validation-for="DataAssunzione" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="LivelloCompetenza" class="form-label">Livello Competenza</label>
+                                    <select asp-for="LivelloCompetenza" class="form-select">
+                                        <option value="">Seleziona livello...</option>
+                                        <option value="1">1 - Principiante</option>
+                                        <option value="2">2 - Base</option>
+                                        <option value="3">3 - Intermedio</option>
+                                        <option value="4">4 - Avanzato</option>
+                                        <option value="5">5 - Esperto</option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Livello di competenza da 1 a 5 (opzionale)
+                                    </div>
+                                    <span asp-validation-for="LivelloCompetenza" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input asp-for="Attivo" class="form-check-input" type="checkbox" checked />
+                                        <label asp-for="Attivo" class="form-check-label">
+                                            Operatore Attivo
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Gli operatori inattivi non saranno visibili nelle selezioni
+                                    </div>
+                                    <span asp-validation-for="Attivo" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label asp-for="Note" class="form-label">Note</label>
+                                    <textarea asp-for="Note" class="form-control" rows="3" maxlength="500" 
+                                              placeholder="Inserisci eventuali note sull'operatore..."></textarea>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Note aggiuntive (opzionale, massimo 500 caratteri)
+                                    </div>
+                                    <span asp-validation-for="Note" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-asterisk text-danger"></i> Campi obbligatori
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Salva Operatore
+                                    </button>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Trasforma il codice in maiuscolo
+        document.getElementById('CodiceOperatore').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Capitalizza nome e cognome
+        document.getElementById('Nome').addEventListener('input', function() {
+            this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase();
+        });
+
+        document.getElementById('Cognome').addEventListener('input', function() {
+            this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase();
+        });
+
+        // Focus automatico sul primo campo
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('CodiceOperatore').focus();
+        });
+    </script>
+}

@@ -1,0 +1,308 @@
+@model dynamic
+
+@{
+    ViewData["Title"] = "Dashboard Ordini di Produzione";
+    ViewBag.UseFluidContainer = true;
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-graph-up text-primary"></i> @ViewData["Title"]</h2>
+            <p class="text-muted">Panoramica completa dello stato degli ordini di produzione</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Index" class="btn btn-outline-primary me-2">
+                <i class="bi bi-list-ul"></i> Lista Ordini
+            </a>
+            <a asp-action="Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nuovo Ordine
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiche principali -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear-fill display-4"></i>
+                    <h3 class="mt-2">@Model.TotaleOrdini</h3>
+                    <p class="mb-0">Totale Ordini</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-clock display-4"></i>
+                    <h3 class="mt-2">@Model.OrdiniEmessi</h3>
+                    <p class="mb-0">Emessi</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-play-circle display-4"></i>
+                    <h3 class="mt-2">@Model.OrdiniInProduzione</h3>
+                    <p class="mb-0">In Produzione</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-pause-circle display-4"></i>
+                    <h3 class="mt-2">@Model.OrdiniSospesi</h3>
+                    <p class="mb-0">Sospesi</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle display-4"></i>
+                    <h3 class="mt-2">@Model.OrdiniChiusi</h3>
+                    <p class="mb-0">Completati</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle display-4"></i>
+                    <h3 class="mt-2">@Model.OrdiniInRitardo.Count</h3>
+                    <p class="mb-0">In Ritardo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Grafico ordini per centro di lavoro -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-bar-chart"></i> Ordini per Centro di Lavoro</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartCentriLavoro" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafico stati ordini -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-pie-chart"></i> Distribuzione Stati</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartStati" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Ordini urgenti -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Ordini Urgenti</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.OrdiniUrgenti.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ordine</th>
+                                        <th>Articolo</th>
+                                        <th>Priorità</th>
+                                        <th>Centro</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ordine in Model.OrdiniUrgenti)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a asp-action="Details" asp-route-id="@ordine.IdListaOP" class="text-decoration-none">
+                                                    @ordine.IdentificativoCompleto
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <strong>@ordine.CodiceArticolo</strong>
+                                                <br><small>@ordine.DescrizioneArticolo</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-danger">@ordine.PrioritaDescrizione</span>
+                                            </td>
+                                            <td>@ordine.CentroLavoro?.DescrizioneCentro</td>
+                                            <td>
+                                                <span class="badge bg-primary">@ordine.Stato?.DescrizioneStato</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-check-circle text-success display-4"></i>
+                            <p class="text-muted mt-2">Nessun ordine urgente al momento</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordini in ritardo -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="bi bi-clock-history"></i> Ordini in Ritardo</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.OrdiniInRitardo.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ordine</th>
+                                        <th>Articolo</th>
+                                        <th>Scadenza</th>
+                                        <th>Centro</th>
+                                        <th>Ritardo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ordine in Model.OrdiniInRitardo)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a asp-action="Details" asp-route-id="@ordine.IdListaOP" class="text-decoration-none">
+                                                    @ordine.IdentificativoCompleto
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <strong>@ordine.CodiceArticolo</strong>
+                                                <br><small>@ordine.DescrizioneArticolo</small>
+                                            </td>
+                                            <td>@ordine.DataFinePrevista?.ToString("dd/MM/yyyy")</td>
+                                            <td>@ordine.CentroLavoro?.DescrizioneCentro</td>
+                                            <td>
+                                                @{
+                                                    var ritardo = DateTime.Now - ordine.DataFinePrevista;
+                                                    var giorni = ritardo?.Days ?? 0;
+                                                }
+                                                <span class="badge bg-danger">@giorni giorni</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-check-circle text-success display-4"></i>
+                            <p class="text-muted mt-2">Nessun ordine in ritardo</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Grafico ordini per centro di lavoro
+        const ctxCentri = document.getElementById('chartCentriLavoro').getContext('2d');
+        const chartCentri = new Chart(ctxCentri, {
+            type: 'bar',
+            data: {
+                labels: [@Html.Raw(string.Join(",", ((IEnumerable<dynamic>)Model.OrdiniPerCentro).Select(x => "'" + x.Centro + "'")))],
+                datasets: [{
+                    label: 'Numero Ordini',
+                    data: [@Html.Raw(string.Join(",", ((IEnumerable<dynamic>)Model.OrdiniPerCentro).Select(x => x.Conteggio)))],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Grafico stati ordini
+        const ctxStati = document.getElementById('chartStati').getContext('2d');
+        const chartStati = new Chart(ctxStati, {
+            type: 'doughnut',
+            data: {
+                labels: ['Emessi', 'In Produzione', 'Sospesi', 'Completati'],
+                datasets: [{
+                    data: [@Model.OrdiniEmessi, @Model.OrdiniInProduzione, @Model.OrdiniSospesi, @Model.OrdiniChiusi],
+                    backgroundColor: [
+                        'rgba(108, 117, 125, 0.8)',
+                        'rgba(13, 110, 253, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(25, 135, 84, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(108, 117, 125, 1)',
+                        'rgba(13, 110, 253, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(25, 135, 84, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Auto-refresh ogni 5 minuti
+        setTimeout(() => location.reload(), 300000);
+    </script>
+}

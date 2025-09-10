@@ -1,0 +1,167 @@
+@model AiDbMaster.ViewModels.EditStatoOPViewModel
+
+@{
+    ViewData["Title"] = "Modifica Stato OP";
+    var isSystemState = ViewBag.IsSystemState ?? false;
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-pencil me-2"></i>Modifica Stato OP</h2>
+            <div>
+                <a asp-action="Details" asp-route-id="@Model?.IdStato" class="btn btn-outline-info">
+                    <i class="bi bi-eye"></i> Dettagli
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        @if (isSystemState)
+        {
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-shield-exclamation"></i> Stato di Sistema
+                </h5>
+                <p>Questo è uno stato di sistema. Alcune modifiche potrebbero essere limitate per mantenere l'integrità del sistema.</p>
+            </div>
+        }
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-flag"></i> Modifica Dati Stato OP
+                            <small class="ms-2">ID: @Model?.IdStato</small>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Edit" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            
+                            <!-- Campo nascosto -->
+                            <input type="hidden" asp-for="IdStato" />
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CodiceStato" class="form-label">
+                                        Codice Stato <span class="text-danger">*</span>
+                                        @if (isSystemState)
+                                        {
+                                            <i class="bi bi-shield-exclamation text-warning" title="Stato di sistema"></i>
+                                        }
+                                    </label>
+                                    <input asp-for="CodiceStato" class="form-control" placeholder="ES, PR, CH..." 
+                                           maxlength="2" required readonly="@isSystemState" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Codice univoco, massimo 2 caratteri
+                                        @if (isSystemState)
+                                        {
+                                            <br><small class="text-warning">Il codice degli stati di sistema non può essere modificato</small>
+                                        }
+                                    </div>
+                                    <span asp-validation-for="CodiceStato" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="DescrizioneStato" class="form-label">
+                                        Descrizione Stato <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="DescrizioneStato" class="form-control" 
+                                           placeholder="Emesso, Produzione, Chiuso..." 
+                                           maxlength="20" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Descrizione breve, massimo 20 caratteri
+                                    </div>
+                                    <span asp-validation-for="DescrizioneStato" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-2 mb-3">
+                                    <label asp-for="Ordine" class="form-label">
+                                        Ordine <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="Ordine" class="form-control" type="number" min="1" max="999" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Sequenza visualizzazione
+                                    </div>
+                                    <span asp-validation-for="Ordine" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input asp-for="Attivo" class="form-check-input" type="checkbox" />
+                                        <label asp-for="Attivo" class="form-check-label">
+                                            Stato Attivo
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Gli stati inattivi non saranno visibili nelle selezioni
+                                        @if (isSystemState)
+                                        {
+                                            <br><small class="text-warning">Attenzione: disattivare uno stato di sistema può causare problemi</small>
+                                        }
+                                    </div>
+                                    <span asp-validation-for="Attivo" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-asterisk text-danger"></i> Campi obbligatori
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="bi bi-check-circle"></i> Salva Modifiche
+                                    </button>
+                                    <a asp-action="Details" asp-route-id="@Model?.IdStato" class="btn btn-info ms-2">
+                                        <i class="bi bi-eye"></i> Visualizza
+                                    </a>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Trasforma il codice in maiuscolo (solo se non è readonly)
+        const codiceInput = document.getElementById('CodiceStato');
+        if (!codiceInput.readOnly) {
+            codiceInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
+
+        // Conferma prima di disattivare uno stato di sistema
+        @if (isSystemState)
+        {
+            <text>
+            document.getElementById('Attivo').addEventListener('change', function() {
+                if (!this.checked) {
+                    if (!confirm('Sei sicuro di voler disattivare questo stato di sistema? Potrebbe causare problemi nel sistema.')) {
+                        this.checked = true;
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}

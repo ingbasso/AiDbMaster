@@ -1,0 +1,523 @@
+@model AiDbMaster.Models.TabellaAgenti
+
+@{
+    ViewData["Title"] = "Dettagli Agente";
+    var altriAgentiProvincia = ViewBag.AltriAgentiProvincia as List<AiDbMaster.Models.TabellaAgenti> ?? new List<AiDbMaster.Models.TabellaAgenti>();
+    var altriAgentiCitta = ViewBag.AltriAgentiCitta as List<AiDbMaster.Models.TabellaAgenti> ?? new List<AiDbMaster.Models.TabellaAgenti>();
+    var statisticheProvincia = ViewBag.StatisticheProvincia;
+}
+
+<div class="container">
+
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person-workspace me-2 text-primary"></i>Dettagli Agente</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informazioni Principali -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Informazioni Principali</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CodiceAgente)</label>
+                                    <div class="form-control-plaintext bg-light p-3 rounded">
+                                        <i class="bi bi-person-badge me-2 text-primary"></i>
+                                        <strong class="fs-4">@Html.DisplayFor(model => model.CodiceAgente)</strong>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                onclick="copyToClipboard('@Model.CodiceAgente')" title="Copia Codice">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Stato</label>
+                                    <div class="form-control-plaintext bg-light p-3 rounded text-center">
+                                        <span class="@Model.StatoAgenteCssClass fs-5">@Model.StatoAgente</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.DescrizioneAgente)</label>
+                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                @if (!string.IsNullOrEmpty(Model.DescrizioneAgente))
+                                {
+                                    <strong class="fs-5">@Html.DisplayFor(model => model.DescrizioneAgente)</strong>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Nome non specificato</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome Completo</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded">
+                                <strong>@Model.NomeCompleto</strong>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                        onclick="copyToClipboard('@Model.NomeCompleto')" title="Copia Nome Completo">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indirizzo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Indirizzo e Localizzazione</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.HasIndirizzoCompleto)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Indirizzo Completo</label>
+                                <div class="form-control-plaintext bg-light p-3 rounded">
+                                    <i class="bi bi-house me-2 text-success"></i>
+                                    @Html.DisplayFor(model => model.IndirizzoCompleto)
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.IndirizzoAgente))
+                            {
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.IndirizzoAgente)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            @Html.DisplayFor(model => model.IndirizzoAgente)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.CapAgente))
+                            {
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CapAgente)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="badge bg-info">@Html.DisplayFor(model => model.CapAgente)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.CittaAgente))
+                            {
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CittaAgente)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <i class="bi bi-building me-2 text-primary"></i>
+                                            @Html.DisplayFor(model => model.CittaAgente)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ProvinciaAgente))
+                            {
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.ProvinciaAgente)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="badge bg-warning text-dark fs-6">@Html.DisplayFor(model => model.ProvinciaAgente)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (string.IsNullOrEmpty(Model.IndirizzoAgente) && string.IsNullOrEmpty(Model.CittaAgente))
+                        {
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-geo-alt-slash" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Informazioni di indirizzo non disponibili</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Altri Agenti nella stessa Città -->
+                @if (altriAgentiCitta.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-building me-2"></i>Altri Agenti in @Model.CittaAgente</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Codice</th>
+                                            <th>Nome</th>
+                                            <th>Indirizzo</th>
+                                            <th>Stato</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var agente in altriAgentiCitta)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-primary">@agente.CodiceAgente</span>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(agente.DescrizioneAgente))
+                                                    {
+                                                        <strong>@agente.DescrizioneAgente</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted fst-italic">Nome non specificato</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(agente.IndirizzoAgente))
+                                                    {
+                                                        <small>@agente.IndirizzoAgente</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <span class="@agente.StatoAgenteCssClass">@agente.StatoAgente</span>
+                                                </td>
+                                                <td>
+                                                    <a asp-action="Details" asp-route-id="@agente.CodiceAgente" 
+                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Altri Agenti nella stessa Provincia -->
+                @if (altriAgentiProvincia.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Altri Agenti in Provincia @Model.ProvinciaAgente</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Codice</th>
+                                            <th>Nome</th>
+                                            <th>Città</th>
+                                            <th>Stato</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var agente in altriAgentiProvincia.Take(10))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-primary">@agente.CodiceAgente</span>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(agente.DescrizioneAgente))
+                                                    {
+                                                        <strong>@agente.DescrizioneAgente</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted fst-italic">Nome non specificato</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(agente.CittaAgente))
+                                                    {
+                                                        @agente.CittaAgente
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <span class="@agente.StatoAgenteCssClass">@agente.StatoAgente</span>
+                                                </td>
+                                                <td>
+                                                    <a asp-action="Details" asp-route-id="@agente.CodiceAgente" 
+                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (altriAgentiProvincia.Count > 10)
+                            {
+                                <div class="mt-2 text-center">
+                                    <small class="text-muted">
+                                        Visualizzati 10 di @altriAgentiProvincia.Count agenti nella provincia
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Informazioni Aggiuntive -->
+            <div class="col-lg-4">
+                <!-- Riepilogo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Riepilogo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Codice Agente</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                                <span class="badge bg-primary fs-4">@Model.CodiceAgente</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stato Operativo</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                                <span class="@Model.StatoAgenteCssClass fs-5">@Model.StatoAgente</span>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.InfoLocalizzazione))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Localizzazione</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                                    <i class="bi bi-geo-alt me-1 text-warning"></i>
+                                    <strong>@Model.InfoLocalizzazione</strong>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Indirizzo Completo</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                                @if (Model.HasIndirizzoCompleto)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Disponibile
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>Non Disponibile
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiche Provincia -->
+                @if (statisticheProvincia != null && !string.IsNullOrEmpty(Model.ProvinciaAgente))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Statistiche Provincia @Model.ProvinciaAgente</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <div class="border-end">
+                                        <h6 class="text-muted">Tot. Agenti</h6>
+                                        <h4 class="text-primary">@(statisticheProvincia?.TotaleAgenti ?? 0)</h4>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-muted">Città</h6>
+                                    <h4 class="text-info">@(statisticheProvincia?.CittaDistinte ?? 0)</h4>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h6 class="text-muted">Attivi</h6>
+                                    <h5 class="text-success">@(statisticheProvincia?.AgentiAttivi ?? 0)</h5>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-muted">Inattivi</h6>
+                                    <h5 class="text-secondary">@(statisticheProvincia?.AgentiInattivi ?? 0)</h5>
+                                </div>
+                            </div>
+
+                            @if (statisticheProvincia?.TotaleAgenti > 0)
+                            {
+                                <hr>
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        Percentuale attivi: 
+                                        <strong>@Math.Round((double)statisticheProvincia.AgentiAttivi / statisticheProvincia.TotaleAgenti * 100, 1)%</strong>
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Informazioni Tecniche -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informazioni Tecniche</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descrizione Completa</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded">
+                                <small class="font-monospace">@Model.DescrizioneCompleta</small>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                        onclick="copyToClipboard('@Model.DescrizioneCompleta')" title="Copia Descrizione">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Codice:</span>
+                            <strong class="text-primary">@Model.CodiceAgente</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Stato:</span>
+                            <span class="@Model.StatoAgenteCssClass">@Model.StatoAgente</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.ProvinciaAgente))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Provincia:</span>
+                                <span class="badge bg-info">@Model.ProvinciaAgente</span>
+                            </div>
+                        }
+                        @if (Model.HasIndirizzoCompleto)
+                        {
+                            <hr class="my-2">
+                            <small class="text-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Dati di indirizzo completi
+                            </small>
+                        }
+                    </div>
+                </div>
+
+                <!-- Azioni Rapide -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Azioni Rapide</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" 
+                                    onclick="copyToClipboard('@Model.CodiceAgente')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Codice Agente
+                            </button>
+                            @if (!string.IsNullOrEmpty(Model.DescrizioneAgente))
+                            {
+                                <button type="button" class="btn btn-outline-info" 
+                                        onclick="copyToClipboard('@Model.DescrizioneAgente')">
+                                    <i class="bi bi-clipboard me-2"></i>Copia Nome Agente
+                                </button>
+                            }
+                            <button type="button" class="btn btn-outline-success" 
+                                    onclick="copyToClipboard('@Model.NomeCompleto')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Nome Completo
+                            </button>
+                            @if (Model.HasIndirizzoCompleto)
+                            {
+                                <button type="button" class="btn btn-outline-warning" 
+                                        onclick="copyToClipboard('@Model.IndirizzoCompleto')">
+                                    <i class="bi bi-clipboard me-2"></i>Copia Indirizzo
+                                </button>
+                            }
+                            <button type="button" class="btn btn-outline-secondary" 
+                                    onclick="copyToClipboard('@Model.DescrizioneCompleta')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Descrizione Completa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copia negli appunti
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Testo copiato negli appunti: ' + text, 'success');
+            }).catch(function(err) {
+                console.error('Errore nella copia: ', err);
+                showToast('Errore nella copia del testo', 'error');
+            });
+        }
+
+        // Funzione per mostrare toast
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+
+        // Crea il container per i toast se non esiste
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+}

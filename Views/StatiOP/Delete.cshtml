@@ -1,0 +1,313 @@
+@model AiDbMaster.ViewModels.DeleteStatoOPViewModel
+
+@{
+    ViewData["Title"] = "Elimina Stato OP";
+    var colorClass = Model?.StatoOP?.CodiceStato?.ToUpper() switch
+    {
+        "ES" => "bg-info",      // Emesso - Blu
+        "PR" => "bg-warning",   // Produzione - Giallo
+        "CH" => "bg-success",   // Chiuso - Verde
+        "SO" => "bg-secondary", // Sospeso - Grigio
+        "AN" => "bg-danger",    // Annullato - Rosso
+        _ => "bg-primary"       // Default - Blu primario
+    };
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-danger"><i class="bi bi-trash me-2"></i>Elimina Stato OP</h2>
+            <div>
+                <a asp-action="Details" asp-route-id="@Model?.StatoOP?.IdStato" class="btn btn-outline-info">
+                    <i class="bi bi-eye"></i> Dettagli
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Alert di avvertimento -->
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> Attenzione!
+                    </h4>
+                    <p>Stai per eliminare definitivamente questo stato OP dal sistema.</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Questa operazione non può essere annullata.</strong>
+                        @if (Model?.IsSystemState == true)
+                        {
+                            <br><span class="text-danger">
+                                <i class="bi bi-shield-exclamation"></i> 
+                                <strong>STATO DI SISTEMA:</strong> Questo stato è protetto e non può essere eliminato!
+                            </span>
+                        }
+                        else if (Model?.HasOrdiniProduzione == true)
+                        {
+                            <br><span class="text-danger">
+                                <i class="bi bi-exclamation-circle"></i> 
+                                <strong>ATTENZIONE:</strong> Questo stato ha @Model.OrdiniProduzioneCount ordini di produzione collegati!
+                            </span>
+                        }
+                        else
+                        {
+                            <span>Considera di disattivare lo stato invece di eliminarlo per mantenere lo storico.</span>
+                        }
+                    </p>
+                </div>
+
+                @if (Model?.IsSystemState == true)
+                {
+                    <!-- Alert blocco eliminazione per stato di sistema -->
+                    <div class="alert alert-danger" role="alert">
+                        <h5><i class="bi bi-shield-exclamation"></i> Eliminazione Bloccata - Stato di Sistema</h5>
+                        <p>
+                            Non è possibile eliminare questo stato perché è uno <strong>stato di sistema</strong> 
+                            essenziale per il funzionamento dell'applicazione.
+                        </p>
+                        <p class="mb-0">
+                            Gli stati di sistema protetti sono: <strong>ES, PR, CH, SO, AN</strong>
+                        </p>
+                    </div>
+                }
+                else if (Model?.HasOrdiniProduzione == true)
+                {
+                    <!-- Alert blocco eliminazione per ordini collegati -->
+                    <div class="alert alert-warning" role="alert">
+                        <h5><i class="bi bi-list-task"></i> Eliminazione Bloccata - Ordini Collegati</h5>
+                        <p>
+                            Non è possibile eliminare questo stato perché ha 
+                            <strong>@Model.OrdiniProduzioneCount ordini di produzione</strong> collegati.
+                        </p>
+                        <p class="mb-0">
+                            Per eliminare lo stato, è necessario prima:
+                        </p>
+                        <ul class="mt-2">
+                            <li>Completare o cancellare tutti gli ordini di produzione con questo stato</li>
+                            <li>Oppure cambiare lo stato degli ordini esistenti</li>
+                        </ul>
+                    </div>
+                }
+
+                <!-- Card con i dati dello stato -->
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-flag"></i> Stato OP da Eliminare
+                            <span class="badge bg-light text-dark ms-2">ID: @Model?.StatoOP?.IdStato</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-muted">Ordine</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge bg-dark fs-6">@Model?.StatoOP?.Ordine</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-muted">Codice Stato</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge @colorClass fs-6">@Model?.StatoOP?.CodiceStato</span>
+                                    @if (Model?.IsSystemState == true)
+                                    {
+                                        <br><small class="text-warning">
+                                            <i class="bi bi-shield-exclamation"></i> Stato di sistema
+                                        </small>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Descrizione Stato</label>
+                                <div class="form-control-plaintext">
+                                    <strong class="fs-5">@Model?.StatoOP?.DescrizioneStato</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Stato Attuale</label>
+                                <div class="form-control-plaintext">
+                                    @if (Model?.StatoOP?.Attivo == true)
+                                    {
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Attivo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary fs-6">
+                                            <i class="bi bi-pause-circle"></i> Inattivo
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Ordini Collegati</label>
+                                <div class="form-control-plaintext">
+                                    @if (Model?.OrdiniProduzioneCount > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark fs-6">
+                                            <i class="bi bi-list-task"></i> @Model.OrdiniProduzioneCount ordini
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Nessun ordine collegato</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model?.IsSystemState != true && Model?.HasOrdiniProduzione != true)
+                {
+                    <!-- Card alternative all'eliminazione -->
+                    <div class="card mt-4 border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Alternative Consigliate</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Prima di eliminare, considera queste alternative:</strong></p>
+                            <ul>
+                                <li>
+                                    <strong>Disattivazione:</strong> 
+                                    <a asp-action="Edit" asp-route-id="@Model?.StatoOP?.IdStato" class="btn btn-sm btn-warning ms-2">
+                                        <i class="bi bi-pause-circle"></i> Disattiva invece
+                                    </a>
+                                </li>
+                                <li><strong>Modifica:</strong> Aggiorna la descrizione se non è più accurata</li>
+                                <li><strong>Riordinamento:</strong> Cambia solo la posizione nell'elenco</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Form di conferma eliminazione -->
+                    <div class="card mt-4 border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione</h6>
+                        </div>
+                        <div class="card-body">
+                            <form asp-action="Delete" method="post">
+                                <input type="hidden" asp-for="StatoOP.IdStato" />
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                    <label class="form-check-label" for="confirmDelete">
+                                        <strong>Confermo di voler eliminare definitivamente questo stato OP</strong>
+                                    </label>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle"></i> 
+                                            L'eliminazione è irreversibile
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                            <i class="bi bi-trash"></i> Elimina Definitivamente
+                                        </button>
+                                        <a asp-action="Edit" asp-route-id="@Model?.StatoOP?.IdStato" class="btn btn-warning ms-2">
+                                            <i class="bi bi-pause-circle"></i> Disattiva Invece
+                                        </a>
+                                        <a asp-action="Index" class="btn btn-secondary ms-2">
+                                            <i class="bi bi-x-circle"></i> Annulla
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Azioni alternative quando non si può eliminare -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-tools"></i> Azioni Alternative</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2 d-md-flex justify-content-center">
+                                @if (Model?.IsSystemState != true)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@Model?.StatoOP?.IdStato" class="btn btn-warning">
+                                        <i class="bi bi-pause-circle"></i> Disattiva Stato
+                                    </a>
+                                    <a asp-controller="ListaOP" asp-action="Index" asp-route-idStato="@Model?.StatoOP?.IdStato" class="btn btn-info">
+                                        <i class="bi bi-list-task"></i> Visualizza Ordini
+                                    </a>
+                                }
+                                <a asp-action="Reorder" class="btn btn-outline-warning">
+                                    <i class="bi bi-arrow-up-down"></i> Riordina Stati
+                                </a>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Torna all'Elenco
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model?.IsSystemState != true && Model?.HasOrdiniProduzione != true)
+{
+    @section Scripts {
+        <script>
+            // Abilita il pulsante di eliminazione solo quando la checkbox è selezionata
+            document.getElementById('confirmDelete').addEventListener('change', function() {
+                const deleteButton = document.getElementById('deleteButton');
+                deleteButton.disabled = !this.checked;
+                
+                if (this.checked) {
+                    deleteButton.classList.remove('btn-danger');
+                    deleteButton.classList.add('btn-outline-danger');
+                } else {
+                    deleteButton.classList.remove('btn-outline-danger');
+                    deleteButton.classList.add('btn-danger');
+                }
+            });
+
+            // Conferma aggiuntiva prima dell'eliminazione
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const codiceStato = '@Model?.StatoOP?.CodiceStato';
+                const descrizione = '@Model?.StatoOP?.DescrizioneStato';
+                const confirmMessage = `Sei assolutamente sicuro di voler eliminare lo stato "${codiceStato} - ${descrizione}"?\n\nQuesta operazione NON PUÒ essere annullata.`;
+                
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Seconda conferma per sicurezza
+                const finalConfirm = 'Digita "ELIMINA" per confermare definitivamente:';
+                const userInput = prompt(finalConfirm);
+                
+                if (userInput !== 'ELIMINA') {
+                    e.preventDefault();
+                    alert('Eliminazione annullata. Testo di conferma non corretto.');
+                    return false;
+                }
+                
+                return true;
+            });
+
+            // Focus sulla checkbox al caricamento
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('confirmDelete').focus();
+            });
+        </script>
+    }
+}

@@ -1,0 +1,339 @@
+@model AiDbMaster.Models.AnagraficaClienti
+
+@{
+    ViewData["Title"] = "Dettagli Cliente";
+}
+
+<div class="container">
+
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person-circle me-2 text-primary"></i>Dettagli Cliente</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informazioni Principali -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-building me-2"></i>Informazioni Principali</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CodiceCliente)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        <i class="bi bi-person-badge me-2 text-primary"></i>
+                                        <strong>@Html.DisplayFor(model => model.CodiceCliente)</strong>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                onclick="copyToClipboard('@Model.CodiceCliente')" title="Copia Codice">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.TipoAnagrafica)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        <span class="badge bg-secondary fs-6">@Html.DisplayFor(model => model.TipoAnagrafica)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.RagioneSociale)</label>
+                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                <strong>@Html.DisplayFor(model => model.RagioneSociale)</strong>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.DescrizioneAggiuntiva))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.DescrizioneAggiuntiva)</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded">
+                                    @Html.DisplayFor(model => model.DescrizioneAggiuntiva)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Indirizzo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Indirizzo</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.IndirizzoCompleto))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Indirizzo Completo</label>
+                                <div class="form-control-plaintext bg-light p-3 rounded">
+                                    <i class="bi bi-house me-2 text-success"></i>
+                                    @Html.DisplayFor(model => model.IndirizzoCompleto)
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.Indirizzo))
+                            {
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Indirizzo)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            @Html.DisplayFor(model => model.Indirizzo)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Cap))
+                            {
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Cap)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="badge bg-info">@Html.DisplayFor(model => model.Cap)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.Citta))
+                            {
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Citta)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <i class="bi bi-building me-2 text-primary"></i>
+                                            @Html.DisplayFor(model => model.Citta)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Provincia))
+                            {
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Provincia)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="badge bg-warning text-dark fs-6">@Html.DisplayFor(model => model.Provincia)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dati Fiscali -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Dati Fiscali</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.CodiceFiscale))
+                            {
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CodiceFiscale)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <i class="bi bi-card-text me-2 text-warning"></i>
+                                            @Html.DisplayFor(model => model.CodiceFiscale)
+                                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                    onclick="copyToClipboard('@Model.CodiceFiscale')" title="Copia Codice Fiscale">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.PartitaIva))
+                            {
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.PartitaIva)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <i class="bi bi-receipt me-2 text-success"></i>
+                                            @Html.DisplayFor(model => model.PartitaIva)
+                                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                    onclick="copyToClipboard('@Model.PartitaIva')" title="Copia Partita IVA">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informazioni Aggiuntive -->
+            <div class="col-lg-4">
+                <!-- ID Sistema -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-hash me-2"></i>Identificativo Sistema</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                            <span class="badge bg-dark fs-4">#@Html.DisplayFor(model => model.Id)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contatti -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Contatti</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.Telefono))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Telefono)</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded">
+                                    <i class="bi bi-telephone me-2 text-success"></i>
+                                    <a href="tel:@Model.Telefono" class="text-decoration-none">@Html.DisplayFor(model => model.Telefono)</a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                            onclick="copyToClipboard('@Model.Telefono')" title="Copia Telefono">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.FaxTelex))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.FaxTelex)</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded">
+                                    <i class="bi bi-printer me-2 text-secondary"></i>
+                                    @Html.DisplayFor(model => model.FaxTelex)
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                            onclick="copyToClipboard('@Model.FaxTelex')" title="Copia Fax">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (string.IsNullOrEmpty(Model.Telefono) && string.IsNullOrEmpty(Model.FaxTelex))
+                        {
+                            <div class="text-center text-muted">
+                                <i class="bi bi-telephone-x" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Nessun contatto disponibile</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Agente -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-workspace me-2"></i>Agente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <span class="badge bg-warning text-dark fs-3">@Html.DisplayFor(model => model.CodiceAgente)</span>
+                            <p class="mt-2 text-muted">Codice Agente Assegnato</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riepilogo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Riepilogo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h6 class="text-muted">Tipo</h6>
+                                    <h4 class="text-primary">@Model.TipoAnagrafica</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted">Agente</h6>
+                                <h4 class="text-warning">@Model.CodiceAgente</h4>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Provincia))
+                        {
+                            <hr>
+                            <div class="text-center">
+                                <h6 class="text-muted">Localizzazione</h6>
+                                <span class="badge bg-info fs-6">@Model.Provincia</span>
+                                @if (!string.IsNullOrEmpty(Model.Citta))
+                                {
+                                    <span class="ms-2">@Model.Citta</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copia negli appunti
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Testo copiato negli appunti: ' + text, 'success');
+            }).catch(function(err) {
+                console.error('Errore nella copia: ', err);
+                showToast('Errore nella copia del testo', 'error');
+            });
+        }
+
+        // Funzione per mostrare toast
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+
+        // Crea il container per i toast se non esiste
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+}

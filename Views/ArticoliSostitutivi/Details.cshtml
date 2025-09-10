@@ -1,0 +1,353 @@
+@model AiDbMaster.Models.ArticoliSostitutivi
+
+@{
+    ViewData["Title"] = "Dettagli Relazione di Sostituzione";
+    var altreRelazioni = ViewBag.AltreRelazioni as List<AiDbMaster.Models.ArticoliSostitutivi> ?? new List<AiDbMaster.Models.ArticoliSostitutivi>();
+    var relazioniInverse = ViewBag.RelazioniInverse as List<AiDbMaster.Models.ArticoliSostitutivi> ?? new List<AiDbMaster.Models.ArticoliSostitutivi>();
+}
+
+<div class="container">
+
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-arrow-left-right me-2 text-primary"></i>Dettagli Relazione di Sostituzione</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informazioni Principali -->
+            <div class="col-lg-8">
+                <!-- Relazione di Sostituzione -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Relazione di Sostituzione</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="mb-2">
+                                        <i class="bi bi-box text-primary" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <h4 class="text-primary mb-1">@Html.DisplayFor(model => model.CodiceArticolo)</h4>
+                                    <small class="text-muted">Articolo Principale</small>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                onclick="copyToClipboard('@Model.CodiceArticolo')" title="Copia Codice">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <i class="bi bi-arrow-right text-success" style="font-size: 3rem;"></i>
+                                <div class="mt-2">
+                                    <small class="text-muted">sostituito da</small>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="mb-2">
+                                        <i class="bi bi-boxes text-warning" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <h4 class="text-warning mb-1">@Html.DisplayFor(model => model.CodiceArticoloSostitutivo)</h4>
+                                    <small class="text-muted">Articolo Sostitutivo</small>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                onclick="copyToClipboard('@Model.CodiceArticoloSostitutivo')" title="Copia Codice">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Relazione:</strong> @Html.DisplayFor(model => model.DescrizioneCompleta)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-sticky me-2"></i>Note</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                <i class="bi bi-quote text-info me-2"></i>
+                                @Html.DisplayFor(model => model.Note)
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Altre Relazioni dello stesso Articolo -->
+                @if (altreRelazioni.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Altri Sostitutivi per @Model.CodiceArticolo</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Articolo Sostitutivo</th>
+                                            <th>Note</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var relazione in altreRelazioni)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-boxes me-2 text-warning"></i>
+                                                    <strong>@relazione.CodiceArticoloSostitutivo</strong>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(relazione.Note))
+                                                    {
+                                                        <small class="text-muted">@relazione.Note</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a asp-action="Details" 
+                                                       asp-route-codiceArticolo="@relazione.CodiceArticolo"
+                                                       asp-route-codiceArticoloSostitutivo="@relazione.CodiceArticoloSostitutivo"
+                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Relazioni Inverse -->
+                @if (relazioniInverse.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bi bi-arrow-left me-2"></i>Articoli che usano @Model.CodiceArticolo come Sostitutivo</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Articolo Principale</th>
+                                            <th>Note</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var relazione in relazioniInverse)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-box me-2 text-primary"></i>
+                                                    <strong>@relazione.CodiceArticolo</strong>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(relazione.Note))
+                                                    {
+                                                        <small class="text-muted">@relazione.Note</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a asp-action="Details" 
+                                                       asp-route-codiceArticolo="@relazione.CodiceArticolo"
+                                                       asp-route-codiceArticoloSostitutivo="@relazione.CodiceArticoloSostitutivo"
+                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Informazioni Aggiuntive -->
+            <div class="col-lg-4">
+                <!-- Riepilogo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Riepilogo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tipo Relazione</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded">
+                                <span class="badge bg-primary fs-6">@Model.TipoRelazione</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Chiave Composta</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded">
+                                <small class="text-muted font-monospace">@Model.ChiaveComposta</small>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                        onclick="copyToClipboard('@Model.ChiaveComposta')" title="Copia Chiave">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Note Presenti</label>
+                            <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                                @if (Model.HasNote)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Sì
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>No
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiche Correlate -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Statistiche</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h6 class="text-muted">Altri Sostitutivi</h6>
+                                    <h4 class="text-success">@altreRelazioni.Count</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted">Relazioni Inverse</h6>
+                                <h4 class="text-warning">@relazioniInverse.Count</h4>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Relazioni totali correlate: <strong>@(altreRelazioni.Count + relazioniInverse.Count + 1)</strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Azioni Rapide -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Azioni Rapide</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" 
+                                    onclick="copyToClipboard('@Model.CodiceArticolo')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Articolo Principale
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" 
+                                    onclick="copyToClipboard('@Model.CodiceArticoloSostitutivo')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Articolo Sostitutivo
+                            </button>
+                            <button type="button" class="btn btn-outline-info" 
+                                    onclick="copyToClipboard('@Model.DescrizioneCompleta')">
+                                <i class="bi bi-clipboard me-2"></i>Copia Relazione Completa
+                            </button>
+                            @if (!string.IsNullOrEmpty(Model.Note))
+                            {
+                                <button type="button" class="btn btn-outline-secondary" 
+                                        onclick="copyToClipboard('@Model.Note')">
+                                    <i class="bi bi-clipboard me-2"></i>Copia Note
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copia negli appunti
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Testo copiato negli appunti: ' + text, 'success');
+            }).catch(function(err) {
+                console.error('Errore nella copia: ', err);
+                showToast('Errore nella copia del testo', 'error');
+            });
+        }
+
+        // Funzione per mostrare toast
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+
+        // Crea il container per i toast se non esiste
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+}

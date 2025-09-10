@@ -1,0 +1,149 @@
+@model AiDbMaster.ViewModels.CreateStatoOPViewModel
+
+@{
+    ViewData["Title"] = "Nuovo Stato OP";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-plus-circle me-2"></i>Nuovo Stato OP</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-flag"></i> Dati Stato OP</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CodiceStato" class="form-label">
+                                        Codice Stato <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="CodiceStato" class="form-control" placeholder="ES, PR, CH..." maxlength="2" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Codice univoco, massimo 2 caratteri
+                                    </div>
+                                    <span asp-validation-for="CodiceStato" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="DescrizioneStato" class="form-label">
+                                        Descrizione Stato <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="DescrizioneStato" class="form-control" 
+                                           placeholder="Emesso, Produzione, Chiuso..." 
+                                           maxlength="20" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Descrizione breve, massimo 20 caratteri
+                                    </div>
+                                    <span asp-validation-for="DescrizioneStato" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-2 mb-3">
+                                    <label asp-for="Ordine" class="form-label">
+                                        Ordine <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="Ordine" class="form-control" type="number" min="1" max="999" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Sequenza visualizzazione
+                                    </div>
+                                    <span asp-validation-for="Ordine" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input asp-for="Attivo" class="form-check-input" type="checkbox" checked />
+                                        <label asp-for="Attivo" class="form-check-label">
+                                            Stato Attivo
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Gli stati inattivi non saranno visibili nelle selezioni
+                                    </div>
+                                    <span asp-validation-for="Attivo" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-asterisk text-danger"></i> Campi obbligatori
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Salva Stato OP
+                                    </button>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card suggerimenti -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Suggerimenti</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Codici Consigliati:</h6>
+                                <ul class="mb-0">
+                                    <li><strong>ES</strong> - Emesso</li>
+                                    <li><strong>PR</strong> - Produzione</li>
+                                    <li><strong>CH</strong> - Chiuso</li>
+                                    <li><strong>SO</strong> - Sospeso</li>
+                                    <li><strong>AN</strong> - Annullato</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Best Practices:</h6>
+                                <ul class="mb-0">
+                                    <li>Usa codici brevi e mnemonici</li>
+                                    <li>Mantieni l'ordine logico del flusso</li>
+                                    <li>Descrizioni chiare e concise</li>
+                                    <li>Evita spazi nei codici</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Trasforma il codice in maiuscolo
+        document.getElementById('CodiceStato').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Focus automatico sul primo campo
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('CodiceStato').focus();
+        });
+    </script>
+}

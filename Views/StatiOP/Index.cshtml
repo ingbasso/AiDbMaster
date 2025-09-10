@@ -1,0 +1,401 @@
+@model IEnumerable<AiDbMaster.Models.StatoOP>
+
+@{
+    ViewData["Title"] = "Gestione Stati OP";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-flag me-2"></i>Gestione Stati OP</h2>
+            <div>
+                <a asp-action="Reorder" class="btn btn-outline-warning">
+                    <i class="bi bi-arrow-up-down"></i> Riordina
+                </a>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nuovo Stato OP
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtri di ricerca -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtri di Ricerca</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" asp-action="Index">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Ricerca</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="@ViewBag.CurrentSearch" placeholder="Cerca per codice o descrizione..." />
+                        </div>
+                        <div class="col-md-2">
+                            <label for="attivo" class="form-label">Stato</label>
+                            <select class="form-select" id="attivo" name="attivo">
+                                <option value="">Tutti</option>
+                                <option value="true" selected="@(ViewBag.CurrentAttivo == true)">Solo Attivi</option>
+                                <option value="false" selected="@(ViewBag.CurrentAttivo == false)">Solo Inattivi</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="codiceStato" class="form-label">Codice</label>
+                            <select class="form-select" id="codiceStato" name="codiceStato">
+                                <option value="">Tutti</option>
+                                <option value="ES" selected="@(ViewBag.CurrentCodiceStato == "ES")">ES - Emesso</option>
+                                <option value="PR" selected="@(ViewBag.CurrentCodiceStato == "PR")">PR - Produzione</option>
+                                <option value="CH" selected="@(ViewBag.CurrentCodiceStato == "CH")">CH - Chiuso</option>
+                                <option value="SO" selected="@(ViewBag.CurrentCodiceStato == "SO")">SO - Sospeso</option>
+                                <option value="AN" selected="@(ViewBag.CurrentCodiceStato == "AN")">AN - Annullato</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="pageSize" class="form-label">Elementi</label>
+                            <select class="form-select" id="pageSize" name="pageSize">
+                                <option value="25" selected="@(ViewBag.PageSize == 25)">25</option>
+                                <option value="50" selected="@(ViewBag.PageSize == 50)">50</option>
+                                <option value="100" selected="@(ViewBag.PageSize == 100)">100</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <input type="hidden" name="sortOrder" value="@ViewBag.CurrentSort" />
+                </form>
+            </div>
+        </div>
+
+        <!-- Messaggi di feedback -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Tabella risultati -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-0">
+                            Elenco Stati OP 
+                            <span class="badge bg-secondary">@ViewBag.TotalCount risultati</span>
+                        </h5>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        @if (ViewBag.TotalPages > 1)
+                        {
+                            <small class="text-muted">
+                                Pagina @ViewBag.CurrentPage di @ViewBag.TotalPages
+                            </small>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-sortOrder="@ViewBag.OrdineSortParm"
+                                           asp-route-search="@ViewBag.CurrentSearch"
+                                           asp-route-attivo="@ViewBag.CurrentAttivo"
+                                           asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                           asp-route-pageSize="@ViewBag.PageSize"
+                                           class="text-decoration-none">
+                                            Ordine
+                                            @if (ViewBag.CurrentSort == "ordine")
+                                            {
+                                                <i class="bi bi-sort-numeric-down"></i>
+                                            }
+                                            else if (ViewBag.CurrentSort == "ordine_desc")
+                                            {
+                                                <i class="bi bi-sort-numeric-up"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-sortOrder="@ViewBag.CodiceSortParm"
+                                           asp-route-search="@ViewBag.CurrentSearch"
+                                           asp-route-attivo="@ViewBag.CurrentAttivo"
+                                           asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                           asp-route-pageSize="@ViewBag.PageSize"
+                                           class="text-decoration-none">
+                                            Codice
+                                            @if (ViewBag.CurrentSort == "codice")
+                                            {
+                                                <i class="bi bi-sort-alpha-down"></i>
+                                            }
+                                            else if (ViewBag.CurrentSort == "codice_desc")
+                                            {
+                                                <i class="bi bi-sort-alpha-up"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-sortOrder="@ViewBag.DescrizioneSortParm"
+                                           asp-route-search="@ViewBag.CurrentSearch"
+                                           asp-route-attivo="@ViewBag.CurrentAttivo"
+                                           asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                           asp-route-pageSize="@ViewBag.PageSize"
+                                           class="text-decoration-none">
+                                            Descrizione
+                                            @if (ViewBag.CurrentSort == "descrizione")
+                                            {
+                                                <i class="bi bi-sort-alpha-down"></i>
+                                            }
+                                            else if (ViewBag.CurrentSort == "descrizione_desc")
+                                            {
+                                                <i class="bi bi-sort-alpha-up"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>Ordini Collegati</th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-sortOrder="@ViewBag.AttivoSortParm"
+                                           asp-route-search="@ViewBag.CurrentSearch"
+                                           asp-route-attivo="@ViewBag.CurrentAttivo"
+                                           asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                           asp-route-pageSize="@ViewBag.PageSize"
+                                           class="text-decoration-none">
+                                            Stato
+                                            @if (ViewBag.CurrentSort == "attivo")
+                                            {
+                                                <i class="bi bi-sort-down"></i>
+                                            }
+                                            else if (ViewBag.CurrentSort == "attivo_desc")
+                                            {
+                                                <i class="bi bi-sort-up"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th width="200">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    var colorClass = item.CodiceStato.ToUpper() switch
+                                    {
+                                        "ES" => "bg-info",      // Emesso - Blu
+                                        "PR" => "bg-warning",   // Produzione - Giallo
+                                        "CH" => "bg-success",   // Chiuso - Verde
+                                        "SO" => "bg-secondary", // Sospeso - Grigio
+                                        "AN" => "bg-danger",    // Annullato - Rosso
+                                        _ => "bg-primary"       // Default - Blu primario
+                                    };
+                                    
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-dark fs-6">@item.Ordine</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @colorClass fs-6">@Html.DisplayFor(modelItem => item.CodiceStato)</span>
+                                        </td>
+                                        <td>
+                                            <strong>@Html.DisplayFor(modelItem => item.DescrizioneStato)</strong>
+                                        </td>
+                                        <td>
+                                            @if (item.OrdiniProduzione?.Any() == true)
+                                            {
+                                                <span class="badge bg-info fs-6">
+                                                    <i class="bi bi-list-task"></i> @item.OrdiniProduzione.Count
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">0</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.Attivo)
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle"></i> Attivo
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-pause-circle"></i> Inattivo
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a asp-action="Details" asp-route-id="@item.IdStato" 
+                                                   class="btn btn-sm btn-outline-info" title="Dettagli">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a asp-action="Edit" asp-route-id="@item.IdStato" 
+                                                   class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.IdStato" 
+                                                   class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginazione -->
+                    @if (ViewBag.TotalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <nav aria-label="Paginazione stati OP">
+                                <ul class="pagination justify-content-center mb-0">
+                                    @if (ViewBag.CurrentPage > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" 
+                                               asp-action="Index"
+                                               asp-route-page="@(ViewBag.CurrentPage - 1)"
+                                               asp-route-search="@ViewBag.CurrentSearch"
+                                               asp-route-attivo="@ViewBag.CurrentAttivo"
+                                               asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                               asp-route-sortOrder="@ViewBag.CurrentSort"
+                                               asp-route-pageSize="@ViewBag.PageSize">
+                                                <i class="bi bi-chevron-left"></i> Precedente
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+                                    {
+                                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" 
+                                               asp-action="Index"
+                                               asp-route-page="@i"
+                                               asp-route-search="@ViewBag.CurrentSearch"
+                                               asp-route-attivo="@ViewBag.CurrentAttivo"
+                                               asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                               asp-route-sortOrder="@ViewBag.CurrentSort"
+                                               asp-route-pageSize="@ViewBag.PageSize">
+                                                @i
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" 
+                                               asp-action="Index"
+                                               asp-route-page="@(ViewBag.CurrentPage + 1)"
+                                               asp-route-search="@ViewBag.CurrentSearch"
+                                               asp-route-attivo="@ViewBag.CurrentAttivo"
+                                               asp-route-codiceStato="@ViewBag.CurrentCodiceStato"
+                                               asp-route-sortOrder="@ViewBag.CurrentSort"
+                                               asp-route-pageSize="@ViewBag.PageSize">
+                                                Successiva <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-flag display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Nessuno stato OP trovato</h4>
+                        <p class="text-muted">
+                            @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch) || ViewBag.CurrentAttivo != null || !string.IsNullOrEmpty(ViewBag.CurrentCodiceStato))
+                            {
+                                <span>Prova a modificare i filtri di ricerca o</span>
+                            }
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Crea il primo stato OP
+                            </a>
+                        </p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Card informativa -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni Stati OP</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Stati Standard del Sistema:</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-info">ES</span> Emesso - Ordine creato</li>
+                            <li><span class="badge bg-warning text-dark">PR</span> Produzione - In lavorazione</li>
+                            <li><span class="badge bg-success">CH</span> Chiuso - Completato</li>
+                            <li><span class="badge bg-secondary">SO</span> Sospeso - Temporaneamente fermo</li>
+                            <li><span class="badge bg-danger">AN</span> Annullato - Cancellato</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Funzionalità:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-arrow-up-down text-warning"></i> Riordina gli stati per sequenza logica</li>
+                            <li><i class="bi bi-shield-exclamation text-danger"></i> Gli stati di sistema non possono essere eliminati</li>
+                            <li><i class="bi bi-list-task text-info"></i> Visualizza ordini collegati per ogni stato</li>
+                            <li><i class="bi bi-graph-up text-success"></i> Statistiche di utilizzo disponibili</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-submit del form quando cambiano i filtri
+        document.getElementById('attivo').addEventListener('change', function() {
+            this.form.submit();
+        });
+        
+        document.getElementById('codiceStato').addEventListener('change', function() {
+            this.form.submit();
+        });
+        
+        document.getElementById('pageSize').addEventListener('change', function() {
+            this.form.submit();
+        });
+
+        // Ricerca con Enter
+        document.getElementById('search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    </script>
+}

@@ -1,10 +1,10 @@
-# 🛠️ GUIDA DEPLOY MANUALE - AiDocMaster
+# 🛠️ GUIDA DEPLOY MANUALE - AiDbMaster
 
 ## 📋 INFORMAZIONI PRODUZIONE
-- **Sito Produzione**: `C:\inetpub\wwwroot\AiDocMaster`
-- **Database**: `AIDOCMASTER` su `SRVPSTREE\SQLEXPRESS`
-- **Dominio**: `https://www.aidocmaster.it`
-- **File Compilati**: `C:\Prove Cursor\AiDocMaster\publish-production`
+- **Sito Produzione**: `C:\inetpub\wwwroot\AiDbMaster`
+- **Database**: `AIDBMASTER` su `SRVPSTREE\SQLEXPRESS`
+- **Dominio**: `https://www.aidbmaster.it`
+- **File Compilati**: `C:\Prove Cursor\AiDbMaster\publish-production`
 
 ---
 
@@ -15,18 +15,18 @@
 ```powershell
 # Sul server di produzione
 $BackupDate = Get-Date -Format "yyyyMMdd-HHmmss"
-$BackupPath = "C:\Backup\AiDocMaster-$BackupDate"
+$BackupPath = "C:\Backup\AiDbMaster-$BackupDate"
 
 # 1. Crea cartella backup
 New-Item -ItemType Directory -Path $BackupPath -Force
 
 # 2. Backup sito completo
-Copy-Item "C:\inetpub\wwwroot\AiDocMaster\*" $BackupPath -Recurse -Force
+Copy-Item "C:\inetpub\wwwroot\AiDbMaster\*" $BackupPath -Recurse -Force
 Write-Host "✅ Backup sito: $BackupPath" -ForegroundColor Green
 
 # 3. Backup database
-sqlcmd -S "SRVPSTREE\SQLEXPRESS" -E -Q "BACKUP DATABASE AIDOCMASTER TO DISK = '$BackupPath\AIDOCMASTER-backup.bak'"
-Write-Host "✅ Backup database: $BackupPath\AIDOCMASTER-backup.bak" -ForegroundColor Green
+sqlcmd -S "SRVPSTREE\SQLEXPRESS" -E -Q "BACKUP DATABASE AIDBMASTER TO DISK = '$BackupPath\AIDBMASTER-backup.bak'"
+Write-Host "✅ Backup database: $BackupPath\AIDBMASTER-backup.bak" -ForegroundColor Green
 ```
 
 ### **PASSO 2: FERMA IIS** 🛑
@@ -37,10 +37,10 @@ Write-Host "🛑 Fermo IIS..." -ForegroundColor Yellow
 
 # Metodo 1: Stop Application Pool
 Import-Module WebAdministration
-Stop-WebAppPool -Name "AiDocMaster" -ErrorAction SilentlyContinue
+Stop-WebAppPool -Name "AiDbMaster" -ErrorAction SilentlyContinue
 
 # Metodo 2: Stop sito web
-Stop-WebSite -Name "AiDocMaster" -ErrorAction SilentlyContinue
+Stop-WebSite -Name "AiDbMaster" -ErrorAction SilentlyContinue
 
 # Metodo 3: Reset completo IIS (se necessario)
 # iisreset /stop
@@ -59,7 +59,7 @@ New-Item -ItemType Directory -Path $TempDataPath -Force
 $FoldersToPreserve = @("DocumentsStorage", "Uploads", "Logs")
 
 foreach ($folder in $FoldersToPreserve) {
-    $source = "C:\inetpub\wwwroot\AiDocMaster\$folder"
+    $source = "C:\inetpub\wwwroot\AiDbMaster\$folder"
     $dest = "$TempDataPath\$folder"
     
     if (Test-Path $source) {
@@ -74,8 +74,8 @@ foreach ($folder in $FoldersToPreserve) {
 **Sul PC di sviluppo:**
 ```powershell
 # Comprimi i file compilati
-$SourcePath = "C:\Prove Cursor\AiDocMaster\publish-production"
-$ZipPath = "C:\temp\AiDocMaster-Release-$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
+$SourcePath = "C:\Prove Cursor\AiDbMaster\publish-production"
+$ZipPath = "C:\temp\AiDbMaster-Release-$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
 
 Compress-Archive -Path "$SourcePath\*" -DestinationPath $ZipPath -Force
 Write-Host "✅ Pacchetto creato: $ZipPath" -ForegroundColor Green
@@ -87,8 +87,8 @@ Write-Host "✅ Pacchetto creato: $ZipPath" -ForegroundColor Green
 
 ```powershell
 # Sul server di produzione
-$ZipFile = "C:\temp\AiDocMaster-Release-*.zip"  # Nome del tuo ZIP
-$TargetPath = "C:\inetpub\wwwroot\AiDocMaster"
+$ZipFile = "C:\temp\AiDbMaster-Release-*.zip"  # Nome del tuo ZIP
+$TargetPath = "C:\inetpub\wwwroot\AiDbMaster"
 
 # 1. Rimuovi file vecchi (mantenendo struttura)
 Write-Host "🗑️ Rimuovo file vecchi..." -ForegroundColor Yellow
@@ -118,8 +118,8 @@ Write-Host "✅ Deploy completato!" -ForegroundColor Green
 ```powershell
 # Sul server di produzione
 $ConfigFiles = @(
-    "C:\inetpub\wwwroot\AiDocMaster\web.config",
-    "C:\inetpub\wwwroot\AiDocMaster\appsettings.Production.json"
+    "C:\inetpub\wwwroot\AiDbMaster\web.config",
+    "C:\inetpub\wwwroot\AiDbMaster\appsettings.Production.json"
 )
 
 foreach ($file in $ConfigFiles) {
@@ -131,10 +131,10 @@ foreach ($file in $ConfigFiles) {
 }
 
 # Verifica file principale
-if (Test-Path "C:\inetpub\wwwroot\AiDocMaster\AiDocMaster.dll") {
-    Write-Host "✅ Applicazione principale: AiDocMaster.dll" -ForegroundColor Green
+if (Test-Path "C:\inetpub\wwwroot\AiDbMaster\AiDbMaster.dll") {
+    Write-Host "✅ Applicazione principale: AiDbMaster.dll" -ForegroundColor Green
 } else {
-    Write-Host "❌ MANCANTE: AiDocMaster.dll" -ForegroundColor Red
+    Write-Host "❌ MANCANTE: AiDbMaster.dll" -ForegroundColor Red
 }
 ```
 
@@ -145,10 +145,10 @@ if (Test-Path "C:\inetpub\wwwroot\AiDocMaster\AiDocMaster.dll") {
 Write-Host "▶️ Riavvio IIS..." -ForegroundColor Yellow
 
 # Metodo 1: Start Application Pool
-Start-WebAppPool -Name "AiDocMaster" -ErrorAction SilentlyContinue
+Start-WebAppPool -Name "AiDbMaster" -ErrorAction SilentlyContinue
 
 # Metodo 2: Start sito web
-Start-WebSite -Name "AiDocMaster" -ErrorAction SilentlyContinue
+Start-WebSite -Name "AiDbMaster" -ErrorAction SilentlyContinue
 
 # Metodo 3: Reset completo IIS
 # iisreset /start
@@ -167,7 +167,7 @@ Write-Host "🧪 Test finale..." -ForegroundColor Yellow
 
 # Test 1: HTTP Status
 try {
-    $response = Invoke-WebRequest -Uri "https://www.aidocmaster.it" -UseBasicParsing -TimeoutSec 30
+    $response = Invoke-WebRequest -Uri "https://www.aidbmaster.it" -UseBasicParsing -TimeoutSec 30
     if ($response.StatusCode -eq 200) {
         Write-Host "✅ Sito raggiungibile: HTTP $($response.StatusCode)" -ForegroundColor Green
     } else {
@@ -179,7 +179,7 @@ try {
 
 # Test 2: Database
 try {
-    sqlcmd -S "SRVPSTREE\SQLEXPRESS" -E -Q "SELECT TOP 1 * FROM INFORMATION_SCHEMA.TABLES" -d AIDOCMASTER
+    sqlcmd -S "SRVPSTREE\SQLEXPRESS" -E -Q "SELECT TOP 1 * FROM INFORMATION_SCHEMA.TABLES" -d AIDBMASTER
     Write-Host "✅ Database raggiungibile" -ForegroundColor Green
 } catch {
     Write-Host "❌ Database non raggiungibile: $($_.Exception.Message)" -ForegroundColor Red
@@ -187,7 +187,7 @@ try {
 
 # Test 3: Login page
 try {
-    $loginResponse = Invoke-WebRequest -Uri "https://www.aidocmaster.it/Account/Login" -UseBasicParsing -TimeoutSec 30
+    $loginResponse = Invoke-WebRequest -Uri "https://www.aidbmaster.it/Account/Login" -UseBasicParsing -TimeoutSec 30
     if ($loginResponse.StatusCode -eq 200) {
         Write-Host "✅ Pagina login funzionante" -ForegroundColor Green
     }
@@ -203,14 +203,14 @@ try {
 ### **Errore HTTP 500**
 ```powershell
 # Controlla i log
-Get-Content "C:\inetpub\wwwroot\AiDocMaster\Logs\stdout*.log" -Tail 50
+Get-Content "C:\inetpub\wwwroot\AiDbMaster\Logs\stdout*.log" -Tail 50
 ```
 
 ### **Service Unavailable**
 ```powershell
 # Verifica Application Pool
-Get-WebAppPoolState -Name "AiDocMaster"
-# Se stopped: Start-WebAppPool -Name "AiDocMaster"
+Get-WebAppPoolState -Name "AiDbMaster"
+# Se stopped: Start-WebAppPool -Name "AiDbMaster"
 ```
 
 ### **File bloccati**
@@ -225,10 +225,10 @@ iisreset /start
 ### **Rollback Emergenza**
 ```powershell
 # Ripristina dal backup
-$BackupPath = "C:\Backup\AiDocMaster-[DATA]"  # Usa l'ultimo backup
+$BackupPath = "C:\Backup\AiDbMaster-[DATA]"  # Usa l'ultimo backup
 iisreset /stop
-Remove-Item "C:\inetpub\wwwroot\AiDocMaster\*" -Recurse -Force
-Copy-Item "$BackupPath\*" "C:\inetpub\wwwroot\AiDocMaster\" -Recurse -Force
+Remove-Item "C:\inetpub\wwwroot\AiDbMaster\*" -Recurse -Force
+Copy-Item "$BackupPath\*" "C:\inetpub\wwwroot\AiDbMaster\" -Recurse -Force
 iisreset /start
 ```
 

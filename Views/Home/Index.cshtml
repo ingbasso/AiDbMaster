@@ -2,115 +2,71 @@
     ViewData["Title"] = "Home";
 }
 
-<div class="row align-items-center mb-5">
-    <div class="col-lg-6">
-        <h1 class="display-4 fw-bold mb-4">Gestisci i tuoi documenti aziendali con facilità</h1>
-        <p class="lead mb-4">AiDocMaster è un sistema completo per l'archiviazione, la classificazione e la gestione dei documenti aziendali, con controllo degli accessi e supporto per vari formati.</p>
-        
-        @if (User.Identity?.IsAuthenticated == true)
-        {
-            <div class="d-grid gap-2 d-md-flex">
-                <a asp-controller="Document" asp-action="Index" class="btn btn-primary btn-lg px-4 me-md-2">Visualizza documenti</a>
-                <a asp-controller="Document" asp-action="Create" class="btn btn-outline-light btn-lg px-4">Carica documento</a>
-            </div>
-        }
-        else
-        {
-            <div class="d-grid gap-2 d-md-flex">
-                <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-lg px-4 me-md-2">Registrati</a>
-                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg px-4">Accedi</a>
-            </div>
-        }
-    </div>
-    <div class="col-lg-6 d-none d-lg-block">
-        <img src="~/images/Home.svg" alt="Document Management" class="img-fluid" />
-    </div>
-</div>
-
-<div class="row g-4 py-5">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center p-4">
-                <div class="document-icon text-primary">
-                    <i class="bi bi-file-earmark-text"></i>
+<!-- Hero Section -->
+<div class="hero-section py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-37">
+            <!-- Left Column - Content -->
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-3 fw-bold mb-4 d-flex align-items-center justify-content-start" style="color: var(--orange-dark);">
+                        Ai<i class="bi bi-robot mx-2" style="font-size: 3.5rem; color: var(--orange-dark);"></i>DbMaster
+                    </h1>
+                    <p class="lead fs-3" style="color: #666;">Sistema AI di gestione richieste</p>
                 </div>
-                <h3 class="card-title">Supporto multi-formato</h3>
-                <p class="card-text">Gestisci documenti in vari formati: PDF, Word, Excel, Email e testo semplice.</p>
             </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center p-4">
-                <div class="document-icon text-primary">
-                    <i class="bi bi-shield-lock"></i>
-                </div>
-                <h3 class="card-title">Controllo accessi</h3>
-                <p class="card-text">Gestisci i permessi di accesso per utenti e gruppi con diversi livelli di autorizzazione.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center p-4">
-                <div class="document-icon text-primary">
-                    <i class="bi bi-tags"></i>
-                </div>
-                <h3 class="card-title">Categorizzazione</h3>
-                <p class="card-text">Organizza i documenti in categorie e tag per una ricerca e gestione più efficiente.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-@if (User.Identity?.IsAuthenticated == true && ViewBag.RecentDocuments != null)
-{
-    <div class="content-container mt-5">
-        <h2 class="mb-4">Documenti recenti</h2>
-        <div class="row g-4">
-            @foreach (var doc in ViewBag.RecentDocuments)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="card document-card">
-                        <div class="card-body">
-                            @{
-                                string iconClass = doc.FileType switch
-                                {
-                                    DocumentType.PDF => "bi bi-file-earmark-pdf text-danger",
-                                    DocumentType.DOCX => "bi bi-file-earmark-word text-primary",
-                                    DocumentType.TXT => "bi bi-file-earmark-text text-secondary",
-                                    DocumentType.EMAIL => "bi bi-envelope text-success",
-                                    DocumentType.EXCEL => "bi bi-file-earmark-excel text-success",
-                                    _ => "bi bi-file-earmark"
-                                };
-                            }
-                            <div class="d-flex align-items-center mb-3">
-                                <i class="@iconClass me-2 fs-4"></i>
-                                <h5 class="card-title mb-0">@doc.Name</h5>
+            
+            <!-- Right Column - Image -->
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="hero-image text-center">
+                    <div class="image-container" style="position: relative; max-width: 500px; margin: 0 auto;">
+                        <!-- Database Icon with AI Elements -->
+                        <div class="database-visual" style="background: linear-gradient(135deg, var(--orange-light), var(--orange-medium)); border-radius: 20px; padding: 3rem; box-shadow: 0 20px 40px rgba(255, 133, 51, 0.2);">
+                            <!-- Main Database Icon -->
+                            <div class="main-icon mb-4">
+                                <i class="bi bi-database-fill" style="font-size: 5rem; color: var(--orange-dark);"></i>
                             </div>
-                            <p class="card-text small text-muted">
-                                Caricato il @doc.UploadDate.ToString("dd/MM/yyyy")
-                                @if (doc.IsConfidential)
-                                {
-                                    <span class="badge bg-warning text-dark ms-2">
-                                        <i class="bi bi-lock-fill"></i> Confidenziale
-                                    </span>
-                                }
-                            </p>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <div class="d-flex justify-content-between">
-                                <a asp-controller="Document" asp-action="Details" asp-route-id="@doc.Id" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> Dettagli
-                                </a>
-                                <a asp-controller="Document" asp-action="Download" asp-route-id="@doc.Id" class="btn btn-sm btn-outline-success">
-                                    <i class="bi bi-download"></i> Scarica
-                                </a>
+                            
+                            <!-- AI Brain Icon -->
+                            <div class="ai-brain" style="position: absolute; top: 20px; right: 20px; background: white; border-radius: 50%; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                                <i class="bi bi-cpu" style="font-size: 2rem; color: var(--orange-dark);"></i>
+                            </div>
+                            
+                            <!-- Query Bubbles -->
+                            <div class="query-bubbles">
+                                <div class="bubble bubble-1" style="position: absolute; top: 60px; left: 30px; background: white; padding: 10px 15px; border-radius: 20px; font-size: 0.8rem; color: #666; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                                    SELECT *
+                                </div>
+                                <div class="bubble bubble-2" style="position: absolute; bottom: 80px; right: 40px; background: white; padding: 10px 15px; border-radius: 20px; font-size: 0.8rem; color: #666; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                                    WHERE...
+                                </div>
+                                <div class="bubble bubble-3" style="position: absolute; bottom: 40px; left: 50px; background: white; padding: 10px 15px; border-radius: 20px; font-size: 0.8rem; color: #666; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                                    COUNT()
+                                </div>
+                            </div>
+                            
+                            <!-- Connection Lines -->
+                            <div class="connections">
+                                <div style="position: absolute; top: 50%; left: 50%; width: 2px; height: 60px; background: var(--orange-medium); transform: translate(-50%, -50%) rotate(45deg); opacity: 0.6;"></div>
+                                <div style="position: absolute; top: 50%; left: 50%; width: 2px; height: 60px; background: var(--orange-medium); transform: translate(-50%, -50%) rotate(-45deg); opacity: 0.6;"></div>
+                            </div>
+                            
+                            <!-- Data Flow Animation -->
+                            <div class="data-flow" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;">
+                                <div class="dot" style="width: 8px; height: 8px; background: var(--orange-dark); border-radius: 50%; animation: pulse 2s infinite;"></div>
+                                <div class="dot" style="width: 8px; height: 8px; background: var(--orange-dark); border-radius: 50%; animation: pulse 2s infinite 0.3s;"></div>
+                                <div class="dot" style="width: 8px; height: 8px; background: var(--orange-dark); border-radius: 50%; animation: pulse 2s infinite 0.6s;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            }
+            </div>
         </div>
     </div>
-}
+</div>
+
+
+
+
+
+

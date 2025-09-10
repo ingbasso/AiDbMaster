@@ -1,0 +1,338 @@
+@model AiDbMaster.Models.ListaOP
+
+@{
+    ViewData["Title"] = $"Dettagli Ordine {Model.IdentificativoCompleto}";
+}
+
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-info-circle text-primary"></i> @ViewData["Title"]</h2>
+            <p class="text-muted">Visualizza tutti i dettagli dell'ordine di produzione</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Edit" asp-route-id="@Model.IdListaOP" class="btn btn-primary me-2">
+                <i class="bi bi-pencil"></i> Modifica
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Torna alla Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informazioni principali -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-gear"></i> Informazioni Ordine</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Identificativo:</dt>
+                                <dd class="col-sm-8"><strong>@Model.IdentificativoCompleto</strong></dd>
+                                
+                                <dt class="col-sm-4">Descrizione:</dt>
+                                <dd class="col-sm-8">@Model.DescrOrdine</dd>
+                                
+                                <dt class="col-sm-4">Stato:</dt>
+                                <dd class="col-sm-8">
+                                    @{
+                                        var badgeClass = Model.Stato?.CodiceStato switch
+                                        {
+                                            "EM" => "bg-secondary",
+                                            "PR" => "bg-primary",
+                                            "SO" => "bg-warning",
+                                            "CH" => "bg-success",
+                                            _ => "bg-light text-dark"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass fs-6">@Model.Stato?.DescrizioneStato</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Priorità:</dt>
+                                <dd class="col-sm-8">
+                                    @{
+                                        var prioritaBadge = Model.Priorita switch
+                                        {
+                                            5 => "bg-danger",
+                                            4 => "bg-warning",
+                                            3 => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @prioritaBadge fs-6">@Model.PrioritaDescrizione</span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Centro Lavoro:</dt>
+                                <dd class="col-sm-8">@Model.CentroLavoro?.DescrizioneCentro</dd>
+                                
+                                <dt class="col-sm-4">Lavorazione:</dt>
+                                <dd class="col-sm-8">
+                                    @if (Model.Lavorazione != null)
+                                    {
+                                        @if (!string.IsNullOrEmpty(Model.Lavorazione.CodiceLavorazione))
+                                        {
+                                            <span class="badge bg-info me-2">@Model.Lavorazione.CodiceLavorazione</span>
+                                        }
+                                        @Model.Lavorazione.DescrizioneLavorazione
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non assegnata</span>
+                                    }
+                                </dd>
+                                
+                                <dt class="col-sm-4">Operatore:</dt>
+                                <dd class="col-sm-8">@Model.Operatore?.NomeCompleto</dd>
+                                
+                                <dt class="col-sm-4">Costo Orario:</dt>
+                                <dd class="col-sm-8">
+                                    @if (Model.CostoOrario.HasValue)
+                                    {
+                                        @Model.CostoOrario.Value.ToString("C2")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non specificato</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informazioni articolo -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-box"></i> Articolo da Produrre</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Codice:</dt>
+                                <dd class="col-sm-8"><strong>@Model.CodiceArticolo</strong></dd>
+                                
+                                <dt class="col-sm-4">Descrizione:</dt>
+                                <dd class="col-sm-8">@Model.DescrizioneArticolo</dd>
+                                
+                                <dt class="col-sm-4">Unità Misura:</dt>
+                                <dd class="col-sm-8">@Model.UnitaMisura</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Quantità:</dt>
+                                <dd class="col-sm-8"><strong>@Model.Quantita.ToString("N2")</strong></dd>
+                                
+                                <dt class="col-sm-4">Prodotta:</dt>
+                                <dd class="col-sm-8"><strong>@Model.QuantitaProdotta.ToString("N2")</strong></dd>
+                                
+                                <dt class="col-sm-4">Progresso:</dt>
+                                <dd class="col-sm-8">
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar" role="progressbar" style="width: @Model.PercentualeCompletamento%">
+                                            @Model.PercentualeCompletamento.ToString("N1")%
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note -->
+            @if (!string.IsNullOrEmpty(Model.Note))
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-sticky"></i> Note</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@Model.Note</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar con informazioni temporali e tecniche -->
+        <div class="col-md-4">
+            <!-- Date e tempi -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-calendar"></i> Pianificazione</h5>
+                </div>
+                <div class="card-body">
+                    <dl>
+                        <dt>Data Inizio OP:</dt>
+                        <dd>@Model.DataInizioOP.ToString("dd/MM/yyyy HH:mm")</dd>
+                        
+                        @if (Model.DataInizioSetup.HasValue)
+                        {
+                            <dt>Inizio Setup:</dt>
+                            <dd>@Model.DataInizioSetup.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                        }
+                        
+                        @if (Model.DataFinePrevista.HasValue)
+                        {
+                            <dt>Fine Prevista:</dt>
+                            <dd>
+                                @Model.DataFinePrevista.Value.ToString("dd/MM/yyyy HH:mm")
+                                @if (Model.DataFinePrevista < DateTime.Now && Model.Stato?.CodiceStato != "CH")
+                                {
+                                    <span class="badge bg-danger ms-2">In Ritardo</span>
+                                }
+                            </dd>
+                        }
+                        
+                        @if (Model.DataFineOP.HasValue)
+                        {
+                            <dt>Fine Effettiva:</dt>
+                            <dd>@Model.DataFineOP.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Tempi di lavorazione -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-stopwatch"></i> Tempi di Lavorazione</h5>
+                </div>
+                <div class="card-body">
+                    <dl>
+                        <dt>Tempo Ciclo:</dt>
+                        <dd>@Model.TempoCicloFormattato <small class="text-muted">(per pezzo)</small></dd>
+                        
+                        @if (Model.TempoSetup.HasValue)
+                        {
+                            <dt>Tempo Setup:</dt>
+                            <dd>@Model.TempoSetupFormattato</dd>
+                        }
+                        
+                        @if (Model.TempoEffettivo.HasValue)
+                        {
+                            <dt>Tempo Effettivo:</dt>
+                            <dd>@Model.TempoEffettivoFormattato</dd>
+                        }
+                        
+                        @if (Model.TempoCiclo > 0 && Model.Quantita > 0)
+                        {
+                            <dt>Tempo Totale Stimato:</dt>
+                            <dd>
+                                @{
+                                    var tempoTotale = TimeSpan.FromSeconds((double)(Model.TempoCiclo * Model.Quantita));
+                                }
+                                @tempoTotale.ToString(@"hh\:mm\:ss")
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Azioni rapide -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning"></i> Azioni Rapide</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        @if (Model.Stato?.CodiceStato == "EM")
+                        {
+                            <button class="btn btn-primary" onclick="cambiaStato(@Model.IdListaOP, 2)">
+                                <i class="bi bi-play"></i> Inizia Produzione
+                            </button>
+                        }
+                        
+                        @if (Model.Stato?.CodiceStato == "PR")
+                        {
+                            <button class="btn btn-warning" onclick="cambiaStato(@Model.IdListaOP, 4)">
+                                <i class="bi bi-pause"></i> Sospendi
+                            </button>
+                            <button class="btn btn-success" onclick="cambiaStato(@Model.IdListaOP, 3)">
+                                <i class="bi bi-check"></i> Completa
+                            </button>
+                        }
+                        
+                        @if (Model.Stato?.CodiceStato == "SO")
+                        {
+                            <button class="btn btn-primary" onclick="cambiaStato(@Model.IdListaOP, 2)">
+                                <i class="bi bi-play"></i> Riprendi
+                            </button>
+                        }
+                        
+                        <a asp-action="Edit" asp-route-id="@Model.IdListaOP" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Modifica Dettagli
+                        </a>
+                        
+                        <button class="btn btn-outline-info" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Stampa Scheda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Funzione per cambiare stato
+        function cambiaStato(ordineId, nuovoStato) {
+            const stati = { 1: 'Emesso', 2: 'In Produzione', 3: 'Completato', 4: 'Sospeso' };
+            const messaggio = `Sei sicuro di voler cambiare lo stato a "${stati[nuovoStato]}"?`;
+            
+            if (confirm(messaggio)) {
+                $.post('@Url.Action("UpdateStato")', {
+                    id: ordineId,
+                    nuovoStato: nuovoStato
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showAlert('danger', response.message);
+                    }
+                })
+                .fail(function() {
+                    showAlert('danger', 'Errore durante l\'aggiornamento dello stato');
+                });
+            }
+        }
+
+        // Funzione per mostrare alert
+        function showAlert(type, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('.container').prepend(alertHtml);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn, .card-header, nav, footer {
+                display: none !important;
+            }
+            .card {
+                border: none !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+}

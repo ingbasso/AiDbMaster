@@ -34,7 +34,7 @@ namespace AiDbMaster.Controllers
 
             foreach (var role in roles)
             {
-                var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
+                var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
                 roleViewModels.Add(new RoleViewModel
                 {
                     Id = role.Id,
@@ -58,7 +58,7 @@ namespace AiDbMaster.Controllers
         {
             if (ModelState.IsValid)
             {
-                var role = new IdentityRole(model.Name);
+                var role = new IdentityRole(model.Name!);
                 var result = await _roleManager.CreateAsync(role);
 
                 if (result.Succeeded)
@@ -85,7 +85,7 @@ namespace AiDbMaster.Controllers
                 return NotFound();
             }
 
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
             var allUsers = await _userManager.Users.ToListAsync();
 
             var model = new EditRoleViewModel
@@ -109,35 +109,35 @@ namespace AiDbMaster.Controllers
         {
             if (ModelState.IsValid)
             {
-                var role = await _roleManager.FindByIdAsync(model.Id);
+                var role = await _roleManager.FindByIdAsync(model.Id!);
                 if (role == null)
                 {
                     return NotFound();
                 }
 
-                role.Name = model.Name;
+                role.Name = model.Name!;
                 var result = await _roleManager.UpdateAsync(role);
 
                 if (result.Succeeded)
                 {
                     // Aggiorna i ruoli degli utenti
-                    foreach (var user in model.Users)
+                    foreach (var user in model.Users!)
                     {
-                        var appUser = await _userManager.FindByIdAsync(user.UserId);
+                        var appUser = await _userManager.FindByIdAsync(user.UserId!);
                         if (appUser != null)
                         {
                             if (user.IsInRole)
                             {
-                                if (!await _userManager.IsInRoleAsync(appUser, role.Name))
+                                if (!await _userManager.IsInRoleAsync(appUser, role.Name!))
                                 {
-                                    await _userManager.AddToRoleAsync(appUser, role.Name);
+                                    await _userManager.AddToRoleAsync(appUser, role.Name!);
                                 }
                             }
                             else
                             {
-                                if (await _userManager.IsInRoleAsync(appUser, role.Name))
+                                if (await _userManager.IsInRoleAsync(appUser, role.Name!))
                                 {
-                                    await _userManager.RemoveFromRoleAsync(appUser, role.Name);
+                                    await _userManager.RemoveFromRoleAsync(appUser, role.Name!);
                                 }
                             }
                         }
@@ -167,7 +167,7 @@ namespace AiDbMaster.Controllers
             }
 
             // Verifica se ci sono utenti nel ruolo
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
             if (usersInRole.Any())
             {
                 TempData["ErrorMessage"] = "Impossibile eliminare il ruolo perché ci sono utenti assegnati.";

@@ -1,0 +1,218 @@
+@model AiDbMaster.Models.Lavorazioni
+
+@{
+    ViewData["Title"] = "Elimina Lavorazione";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-danger"><i class="bi bi-trash me-2"></i>Elimina Lavorazione</h2>
+            <div>
+                <a asp-action="Details" asp-route-id="@Model?.IdLavorazione" class="btn btn-outline-info">
+                    <i class="bi bi-eye"></i> Dettagli
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Alert di avvertimento -->
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> Attenzione!
+                    </h4>
+                    <p>Stai per eliminare definitivamente questa lavorazione dal sistema.</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Questa operazione non può essere annullata.</strong>
+                        Considera di disattivare la lavorazione invece di eliminarla per mantenere lo storico.
+                    </p>
+                </div>
+
+                <!-- Card con i dati della lavorazione -->
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear-wide"></i> Lavorazione da Eliminare
+                            <span class="badge bg-light text-dark ms-2">ID: @Model?.IdLavorazione</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted">Codice Lavorazione</label>
+                                <div class="form-control-plaintext">
+                                    @if (!string.IsNullOrEmpty(Model?.CodiceLavorazione))
+                                    {
+                                        <span class="badge bg-primary fs-6">@Model.CodiceLavorazione</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non specificato</span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label text-muted">Descrizione Lavorazione</label>
+                                <div class="form-control-plaintext">
+                                    <strong class="fs-5">@Model?.DescrizioneLavorazione</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Stato Attuale</label>
+                                <div class="form-control-plaintext">
+                                    @if (Model?.Attivo == true)
+                                    {
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Attiva
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary fs-6">
+                                            <i class="bi bi-pause-circle"></i> Inattiva
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Data Creazione</label>
+                                <div class="form-control-plaintext">
+                                    <i class="bi bi-calendar-plus text-muted"></i>
+                                    @Model?.DataCreazione.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model?.DataUltimaModifica != null)
+                        {
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted">Ultima Modifica</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="bi bi-calendar-check text-muted"></i>
+                                        @Model.DataUltimaModifica?.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Card alternative all'eliminazione -->
+                <div class="card mt-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Alternative Consigliate</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Prima di eliminare, considera queste alternative:</strong></p>
+                        <ul>
+                            <li>
+                                <strong>Disattivazione:</strong> 
+                                <a asp-action="Edit" asp-route-id="@Model?.IdLavorazione" class="btn btn-sm btn-warning ms-2">
+                                    <i class="bi bi-pause-circle"></i> Disattiva invece
+                                </a>
+                            </li>
+                            <li><strong>Modifica:</strong> Aggiorna la descrizione se non è più accurata</li>
+                            <li><strong>Archiviazione:</strong> Mantieni per riferimenti storici</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Form di conferma eliminazione -->
+                <div class="card mt-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione</h6>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Delete" method="post">
+                            <input type="hidden" asp-for="IdLavorazione" />
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                <label class="form-check-label" for="confirmDelete">
+                                    <strong>Confermo di voler eliminare definitivamente questa lavorazione</strong>
+                                </label>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> 
+                                        L'eliminazione è irreversibile
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                        <i class="bi bi-trash"></i> Elimina Definitivamente
+                                    </button>
+                                    <a asp-action="Edit" asp-route-id="@Model?.IdLavorazione" class="btn btn-warning ms-2">
+                                        <i class="bi bi-pause-circle"></i> Disattiva Invece
+                                    </a>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Abilita il pulsante di eliminazione solo quando la checkbox è selezionata
+        document.getElementById('confirmDelete').addEventListener('change', function() {
+            const deleteButton = document.getElementById('deleteButton');
+            deleteButton.disabled = !this.checked;
+            
+            if (this.checked) {
+                deleteButton.classList.remove('btn-danger');
+                deleteButton.classList.add('btn-outline-danger');
+            } else {
+                deleteButton.classList.remove('btn-outline-danger');
+                deleteButton.classList.add('btn-danger');
+            }
+        });
+
+        // Conferma aggiuntiva prima dell'eliminazione
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const descrizione = '@Model?.DescrizioneLavorazione';
+            const confirmMessage = `Sei assolutamente sicuro di voler eliminare la lavorazione "${descrizione}"?\n\nQuesta operazione NON PUÒ essere annullata.`;
+            
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Seconda conferma per sicurezza
+            const finalConfirm = 'Digita "ELIMINA" per confermare definitivamente:';
+            const userInput = prompt(finalConfirm);
+            
+            if (userInput !== 'ELIMINA') {
+                e.preventDefault();
+                alert('Eliminazione annullata. Testo di conferma non corretto.');
+                return false;
+            }
+            
+            return true;
+        });
+
+        // Focus sulla checkbox al caricamento
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('confirmDelete').focus();
+        });
+    </script>
+}

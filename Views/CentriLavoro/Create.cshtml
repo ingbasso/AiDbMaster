@@ -1,0 +1,226 @@
+@model AiDbMaster.ViewModels.CreateCentroLavoroViewModel
+
+@{
+    ViewData["Title"] = "Nuovo Centro di Lavoro";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-plus-circle me-2"></i>Nuovo Centro di Lavoro</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-building-gear"></i> Dati Centro di Lavoro</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CodiceCentro" class="form-label">Codice Centro</label>
+                                    <input asp-for="CodiceCentro" class="form-control" placeholder="Es: C001, FRES..." maxlength="10" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Codice opzionale di massimo 10 caratteri
+                                    </div>
+                                    <span asp-validation-for="CodiceCentro" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-8 mb-3">
+                                    <label asp-for="DescrizioneCentro" class="form-label">
+                                        Descrizione Centro <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="DescrizioneCentro" class="form-control" 
+                                           placeholder="Inserisci la descrizione del centro di lavoro..." 
+                                           maxlength="100" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Campo obbligatorio, massimo 100 caratteri
+                                    </div>
+                                    <span asp-validation-for="DescrizioneCentro" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CapacitaOraria" class="form-label">Capacità Oraria</label>
+                                    <div class="input-group">
+                                        <input asp-for="CapacitaOraria" class="form-control" type="number" min="1" max="1000" 
+                                               placeholder="Es: 100" />
+                                        <span class="input-group-text">pezzi/h</span>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Capacità produttiva oraria (opzionale)
+                                    </div>
+                                    <span asp-validation-for="CapacitaOraria" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CostoOrarioStandard" class="form-label">Costo Orario Standard</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">€</span>
+                                        <input asp-for="CostoOrarioStandard" class="form-control" type="number" step="0.01" 
+                                               min="0.01" max="999.99" placeholder="Es: 25.50" />
+                                        <span class="input-group-text">/h</span>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Costo orario standard (opzionale)
+                                    </div>
+                                    <span asp-validation-for="CostoOrarioStandard" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input asp-for="Attivo" class="form-check-input" type="checkbox" checked />
+                                        <label asp-for="Attivo" class="form-check-label">
+                                            Centro di Lavoro Attivo
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> I centri inattivi non saranno visibili nelle selezioni
+                                    </div>
+                                    <span asp-validation-for="Attivo" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label asp-for="Note" class="form-label">Note</label>
+                                    <textarea asp-for="Note" class="form-control" rows="3" maxlength="500" 
+                                              placeholder="Inserisci eventuali note sul centro di lavoro..."></textarea>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Note aggiuntive (opzionale, massimo 500 caratteri)
+                                    </div>
+                                    <span asp-validation-for="Note" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-asterisk text-danger"></i> Campi obbligatori
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Salva Centro di Lavoro
+                                    </button>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card informativa -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Suggerimenti</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="mb-0">
+                                    <li><strong>Codice Centro:</strong> Utilizzare codici brevi e mnemonici (es: FRES=Fresatura, TORN=Tornitura)</li>
+                                    <li><strong>Descrizione:</strong> Essere specifici e chiari nella descrizione per facilitare la selezione</li>
+                                    <li><strong>Capacità Oraria:</strong> Indicare la capacità produttiva standard in pezzi per ora</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="mb-0">
+                                    <li><strong>Costo Orario:</strong> Inserire il costo standard per calcoli automatici</li>
+                                    <li><strong>Note:</strong> Utilizzare per informazioni aggiuntive come turni, operatori, ecc.</li>
+                                    <li><strong>Stato Attivo:</strong> Disattivare solo i centri non più utilizzati per mantenere lo storico</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Contatore caratteri per la descrizione
+        document.getElementById('DescrizioneCentro').addEventListener('input', function() {
+            const maxLength = 100;
+            const currentLength = this.value.length;
+            const remaining = maxLength - currentLength;
+            
+            // Trova o crea l'elemento contatore
+            let counter = document.getElementById('desc-counter');
+            if (!counter) {
+                counter = document.createElement('small');
+                counter.id = 'desc-counter';
+                counter.className = 'form-text';
+                this.parentNode.appendChild(counter);
+            }
+            
+            counter.innerHTML = `<i class="bi bi-type"></i> ${currentLength}/${maxLength} caratteri`;
+            counter.className = remaining < 10 ? 'form-text text-warning' : 'form-text text-muted';
+        });
+
+        // Contatore caratteri per le note
+        document.getElementById('Note').addEventListener('input', function() {
+            const maxLength = 500;
+            const currentLength = this.value.length;
+            const remaining = maxLength - currentLength;
+            
+            // Trova o crea l'elemento contatore
+            let counter = document.getElementById('note-counter');
+            if (!counter) {
+                counter = document.createElement('small');
+                counter.id = 'note-counter';
+                counter.className = 'form-text';
+                this.parentNode.appendChild(counter);
+            }
+            
+            counter.innerHTML = `<i class="bi bi-type"></i> ${currentLength}/${maxLength} caratteri`;
+            counter.className = remaining < 50 ? 'form-text text-warning' : 'form-text text-muted';
+        });
+
+        // Trasforma il codice in maiuscolo
+        document.getElementById('CodiceCentro').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Calcolo automatico costo giornaliero
+        document.getElementById('CostoOrarioStandard').addEventListener('input', function() {
+            const costoOrario = parseFloat(this.value);
+            if (!isNaN(costoOrario) && costoOrario > 0) {
+                const costoGiornaliero = costoOrario * 8; // 8 ore lavorative
+                
+                let info = document.getElementById('costo-info');
+                if (!info) {
+                    info = document.createElement('small');
+                    info.id = 'costo-info';
+                    info.className = 'form-text text-info';
+                    this.parentNode.parentNode.appendChild(info);
+                }
+                
+                info.innerHTML = `<i class="bi bi-calculator"></i> Costo giornaliero (8h): €${costoGiornaliero.toFixed(2)}`;
+            }
+        });
+
+        // Focus automatico sul primo campo
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('CodiceCentro').focus();
+        });
+    </script>
+}

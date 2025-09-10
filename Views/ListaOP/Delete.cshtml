@@ -1,0 +1,301 @@
+@model AiDbMaster.Models.ListaOP
+
+@{
+    ViewData["Title"] = $"Elimina Ordine {Model.IdentificativoCompleto}";
+}
+
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-trash text-danger"></i> @ViewData["Title"]</h2>
+            <p class="text-muted">Conferma l'eliminazione dell'ordine di produzione</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Details" asp-route-id="@Model.IdListaOP" class="btn btn-info me-2">
+                <i class="bi bi-eye"></i> Dettagli
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Torna alla Lista
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert di avviso -->
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Attenzione!</h4>
+        <p>Stai per eliminare definitivamente questo ordine di produzione. Questa operazione <strong>non può essere annullata</strong>.</p>
+        <hr>
+        <p class="mb-0">Verifica attentamente i dati prima di procedere con l'eliminazione.</p>
+    </div>
+
+    <div class="row">
+        <!-- Informazioni principali -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5><i class="bi bi-gear"></i> Informazioni Ordine</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Identificativo:</dt>
+                                <dd class="col-sm-7"><strong>@Model.IdentificativoCompleto</strong></dd>
+                                
+                                <dt class="col-sm-5">Descrizione:</dt>
+                                <dd class="col-sm-7">@Model.DescrOrdine</dd>
+                                
+                                <dt class="col-sm-5">Stato:</dt>
+                                <dd class="col-sm-7">
+                                    @{
+                                        var badgeClass = Model.Stato?.CodiceStato switch
+                                        {
+                                            "EM" => "bg-secondary",
+                                            "PR" => "bg-primary",
+                                            "SO" => "bg-warning",
+                                            "CH" => "bg-success",
+                                            _ => "bg-light text-dark"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@Model.Stato?.DescrizioneStato</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5">Priorità:</dt>
+                                <dd class="col-sm-7">
+                                    @{
+                                        var prioritaBadge = Model.Priorita switch
+                                        {
+                                            5 => "bg-danger",
+                                            4 => "bg-warning",
+                                            3 => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @prioritaBadge">@Model.PrioritaDescrizione</span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Centro Lavoro:</dt>
+                                <dd class="col-sm-7">@Model.CentroLavoro?.DescrizioneCentro</dd>
+                                
+                                <dt class="col-sm-5">Operatore:</dt>
+                                <dd class="col-sm-7">@Model.Operatore?.NomeCompleto</dd>
+                                
+                                <dt class="col-sm-5">Data Inizio:</dt>
+                                <dd class="col-sm-7">@Model.DataInizioOP.ToString("dd/MM/yyyy HH:mm")</dd>
+                                
+                                <dt class="col-sm-5">Costo Orario:</dt>
+                                <dd class="col-sm-7">
+                                    @if (Model.CostoOrario.HasValue)
+                                    {
+                                        @Model.CostoOrario.Value.ToString("C2")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non specificato</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informazioni articolo -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5><i class="bi bi-box"></i> Articolo da Produrre</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Codice:</dt>
+                                <dd class="col-sm-7"><strong>@Model.CodiceArticolo</strong></dd>
+                                
+                                <dt class="col-sm-5">Descrizione:</dt>
+                                <dd class="col-sm-7">@Model.DescrizioneArticolo</dd>
+                                
+                                <dt class="col-sm-5">Unità Misura:</dt>
+                                <dd class="col-sm-7">@Model.UnitaMisura</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Quantità:</dt>
+                                <dd class="col-sm-7"><strong>@Model.Quantita.ToString("N2")</strong></dd>
+                                
+                                <dt class="col-sm-5">Prodotta:</dt>
+                                <dd class="col-sm-7"><strong>@Model.QuantitaProdotta.ToString("N2")</strong></dd>
+                                
+                                <dt class="col-sm-5">Progresso:</dt>
+                                <dd class="col-sm-7">
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" style="width: @Model.PercentualeCompletamento%">
+                                            @Model.PercentualeCompletamento.ToString("N1")%
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note -->
+            @if (!string.IsNullOrEmpty(Model.Note))
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5><i class="bi bi-sticky"></i> Note</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@Model.Note</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar con avvisi -->
+        <div class="col-md-4">
+            <!-- Controlli pre-eliminazione -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="bi bi-shield-exclamation"></i> Controlli</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Stato?.CodiceStato == "PR")
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Ordine in produzione!</strong><br>
+                            L'ordine è attualmente in produzione. Considera di sospenderlo prima dell'eliminazione.
+                        </div>
+                    }
+                    
+                    @if (Model.QuantitaProdotta > 0)
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Produzione parziale</strong><br>
+                            Sono già stati prodotti @Model.QuantitaProdotta.ToString("N2") @Model.UnitaMisura su @Model.Quantita.ToString("N2").
+                        </div>
+                    }
+                    
+                    @if (Model.Stato?.CodiceStato == "CH")
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            <strong>Ordine completato</strong><br>
+                            L'ordine è stato completato. L'eliminazione rimuoverà i dati storici.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Tempi di lavorazione -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5><i class="bi bi-stopwatch"></i> Tempi</h5>
+                </div>
+                <div class="card-body">
+                    <dl>
+                        <dt>Tempo Ciclo:</dt>
+                        <dd>@Model.TempoCicloFormattato</dd>
+                        
+                        @if (Model.TempoSetup.HasValue)
+                        {
+                            <dt>Tempo Setup:</dt>
+                            <dd>@Model.TempoSetupFormattato</dd>
+                        }
+                        
+                        @if (Model.TempoEffettivo.HasValue)
+                        {
+                            <dt>Tempo Effettivo:</dt>
+                            <dd>@Model.TempoEffettivoFormattato</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pulsanti di conferma -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="mb-4">
+                        Sei sicuro di voler eliminare l'ordine <strong>@Model.IdentificativoCompleto</strong>?<br>
+                        Questa operazione è <strong>irreversibile</strong>.
+                    </p>
+                    
+                    <form asp-action="Delete" method="post" class="d-inline">
+                        <input type="hidden" asp-for="IdListaOP" />
+                        <button type="submit" class="btn btn-danger btn-lg me-3" onclick="return confirm('ATTENZIONE: Stai per eliminare definitivamente questo ordine. Sei assolutamente sicuro?')">
+                            <i class="bi bi-trash"></i> Elimina Definitivamente
+                        </button>
+                    </form>
+                    
+                    <a asp-action="Details" asp-route-id="@Model.IdListaOP" class="btn btn-info btn-lg me-3">
+                        <i class="bi bi-eye"></i> Visualizza Dettagli
+                    </a>
+                    
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-x-circle"></i> Annulla
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Aggiunge ulteriore conferma per ordini in produzione
+        $(document).ready(function() {
+            $('form[asp-action="Delete"]').on('submit', function(e) {
+                var stato = '@Model.Stato?.CodiceStato';
+                var quantitaProdotta = @Model.QuantitaProdotta;
+                
+                if (stato === 'PR') {
+                    e.preventDefault();
+                    if (confirm('ATTENZIONE: L\'ordine è attualmente IN PRODUZIONE!\n\nEliminandolo potresti perdere dati importanti.\n\nSei ASSOLUTAMENTE SICURO di voler procedere?')) {
+                        this.submit();
+                    }
+                    return false;
+                }
+                
+                if (quantitaProdotta > 0) {
+                    e.preventDefault();
+                    if (confirm('ATTENZIONE: L\'ordine ha già una produzione parziale di ' + quantitaProdotta + ' unità.\n\nEliminandolo perderai questi dati di produzione.\n\nSei SICURO di voler procedere?')) {
+                        this.submit();
+                    }
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .card-header.bg-danger {
+            border-bottom: 1px solid #dc3545;
+        }
+        
+        .card.border-danger {
+            border-color: #dc3545 !important;
+        }
+        
+        .alert {
+            font-size: 0.9rem;
+        }
+    </style>
+}

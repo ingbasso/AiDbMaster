@@ -1,0 +1,139 @@
+@model AiDbMaster.Models.Lavorazioni
+
+@{
+    ViewData["Title"] = "Nuova Lavorazione";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-plus-circle me-2"></i>Nuova Lavorazione</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear-wide"></i> Dati Lavorazione</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="CodiceLavorazione" class="form-label">Codice Lavorazione</label>
+                                    <input asp-for="CodiceLavorazione" class="form-control" placeholder="Es: A, B, C..." maxlength="1" />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Codice opzionale di 1 carattere
+                                    </div>
+                                    <span asp-validation-for="CodiceLavorazione" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="col-md-8 mb-3">
+                                    <label asp-for="DescrizioneLavorazione" class="form-label">
+                                        Descrizione Lavorazione <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="DescrizioneLavorazione" class="form-control" 
+                                           placeholder="Inserisci la descrizione della lavorazione..." 
+                                           maxlength="100" required />
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Campo obbligatorio, massimo 100 caratteri
+                                    </div>
+                                    <span asp-validation-for="DescrizioneLavorazione" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="Attivo" class="form-check-input" type="checkbox" checked />
+                                        <label asp-for="Attivo" class="form-check-label">
+                                            Lavorazione Attiva
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Le lavorazioni inattive non saranno visibili nelle selezioni
+                                    </div>
+                                    <span asp-validation-for="Attivo" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-asterisk text-danger"></i> Campi obbligatori
+                                    </small>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Salva Lavorazione
+                                    </button>
+                                    <a asp-action="Index" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i> Annulla
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card informativa -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Suggerimenti</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li><strong>Codice Lavorazione:</strong> Utilizzare codici brevi e mnemonici (es: A=Assemblaggio, T=Taglio, F=Finitura)</li>
+                            <li><strong>Descrizione:</strong> Essere specifici e chiari nella descrizione per facilitare la selezione</li>
+                            <li><strong>Stato Attivo:</strong> Disattivare solo le lavorazioni non più utilizzate per mantenere lo storico</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Contatore caratteri per la descrizione
+        document.getElementById('DescrizioneLavorazione').addEventListener('input', function() {
+            const maxLength = 100;
+            const currentLength = this.value.length;
+            const remaining = maxLength - currentLength;
+            
+            // Trova o crea l'elemento contatore
+            let counter = document.getElementById('desc-counter');
+            if (!counter) {
+                counter = document.createElement('small');
+                counter.id = 'desc-counter';
+                counter.className = 'form-text';
+                this.parentNode.appendChild(counter);
+            }
+            
+            counter.innerHTML = `<i class="bi bi-type"></i> ${currentLength}/${maxLength} caratteri`;
+            counter.className = remaining < 10 ? 'form-text text-warning' : 'form-text text-muted';
+        });
+
+        // Trasforma il codice in maiuscolo
+        document.getElementById('CodiceLavorazione').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Focus automatico sul primo campo
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('CodiceLavorazione').focus();
+        });
+    </script>
+}

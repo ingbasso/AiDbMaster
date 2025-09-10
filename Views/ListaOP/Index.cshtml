@@ -1,0 +1,278 @@
+@model IEnumerable<AiDbMaster.Models.ListaOP>
+
+@{
+    ViewData["Title"] = "Gestione Ordini di Produzione";
+    ViewBag.UseFluidContainer = true;
+}
+
+<div class="container-fluid">
+    <!-- Header con titolo e pulsanti -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-gear-fill text-primary"></i> @ViewData["Title"]</h2>
+            <p class="text-muted">Gestisci tutti gli ordini di produzione dell'azienda</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Dashboard" class="btn btn-info me-2">
+                <i class="bi bi-graph-up"></i> Dashboard
+            </a>
+            <a asp-action="Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nuovo Ordine
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtri -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Filtri
+                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filtriCollapse">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            </h5>
+        </div>
+        <div class="collapse show" id="filtriCollapse">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Stato</label>
+                        <select name="filtroStato" class="form-select">
+                            <option value="">Tutti gli stati</option>
+                            @if (ViewBag.Stati != null)
+                            {
+                                @foreach (var stato in ViewBag.Stati)
+                                {
+                                    <option value="@stato.CodiceStato" selected="@(ViewBag.FiltroStato == stato.CodiceStato)">
+                                        @stato.DescrizioneStato
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Operatore</label>
+                        <select name="filtroOperatore" class="form-select">
+                            <option value="">Tutti gli operatori</option>
+                            @if (ViewBag.Operatori != null)
+                            {
+                                @foreach (var operatore in ViewBag.Operatori)
+                                {
+                                    <option value="@operatore.IdOperatore" selected="@(ViewBag.FiltroOperatore == operatore.IdOperatore.ToString())">
+                                        @operatore.NomeCompleto
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Centro Lavoro</label>
+                        <select name="filtroCentro" class="form-select">
+                            <option value="">Tutti i centri</option>
+                            @if (ViewBag.CentriLavoro != null)
+                            {
+                                @foreach (var centro in ViewBag.CentriLavoro)
+                                {
+                                    <option value="@centro.IdCentroLavoro" selected="@(ViewBag.FiltroCentro == centro.IdCentroLavoro.ToString())">
+                                        @centro.DescrizioneCentro
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Lavorazione</label>
+                        <select name="filtroLavorazione" class="form-select">
+                            <option value="">Tutte le lavorazioni</option>
+                            @if (ViewBag.Lavorazioni != null)
+                            {
+                                @foreach (var lavorazione in ViewBag.Lavorazioni)
+                                {
+                                    <option value="@lavorazione.IdLavorazione" selected="@(ViewBag.FiltroLavorazione == lavorazione.IdLavorazione.ToString())">
+                                        @(!string.IsNullOrEmpty(lavorazione.CodiceLavorazione) ? $"{lavorazione.CodiceLavorazione} - " : "")@lavorazione.DescrizioneLavorazione
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Priorità</label>
+                        <select name="filtroPriorita" class="form-select">
+                            <option value="">Tutte le priorità</option>
+                            @if (ViewBag.Priorita != null)
+                            {
+                                @foreach (var priorita in ViewBag.Priorita)
+                                {
+                                    <option value="@priorita.Value" selected="@(ViewBag.FiltroPriorita == priorita.Value)">
+                                        @priorita.Text
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Articolo</label>
+                        <input type="text" name="filtroArticolo" class="form-control" placeholder="Codice o descrizione" value="@ViewBag.FiltroArticolo">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Filtra
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messaggi di successo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Tabella ordini -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ul"></i> Ordini di Produzione (@Model.Count())
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ordine</th>
+                                <th>Articolo</th>
+                                <th>Quantità</th>
+                                <th>Stato</th>
+                                <th>Priorità</th>
+                                <th>Centro Lavoro</th>
+                                <th>Lavorazione</th>
+                                <th>Operatore</th>
+                                <th>Data Inizio</th>
+                                <th>Progresso</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ordine in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@ordine.IdentificativoCompleto</strong>
+                                        @if (!string.IsNullOrEmpty(ordine.DescrOrdine))
+                                        {
+                                            <br><small class="text-muted">@ordine.DescrOrdine</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@ordine.CodiceArticolo</strong>
+                                        <br><small>@ordine.DescrizioneArticolo</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@ordine.QuantitaProdotta.ToString("N0") / @ordine.Quantita.ToString("N0")</span>
+                                        <br><small>@ordine.UnitaMisura</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var badgeClass = ordine.Stato?.CodiceStato switch
+                                            {
+                                                "EM" => "bg-secondary",
+                                                "PR" => "bg-primary",
+                                                "SO" => "bg-warning",
+                                                "CH" => "bg-success",
+                                                _ => "bg-light text-dark"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">@ordine.Stato?.DescrizioneStato</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var prioritaBadge = ordine.Priorita switch
+                                            {
+                                                5 => "bg-danger",
+                                                4 => "bg-warning",
+                                                3 => "bg-info",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @prioritaBadge">@ordine.PrioritaDescrizione</span>
+                                    </td>
+                                    <td>@ordine.CentroLavoro?.DescrizioneCentro</td>
+                                    <td>
+                                        @if (ordine.Lavorazione != null)
+                                        {
+                                            @if (!string.IsNullOrEmpty(ordine.Lavorazione.CodiceLavorazione))
+                                            {
+                                                <span class="badge bg-info me-1">@ordine.Lavorazione.CodiceLavorazione</span>
+                                            }
+                                            <span>@ordine.Lavorazione.DescrizioneLavorazione</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Non assegnata</span>
+                                        }
+                                    </td>
+                                    <td>@ordine.Operatore?.NomeCompleto</td>
+                                    <td>
+                                        @ordine.DataInizioOP.ToString("dd/MM/yyyy")
+                                        <br><small class="text-muted">@ordine.DataInizioOP.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" style="width: @ordine.PercentualeCompletamento%">
+                                                @ordine.PercentualeCompletamento.ToString("N1")%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="text-muted">Nessun ordine trovato</h4>
+                    <p class="text-muted">Non ci sono ordini di produzione che corrispondono ai filtri selezionati.</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Crea il primo ordine
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-submit del form filtri quando cambiano i select
+        $('select[name^="filtro"]').change(function() {
+            $(this).closest('form').submit();
+        });
+    </script>
+}

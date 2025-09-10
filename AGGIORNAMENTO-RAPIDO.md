@@ -1,4 +1,4 @@
-# ⚡ AGGIORNAMENTO RAPIDO - AiDocMaster
+# ⚡ AGGIORNAMENTO RAPIDO - AiDbMaster
 
 ## 🎯 **3 METODI PER AGGIORNARE**
 
@@ -8,7 +8,7 @@
 .\Build-Release-Package.ps1
 
 # 🖥️ SUL SERVER (cartella temporanea):
-Expand-Archive -Path "AiDocMaster-YYYYMMDD-HHMM.zip" -DestinationPath "C:\Temp\Deploy"
+Expand-Archive -Path "AiDbMaster-YYYYMMDD-HHMM.zip" -DestinationPath "C:\Temp\Deploy"
 cd C:\Temp\Deploy
 .\Deploy-From-Package.ps1
 ```
@@ -20,7 +20,7 @@ cd C:\Temp\Deploy
 .\Sync-To-Production.ps1
 
 # 2. Vai nella cartella sorgenti del server
-cd C:\inetpub\AiDocMaster
+cd C:\inetpub\AiDbMaster
 
 # 3. Esegui l'aggiornamento automatico
 .\Update-Production.ps1
@@ -29,27 +29,27 @@ cd C:\inetpub\AiDocMaster
 ### 👨‍💻 **METODO 3: MANUALE**
 ```powershell
 # Backup
-$BackupPath = "C:\Backup\AiDocMaster-$(Get-Date -Format 'yyyyMMdd-HHmm')"
-Copy-Item "C:\inetpub\wwwroot\AiDocMaster" -Destination "$BackupPath\App" -Recurse -Force
+$BackupPath = "C:\Backup\AiDbMaster-$(Get-Date -Format 'yyyyMMdd-HHmm')"
+Copy-Item "C:\inetpub\wwwroot\AiDbMaster" -Destination "$BackupPath\App" -Recurse -Force
 
 # Stop
-Stop-WebAppPool -Name "AiDocMasterAppPool"
+Stop-WebAppPool -Name "AiDbMasterAppPool"
 
 # Deploy
-dotnet publish --configuration Release --output "C:\inetpub\wwwroot\AiDocMaster" --force
+dotnet publish --configuration Release --output "C:\inetpub\wwwroot\AiDbMaster" --force
 
 # Start
-Start-WebAppPool -Name "AiDocMasterAppPool"
+Start-WebAppPool -Name "AiDbMasterAppPool"
 
 # Test
-Invoke-WebRequest -Uri "https://www.aidocmaster.it" -UseBasicParsing
+Invoke-WebRequest -Uri "https://www.aidbmaster.it" -UseBasicParsing
 ```
 
 ---
 
 ## ✅ **DOPO L'AGGIORNAMENTO - TEST VELOCE**
 
-1. **Vai su**: `https://www.aidocmaster.it`
+1. **Vai su**: `https://www.aidbmaster.it`
 2. **Login**: Accedi come amministratore
 3. **Test nuova funzione**: Vai in "Gestione Utenti" → Clicca "Password" su un utente
 4. **Verifica**: Cambia password e controlla messaggio successo
@@ -60,19 +60,19 @@ Invoke-WebRequest -Uri "https://www.aidocmaster.it" -UseBasicParsing
 
 ```powershell
 # Stato applicazione
-Get-WebAppPoolState -Name "AiDocMasterAppPool"
+Get-WebAppPoolState -Name "AiDbMasterAppPool"
 
 # Log errori
-Get-Content "C:\inetpub\wwwroot\AiDocMaster\Logs\stdout*.log" | Select-Object -Last 10
+Get-Content "C:\inetpub\wwwroot\AiDbMaster\Logs\stdout*.log" | Select-Object -Last 10
 
 # Riavvio se necessario
-Restart-WebAppPool -Name "AiDocMasterAppPool"
+Restart-WebAppPool -Name "AiDbMasterAppPool"
 
 # Test HTTPS
-Invoke-WebRequest -Uri "https://www.aidocmaster.it" -UseBasicParsing
+Invoke-WebRequest -Uri "https://www.aidbmaster.it" -UseBasicParsing
 
 # Verifica binding
-Get-WebBinding -Name "AiDocMaster"
+Get-WebBinding -Name "AiDbMaster"
 ```
 
 ---
@@ -80,10 +80,10 @@ Get-WebBinding -Name "AiDocMaster"
 ## 🚨 **ROLLBACK VELOCE (se serve)**
 
 ```powershell
-Stop-WebAppPool -Name "AiDocMasterAppPool"
-$LastBackup = Get-ChildItem "C:\Backup\AiDocMaster*" | Sort-Object Name -Descending | Select-Object -First 1
-Copy-Item "$($LastBackup.FullName)\App\*" -Destination "C:\inetpub\wwwroot\AiDocMaster" -Recurse -Force
-Start-WebAppPool -Name "AiDocMasterAppPool"
+Stop-WebAppPool -Name "AiDbMasterAppPool"
+$LastBackup = Get-ChildItem "C:\Backup\AiDbMaster*" | Sort-Object Name -Descending | Select-Object -First 1
+Copy-Item "$($LastBackup.FullName)\App\*" -Destination "C:\inetpub\wwwroot\AiDbMaster" -Recurse -Force
+Start-WebAppPool -Name "AiDbMasterAppPool"
 ```
 
 ---
@@ -101,8 +101,8 @@ Start-WebAppPool -Name "AiDocMasterAppPool"
 
 ```
 C:\inetpub\
-├── AiDocMaster\                ← 📂 SORGENTI (qui copi i file aggiornati)
-└── wwwroot\AiDocMaster\        ← 🌐 SITO LIVE (pubblicato automaticamente)
+├── AiDbMaster\                ← 📂 SORGENTI (qui copi i file aggiornati)
+└── wwwroot\AiDbMaster\        ← 🌐 SITO LIVE (pubblicato automaticamente)
 ```
 
 ---

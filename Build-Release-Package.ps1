@@ -5,7 +5,7 @@ param(
     [string]$OutputPath = ".\Release-Package",
     [string]$Version = (Get-Date -Format "yyyyMMdd-HHmm"),
     [switch]$SkipTests = $false,
-    [switch]$Clean = $true
+    [switch]$NoClean
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,8 +21,8 @@ Write-Host ""
 # Verifica prerequisiti
 Write-Host "=== VERIFICA PREREQUISITI ===" -ForegroundColor Cyan
 
-if (-not (Test-Path "AiDocMaster.csproj")) {
-    Write-Error "❌ File AiDocMaster.csproj non trovato! Esegui lo script dalla directory del progetto."
+if (-not (Test-Path "AiDbMaster.csproj")) {
+    Write-Error "❌ File AiDbMaster.csproj non trovato! Esegui lo script dalla directory del progetto."
     exit 1
 }
 Write-Host "✅ File progetto trovato" -ForegroundColor Green
@@ -41,8 +41,8 @@ try {
 
 Write-Host ""
 
-# Clean se richiesto
-if ($Clean) {
+# Clean di default (a meno che non sia specificato -NoClean)
+if (-not $NoClean) {
     Write-Host "=== PULIZIA PROGETTO ===" -ForegroundColor Cyan
     Write-Host "🧹 Cleaning..." -ForegroundColor White
     dotnet clean --configuration Release
@@ -91,7 +91,7 @@ if (-not $SkipTests) {
 
 # Publish
 Write-Host "=== PUBLISH APPLICAZIONE ===" -ForegroundColor Cyan
-$publishPath = "$OutputPath\AiDocMaster-$Version"
+$publishPath = "$OutputPath\AiDbMaster-$Version"
 Write-Host "📤 Publishing in: $publishPath" -ForegroundColor White
 
 # Rimuovi directory di output se esiste
@@ -125,7 +125,7 @@ foreach ($script in $scriptsToInclude) {
 
 # Crea il file README per il deploy
 $readmeLines = @(
-    "# PACCHETTO PRODUZIONE AIDOCMASTER",
+    "# PACCHETTO PRODUZIONE AIDBMASTER",
     "Versione: $Version",
     "Build: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
     "",
@@ -143,8 +143,8 @@ $readmeLines = @(
     "## REQUISITI SERVER:",
     "- Windows Server con IIS",
     "- .NET 8.0 Runtime (non SDK)", 
-    "- Database AIDOCMASTER esistente",
-    "- Certificato SSL per aidocmaster.it"
+    "- Database AIDBMASTER esistente",
+    "- Certificato SSL per aidbmaster.it"
 )
 
 $readmeLines | Out-File -FilePath "$publishPath\README-DEPLOY.txt" -Encoding UTF8
@@ -171,7 +171,7 @@ Write-Host ""
 
 # Creazione ZIP
 Write-Host "=== CREAZIONE PACCHETTO ZIP ===" -ForegroundColor Cyan
-$zipPath = "$OutputPath\AiDocMaster-$Version.zip"
+$zipPath = "$OutputPath\AiDbMaster-$Version.zip"
 
 Write-Host "📦 Creazione ZIP: $zipPath" -ForegroundColor White
 

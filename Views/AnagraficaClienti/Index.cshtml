@@ -1,0 +1,542 @@
+@model IEnumerable<AiDbMaster.Models.AnagraficaClienti>
+
+@{
+    ViewData["Title"] = "Anagrafica Clienti";
+    var search = ViewBag.Search as string ?? "";
+    var tipoAnagrafica = ViewBag.TipoAnagrafica as string ?? "";
+    var provincia = ViewBag.Provincia as string ?? "";
+    var sortOrder = ViewBag.SortOrder as string ?? "codice";
+    var currentPage = ViewBag.CurrentPage as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var totalItems = ViewBag.TotalItems as int? ?? 0;
+    var pageSize = ViewBag.PageSize as int? ?? 50;
+    var tipiAnagrafica = ViewBag.TipiAnagrafica as List<string> ?? new List<string>();
+    var province = ViewBag.Province as List<string> ?? new List<string>();
+}
+
+<div class="container-fluid">
+
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-people me-2 text-primary"></i>Anagrafica Clienti</h2>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                    <i class="bi bi-arrow-clockwise"></i> Reset Filtri
+                </button>
+                <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                    <i class="bi bi-file-earmark-excel"></i> Esporta Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtri -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtri di Ricerca</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" asp-action="Index" id="filterForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Ricerca Generale</label>
+                            <input type="text" class="form-control" id="search" name="search" value="@search" 
+                                   placeholder="Codice, ragione sociale, CF, P.IVA, città...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="tipoAnagrafica" class="form-label">Tipo Anagrafica</label>
+                            <select class="form-select" id="tipoAnagrafica" name="tipoAnagrafica">
+                                <option value="">Tutti i tipi</option>
+                                @foreach (var tipo in tipiAnagrafica)
+                                {
+                                    <option value="@tipo" selected="@(tipoAnagrafica == tipo)">@tipo</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="provincia" class="form-label">Provincia</label>
+                            <select class="form-select" id="provincia" name="provincia">
+                                <option value="">Tutte le province</option>
+                                @foreach (var prov in province)
+                                {
+                                    <option value="@prov" selected="@(provincia == prov)">@prov</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="pageSize" class="form-label">Elementi per pagina</label>
+                            <select class="form-select" id="pageSize" name="pageSize">
+                                <option value="25" selected="@(pageSize == 25)">25</option>
+                                <option value="50" selected="@(pageSize == 50)">50</option>
+                                <option value="100" selected="@(pageSize == 100)">100</option>
+                                <option value="200" selected="@(pageSize == 200)">200</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Cerca
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="sortOrder" value="@sortOrder">
+                    <input type="hidden" name="page" value="1">
+                </form>
+            </div>
+        </div>
+
+        <!-- Statistiche -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Totale Clienti</h6>
+                                <h3 class="mb-0">@totalItems</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-people-fill" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Tipi Anagrafica</h6>
+                                <h3 class="mb-0">@tipiAnagrafica.Count</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-diagram-3" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Province</h6>
+                                <h3 class="mb-0">@province.Count</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-geo-alt" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Pagina</h6>
+                                <h3 class="mb-0">@currentPage di @totalPages</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-file-text" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabella Clienti -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Elenco Clienti</h5>
+                    <small class="text-muted">
+                        Visualizzati @(Model?.Count() ?? 0) di @totalItems clienti
+                    </small>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0" id="clientiTable">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "codice" ? "codice_desc" : "codice")"
+                                           class="text-white text-decoration-none">
+                                            Codice
+                                            @if (sortOrder == "codice")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "codice_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "ragione" ? "ragione_desc" : "ragione")"
+                                           class="text-white text-decoration-none">
+                                            Ragione Sociale
+                                            @if (sortOrder == "ragione")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "ragione_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "tipo" ? "tipo_desc" : "tipo")"
+                                           class="text-white text-decoration-none">
+                                            Tipo
+                                            @if (sortOrder == "tipo")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "tipo_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "citta" ? "citta_desc" : "citta")"
+                                           class="text-white text-decoration-none">
+                                            Città
+                                            @if (sortOrder == "citta")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "citta_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "provincia" ? "provincia_desc" : "provincia")"
+                                           class="text-white text-decoration-none">
+                                            Prov.
+                                            @if (sortOrder == "provincia")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "provincia_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>Contatti</th>
+                                    <th>Agente</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="cliente-row">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-person-badge me-2 text-primary"></i>
+                                                <strong>@Html.DisplayFor(modelItem => item.CodiceCliente)</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-bold">@Html.DisplayFor(modelItem => item.RagioneSociale)</div>
+                                                @if (!string.IsNullOrEmpty(item.DescrizioneAggiuntiva))
+                                                {
+                                                    <small class="text-muted">@Html.DisplayFor(modelItem => item.DescrizioneAggiuntiva)</small>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@Html.DisplayFor(modelItem => item.TipoAnagrafica)</span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.Citta))
+                                            {
+                                                <span>@Html.DisplayFor(modelItem => item.Citta)</span>
+                                                @if (!string.IsNullOrEmpty(item.Cap))
+                                                {
+                                                    <br><small class="text-muted">@Html.DisplayFor(modelItem => item.Cap)</small>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.Provincia))
+                                            {
+                                                <span class="badge bg-info text-white">@Html.DisplayFor(modelItem => item.Provincia)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                @if (!string.IsNullOrEmpty(item.Telefono))
+                                                {
+                                                    <div><i class="bi bi-telephone me-1"></i>@Html.DisplayFor(modelItem => item.Telefono)</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.FaxTelex))
+                                                {
+                                                    <div><i class="bi bi-printer me-1"></i>@Html.DisplayFor(modelItem => item.FaxTelex)</div>
+                                                }
+                                                @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.FaxTelex))
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning text-dark">@Html.DisplayFor(modelItem => item.CodiceAgente)</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a asp-action="Details" asp-route-id="@item.Id" 
+                                                   class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                        onclick="copyToClipboard('@item.CodiceCliente')" title="Copia Codice">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginazione -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <nav aria-label="Navigazione pagine">
+                                <ul class="pagination justify-content-center mb-0">
+                                    @if (currentPage > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-search="@search"
+                                               asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                               asp-route-provincia="@provincia"
+                                               asp-route-pageSize="@pageSize"
+                                               asp-route-sortOrder="@sortOrder"
+                                               asp-route-page="1">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-search="@search"
+                                               asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                               asp-route-provincia="@provincia"
+                                               asp-route-pageSize="@pageSize"
+                                               asp-route-sortOrder="@sortOrder"
+                                               asp-route-page="@(currentPage - 1)">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                    {
+                                        <li class="page-item @(i == currentPage ? "active" : "")">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-search="@search"
+                                               asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                               asp-route-provincia="@provincia"
+                                               asp-route-pageSize="@pageSize"
+                                               asp-route-sortOrder="@sortOrder"
+                                               asp-route-page="@i">@i</a>
+                                        </li>
+                                    }
+
+                                    @if (currentPage < totalPages)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-search="@search"
+                                               asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                               asp-route-provincia="@provincia"
+                                               asp-route-pageSize="@pageSize"
+                                               asp-route-sortOrder="@sortOrder"
+                                               asp-route-page="@(currentPage + 1)">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-search="@search"
+                                               asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                               asp-route-provincia="@provincia"
+                                               asp-route-pageSize="@pageSize"
+                                               asp-route-sortOrder="@sortOrder"
+                                               asp-route-page="@totalPages">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="p-5 text-center">
+                        <i class="bi bi-inbox text-primary" style="font-size: 4rem;"></i>
+                        <h4 class="mt-3">Nessun cliente trovato</h4>
+                        @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(tipoAnagrafica) || !string.IsNullOrEmpty(provincia))
+                        {
+                            <p class="text-muted">Prova a modificare i filtri di ricerca per visualizzare più risultati.</p>
+                            <button type="button" class="btn btn-outline-primary mt-3" onclick="resetFilters()">
+                                <i class="bi bi-arrow-clockwise"></i> Reset Filtri
+                            </button>
+                        }
+                        else
+                        {
+                            <p class="text-muted">Non ci sono clienti nell'anagrafica.</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Reset dei filtri
+        function resetFilters() {
+            window.location.href = '@Url.Action("Index", "AnagraficaClienti")';
+        }
+
+        // Copia negli appunti
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Codice copiato negli appunti: ' + text, 'success');
+            }).catch(function(err) {
+                console.error('Errore nella copia: ', err);
+                showToast('Errore nella copia del codice', 'error');
+            });
+        }
+
+        // Funzione per mostrare toast
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+
+        // Crea il container per i toast se non esiste
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        }
+
+        // Esportazione Excel (placeholder)
+        function exportToExcel() {
+            showToast('Funzionalità di esportazione Excel da implementare', 'info');
+        }
+
+        // Auto-submit del form quando cambiano i filtri
+        $(document).ready(function() {
+            $('#tipoAnagrafica, #provincia, #pageSize').change(function() {
+                $('#filterForm').submit();
+            });
+
+            // Ricerca in tempo reale con debounce
+            let searchTimeout;
+            $('#search').on('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    $('#filterForm').submit();
+                }, 500);
+            });
+
+            // Evidenzia i termini di ricerca
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <text>
+                highlightSearchTerms('@Html.Raw(Html.Encode(search))');
+                </text>
+            }
+        });
+
+        // Funzione per evidenziare i termini di ricerca
+        function highlightSearchTerms(searchTerm) {
+            if (!searchTerm) return;
+            
+            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            $('.cliente-row').each(function() {
+                const $row = $(this);
+                $row.find('td').each(function() {
+                    const $cell = $(this);
+                    const html = $cell.html();
+                    const highlightedHtml = html.replace(regex, '<mark class="bg-warning">$1</mark>');
+                    $cell.html(highlightedHtml);
+                });
+            });
+        }
+    </script>
+}

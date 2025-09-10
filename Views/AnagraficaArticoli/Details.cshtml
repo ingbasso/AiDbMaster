@@ -1,0 +1,290 @@
+@model AiDbMaster.Models.AnagraficaArticoli
+
+@{
+    ViewData["Title"] = "Dettagli Articolo";
+}
+
+<div class="container">
+
+
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-info-circle me-2 text-primary"></i>Dettagli Articolo</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna all'elenco
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informazioni Principali -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Informazioni Principali</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CodiceArticolo)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        <i class="bi bi-upc-scan me-2 text-primary"></i>
+                                        <strong>@Html.DisplayFor(model => model.CodiceArticolo)</strong>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                                onclick="copyToClipboard('@Model.CodiceArticolo')" title="Copia Codice">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.TipoArticolo)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        @if (!string.IsNullOrEmpty(Model.TipoArticolo))
+                                        {
+                                            <span class="badge bg-secondary fs-6">@Html.DisplayFor(model => model.TipoArticolo)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Non specificato</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Descrizione)</label>
+                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                @Html.DisplayFor(model => model.Descrizione)
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.DescrizioneUlteriore))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.DescrizioneUlteriore)</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded">
+                                    @Html.DisplayFor(model => model.DescrizioneUlteriore)
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.CodiceAlternativo))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.CodiceAlternativo)</label>
+                                <div class="form-control-plaintext bg-light p-2 rounded">
+                                    <i class="bi bi-tag me-2 text-secondary"></i>
+                                    @Html.DisplayFor(model => model.CodiceAlternativo)
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                            onclick="copyToClipboard('@Model.CodiceAlternativo')" title="Copia Codice Alternativo">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Unità di Misura e Conversioni -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-rulers me-2"></i>Unità di Misura e Conversioni</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.UnitaMisura)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        <span class="badge bg-info fs-6">@Html.DisplayFor(model => model.UnitaMisura)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.SecondaUnitaMisura)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        @if (!string.IsNullOrEmpty(Model.SecondaUnitaMisura))
+                                        {
+                                            <span class="badge bg-light text-dark fs-6">@Html.DisplayFor(model => model.SecondaUnitaMisura)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Non specificata</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Conversione)</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded">
+                                        <span class="text-primary fw-bold fs-5">@Model.Conversione.ToString("F6")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.UnitaMisuraConfezione))
+                        {
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.UnitaMisuraConfezione)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="badge bg-warning text-dark fs-6">@Html.DisplayFor(model => model.UnitaMisuraConfezione)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.ConversioneConfezione)</label>
+                                        <div class="form-control-plaintext bg-light p-2 rounded">
+                                            <span class="text-warning fw-bold fs-5">@Model.ConversioneConfezione.ToString("F6")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Conversioni:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Conversione principale:</strong> 1 @Model.UnitaMisura = @Model.Conversione.ToString("F6") unità base</li>
+                                @if (!string.IsNullOrEmpty(Model.UnitaMisuraConfezione) && Model.ConversioneConfezione != 0)
+                                {
+                                    <li><strong>Conversione confezione:</strong> 1 @Model.UnitaMisuraConfezione = @Model.ConversioneConfezione.ToString("F6") unità base</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informazioni Aggiuntive -->
+            <div class="col-lg-4">
+                <!-- ID Sistema -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-hash me-2"></i>Identificativo Sistema</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-control-plaintext bg-light p-2 rounded text-center">
+                            <span class="badge bg-dark fs-4">#@Html.DisplayFor(model => model.Id)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riepilogo Unità di Misura -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Riepilogo Misure</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Unità Principale</label>
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                <span class="badge bg-info">@Model.UnitaMisura</span>
+                                <span class="text-muted">x @Model.Conversione.ToString("F2")</span>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.SecondaUnitaMisura))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Seconda Unità</label>
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                    <span class="badge bg-light text-dark">@Model.SecondaUnitaMisura</span>
+                                    <span class="text-muted">Disponibile</span>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.UnitaMisuraConfezione))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Unità Confezione</label>
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                    <span class="badge bg-warning text-dark">@Model.UnitaMisuraConfezione</span>
+                                    <span class="text-muted">x @Model.ConversioneConfezione.ToString("F2")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Statistiche -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Statistiche</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h6 class="text-muted">Conversione</h6>
+                                    <h4 class="text-primary">@Model.Conversione.ToString("F2")</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted">Conf. Conv.</h6>
+                                <h4 class="text-warning">@Model.ConversioneConfezione.ToString("F2")</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copia negli appunti
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Testo copiato negli appunti: ' + text, 'success');
+            }).catch(function(err) {
+                console.error('Errore nella copia: ', err);
+                showToast('Errore nella copia del testo', 'error');
+            });
+        }
+
+        // Funzione per mostrare toast
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+
+        // Crea il container per i toast se non esiste
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+}

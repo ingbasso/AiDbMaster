@@ -1,0 +1,133 @@
+@model IEnumerable<AiDbMaster.Models.OrdiniRighe>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped mb-0" style="font-size: 0.85rem;">
+        <thead class="table-secondary">
+            <tr>
+                <th style="width: 60px;">Riga</th>
+                <th style="width: 120px;">Codice Articolo</th>
+                <th style="width: 200px;">Descrizione</th>
+                <th style="width: 110px;">Data Consegna</th>
+                <th style="width: 90px;">Quantità</th>
+                <th style="width: 60px;">U.M.</th>
+                <th style="width: 80px;">Colli</th>
+                <th style="width: 70px;">U.M. Colli</th>
+                <th style="width: 90px;">Colli Evasi</th>
+                <th style="width: 90px;">Qtà Evasa</th>
+                <th style="width: 90px;">Prezzo</th>
+                <th style="width: 100px;">Valore Riga</th>
+                <th style="width: 150px;">Note</th>
+                <th style="width: 120px;">Stato</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var riga in Model)
+            {
+
+                <tr>
+                    <td>
+                        <span class="badge bg-dark">@riga.RigaOrdine</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box me-2 text-primary"></i>
+                            <strong>@riga.CodiceArticolo</strong>
+                        </div>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(riga.DescrizioneArticolo))
+                        {
+                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="@riga.DescrizioneArticolo">
+                                @riga.DescrizioneArticolo
+                            </span>
+                        }
+                        else if (riga.Articolo != null)
+                        {
+                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="@riga.Articolo.Descrizione">
+                                @riga.Articolo.Descrizione
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">Descrizione non disponibile</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="badge bg-info text-white">@riga.DataConsegna.ToString("dd/MM/yyyy")</span>
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="fs-6">@riga.Quantita.ToString("N2")</strong>
+                        </div>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(riga.UnitaMisura))
+                        {
+                            <span class="badge bg-secondary">@riga.UnitaMisura</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="fs-6">@riga.NumeroColli.ToString("N2")</strong>
+                        </div>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(riga.UnitaMisuraColli))
+                        {
+                            <span class="badge bg-secondary">@riga.UnitaMisuraColli</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="@(riga.ColliEvasi > 0 ? "text-success" : "text-muted")">
+                                @riga.ColliEvasi.ToString("N2")
+                            </strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="@(riga.QuantitaEvasa > 0 ? "text-success" : "text-muted")">
+                                @riga.QuantitaEvasa.ToString("N2")
+                            </strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="text-primary">@riga.Prezzo.ToString("C")</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-end">
+                            <strong class="text-success fs-6">@riga.ValoreRiga.ToString("C")</strong>
+                        </div>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(riga.Note))
+                        {
+                            <span class="text-truncate d-inline-block" style="max-width: 150px;" title="@riga.Note">
+                                <i class="bi bi-sticky me-1 text-warning"></i>@riga.Note
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="@riga.StatoEvasioneCssClass">@riga.StatoEvasione</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+

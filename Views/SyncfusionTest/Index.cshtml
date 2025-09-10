@@ -1,0 +1,170 @@
+@model IEnumerable<dynamic>
+
+@{
+    ViewData["Title"] = "Test Syncfusion DataGrid";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-table me-2"></i>
+                        Test Syncfusion DataGrid
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Questa è una pagina di prova per testare l'integrazione di Syncfusion DataGrid nel progetto.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div id="SyncfusionGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-calendar3 me-2"></i>
+                        Test Syncfusion Scheduler
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Calendario di prova per testare l'integrazione di Syncfusion Scheduler.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div id="SyncfusionScheduler"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Funzionalità Testate</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">DataGrid</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Paginazione</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Ordinamento</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Filtri</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Scheduler</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Viste multiple (Giorno/Settimana/Mese)</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Gestione eventi</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-check text-success me-2"></i>Navigazione temporale</span>
+                                    <span class="badge bg-success rounded-pill">✓</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FWYUA=";
+        } else {
+        }
+        
+        // Script per inizializzare i controlli Syncfusion
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FWYUA=";
+            }
+            
+            // Dati per la griglia
+            var gridData = @Html.Raw(Json.Serialize(Model));
+            
+            // Dati per lo scheduler
+            var scheduleData = @Html.Raw(Json.Serialize(ViewBag.ScheduleData));
+            
+            // Inizializza DataGrid
+            var grid = new ej.grids.Grid({
+                dataSource: gridData,
+                allowPaging: true,
+                allowSorting: true,
+                allowFiltering: true,
+                allowGrouping: true,
+                allowResizing: true,
+                allowReordering: true,
+                height: 400,
+                pageSettings: { pageSize: 5, pageSizes: [5, 10, 20, 50] },
+                filterSettings: { type: 'Menu' },
+                columns: [
+                    { field: 'Id', headerText: 'ID', width: 80, textAlign: 'Right', isPrimaryKey: true },
+                    { field: 'Nome', headerText: 'Nome', width: 150 },
+                    { field: 'Email', headerText: 'Email', width: 200 },
+                    { field: 'Città', headerText: 'Città', width: 120 },
+                    { field: 'Età', headerText: 'Età', width: 80, textAlign: 'Right' },
+                    { field: 'Stipendio', headerText: 'Stipendio (€)', width: 120, textAlign: 'Right', format: 'C2' }
+                ],
+                dataBound: function(args) {
+                    if (args.currentViewData && args.currentViewData.length) {
+                        console.log('DataGrid aggiornata con ' + args.currentViewData.length + ' record');
+                    } else {
+                        console.log('DataGrid aggiornata - dati non disponibili');
+                    }
+                }
+            });
+            grid.appendTo('#SyncfusionGrid');
+            
+            // Inizializza Scheduler
+            var schedule = new ej.schedule.Schedule({
+                height: 500,
+                selectedDate: new Date(2025, 0, 15), // Gennaio 2025
+                startHour: '08:00',
+                endHour: '18:00',
+                currentView: 'Week',
+                views: ['Day', 'Week', 'Month', 'Agenda'],
+                eventSettings: { dataSource: scheduleData },
+                eventClick: function(args) {
+                    console.log('Evento cliccato:', args.event.Subject);
+                },
+                cellClick: function(args) {
+                    console.log('Cella cliccata:', args.startTime);
+                },
+                navigated: function(args) {
+                    console.log('Navigazione cambiata:', args.currentView, args.currentDate);
+                }
+            });
+            schedule.appendTo('#SyncfusionScheduler');
+            
+        });
+    </script>
+}
