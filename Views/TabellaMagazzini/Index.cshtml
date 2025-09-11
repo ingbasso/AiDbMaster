@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Gestione Magazzini";
+    ViewBag.UseFluidContainer = true;
     var search = ViewBag.CurrentSearch as string ?? "";
     var hasDescrizione = ViewBag.CurrentHasDescrizione as bool?;
     var sortOrder = ViewBag.CurrentSort as string ?? "codice";

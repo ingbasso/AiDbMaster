@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Progressivi Articoli";
+    ViewBag.UseFluidContainer = true;
     var search = ViewBag.CurrentSearch as string ?? "";
     var codiceArticolo = ViewBag.CurrentCodiceArticolo as string ?? "";
     var codiceMagazzino = ViewBag.CurrentCodiceMagazzino as short?;

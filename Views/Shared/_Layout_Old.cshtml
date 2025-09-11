@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AiDbMaster</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Syncfusion CSS -->
+    <link href="https://cdn.syncfusion.com/ej2/31.1.17/material.css" rel="stylesheet" />
+    <link href="https://cdn.syncfusion.com/ej2/31.1.17/bootstrap5.css" rel="stylesheet" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="feed-theme">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                <span class="brand-text">AiDbMaster</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-content">
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-house-door"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Grafici" asp-action="Index">
+                                <i class="bi bi-graph-up"></i>
+                                <span>Grafici</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="GestioneOrdini" asp-action="Index">
+                                <i class="bi bi-clipboard-data"></i>
+                                <span>Gestione Ordini</span>
+                            </a>
+                        </li>
+                    }
+                            
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="documentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Documenti
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="documentDropdown">
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Index">
+                                            <i class="bi bi-files"></i> Tutti i documenti
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Create">
+                                            <i class="bi bi-file-earmark-plus"></i> Carica nuovo documento
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Document" asp-action="Index" asp-route-filter="my">
+                                            <i class="bi bi-person-lines-fill"></i> I miei documenti
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Statistics" asp-action="Index">
+                                            <i class="bi bi-bar-chart-fill"></i> Statistiche documenti
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="tabelleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Tabelle
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="tabelleDropdown">
+                                        <li><a class="dropdown-item" asp-controller="AnagraficaArticoli" asp-action="Index">
+                                            <i class="bi bi-table"></i> Anagrafica Articoli
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="AnagraficaClienti" asp-action="Index">
+                                            <i class="bi bi-people"></i> Anagrafica Clienti
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="AnagraficaFornitori" asp-action="Index">
+                                            <i class="bi bi-truck"></i> Anagrafica Fornitori
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="ArticoliSostitutivi" asp-action="Index">
+                                            <i class="bi bi-arrow-left-right"></i> Articoli Sostitutivi
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="ProgressiviArticoli" asp-action="Index">
+                                            <i class="bi bi-boxes"></i> Progressivi Articoli
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="TabellaAgenti" asp-action="Index">
+                                            <i class="bi bi-person-workspace"></i> Agenti
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="TabellaMagazzini" asp-action="Index">
+                                            <i class="bi bi-building"></i> Magazzini
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="Lavorazioni" asp-action="Index">
+                                            <i class="bi bi-gear-wide"></i> Lavorazioni
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="CentriLavoro" asp-action="Index">
+                                            <i class="bi bi-building-gear"></i> Centri di Lavoro
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="Operatori" asp-action="Index">
+                                            <i class="bi bi-people"></i> Operatori
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="StatiOP" asp-action="Index">
+                                            <i class="bi bi-flag"></i> Stati OP
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="OrdiniTestate" asp-action="Index">
+                                            <i class="bi bi-clipboard-check"></i> Gestione Ordini
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="alert('Gestione Tabelle - Da implementare')">
+                                            <i class="bi bi-gear"></i> Gestione Tabelle
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="alert('Importa Dati - Da implementare')">
+                                            <i class="bi bi-upload"></i> Importa Dati
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="alert('Statistiche Tabelle - Da implementare')">
+                                            <i class="bi bi-bar-chart"></i> Statistiche Tabelle
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="produzioneDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-gear-wide-connected"></i> Produzione
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="produzioneDropdown">
+                                        <li><a class="dropdown-item" asp-controller="ListaOP" asp-action="Dashboard">
+                                            <i class="bi bi-graph-up"></i> Dashboard
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="ListaOP" asp-action="Index">
+                                            <i class="bi bi-list-ul"></i> Ordini di Produzione
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="ListaOP" asp-action="Create">
+                                            <i class="bi bi-plus-circle"></i> Nuovo Ordine
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="ListaOP" asp-action="Index" asp-route-filtroStato="PR">
+                                            <i class="bi bi-play-circle"></i> In Produzione
+                                        </a></li>
+                                        <li><a class="dropdown-item" asp-controller="ListaOP" asp-action="Index" asp-route-filtroPriorita="5">
+                                            <i class="bi bi-exclamation-triangle"></i> Urgenti
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                                {
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Amministrazione
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
+                                            <li><a class="dropdown-item" asp-controller="Category" asp-action="Index">
+                                                <i class="bi bi-tags"></i> Gestione categorie
+                                            </a></li>
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <li><a class="dropdown-item" asp-controller="UserManagement" asp-action="Index">
+                                                    <i class="bi bi-people"></i> Gestione utenti
+                                                </a></li>
+                                                <li><a class="dropdown-item" asp-controller="RoleManagement" asp-action="Index">
+                                                    <i class="bi bi-shield-lock"></i> Gestione ruoli
+                                                </a></li>
+                                                <li><a class="dropdown-item" asp-controller="AISettings" asp-action="Index">
+                                                    <i class="bi bi-robot"></i> Impostazioni AI
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" asp-controller="SyncfusionTest" asp-action="Index">
+                                                    <i class="bi bi-grid-3x3-gap"></i> Test Syncfusion
+                                                </a></li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                        
+                        <ul class="navbar-nav">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-person-circle"></i> @(User.Identity?.Name ?? "Utente")
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userDropdown">
+                                        <li>
+                                            <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link btn btn-outline-light btn-sm px-3 me-2" asp-controller="Account" asp-action="Login">
+                                        Login
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main" class="flex-grow-1 py-2">
+            <div class="@(ViewBag.UseFluidContainer == true ? "container-fluid" : "container")">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer class="footer py-4">
+            <div class="container">
+                <p class="mb-0">AiDbMaster - Sistema AI di gestione richieste - &copy; 2025 - Tutti i diritti riservati</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Pulsante Torna in alto -->
+    <div class="scroll-to-top" id="scrollToTop">
+        <i class="bi bi-arrow-up"></i>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- REGISTRAZIONE LICENZA SYNCFUSION -->
+    <script>
+        // Definisci la licenza globalmente prima del caricamento della libreria Syncfusion
+        window.sf_license = "Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=";
+    </script>
+    
+    <!-- Carica la libreria Syncfusion DOPO aver definito la licenza -->
+    <script src="https://cdn.syncfusion.com/ej2/31.1.17/dist/ej2.min.js"></script>
+    <ejs-scripts></ejs-scripts>
+    
+    <!-- Registrazione post-caricamento della licenza -->
+    <script>
+        // Registra la licenza usando il metodo ufficiale Syncfusion
+        if (typeof ej !== 'undefined' && ej.base && ej.base.registerLicense) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=");
+        } else if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=";
+        }
+    </script>
+    
+    <script>
+        // CONTROLLO POST-CARICAMENTO SYNCFUSION
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Verifica che Syncfusion sia caricato
+            if (typeof ej !== 'undefined') {
+                
+                // Ri-registra la licenza per sicurezza
+                if (ej.base) {
+                    ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FWYUA=";
+                }
+                
+            }
+        });
+    </script>
+    
+    <script>
+        // Script per gestire l'header fisso e il pulsante "Torna in alto"
+        $(document).ready(function() {
+            var header = $('header');
+            var scrollToTop = $('#scrollToTop');
+            
+            // Gestione dello scroll
+            $(window).scroll(function() {
+                if ($(this).scrollTop() > 50) {
+                    header.addClass('scrolled');
+                    scrollToTop.addClass('visible');
+                } else {
+                    header.removeClass('scrolled');
+                    scrollToTop.removeClass('visible');
+                }
+            });
+            
+            // Funzione per tornare in alto
+            scrollToTop.click(function() {
+                $('html, body').animate({scrollTop: 0}, 500);
+                return false;
+            });
+        });
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AiDbMaster</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Syncfusion CSS -->
+    <link href="https://cdn.syncfusion.com/ej2/31.1.17/material.css" rel="stylesheet" />
+    <link href="https://cdn.syncfusion.com/ej2/31.1.17/bootstrap5.css" rel="stylesheet" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="feed-theme">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-database-gear me-2"></i>
+                <span class="brand-text">AiDbMaster</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-content">
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-house-door"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    
+                    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Grafici" asp-action="Index">
+                                <i class="bi bi-graph-up"></i>
+                                <span>Grafici</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="GestioneOrdini" asp-action="Index">
+                                <i class="bi bi-clipboard-data"></i>
+                                <span>Gestione Ordini</span>
+                            </a>
+                        </li>
+                    }
+                    
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <!-- Documenti -->
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#documentiSubmenu" aria-expanded="false">
+                                <i class="bi bi-files"></i>
+                                <span>Documenti</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="documentiSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Document" asp-action="Index">
+                                            <i class="bi bi-files"></i>
+                                            <span>Tutti i documenti</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Document" asp-action="Create">
+                                            <i class="bi bi-file-earmark-plus"></i>
+                                            <span>Carica nuovo documento</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Document" asp-action="Index" asp-route-filter="my">
+                                            <i class="bi bi-person-lines-fill"></i>
+                                            <span>I miei documenti</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Statistics" asp-action="Index">
+                                            <i class="bi bi-bar-chart-fill"></i>
+                                            <span>Statistiche documenti</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        <!-- Tabelle -->
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
+                                <i class="bi bi-table"></i>
+                                <span>Tabelle</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="tabelleSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="AnagraficaArticoli" asp-action="Index">
+                                            <i class="bi bi-table"></i>
+                                            <span>Anagrafica Articoli</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="AnagraficaClienti" asp-action="Index">
+                                            <i class="bi bi-people"></i>
+                                            <span>Anagrafica Clienti</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="AnagraficaFornitori" asp-action="Index">
+                                            <i class="bi bi-truck"></i>
+                                            <span>Anagrafica Fornitori</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ArticoliSostitutivi" asp-action="Index">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                            <span>Articoli Sostitutivi</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ProgressiviArticoli" asp-action="Index">
+                                            <i class="bi bi-boxes"></i>
+                                            <span>Progressivi Articoli</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="TabellaAgenti" asp-action="Index">
+                                            <i class="bi bi-person-workspace"></i>
+                                            <span>Agenti</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="TabellaMagazzini" asp-action="Index">
+                                            <i class="bi bi-building"></i>
+                                            <span>Magazzini</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Lavorazioni" asp-action="Index">
+                                            <i class="bi bi-gear-wide"></i>
+                                            <span>Lavorazioni</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="CentriLavoro" asp-action="Index">
+                                            <i class="bi bi-building-gear"></i>
+                                            <span>Centri di Lavoro</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="Operatori" asp-action="Index">
+                                            <i class="bi bi-people"></i>
+                                            <span>Operatori</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="StatiOP" asp-action="Index">
+                                            <i class="bi bi-flag"></i>
+                                            <span>Stati OP</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="OrdiniTestate" asp-action="Index">
+                                            <i class="bi bi-clipboard-check"></i>
+                                            <span>Gestione Ordini</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        <!-- Produzione -->
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#produzioneSubmenu" aria-expanded="false">
+                                <i class="bi bi-gear-wide-connected"></i>
+                                <span>Produzione</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="produzioneSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ListaOP" asp-action="Dashboard">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Dashboard</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ListaOP" asp-action="Index">
+                                            <i class="bi bi-list-ul"></i>
+                                            <span>Ordini di Produzione</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ListaOP" asp-action="Create">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Nuovo Ordine</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ListaOP" asp-action="Index" asp-route-filtroStato="PR">
+                                            <i class="bi bi-play-circle"></i>
+                                            <span>In Produzione</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-controller="ListaOP" asp-action="Index" asp-route-filtroPriorita="5">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <span>Urgenti</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                        {
+                            <!-- Amministrazione -->
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#adminSubmenu" aria-expanded="false">
+                                    <i class="bi bi-gear"></i>
+                                    <span>Amministrazione</span>
+                                    <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                                </a>
+                                <div class="collapse" id="adminSubmenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link" asp-controller="Category" asp-action="Index">
+                                                <i class="bi bi-tags"></i>
+                                                <span>Gestione categorie</span>
+                                            </a>
+                                        </li>
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <li class="nav-item">
+                                                <a class="nav-link" asp-controller="UserManagement" asp-action="Index">
+                                                    <i class="bi bi-people"></i>
+                                                    <span>Gestione utenti</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" asp-controller="RoleManagement" asp-action="Index">
+                                                    <i class="bi bi-shield-lock"></i>
+                                                    <span>Gestione ruoli</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" asp-controller="AISettings" asp-action="Index">
+                                                    <i class="bi bi-robot"></i>
+                                                    <span>Impostazioni AI</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" asp-controller="SyncfusionTest" asp-action="Index">
+                                                    <i class="bi bi-grid-3x3-gap"></i>
+                                                    <span>Test Syncfusion</span>
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+                    }
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- Menu utente in basso nel sidebar -->
+        <div class="sidebar-footer">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">@(User.Identity?.Name ?? "Utente")</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
+                            <button type="submit" class="btn btn-link p-0 logout-btn">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <a class="btn btn-primary w-100" asp-controller="Account" asp-action="Login">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+            }
+        </div>
+    </div>
+    
+    <!-- Overlay per mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Header minimale con pulsante hamburger -->
+    <header class="top-header">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-link sidebar-toggle-btn" id="sidebarToggle">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="header-title">
+                    <span class="brand-text-mini">AiDbMaster</span>
+                </div>
+                <div class="header-actions">
+                    <!-- Spazio per eventuali azioni future -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main wrapper -->
+    <div class="main-wrapper">
+        <main role="main" class="main-content">
+            <div class="@(ViewBag.UseFluidContainer == true ? "container-fluid" : "container")">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer class="footer py-4">
+            <div class="container">
+                <p class="mb-0">AiDbMaster - Sistema AI di gestione richieste - &copy; 2025 - Tutti i diritti riservati</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Pulsante Torna in alto -->
+    <div class="scroll-to-top" id="scrollToTop">
+        <i class="bi bi-arrow-up"></i>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- REGISTRAZIONE LICENZA SYNCFUSION -->
+    <script>
+        // Definisci la licenza globalmente prima del caricamento della libreria Syncfusion
+        window.sf_license = "Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=";
+    </script>
+    
+    <!-- Carica la libreria Syncfusion DOPO aver definito la licenza -->
+    <script src="https://cdn.syncfusion.com/ej2/31.1.17/dist/ej2.min.js"></script>
+    <ejs-scripts></ejs-scripts>
+    
+    <!-- Registrazione post-caricamento della licenza -->
+    <script>
+        // Registra la licenza usando il metodo ufficiale Syncfusion
+        if (typeof ej !== 'undefined' && ej.base && ej.base.registerLicense) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=");
+        } else if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeXRcQ2VcVkV0XEBWYEg=";
+        }
+    </script>
+    
+    <script>
+        // CONTROLLO POST-CARICAMENTO SYNCFUSION
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Verifica che Syncfusion sia caricato
+            if (typeof ej !== 'undefined') {
+                
+                // Ri-registra la licenza per sicurezza
+                if (ej.base) {
+                    ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FWYUA=";
+                }
+                
+            }
+        });
+    </script>
+    
+    <!-- Script per sidebar -->
+    <script>
+        $(document).ready(function() {
+            // Toggle sidebar
+            $('#sidebarToggle').click(function() {
+                $('#sidebar').toggleClass('active');
+                $('#sidebarOverlay').toggleClass('active');
+                $('body').toggleClass('sidebar-open');
+            });
+            
+            // Chiudi sidebar cliccando sull'overlay
+            $('#sidebarOverlay').click(function() {
+                $('#sidebar').removeClass('active');
+                $('#sidebarOverlay').removeClass('active');
+                $('body').removeClass('sidebar-open');
+            });
+            
+            // Gestione sottomenu
+            $('.sidebar-toggle').click(function(e) {
+                e.preventDefault();
+                var target = $(this).attr('data-bs-target');
+                $(target).collapse('toggle');
+                
+                // Ruota l'icona
+                $(this).find('.toggle-icon').toggleClass('rotated');
+            });
+            
+            // Script per gestire il pulsante "Torna in alto"
+            var scrollToTop = $('#scrollToTop');
+            
+            $(window).scroll(function() {
+                if ($(this).scrollTop() > 300) {
+                    scrollToTop.addClass('visible');
+                } else {
+                    scrollToTop.removeClass('visible');
+                }
+            });
+            
+            scrollToTop.click(function() {
+                $('html, body').animate({scrollTop: 0}, 500);
+                return false;
+            });
+        });
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Gestione Agenti";
+    ViewBag.UseFluidContainer = true;
     var search = ViewBag.CurrentSearch as string ?? "";
     var provincia = ViewBag.CurrentProvincia as string ?? "";
     var attivo = ViewBag.CurrentAttivo as bool?;

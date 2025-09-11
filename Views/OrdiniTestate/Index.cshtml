@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Gestione Ordini";
+    ViewBag.UseFluidContainer = true;
     var search = ViewBag.CurrentSearch as string ?? "";
     var tipoOrdine = ViewBag.CurrentTipoOrdine as string ?? "R"; // Default: Ordini Cliente
     var annoOrdine = ViewBag.CurrentAnnoOrdine as short?;
