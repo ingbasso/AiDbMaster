@@ -4,6 +4,7 @@ using AiDbMaster.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AiDbMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250915094844_ChangeQuantitaDecimalPrecision")]
+    partial class ChangeQuantitaDecimalPrecision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -555,7 +558,7 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 1,
                             Attivo = true,
                             CodiceLavorazione = "T",
-                            DataCreazione = new DateTime(2025, 8, 16, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1790),
+                            DataCreazione = new DateTime(2025, 8, 16, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(91),
                             DescrizioneLavorazione = "Taglio"
                         },
                         new
@@ -563,7 +566,7 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 2,
                             Attivo = true,
                             CodiceLavorazione = "F",
-                            DataCreazione = new DateTime(2025, 8, 21, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1802),
+                            DataCreazione = new DateTime(2025, 8, 21, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(97),
                             DescrizioneLavorazione = "Fresatura"
                         },
                         new
@@ -571,7 +574,7 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 3,
                             Attivo = true,
                             CodiceLavorazione = "T",
-                            DataCreazione = new DateTime(2025, 8, 26, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1811),
+                            DataCreazione = new DateTime(2025, 8, 26, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(100),
                             DescrizioneLavorazione = "Tornitura"
                         },
                         new
@@ -579,7 +582,7 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 4,
                             Attivo = true,
                             CodiceLavorazione = "S",
-                            DataCreazione = new DateTime(2025, 8, 31, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1820),
+                            DataCreazione = new DateTime(2025, 8, 31, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(103),
                             DescrizioneLavorazione = "Saldatura"
                         },
                         new
@@ -587,14 +590,14 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 5,
                             Attivo = true,
                             CodiceLavorazione = "A",
-                            DataCreazione = new DateTime(2025, 9, 5, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1823),
+                            DataCreazione = new DateTime(2025, 9, 5, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(106),
                             DescrizioneLavorazione = "Assemblaggio"
                         },
                         new
                         {
                             IdLavorazione = 6,
                             Attivo = true,
-                            DataCreazione = new DateTime(2025, 9, 10, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1829),
+                            DataCreazione = new DateTime(2025, 9, 10, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(111),
                             DescrizioneLavorazione = "Controllo Qualità"
                         },
                         new
@@ -602,7 +605,7 @@ namespace AiDbMaster.Migrations
                             IdLavorazione = 7,
                             Attivo = false,
                             CodiceLavorazione = "P",
-                            DataCreazione = new DateTime(2025, 7, 27, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1835),
+                            DataCreazione = new DateTime(2025, 7, 27, 11, 48, 42, 395, DateTimeKind.Local).AddTicks(113),
                             DescrizioneLavorazione = "Verniciatura"
                         });
                 });
@@ -670,10 +673,10 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Quantita")
-                        .HasColumnType("decimal(10,3)");
+                        .HasColumnType("decimal(27,9)");
 
                     b.Property<decimal>("QuantitaProdotta")
-                        .HasColumnType("decimal(10,3)");
+                        .HasColumnType("decimal(27,9)");
 
                     b.Property<int>("RigaOrdine")
                         .HasColumnType("int");
@@ -683,14 +686,14 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
-                    b.Property<float>("TempoCiclo")
-                        .HasColumnType("real");
+                    b.Property<int>("TempoCiclo")
+                        .HasColumnType("int");
 
-                    b.Property<float?>("TempoEffettivo")
-                        .HasColumnType("real");
+                    b.Property<int?>("TempoEffettivo")
+                        .HasColumnType("int");
 
-                    b.Property<float?>("TempoSetup")
-                        .HasColumnType("real");
+                    b.Property<int?>("TempoSetup")
+                        .HasColumnType("int");
 
                     b.Property<string>("TipoOrdine")
                         .IsRequired()

@@ -66,6 +66,33 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// API per ottenere i centri di lavoro per il dropdown del popup
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCentriLavoroDropdown()
+        {
+            try
+            {
+                var centri = await _context.CentriLavoro
+                    .Where(c => c.Attivo)
+                    .OrderBy(c => c.DescrizioneCentro)
+                    .Select(c => new
+                    {
+                        Id = c.IdCentroLavoro,
+                        Nome = c.DescrizioneCentro
+                    })
+                    .ToListAsync();
+
+                return Json(centri);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel caricamento centri di lavoro per dropdown");
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// API per ottenere i centri di lavoro (rooms per lo scheduler)
         /// </summary>
         [HttpGet]
@@ -135,6 +162,7 @@ namespace AiDbMaster.Controllers
                     {
                         Id = o.IdListaOP,
                         CodiceArticolo = o.CodiceArticolo,
+                        DescrizioneArticolo = o.DescrizioneArticolo,
                         Quantita = o.Quantita,
                         QuantitaProdotta = o.QuantitaProdotta,
                         DescrOrdine = o.DescrOrdine ?? "",
@@ -145,7 +173,14 @@ namespace AiDbMaster.Controllers
                         IdStato = o.IdStato,
                         StatoDescrizione = o.Stato != null ? o.Stato.DescrizioneStato : "",
                         CentroLavoroDescrizione = o.CentroLavoro != null ? o.CentroLavoro.DescrizioneCentro : "",
-                        Priorita = o.Priorita ?? 2
+                        Priorita = o.Priorita ?? 2,
+                        TipoOrdine = o.TipoOrdine,
+                        AnnoOrdine = o.AnnoOrdine,
+                        SerieOrdine = o.SerieOrdine,
+                        NumeroOrdine = o.NumeroOrdine,
+                        Note = o.Note ?? "",
+                        TempoCiclo = o.TempoCiclo,
+                        TempoSetup = o.TempoSetup ?? 0
                     })
                     .ToListAsync();
 
@@ -163,13 +198,22 @@ namespace AiDbMaster.Controllers
                     RecurrenceRule = "",
                     // Dati aggiuntivi per il tooltip e la modifica
                     CodiceArticolo = o.CodiceArticolo,
+                    DescrizioneArticolo = o.DescrizioneArticolo,
                     Quantita = o.Quantita,
                     QuantitaProdotta = o.QuantitaProdotta,
                     IdStato = o.IdStato,
                     StatoDescrizione = o.StatoDescrizione,
                     CentroLavoro = o.CentroLavoroDescrizione,
+                    IdCentroLavoro = o.IdCentroLavoro,
                     Priorita = o.Priorita,
-                    PercentualeCompletamento = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 2) : 0
+                    PercentualeCompletamento = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 2) : 0,
+                    TipoOrdine = o.TipoOrdine,
+                    AnnoOrdine = o.AnnoOrdine,
+                    SerieOrdine = o.SerieOrdine,
+                    NumeroOrdine = o.NumeroOrdine,
+                    Note = o.Note,
+                    TempoCiclo = o.TempoCiclo,
+                    TempoSetup = o.TempoSetup
                 }).ToList();
 
                 _logger.LogInformation($"Primi 3 ordini: {string.Join(", ", ordini.Take(3).Select(o => $"Id:{o.Id}, RoomId:{o.RoomId}, Subject:{o.Subject}"))}");
@@ -255,6 +299,38 @@ namespace AiDbMaster.Controllers
             var colors = new[] { "#E3F2FD", "#F3E5F5", "#E8F5E8", "#FFF3E0", "#FCE4EC", "#F1F8E9" };
             return colors[idCentroLavoro % colors.Length];
         }
+
+        /// <summary>
+        /// API per salvare le modifiche di un ordine dal popup
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SaveOrderDetails([FromBody] SaveOrderDetailsRequest request)
+        {
+            try
+            {
+                var ordine = await _context.ListaOP.FindAsync(request.Id);
+                if (ordine == null)
+                {
+                    return NotFound("Ordine non trovato");
+                }
+
+                // Aggiorna i campi modificabili
+                ordine.Quantita = request.Quantita;
+                ordine.QuantitaProdotta = request.QuantitaProdotta;
+                ordine.IdStato = request.IdStato;
+                ordine.IdCentroLavoro = request.IdCentroLavoro;
+                ordine.Note = request.Note;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Modifiche salvate con successo" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel salvataggio delle modifiche ordine {Id}", request.Id);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     /// <summary>
@@ -266,5 +342,18 @@ namespace AiDbMaster.Controllers
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public int? RoomId { get; set; }
+    }
+
+    /// <summary>
+    /// Modello per la richiesta di salvataggio dettagli ordine
+    /// </summary>
+    public class SaveOrderDetailsRequest
+    {
+        public int Id { get; set; }
+        public decimal Quantita { get; set; }
+        public decimal QuantitaProdotta { get; set; }
+        public int IdStato { get; set; }
+        public int IdCentroLavoro { get; set; }
+        public string Note { get; set; } = string.Empty;
     }
 }

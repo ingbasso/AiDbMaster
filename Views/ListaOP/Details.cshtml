@@ -230,7 +230,7 @@
                             <dt>Tempo Totale Stimato:</dt>
                             <dd>
                                 @{
-                                    var tempoTotale = TimeSpan.FromSeconds((double)(Model.TempoCiclo * Model.Quantita));
+                                    var tempoTotale = TimeSpan.FromSeconds((double)(Model.TempoCiclo * (float)Model.Quantita));
                                 }
                                 @tempoTotale.ToString(@"hh\:mm\:ss")
                             </dd>

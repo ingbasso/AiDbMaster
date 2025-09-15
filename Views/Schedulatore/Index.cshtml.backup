@@ -558,44 +558,17 @@
                         <div class="col-12">
                             <hr class="text-primary mb-2">
                         </div>
-                        <div class="col-md-2 mb-2">
-                            <label for="orderIdListaOPDisplay" class="form-label">ID Ordine</label>
-                            <input type="text" class="form-control" id="orderIdListaOPDisplay" readonly>
-                        </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-4 mb-2">
                             <label for="orderCodiceArticolo" class="form-label">Codice Articolo</label>
                             <input type="text" class="form-control" id="orderCodiceArticolo" readonly>
                         </div>
-                        <div class="col-md-7 mb-2">
-                            <label for="orderDescrizioneArticolo" class="form-label">Descrizione Articolo</label>
-                            <input type="text" class="form-control" id="orderDescrizioneArticolo" readonly>
-                        </div>
-                    </div>
-
-                    <!-- Sezione Quantità e Tempi -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <hr class="text-primary mb-2">
-                        </div>
-                        <div class="col-md-2 mb-2">
+                        <div class="col-md-4 mb-2">
                             <label for="orderQuantita" class="form-label">Quantità</label>
-                            <input type="number" class="form-control" id="orderQuantita" step="0.001">
+                            <input type="number" class="form-control" id="orderQuantita">
                         </div>
-                        <div class="col-md-2 mb-2">
-                            <label for="orderQuantitaProdotta" class="form-label">Qta Prodotta</label>
-                            <input type="number" class="form-control" id="orderQuantitaProdotta" step="0.001">
-                        </div>
-                        <div class="col-md-2 mb-2">
-                            <label for="orderPercentualeProdotta" class="form-label">% Prodotta</label>
-                            <input type="text" class="form-control" id="orderPercentualeProdotta" readonly>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <label for="orderTempoCiclo" class="form-label">Tempo Ciclo (sec)</label>
-                            <input type="text" class="form-control" id="orderTempoCiclo" readonly>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <label for="orderTempoSetup" class="form-label">Tempo Setup (sec)</label>
-                            <input type="text" class="form-control" id="orderTempoSetup" readonly>
+                        <div class="col-md-4 mb-2">
+                            <label for="orderIdListaOP" class="form-label">ID Ordine</label>
+                            <input type="text" class="form-control" id="orderIdListaOPDisplay" readonly>
                         </div>
                     </div>
 
@@ -648,6 +621,20 @@
                                 <option value="4">Urgente</option>
                             </select>
                         </div>
+                        <div class="col-12 mb-2">
+                            <label for="orderPercentuale" class="form-label">Percentuale Completamento (%)</label>
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <input type="range" class="form-range" id="orderPercentualeRange" min="0" max="100" step="5">
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="orderPercentuale" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Sezione Note e Dettagli -->
@@ -655,9 +642,13 @@
                         <div class="col-12">
                             <hr class="text-primary mb-2">
                         </div>
-                        <div class="col-12 mb-2">
+                        <div class="col-lg-6 mb-2">
                             <label for="orderNote" class="form-label">Note</label>
-                            <textarea class="form-control" id="orderNote" rows="3" placeholder="Inserisci note aggiuntive..."></textarea>
+                            <textarea class="form-control" id="orderNote" rows="2" placeholder="Inserisci note aggiuntive..."></textarea>
+                        </div>
+                        <div class="col-lg-6 mb-2">
+                            <label for="orderDescrizione" class="form-label">Descrizione Articolo</label>
+                            <textarea class="form-control" id="orderDescrizione" rows="2" placeholder="Descrizione dettagliata..."></textarea>
                         </div>
                     </div>
 
@@ -724,7 +715,6 @@
         let scheduleObj;
         let centriLavoro = [];
         let ordiniData = [];
-        let ordiniOriginali = []; // Dati originali completi per il popup
 
         // Funzioni helper per il template
         function getWeekNumber(date) {
@@ -816,12 +806,12 @@
                 await loadOrdiniProduzione();
                 
                 // Crea lo scheduler
-                // Crea lo scheduler
+                console.log('Step 3: Creazione scheduler');
                 createScheduler();
                 
                 
                 // Setup event listeners
-                // Setup event listeners
+                console.log('Step 5: Setup event listeners');
                 setupEventListeners();
                 
                 showLoading(false);
@@ -902,7 +892,6 @@
                 }
                 
                 ordiniData = data;
-                ordiniOriginali = [...data]; // Salva una copia dei dati originali completi
                 console.log('Ordini caricati:', ordiniData.length);
                 console.log('Dettaglio ordini (primi 3):', ordiniData.slice(0, 3));
                 
@@ -1238,44 +1227,6 @@
         }
 
 
-        // Trova i dati originali completi dell'ordine
-        function findOriginalOrderData(eventId) {
-            const originalData = ordiniOriginali.find(o => (o.id || o.Id) == eventId);
-            if (originalData) {
-                return originalData;
-            }
-            return null;
-        }
-
-        // Carica i centri di lavoro nel dropdown
-        async function loadCentriLavoroDropdown() {
-            try {
-                const response = await fetch('/Schedulatore/GetCentriLavoroDropdown');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const centri = await response.json();
-                const dropdown = document.getElementById('orderCentroLavoro');
-                
-                // Pulisci il dropdown
-                dropdown.innerHTML = '<option value="">Seleziona Centro di Lavoro</option>';
-                
-                // Aggiungi le opzioni
-                centri.forEach(centro => {
-                    const option = document.createElement('option');
-                    option.value = centro.id;
-                    option.textContent = centro.nome;
-                    dropdown.appendChild(option);
-                });
-                
-                return true;
-            } catch (error) {
-                console.error('Errore nel caricamento centri di lavoro per dropdown:', error);
-                throw error;
-            }
-        }
-
         // Apre il modal con i dettagli dell'ordine
         function openOrderDetailsModal(eventData) {
             try {
@@ -1297,42 +1248,17 @@
                 document.body.style.overflow = '';
                 document.body.style.paddingRight = '';
                 
-                // Recupera i dati originali completi
-                const originalData = findOriginalOrderData(eventData.Id);
-                const fullData = originalData || eventData; // Fallback ai dati filtrati se non trovati
-                
-                // Aggiorna il titolo del modal con il formato richiesto
-                const titoloOrdine = `${fullData.tipoOrdine || fullData.TipoOrdine || ''}-${fullData.annoOrdine || fullData.AnnoOrdine || ''}-${fullData.serieOrdine || fullData.SerieOrdine || ''}-${fullData.numeroOrdine || fullData.NumeroOrdine || ''}`;
-                document.getElementById('orderDetailsModalLabel').innerHTML = `<i class="bi bi-box me-2"></i>Dettagli Ordine: <span id="orderTitleLabel">${titoloOrdine}</span>`;
-                
+                console.log('Apertura modal per evento:', eventData.Id);
                 // Popola i campi del form
                 document.getElementById('orderIdListaOP').value = eventData.Id || '';
                 document.getElementById('orderIdListaOPDisplay').value = eventData.Id || '';
-                document.getElementById('orderCodiceArticolo').value = fullData.codiceArticolo || fullData.CodiceArticolo || '';
-                document.getElementById('orderDescrizioneArticolo').value = fullData.descrizioneArticolo || fullData.DescrizioneArticolo || '';
-                document.getElementById('orderQuantita').value = fullData.quantita || fullData.Quantita || '';
-                document.getElementById('orderQuantitaProdotta').value = fullData.quantitaProdotta || fullData.QuantitaProdotta || '';
-                
-                // Calcola percentuale prodotta
-                const quantita = parseFloat(fullData.quantita || fullData.Quantita || 0);
-                const quantitaProdotta = parseFloat(fullData.quantitaProdotta || fullData.QuantitaProdotta || 0);
-                let percentualeProdotta = 0;
-                if (quantita > 0) {
-                    percentualeProdotta = Math.round((quantitaProdotta / quantita) * 100 * 10) / 10;
-                }
-                document.getElementById('orderPercentualeProdotta').value = percentualeProdotta.toFixed(1) + '%';
-                
-                // Campi tempo (entrambi mostrati in secondi)
-                const tempoCicloSecondi = fullData.tempoCiclo || fullData.TempoCiclo || 0;
-                const tempoSetupMinuti = fullData.tempoSetup || fullData.TempoSetup || 0;
-                const tempoSetupSecondi = tempoSetupMinuti * 60; // Converti da minuti a secondi
-                
-                document.getElementById('orderTempoCiclo').value = tempoCicloSecondi;
-                document.getElementById('orderTempoSetup').value = tempoSetupSecondi;
+                document.getElementById('orderCodiceArticolo').value = eventData.CodiceArticolo || '';
+                document.getElementById('orderQuantita').value = eventData.Quantita || '';
                 
                 // Campi aggiuntivi
-                document.getElementById('orderPriorita').value = fullData.priorita || fullData.Priorita || '2';
-                document.getElementById('orderNote').value = fullData.note || fullData.Note || '';
+                document.getElementById('orderPriorita').value = eventData.Priorita || '2';
+                document.getElementById('orderNote').value = eventData.Note || '';
+                document.getElementById('orderDescrizione').value = eventData.Descrizione || '';
                 
                 // Formatta le date per input datetime-local
                 if (eventData.StartTime) {
@@ -1345,18 +1271,18 @@
                     document.getElementById('orderDataFinePrevista').value = formatDateTimeLocal(eventData.DataFinePrevista);
                 }
                 
-                // Carica il dropdown dei centri di lavoro e imposta il valore
-                loadCentriLavoroDropdown().then(() => {
-                    const centroLavoroId = fullData.idCentroLavoro || fullData.IdCentroLavoro || eventData.RoomId;
-                    document.getElementById('orderCentroLavoro').value = String(centroLavoroId);
-                }).catch(error => {
-                    console.error('Errore nel caricamento dropdown:', error);
-                });
+                // Imposta centro di lavoro e stato
+                document.getElementById('orderCentroLavoro').value = eventData.RoomId || '';
+                document.getElementById('orderStato').value = eventData.IdStato || '';
                 
-                // Imposta stato
-                document.getElementById('orderStato').value = fullData.idStato || fullData.IdStato || eventData.IdStato || '';
+                // Imposta percentuale completamento
+                const percentuale = eventData.PercentualeCompletamento || 0;
+                document.getElementById('orderPercentuale').value = percentuale;
+                document.getElementById('orderPercentualeRange').value = percentuale;
                 
-                
+                // Aggiorna il titolo del modal
+                document.getElementById('orderDetailsModalLabel').innerHTML = 
+                    `<i class="bi bi-box me-2"></i>Ordine: ${eventData.CodiceArticolo || 'N/A'}`;
                 
                 // Mostra il modal con configurazione senza backdrop
                 const modalElement = document.getElementById('orderDetailsModal');
@@ -1534,25 +1460,18 @@
 
         // Setup event listeners per il modal
         function setupModalEventListeners() {
-            // Sincronizza quantità e quantità prodotta per calcolare automaticamente la percentuale
-            const quantitaInput = document.getElementById('orderQuantita');
-            const quantitaProdottaInput = document.getElementById('orderQuantitaProdotta');
+            // Sincronizza slider e input percentuale
+            const rangeInput = document.getElementById('orderPercentualeRange');
+            const numberInput = document.getElementById('orderPercentuale');
             
-            if (quantitaInput && quantitaProdottaInput) {
-                function calcolaPercentuale() {
-                    const quantita = parseFloat(quantitaInput.value) || 0;
-                    const quantitaProdotta = parseFloat(quantitaProdottaInput.value) || 0;
-                    
-                    let percentuale = 0;
-                    if (quantita > 0) {
-                        percentuale = Math.round((quantitaProdotta / quantita) * 100 * 10) / 10;
-                    }
-                    
-                    document.getElementById('orderPercentualeProdotta').value = percentuale.toFixed(1) + '%';
-                }
+            if (rangeInput && numberInput) {
+                rangeInput.addEventListener('input', function() {
+                    numberInput.value = this.value;
+                });
                 
-                quantitaInput.addEventListener('input', calcolaPercentuale);
-                quantitaProdottaInput.addEventListener('input', calcolaPercentuale);
+                numberInput.addEventListener('input', function() {
+                    rangeInput.value = this.value;
+                });
             }
 
             // Event listener per salvare le modifiche
@@ -1627,40 +1546,24 @@
                 
                 const orderId = document.getElementById('orderIdListaOP').value;
                 const quantita = document.getElementById('orderQuantita').value;
-                const quantitaProdotta = document.getElementById('orderQuantitaProdotta').value;
                 const stato = document.getElementById('orderStato').value;
-                const centroLavoro = document.getElementById('orderCentroLavoro').value;
-                const note = document.getElementById('orderNote').value;
-                
-                const requestData = {
-                    Id: parseInt(orderId),
-                    Quantita: parseFloat(quantita),
-                    QuantitaProdotta: parseFloat(quantitaProdotta),
-                    IdStato: parseInt(stato),
-                    IdCentroLavoro: parseInt(centroLavoro),
-                    Note: note
-                };
+                const percentuale = document.getElementById('orderPercentuale').value;
 
-                const response = await fetch('/Schedulatore/SaveOrderDetails', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
+                console.log('Salvataggio modifiche ordine:', {
+                    Id: orderId,
+                    Quantita: quantita,
+                    Stato: stato,
+                    Percentuale: percentuale
                 });
 
-                const result = await response.json();
-                
-                if (!response.ok || !result.success) {
-                    throw new Error(result.message || 'Errore nel salvataggio');
-                }
-
+                // Chiudi il modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
                 if (modal) modal.hide();
 
-                window.location.reload(); // Reload the page to refresh the scheduler
+                // Aggiorna i dati dello scheduler
+                await refreshData();
                 
-                showSuccess(result.message || 'Modifiche salvate con successo');
+                showSuccess('Modifiche salvate con successo');
 
             } catch (error) {
                 console.error('Errore nel salvataggio:', error);

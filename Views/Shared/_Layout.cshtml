@@ -21,10 +21,10 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
-                <i class="bi bi-database-gear me-2"></i>
-                <span class="brand-text">AiDbMaster</span>
-            </a>
+                <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-database-gear me-2"></i>
+                    <span class="brand-text">AiDbMaster</span>
+                </a>
         </div>
         
         <div class="sidebar-content">
@@ -283,7 +283,7 @@
         <div class="sidebar-footer">
             <div class="sidebar-brand-footer">
                 <small class="text-muted">AiDbMaster v2.0</small>
-            </div>
+                    </div>
         </div>
     </div>
     
@@ -472,9 +472,9 @@
             // Chiudi sidebar
             function closeSidebar(save = true) {
                 console.log('Closing sidebar...'); // Debug
-                $('#sidebar').removeClass('active');
-                $('#sidebarOverlay').removeClass('active');
-                $('body').removeClass('sidebar-open');
+                 $('#sidebar').removeClass('active');
+                 $('#sidebarOverlay').removeClass('active');
+                 $('body').removeClass('sidebar-open');
                 
                 if (save) {
                     saveSidebarState(false);

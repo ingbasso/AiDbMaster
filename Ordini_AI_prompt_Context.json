@@ -46,7 +46,7 @@
         { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell’articolo" },
         { "name": "DescrizioneArticolo", "type": "nvarchar(50)", "description": "Descrizione dell’articolo" },
         { "name": "NumeroColli", "type": "decimal(27,9)", "description": "Numero di colli ordinati" },
-        { "name": "Quantita", "type": "decimal(27,9)", "description": "Quantità ordinata" },
+        { "name": "Quantita", "type": "decimal(10,3)", "description": "Quantità ordinata" },
         { "name": "Prezzo", "type": "decimal(24,6)", "description": "Prezzo unitario dell’articolo" },
         { "name": "ValoreRiga", "type": "money", "description": "Valore totale della riga ordine" }
       ],

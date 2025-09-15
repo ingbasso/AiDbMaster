@@ -78,14 +78,14 @@ namespace AiDbMaster.Models
         /// Quantità da produrre
         /// </summary>
         [Required]
-        [Column(TypeName = "decimal(27,9)")]
+        [Column(TypeName = "decimal(10,3)")]
         public decimal Quantita { get; set; }
 
         /// <summary>
         /// Quantità effettivamente prodotta
         /// </summary>
         [Required]
-        [Column(TypeName = "decimal(27,9)")]
+        [Column(TypeName = "decimal(10,3)")]
         public decimal QuantitaProdotta { get; set; }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace AiDbMaster.Models
         /// Tempo ciclo in secondi
         /// </summary>
         [Required]
-        public int TempoCiclo { get; set; }
+        public float TempoCiclo { get; set; }
 
         /// <summary>
         /// Data inizio setup/attrezzaggio
@@ -108,7 +108,7 @@ namespace AiDbMaster.Models
         /// <summary>
         /// Tempo setup/attrezzaggio in minuti
         /// </summary>
-        public int? TempoSetup { get; set; }
+        public float? TempoSetup { get; set; }
 
         /// <summary>
         /// FK verso la tabella StatiOP
@@ -165,7 +165,7 @@ namespace AiDbMaster.Models
         /// <summary>
         /// Tempo effettivamente impiegato in secondi
         /// </summary>
-        public int? TempoEffettivo { get; set; }
+        public float? TempoEffettivo { get; set; }
 
         // PROPRIETÀ CALCOLATE
 

@@ -328,11 +328,11 @@ namespace AiDbMaster.Data
             // Configurazione dei tipi di dati per i campi decimal di ListaOP
             builder.Entity<ListaOP>()
                 .Property(l => l.Quantita)
-                .HasColumnType("decimal(27,9)");
+                .HasColumnType("decimal(10,3)");
 
             builder.Entity<ListaOP>()
                 .Property(l => l.QuantitaProdotta)
-                .HasColumnType("decimal(27,9)");
+                .HasColumnType("decimal(10,3)");
 
             builder.Entity<ListaOP>()
                 .Property(l => l.CostoOrario)
