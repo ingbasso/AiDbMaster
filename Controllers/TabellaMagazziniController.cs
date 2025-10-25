@@ -170,11 +170,10 @@ namespace AiDbMaster.Controllers
                     {
                         TotaleArticoli = g.Count(),
                         TotaleEsistenza = g.Sum(p => p.Esistenza),
-                        TotaleDisponibile = g.Sum(p => p.Esistenza - p.Impegnato - p.Prenotato),
-                        TotaleImpegnato = g.Sum(p => p.Impegnato),
-                        TotaleOrdinato = g.Sum(p => p.Ordinato),
+                        TotaleDisponibile = g.Sum(p => p.Esistenza),
+                        TotaleOrdinatoFornitori = g.Sum(p => p.OrdinatoFornitoriDataOdierna),
                         ArticoliEsauriti = g.Count(p => p.Esistenza <= 0),
-                        ArticoliDisponibili = g.Count(p => (p.Esistenza - p.Impegnato - p.Prenotato) > 0)
+                        ArticoliDisponibili = g.Count(p => p.Esistenza > 0)
                     })
                     .FirstOrDefaultAsync();
 

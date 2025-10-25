@@ -39,71 +39,49 @@ namespace AiDbMaster.Models
         /// </summary>
         [Required(ErrorMessage = "L'esistenza è obbligatoria")]
         [Display(Name = "Esistenza")]
-        [Column("Esistenza")]
+        [Column("Esistenza", TypeName = "decimal(27,9)")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
         public decimal Esistenza { get; set; }
 
         /// <summary>
-        /// Quantità ordinata (in arrivo)
+        /// Quantità ordinata dai fornitori con data odierna
         /// </summary>
         [Required(ErrorMessage = "La quantità ordinata è obbligatoria")]
-        [Display(Name = "Ordinato")]
-        [Column("Ordinato")]
+        [Display(Name = "Ordinato Fornitori Data Odierna")]
+        [Column("OrdinatoFornitoriDataOdierna", TypeName = "decimal(27,9)")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        public decimal Ordinato { get; set; }
+        public decimal OrdinatoFornitoriDataOdierna { get; set; }
 
         /// <summary>
-        /// Quantità impegnata (riservata per ordini)
+        /// Quantità impegnata da ordini clienti con data consegna fino ad oggi
         /// </summary>
         [Required(ErrorMessage = "La quantità impegnata è obbligatoria")]
-        [Display(Name = "Impegnato")]
-        [Column("Impegnato")]
+        [Display(Name = "Impegnato Data Odierna")]
+        [Column("ImpegnatoDataOdierna", TypeName = "decimal(27,9)")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        public decimal Impegnato { get; set; }
+        public decimal ImpegnatoDataOdierna { get; set; }
 
         /// <summary>
-        /// Quantità prenotata
-        /// </summary>
-        [Required(ErrorMessage = "La quantità prenotata è obbligatoria")]
-        [Display(Name = "Prenotato")]
-        [Column("Prenotato")]
-        [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        public decimal Prenotato { get; set; }
-
-        /// <summary>
-        /// Quantità disponibile calcolata (Esistenza - Impegnato - Prenotato)
+        /// Quantità disponibile (Esistenza - Impegnato)
         /// </summary>
         [NotMapped]
         public decimal Disponibile
         {
             get
             {
-                return Esistenza - Impegnato - Prenotato;
+                return Esistenza - ImpegnatoDataOdierna;
             }
         }
 
         /// <summary>
-        /// Quantità totale prevista (Esistenza + Ordinato)
+        /// Quantità totale prevista (Esistenza + OrdinatoFornitoriDataOdierna)
         /// </summary>
         [NotMapped]
         public decimal TotalePrevisto
         {
             get
             {
-                return Esistenza + Ordinato;
-            }
-        }
-
-        /// <summary>
-        /// Percentuale di impegno sul totale esistente
-        /// </summary>
-        [NotMapped]
-        public decimal PercentualeImpegno
-        {
-            get
-            {
-                if (Esistenza == 0) return 0;
-                return Math.Round((Impegnato / Esistenza) * 100, 2);
+                return Esistenza + OrdinatoFornitoriDataOdierna;
             }
         }
 
@@ -161,19 +139,19 @@ namespace AiDbMaster.Models
         {
             get
             {
-                return $"E:{Esistenza:N0} O:{Ordinato:N0} I:{Impegnato:N0} P:{Prenotato:N0} D:{Disponibile:N0}";
+                return $"E:{Esistenza:N0} I:{ImpegnatoDataOdierna:N0} OF:{OrdinatoFornitoriDataOdierna:N0} D:{Disponibile:N0}";
             }
         }
 
         /// <summary>
-        /// Indica se l'articolo ha movimenti (ordinato, impegnato o prenotato > 0)
+        /// Indica se l'articolo ha movimenti (ordinato da fornitori > 0)
         /// </summary>
         [NotMapped]
         public bool HasMovimenti
         {
             get
             {
-                return Ordinato > 0 || Impegnato > 0 || Prenotato > 0;
+                return OrdinatoFornitoriDataOdierna > 0;
             }
         }
 

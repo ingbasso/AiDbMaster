@@ -83,7 +83,7 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID della lavorazione</param>
         /// <returns>Vista con i dettagli della lavorazione</returns>
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(short? id)
         {
             if (id == null)
             {
@@ -123,25 +123,22 @@ namespace AiDbMaster.Controllers
             {
                 try
                 {
-                    // Verifica unicità del codice se specificato
-                    if (!string.IsNullOrEmpty(lavorazione.CodiceLavorazione))
+                    // Verifica unicità del codice
+                    var esistente = await _context.Lavorazioni
+                        .FirstOrDefaultAsync(l => l.CodiceLavorazione == lavorazione.CodiceLavorazione);
+                    
+                    if (esistente != null)
                     {
-                        var esistente = await _context.Lavorazioni
-                            .FirstOrDefaultAsync(l => l.CodiceLavorazione == lavorazione.CodiceLavorazione);
-                        
-                        if (esistente != null)
-                        {
-                            ModelState.AddModelError("CodiceLavorazione", "Esiste già una lavorazione con questo codice.");
-                            return View(lavorazione);
-                        }
+                        ModelState.AddModelError("CodiceLavorazione", "Esiste già una lavorazione con questo codice.");
+                        return View(lavorazione);
                     }
 
                     lavorazione.DataCreazione = DateTime.Now;
                     _context.Add(lavorazione);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation("Lavorazione creata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                        lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                    _logger.LogInformation("Lavorazione creata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                        lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                     TempData["SuccessMessage"] = "Lavorazione creata con successo!";
                     return RedirectToAction(nameof(Index));
@@ -162,14 +159,14 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID della lavorazione da modificare</param>
         /// <returns>Vista con il form di modifica</returns>
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(short? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var lavorazione = await _context.Lavorazioni.FindAsync(id);
+            var lavorazione = await _context.Lavorazioni.FindAsync(id.Value);
             if (lavorazione == null)
             {
                 return NotFound();
@@ -186,9 +183,9 @@ namespace AiDbMaster.Controllers
         /// <returns>Redirect alla lista o vista con errori</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdLavorazione,CodiceLavorazione,DescrizioneLavorazione,Attivo,DataCreazione")] Lavorazioni lavorazione)
+        public async Task<IActionResult> Edit(short id, [Bind("CodiceLavorazione,DescrizioneLavorazione,Attivo,DataCreazione")] Lavorazioni lavorazione)
         {
-            if (id != lavorazione.IdLavorazione)
+            if (id != lavorazione.CodiceLavorazione)
             {
                 return NotFound();
             }
@@ -197,33 +194,19 @@ namespace AiDbMaster.Controllers
             {
                 try
                 {
-                    // Verifica unicità del codice se specificato
-                    if (!string.IsNullOrEmpty(lavorazione.CodiceLavorazione))
-                    {
-                        var esistente = await _context.Lavorazioni
-                            .FirstOrDefaultAsync(l => l.CodiceLavorazione == lavorazione.CodiceLavorazione && 
-                                                     l.IdLavorazione != lavorazione.IdLavorazione);
-                        
-                        if (esistente != null)
-                        {
-                            ModelState.AddModelError("CodiceLavorazione", "Esiste già una lavorazione con questo codice.");
-                            return View(lavorazione);
-                        }
-                    }
-
                     lavorazione.DataUltimaModifica = DateTime.Now;
                     _context.Update(lavorazione);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation("Lavorazione modificata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                        lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                    _logger.LogInformation("Lavorazione modificata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                        lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                     TempData["SuccessMessage"] = "Lavorazione modificata con successo!";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!LavorazioneExists(lavorazione.IdLavorazione))
+                    if (!LavorazioneExists(lavorazione.CodiceLavorazione))
                     {
                         return NotFound();
                     }
@@ -234,8 +217,8 @@ namespace AiDbMaster.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Errore durante la modifica della lavorazione - ID: {Id}", 
-                        lavorazione.IdLavorazione);
+                    _logger.LogError(ex, "Errore durante la modifica della lavorazione - Codice: {Codice}", 
+                        lavorazione.CodiceLavorazione);
                     ModelState.AddModelError(string.Empty, "Errore durante la modifica della lavorazione: " + ex.Message);
                 }
             }
@@ -248,7 +231,7 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID della lavorazione da eliminare</param>
         /// <returns>Vista con la conferma di eliminazione</returns>
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(short? id)
         {
             if (id == null)
             {
@@ -256,7 +239,7 @@ namespace AiDbMaster.Controllers
             }
 
             var lavorazione = await _context.Lavorazioni
-                .FirstOrDefaultAsync(l => l.IdLavorazione == id);
+                .FirstOrDefaultAsync(l => l.CodiceLavorazione == id.Value);
             if (lavorazione == null)
             {
                 return NotFound();
@@ -273,7 +256,7 @@ namespace AiDbMaster.Controllers
         /// <returns>Redirect alla lista</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(short id)
         {
             try
             {
@@ -283,8 +266,8 @@ namespace AiDbMaster.Controllers
                     _context.Lavorazioni.Remove(lavorazione);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation("Lavorazione eliminata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                        lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                    _logger.LogInformation("Lavorazione eliminata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                        lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                     TempData["SuccessMessage"] = "Lavorazione eliminata con successo!";
                 }
@@ -307,9 +290,9 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID della lavorazione</param>
         /// <returns>True se esiste, False altrimenti</returns>
-        private bool LavorazioneExists(int id)
+        private bool LavorazioneExists(short id)
         {
-            return _context.Lavorazioni.Any(e => e.IdLavorazione == id);
+            return _context.Lavorazioni.Any(e => e.CodiceLavorazione == id);
         }
 
         /// <summary>

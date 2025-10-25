@@ -170,7 +170,7 @@
                                     <li class="sidebar-item">
                                         <a class="sidebar-link" asp-controller="OrdiniTestate" asp-action="Index">
                                             <i class="bi bi-clipboard-check"></i>
-                                            <span>Gestione Ordini</span>
+                                            <span>Gestione Ordini CF</span>
                                         </a>
                                     </li>
                                 </ul>
@@ -220,6 +220,37 @@
                                         <a class="sidebar-link" asp-controller="ListaOP" asp-action="Index" asp-route-filtroPriorita="5">
                                             <i class="bi bi-exclamation-triangle"></i>
                                             <span>Urgenti</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="CalendarioFermi" asp-action="Index">
+                                            <i class="bi bi-calendar-x"></i>
+                                            <span>Calendario Fermi</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        <!-- Interrogazioni DB -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#interrogazioniDBSubmenu" aria-expanded="false">
+                                <i class="bi bi-search"></i>
+                                <span>Interrogazioni DB</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="interrogazioniDBSubmenu">
+                                <ul class="sidebar-submenu">
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="Disponibilita">
+                                            <i class="bi bi-boxes"></i>
+                                            <span>Disponibilità</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <span>Consegne Programmate</span>
                                         </a>
                                     </li>
                                 </ul>

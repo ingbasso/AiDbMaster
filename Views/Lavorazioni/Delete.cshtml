@@ -9,7 +9,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="text-danger"><i class="bi bi-trash me-2"></i>Elimina Lavorazione</h2>
             <div>
-                <a asp-action="Details" asp-route-id="@Model?.IdLavorazione" class="btn btn-outline-info">
+                <a asp-action="Details" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-outline-info">
                     <i class="bi bi-eye"></i> Dettagli
                 </a>
                 <a asp-action="Index" class="btn btn-outline-secondary">
@@ -38,7 +38,7 @@
                     <div class="card-header bg-danger text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-gear-wide"></i> Lavorazione da Eliminare
-                            <span class="badge bg-light text-dark ms-2">ID: @Model?.IdLavorazione</span>
+                            <span class="badge bg-light text-dark ms-2">ID: @Model?.CodiceLavorazione</span>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -46,7 +46,7 @@
                             <div class="col-md-4 mb-3">
                                 <label class="form-label text-muted">Codice Lavorazione</label>
                                 <div class="form-control-plaintext">
-                                    @if (!string.IsNullOrEmpty(Model?.CodiceLavorazione))
+                                    @if (Model?.CodiceLavorazione > 0)
                                     {
                                         <span class="badge bg-primary fs-6">@Model.CodiceLavorazione</span>
                                     }
@@ -118,7 +118,7 @@
                         <ul>
                             <li>
                                 <strong>Disattivazione:</strong> 
-                                <a asp-action="Edit" asp-route-id="@Model?.IdLavorazione" class="btn btn-sm btn-warning ms-2">
+                                <a asp-action="Edit" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-sm btn-warning ms-2">
                                     <i class="bi bi-pause-circle"></i> Disattiva invece
                                 </a>
                             </li>
@@ -135,7 +135,7 @@
                     </div>
                     <div class="card-body">
                         <form asp-action="Delete" method="post">
-                            <input type="hidden" asp-for="IdLavorazione" />
+                            <input type="hidden" asp-for="CodiceLavorazione" />
                             
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="confirmDelete" required>
@@ -155,7 +155,7 @@
                                     <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
                                         <i class="bi bi-trash"></i> Elimina Definitivamente
                                     </button>
-                                    <a asp-action="Edit" asp-route-id="@Model?.IdLavorazione" class="btn btn-warning ms-2">
+                                    <a asp-action="Edit" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-warning ms-2">
                                         <i class="bi bi-pause-circle"></i> Disattiva Invece
                                     </a>
                                     <a asp-action="Index" class="btn btn-secondary ms-2">

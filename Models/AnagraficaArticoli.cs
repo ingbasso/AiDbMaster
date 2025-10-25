@@ -97,5 +97,13 @@ namespace AiDbMaster.Models
         [Display(Name = "Conversione Confezione")]
         [Column("ConversioneConfezione", TypeName = "decimal(18,6)")]
         public decimal ConversioneConfezione { get; set; }
+
+        /// <summary>
+        /// Make or Buy: M=Make (produci internamente), B=Buy (acquista da terzi)
+        /// </summary>
+        [StringLength(1, ErrorMessage = "Il campo Make or Buy deve essere di 1 carattere")]
+        [Display(Name = "Make or Buy")]
+        [Column("MakeOrBuy", TypeName = "varchar(1)")]
+        public string? MakeOrBuy { get; set; }
     }
 }

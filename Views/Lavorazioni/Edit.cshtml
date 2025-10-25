@@ -9,7 +9,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-pencil me-2"></i>Modifica Lavorazione</h2>
             <div>
-                <a asp-action="Details" asp-route-id="@Model?.IdLavorazione" class="btn btn-outline-info">
+                <a asp-action="Details" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-outline-info">
                     <i class="bi bi-eye"></i> Dettagli
                 </a>
                 <a asp-action="Index" class="btn btn-outline-secondary">
@@ -24,7 +24,7 @@
                     <div class="card-header bg-warning text-dark">
                         <h5 class="mb-0">
                             <i class="bi bi-gear-wide"></i> Modifica Dati Lavorazione
-                            <small class="ms-2">ID: @Model?.IdLavorazione</small>
+                            <small class="ms-2">ID: @Model?.CodiceLavorazione</small>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -32,7 +32,7 @@
                             <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
                             
                             <!-- Campi nascosti -->
-                            <input type="hidden" asp-for="IdLavorazione" />
+                            <input type="hidden" asp-for="CodiceLavorazione" />
                             <input type="hidden" asp-for="DataCreazione" />
                             
                             <div class="row">
@@ -111,7 +111,7 @@
                                     <button type="submit" class="btn btn-warning">
                                         <i class="bi bi-check-circle"></i> Salva Modifiche
                                     </button>
-                                    <a asp-action="Details" asp-route-id="@Model?.IdLavorazione" class="btn btn-info ms-2">
+                                    <a asp-action="Details" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-info ms-2">
                                         <i class="bi bi-eye"></i> Visualizza
                                     </a>
                                     <a asp-action="Index" class="btn btn-secondary ms-2">

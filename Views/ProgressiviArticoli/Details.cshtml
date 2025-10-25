@@ -25,7 +25,7 @@
             <div class="col-lg-8">
                 <!-- Identificazione Articolo -->
                 <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-tag me-2"></i>Identificazione</h5>
                     </div>
                     <div class="card-body">
@@ -63,7 +63,7 @@
 
                 <!-- Giacenze e Movimenti -->
                 <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-boxes me-2"></i>Giacenze e Movimenti</h5>
                     </div>
                     <div class="card-body">
@@ -84,43 +84,21 @@
                                         <h3 class="@(Model.Disponibile > 0 ? "text-success" : "text-danger") mb-0">
                                             @Model.Disponibile.ToString("N2")
                                         </h3>
-                                        <small class="text-muted">Esistenza - Impegnato - Prenotato</small>
+                                        <small class="text-muted">Disponibile</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-12">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Ordinato)</label>
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.OrdinatoFornitoriDataOdierna)</label>
                                     <div class="form-control-plaintext bg-light p-2 rounded text-center">
-                                        <h4 class="@(Model.Ordinato > 0 ? "text-success" : "text-muted") mb-0">
-                                            @Model.Ordinato.ToString("N2")
+                                        <h4 class="@(Model.OrdinatoFornitoriDataOdierna > 0 ? "text-success" : "text-muted") mb-0">
+                                            @Model.OrdinatoFornitoriDataOdierna.ToString("N2")
                                         </h4>
-                                        <small class="text-muted">In arrivo</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Impegnato)</label>
-                                    <div class="form-control-plaintext bg-light p-2 rounded text-center">
-                                        <h4 class="@(Model.Impegnato > 0 ? "text-warning" : "text-muted") mb-0">
-                                            @Model.Impegnato.ToString("N2")
-                                        </h4>
-                                        <small class="text-muted">Riservato</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Prenotato)</label>
-                                    <div class="form-control-plaintext bg-light p-2 rounded text-center">
-                                        <h4 class="@(Model.Prenotato > 0 ? "text-info" : "text-muted") mb-0">
-                                            @Model.Prenotato.ToString("N2")
-                                        </h4>
-                                        <small class="text-muted">Prenotato</small>
+                                        <small class="text-muted">In arrivo da fornitori</small>
                                     </div>
                                 </div>
                             </div>
@@ -129,7 +107,7 @@
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
                             <strong>Totale Previsto:</strong> @Model.TotalePrevisto.ToString("N2") 
-                            (Esistenza + Ordinato)
+                            (Esistenza + Ordinato Fornitori)
                         </div>
                     </div>
                 </div>
@@ -138,7 +116,7 @@
                 @if (altriMagazzini.Any())
                 {
                     <div class="card mb-4">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-info text-white">
                             <h5 class="mb-0"><i class="bi bi-building me-2"></i>Altri Magazzini per @Model.CodiceArticolo</h5>
                         </div>
                         <div class="card-body">
@@ -149,8 +127,7 @@
                                             <th>Magazzino</th>
                                             <th>Esistenza</th>
                                             <th>Disponibile</th>
-                                            <th>Ordinato</th>
-                                            <th>Impegnato</th>
+                                            <th>Ord. Fornitori</th>
                                             <th>Stato</th>
                                             <th>Azioni</th>
                                         </tr>
@@ -171,19 +148,9 @@
                                                     </strong>
                                                 </td>
                                                 <td>
-                                                    @if (magazzino.Ordinato > 0)
+                                                    @if (magazzino.OrdinatoFornitoriDataOdierna > 0)
                                                     {
-                                                        <span class="text-success">@magazzino.Ordinato.ToString("N2")</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (magazzino.Impegnato > 0)
-                                                    {
-                                                        <span class="text-warning">@magazzino.Impegnato.ToString("N2")</span>
+                                                        <span class="text-success">@magazzino.OrdinatoFornitoriDataOdierna.ToString("N2")</span>
                                                     }
                                                     else
                                                     {
@@ -212,7 +179,7 @@
                 @if (altriArticoliMagazzino.Any())
                 {
                     <div class="card mb-4">
-                        <div class="card-header bg-secondary text-white">
+                        <div class="card-header bg-info text-white">
                             <h5 class="mb-0"><i class="bi bi-boxes me-2"></i>Altri Articoli nel Magazzino @Model.CodiceMagazzino</h5>
                         </div>
                         <div class="card-body">
@@ -266,25 +233,13 @@
             <div class="col-lg-4">
                 <!-- Stato Giacenza -->
                 <div class="card mb-4">
-                    <div class="card-header bg-dark text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Stato Giacenza</h5>
                     </div>
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <span class="@Model.StatoGiacenzaCssClass fs-4">@Model.StatoGiacenza</span>
                         </div>
-                        @if (Model.PercentualeImpegno > 0)
-                        {
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Percentuale Impegno</label>
-                                <div class="progress" style="height: 25px;">
-                                    <div class="progress-bar @(Model.PercentualeImpegno > 80 ? "bg-danger" : Model.PercentualeImpegno > 50 ? "bg-warning" : "bg-success")" 
-                                         role="progressbar" style="width: @Model.PercentualeImpegno%">
-                                        @Model.PercentualeImpegno.ToString("N1")%
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
                 </div>
 
@@ -297,30 +252,21 @@
                         </div>
                         <div class="card-body">
                             <div class="row text-center mb-3">
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="border-end">
                                         <h6 class="text-muted">Tot. Esistenza</h6>
                                         <h4 class="text-primary">@statisticheArticolo.TotaleEsistenza.ToString("N0")</h4>
                                     </div>
                                 </div>
-                                <div class="col-6">
-                                    <h6 class="text-muted">Tot. Disponibile</h6>
-                                    <h4 class="text-success">@statisticheArticolo.TotaleDisponibile.ToString("N0")</h4>
-                                </div>
-                            </div>
-                            
-                            <div class="row text-center mb-3">
                                 <div class="col-4">
-                                    <h6 class="text-muted">Ordinato</h6>
-                                    <h5 class="text-success">@statisticheArticolo.TotaleOrdinato.ToString("N0")</h5>
+                                    <div class="border-end">
+                                        <h6 class="text-muted">Tot. Disponibile</h6>
+                                        <h4 class="text-success">@statisticheArticolo.TotaleDisponibile.ToString("N0")</h4>
+                                    </div>
                                 </div>
                                 <div class="col-4">
-                                    <h6 class="text-muted">Impegnato</h6>
-                                    <h5 class="text-warning">@statisticheArticolo.TotaleImpegnato.ToString("N0")</h5>
-                                </div>
-                                <div class="col-4">
-                                    <h6 class="text-muted">Prenotato</h6>
-                                    <h5 class="text-info">@statisticheArticolo.TotalePrenotato.ToString("N0")</h5>
+                                    <h6 class="text-muted">Ord. Fornitori</h6>
+                                    <h4 class="text-info">@statisticheArticolo.TotaleOrdinatoFornitori.ToString("N0")</h4>
                                 </div>
                             </div>
 
@@ -338,7 +284,7 @@
 
                 <!-- Riepilogo -->
                 <div class="card mb-4">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Riepilogo</h5>
                     </div>
                     <div class="card-body">
@@ -382,7 +328,7 @@
 
                 <!-- Azioni Rapide -->
                 <div class="card mb-4">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Azioni Rapide</h5>
                     </div>
                     <div class="card-body">

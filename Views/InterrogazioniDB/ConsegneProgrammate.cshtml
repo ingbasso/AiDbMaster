@@ -1,0 +1,100 @@
+@model AiDbMaster.ViewModels.ConsegneProgrammateViewModel
+
+@{
+    ViewData["Title"] = "Consegne Programmate";
+}
+
+<div class="container">
+    <div class="content-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-calendar-event me-2 text-primary"></i>Consegne Programmate</h2>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Torna al Menu
+                </a>
+            </div>
+        </div>
+
+        <!-- Alert Info -->
+        <div class="alert alert-info">
+            <h4 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Funzionalità in Fase di Implementazione</h4>
+            <p class="mb-0">
+                Questa sezione è attualmente in fase di sviluppo. 
+                A breve sarà possibile visualizzare le consegne programmate degli articoli ordinati ai fornitori.
+            </p>
+        </div>
+
+        <!-- Form Placeholder -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-search me-2"></i>Parametri di Ricerca (Anteprima)</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="ConsegneProgrammate" method="post">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="CodiceArticolo" class="form-label fw-bold">
+                                <i class="bi bi-box-seam me-1"></i>@Html.DisplayNameFor(model => model.CodiceArticolo)
+                            </label>
+                            <input asp-for="CodiceArticolo" type="text" class="form-control" placeholder="Codice Articolo" disabled />
+                            <small class="text-muted">Ricerca per articolo specifico</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="DataInizio" class="form-label fw-bold">
+                                <i class="bi bi-calendar me-1"></i>@Html.DisplayNameFor(model => model.DataInizio)
+                            </label>
+                            <input asp-for="DataInizio" type="date" class="form-control" disabled />
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="DataFine" class="form-label fw-bold">
+                                <i class="bi bi-calendar me-1"></i>@Html.DisplayNameFor(model => model.DataFine)
+                            </label>
+                            <input asp-for="DataFine" type="date" class="form-control" disabled />
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <button type="submit" class="btn btn-primary btn-lg" disabled>
+                            <i class="bi bi-search me-2"></i>Cerca Consegne
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Anteprima Risultati -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Anteprima Risultati</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Codice Articolo</th>
+                                <th>Fornitore</th>
+                                <th>Data Consegna Prevista</th>
+                                <th class="text-end">Quantità</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="bi bi-hourglass-split fs-3 d-block mb-2"></i>
+                                    In attesa di implementazione...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

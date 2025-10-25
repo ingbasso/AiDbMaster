@@ -47,8 +47,8 @@ namespace AiDbMaster.Controllers
             {
                 _logger.LogInformation("Caricamento anagrafica clienti - Pagina: {Page}, Ricerca: {Search}", page, search);
 
-                // Query base
-                var query = _context.AnagraficaClienti.AsQueryable();
+                // Query base con inclusione dell'agente
+                var query = _context.AnagraficaClienti.Include(c => c.Agente).AsQueryable();
 
                 // Filtro per ricerca testuale
                 if (!string.IsNullOrEmpty(search))
@@ -56,7 +56,7 @@ namespace AiDbMaster.Controllers
                     query = query.Where(c => 
                         c.CodiceCliente.ToString().Contains(search) ||
                         c.RagioneSociale.Contains(search) ||
-                        (c.DescrizioneAggiuntiva != null && c.DescrizioneAggiuntiva.Contains(search)) ||
+                        (c.DescrizioneUlteriore != null && c.DescrizioneUlteriore.Contains(search)) ||
                         (c.CodiceFiscale != null && c.CodiceFiscale.Contains(search)) ||
                         (c.PartitaIva != null && c.PartitaIva.Contains(search)) ||
                         (c.Citta != null && c.Citta.Contains(search)));
@@ -65,7 +65,7 @@ namespace AiDbMaster.Controllers
                 // Filtro per tipo anagrafica
                 if (!string.IsNullOrEmpty(tipoAnagrafica))
                 {
-                    query = query.Where(c => c.TipoAnagrafica == tipoAnagrafica);
+                    query = query.Where(c => c.Tipo == tipoAnagrafica);
                 }
 
                 // Filtro per provincia
@@ -81,12 +81,14 @@ namespace AiDbMaster.Controllers
                     "codice_desc" => query.OrderByDescending(c => c.CodiceCliente),
                     "ragione" => query.OrderBy(c => c.RagioneSociale),
                     "ragione_desc" => query.OrderByDescending(c => c.RagioneSociale),
-                    "tipo" => query.OrderBy(c => c.TipoAnagrafica).ThenBy(c => c.CodiceCliente),
-                    "tipo_desc" => query.OrderByDescending(c => c.TipoAnagrafica).ThenBy(c => c.CodiceCliente),
+                    "tipo" => query.OrderBy(c => c.Tipo).ThenBy(c => c.CodiceCliente),
+                    "tipo_desc" => query.OrderByDescending(c => c.Tipo).ThenBy(c => c.CodiceCliente),
                     "citta" => query.OrderBy(c => c.Citta).ThenBy(c => c.CodiceCliente),
                     "citta_desc" => query.OrderByDescending(c => c.Citta).ThenBy(c => c.CodiceCliente),
                     "provincia" => query.OrderBy(c => c.Provincia).ThenBy(c => c.CodiceCliente),
                     "provincia_desc" => query.OrderByDescending(c => c.Provincia).ThenBy(c => c.CodiceCliente),
+                    "agente" => query.OrderBy(c => c.Agente!.DescrizioneAgente ?? c.CodiceAgente.ToString()).ThenBy(c => c.CodiceCliente),
+                    "agente_desc" => query.OrderByDescending(c => c.Agente!.DescrizioneAgente ?? c.CodiceAgente.ToString()).ThenBy(c => c.CodiceCliente),
                     _ => query.OrderBy(c => c.CodiceCliente)
                 };
 
@@ -111,8 +113,8 @@ namespace AiDbMaster.Controllers
 
                 // Lista dei tipi anagrafica per il filtro dropdown
                 ViewBag.TipiAnagrafica = await _context.AnagraficaClienti
-                    .Where(c => c.TipoAnagrafica != null && c.TipoAnagrafica != "")
-                    .Select(c => c.TipoAnagrafica)
+                    .Where(c => c.Tipo != null && c.Tipo != "")
+                    .Select(c => c.Tipo)
                     .Distinct()
                     .OrderBy(t => t)
                     .ToListAsync();
@@ -148,6 +150,7 @@ namespace AiDbMaster.Controllers
             try
             {
                 var cliente = await _context.AnagraficaClienti
+                    .Include(c => c.Agente)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (cliente == null)
@@ -185,9 +188,9 @@ namespace AiDbMaster.Controllers
                     {
                         c.Id,
                         c.CodiceCliente,
-                        c.TipoAnagrafica,
+                        c.Tipo,
                         c.RagioneSociale,
-                        c.DescrizioneAggiuntiva,
+                        c.DescrizioneUlteriore,
                         c.Indirizzo,
                         c.Cap,
                         c.Citta,
@@ -195,7 +198,6 @@ namespace AiDbMaster.Controllers
                         c.CodiceFiscale,
                         c.PartitaIva,
                         c.Telefono,
-                        c.FaxTelex,
                         c.CodiceAgente,
                         IndirizzoCompleto = c.IndirizzoCompleto,
                         NomeCompleto = c.NomeCompleto

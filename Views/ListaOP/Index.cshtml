@@ -211,7 +211,7 @@
                                     <td>
                                         @if (ordine.Lavorazione != null)
                                         {
-                                            @if (!string.IsNullOrEmpty(ordine.Lavorazione.CodiceLavorazione))
+                                            @if (ordine.Lavorazione.CodiceLavorazione > 0)
                                             {
                                                 <span class="badge bg-info me-1">@ordine.Lavorazione.CodiceLavorazione</span>
                                             }

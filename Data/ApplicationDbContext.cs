@@ -30,6 +30,7 @@ namespace AiDbMaster.Data
         public DbSet<CentroLavoro> CentriLavoro { get; set; }
         public DbSet<ListaOP> ListaOP { get; set; }
         public DbSet<Lavorazioni> Lavorazioni { get; set; }
+        public DbSet<CalendarioFermiCentriLavoro> CalendarioFermiCentriLavoro { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -78,13 +79,6 @@ namespace AiDbMaster.Data
                 .WithMany()
                 .HasForeignKey(o => o.CodiceAgente)
                 .HasPrincipalKey(a => a.CodiceAgente)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder.Entity<OrdiniTestate>()
-                .HasOne(o => o.Magazzino)
-                .WithMany()
-                .HasForeignKey(o => o.CodiceMagazzino)
-                .HasPrincipalKey(m => m.CodiceMagazzino)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configurazione delle relazioni per OrdiniRighe
@@ -155,43 +149,7 @@ namespace AiDbMaster.Data
                 .HasColumnType("decimal(18,4)");
 
             builder.Entity<OrdiniRighe>()
-                .Property(r => r.ColliPrenotati)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.QuantitaPrenotata)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
                 .Property(r => r.Prezzo)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.Sconto1)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.Sconto2)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.Sconto3)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.Provvigione)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.PrezzoConIva)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.PrezzoValuta)
-                .HasColumnType("decimal(18,4)");
-
-            builder.Entity<OrdiniRighe>()
-                .Property(r => r.PrezzoListino)
                 .HasColumnType("decimal(18,4)");
 
             builder.Entity<OrdiniRighe>()
@@ -232,11 +190,6 @@ namespace AiDbMaster.Data
 
             // Configurazione CentroLavoro
             builder.Entity<CentroLavoro>()
-                .HasIndex(c => c.CodiceCentro)
-                .IsUnique()
-                .HasDatabaseName("IX_CentriLavoro_CodiceCentro");
-
-            builder.Entity<CentroLavoro>()
                 .HasIndex(c => c.DescrizioneCentro)
                 .HasDatabaseName("IX_CentriLavoro_DescrizioneCentro");
 
@@ -246,18 +199,35 @@ namespace AiDbMaster.Data
 
             // Configurazione Lavorazioni
             builder.Entity<Lavorazioni>()
-                .HasIndex(l => l.CodiceLavorazione)
-                .IsUnique()
-                .HasDatabaseName("IX_Lavorazioni_CodiceLavorazione")
-                .HasFilter("[CodiceLavorazione] IS NOT NULL");
-
-            builder.Entity<Lavorazioni>()
                 .HasIndex(l => l.Attivo)
                 .HasDatabaseName("IX_Lavorazioni_Attivo");
 
             builder.Entity<Lavorazioni>()
                 .HasIndex(l => l.DescrizioneLavorazione)
                 .HasDatabaseName("IX_Lavorazioni_DescrizioneLavorazione");
+
+            // Configurazione CalendarioFermiCentriLavoro
+            builder.Entity<CalendarioFermiCentriLavoro>()
+                .HasOne(cf => cf.CentroLavoro)
+                .WithMany()
+                .HasForeignKey(cf => cf.CodiceCentro)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CalendarioFermiCentriLavoro>()
+                .HasIndex(cf => cf.CodiceCentro)
+                .HasDatabaseName("IX_CalendarioFermiCentriLavoro_CodiceCentro");
+
+            builder.Entity<CalendarioFermiCentriLavoro>()
+                .HasIndex(cf => cf.DataInizioFermo)
+                .HasDatabaseName("IX_CalendarioFermiCentriLavoro_DataInizioFermo");
+
+            builder.Entity<CalendarioFermiCentriLavoro>()
+                .HasIndex(cf => cf.DataFineFermo)
+                .HasDatabaseName("IX_CalendarioFermiCentriLavoro_DataFineFermo");
+
+            builder.Entity<CalendarioFermiCentriLavoro>()
+                .HasIndex(cf => cf.TipoFermo)
+                .HasDatabaseName("IX_CalendarioFermiCentriLavoro_TipoFermo");
 
             // Configurazione ListaOP
             // Indice composito per identificazione ordine
@@ -277,8 +247,8 @@ namespace AiDbMaster.Data
 
             // Indice per centro di lavoro
             builder.Entity<ListaOP>()
-                .HasIndex(l => l.IdCentroLavoro)
-                .HasDatabaseName("IX_ListaOP_IdCentroLavoro");
+                .HasIndex(l => l.CodiceCentro)
+                .HasDatabaseName("IX_ListaOP_CodiceCentro");
 
             // Indice per operatore
             builder.Entity<ListaOP>()
@@ -287,8 +257,8 @@ namespace AiDbMaster.Data
 
             // Indice per lavorazione
             builder.Entity<ListaOP>()
-                .HasIndex(l => l.IdLavorazione)
-                .HasDatabaseName("IX_ListaOP_IdLavorazione");
+                .HasIndex(l => l.CodiceLavorazione)
+                .HasDatabaseName("IX_ListaOP_CodiceLavorazione");
 
             // Indice per priorità
             builder.Entity<ListaOP>()
@@ -316,13 +286,13 @@ namespace AiDbMaster.Data
             builder.Entity<ListaOP>()
                 .HasOne(l => l.CentroLavoro)
                 .WithMany(c => c.OrdiniProduzione)
-                .HasForeignKey(l => l.IdCentroLavoro)
+                .HasForeignKey(l => l.CodiceCentro)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<ListaOP>()
                 .HasOne(l => l.Lavorazione)
                 .WithMany(lav => lav.OrdiniProduzione)
-                .HasForeignKey(l => l.IdLavorazione)
+                .HasForeignKey(l => l.CodiceLavorazione)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configurazione dei tipi di dati per i campi decimal di ListaOP
@@ -352,64 +322,7 @@ namespace AiDbMaster.Data
             );
 
             // Seed data per Lavorazioni
-            builder.Entity<Lavorazioni>().HasData(
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 1, 
-                    CodiceLavorazione = "T", 
-                    DescrizioneLavorazione = "Taglio", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-30) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 2, 
-                    CodiceLavorazione = "F", 
-                    DescrizioneLavorazione = "Fresatura", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-25) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 3, 
-                    CodiceLavorazione = "T", 
-                    DescrizioneLavorazione = "Tornitura", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-20) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 4, 
-                    CodiceLavorazione = "S", 
-                    DescrizioneLavorazione = "Saldatura", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-15) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 5, 
-                    CodiceLavorazione = "A", 
-                    DescrizioneLavorazione = "Assemblaggio", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-10) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 6, 
-                    CodiceLavorazione = null, 
-                    DescrizioneLavorazione = "Controllo Qualità", 
-                    Attivo = true, 
-                    DataCreazione = DateTime.Now.AddDays(-5) 
-                },
-                new Lavorazioni 
-                { 
-                    IdLavorazione = 7, 
-                    CodiceLavorazione = "P", 
-                    DescrizioneLavorazione = "Verniciatura", 
-                    Attivo = false, 
-                    DataCreazione = DateTime.Now.AddDays(-50) 
-                }
-            );
+            // Nota: I dati di seed vengono ora gestiti tramite la migrazione per preservare i dati esistenti
         }
     }
 } 

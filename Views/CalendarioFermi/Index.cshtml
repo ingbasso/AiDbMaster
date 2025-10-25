@@ -1,0 +1,1274 @@
+@{
+    ViewData["Title"] = "Calendario Fermi Centri di Lavoro";
+    ViewBag.UseFluidContainer = true;
+    var centri = ViewBag.CentriLavoro as IEnumerable<dynamic>;
+}
+
+<!-- CSS Custom -->
+<style>
+    #schedule {
+        height: calc(100vh - 250px);
+        min-height: 600px;
+        width: 100%;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .e-schedule {
+        height: 100% !important;
+        min-height: 600px;
+    }
+    
+    .toolbar-buttons {
+        margin-bottom: 15px;
+    }
+    
+    /* Stili per timeline view */
+    .e-schedule .e-timeline-view .e-resource-left-td {
+        min-width: 200px !important;
+        width: 200px !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-left-indent-wrap {
+        width: 200px !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-resource-cells {
+        display: table-cell !important;
+        visibility: visible !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-content-table tbody tr {
+        display: table-row !important;
+        height: auto !important;
+        min-height: 60px;
+    }
+    
+    .resource-header-content {
+        padding: 12px;
+        font-weight: 600;
+    }
+    
+    .resource-name {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1.3rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+    }
+    
+    /* SUPER SPECIFICO: Forza dimensione nomi centri di lavoro */
+    #schedule .e-schedule .e-timeline-view .e-resource-cells,
+    #schedule .e-schedule .e-timeline-view .e-resource-cells *,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td *,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td * {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* Forza anche sugli span e div interni */
+    #schedule .e-schedule .e-resource-cells span,
+    #schedule .e-schedule .e-resource-cells div,
+    #schedule .e-schedule .e-left-indent-wrap span,
+    #schedule .e-schedule .e-left-indent-wrap div {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+    }
+    
+    /* Stili per eventi fermi - FORZA COLORE ROSSO FRIMA */
+    .e-schedule .e-appointment,
+    #schedule .e-schedule .e-appointment,
+    #schedule .e-appointment {
+        min-height: 50px !important;
+        height: auto !important;
+        padding: 8px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        cursor: move !important;
+        transition: all 0.2s ease !important;
+        background-color: #e74c3c !important;
+        border-color: #c0392b !important;
+        color: white !important;
+    }
+    
+    .e-schedule .e-appointment:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        transform: translateY(-2px);
+    }
+    
+    .e-schedule .e-appointment.e-drag-clone,
+    .e-schedule .e-appointment.e-dragging {
+        opacity: 0.7 !important;
+        cursor: grabbing !important;
+    }
+    
+    .e-schedule .e-appointment .e-subject,
+    #schedule .e-appointment .e-subject {
+        font-weight: bold !important;
+        margin-bottom: 4px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        color: white !important;
+    }
+    
+    /* Forza testo bianco per tutto il contenuto degli eventi */
+    .e-schedule .e-appointment *,
+    #schedule .e-appointment * {
+        color: white !important;
+    }
+    
+    /* Stili per resize handles */
+    .e-schedule .e-appointment .e-resize-handler {
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 2px solid rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Header styles per timeline - allineati allo Schedulatore */
+    #schedule .e-schedule .week-header-content,
+    .week-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 8px 4px !important;
+        background: linear-gradient(135deg, #e74c3c, #c0392b) !important; /* Rosso FRIMA come gli eventi */
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 0.9rem !important;
+        border-radius: 4px 4px 0 0 !important;
+    }
+    
+    #schedule .e-schedule .week-label,
+    .week-label {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+        color: white !important;
+    }
+    
+    #schedule .e-schedule .day-header-content,
+    .day-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 6px 4px !important;
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        min-width: 70px !important;
+    }
+    
+    #schedule .e-schedule .day-compact,
+    .day-compact {
+        font-weight: bold !important;
+        font-size: 0.9rem !important;
+        color: #495057 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    
+    #schedule .e-schedule .hour-header-content,
+    .hour-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 4px !important;
+        background: #ffffff !important;
+        border-right: 1px solid #e9ecef !important;
+        min-width: 60px !important;
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+        color: #495057 !important;
+    }
+    
+    #schedule .e-schedule .hour-label,
+    .hour-label {
+        font-family: 'Courier New', monospace !important;
+        color: #495057 !important;
+    }
+    
+    /* Fix z-index per modals Bootstrap - deve essere sopra Syncfusion */
+    .modal {
+        z-index: 100000 !important;
+    }
+    
+    /* NASCONDI COMPLETAMENTE IL BACKDROP */
+    .modal-backdrop {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    .modal-dialog {
+        z-index: 100001 !important;
+        margin-top: 100px !important; /* Sposta il modal più in basso per evitare sovrapposizione con header */
+    }
+    
+    .modal-content {
+        z-index: 100002 !important;
+        position: relative;
+        box-shadow: 0 5px 15px rgba(0,0,0,.5) !important;
+    }
+    
+    /* Assicura che lo scheduler non copra i modal */
+    .e-schedule,
+    .e-schedule-toolbar,
+    .e-schedule .e-content-wrap {
+        z-index: auto !important;
+    }
+    
+    /* Sfondo semi-trasparente per i modal (alternativa al backdrop) */
+    .modal.show {
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Responsive: su schermi piccoli riduci il margine superiore */
+    @@media (max-width: 768px) {
+        .modal-dialog {
+            margin-top: 60px !important;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="content-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-calendar-x me-2 text-danger"></i>Calendario Fermi Centri di Lavoro</h2>
+            <div>
+                <button type="button" class="btn btn-success" onclick="openGeneraWeekendModal()">
+                    <i class="bi bi-calendar-week me-1"></i> Genera Weekend
+                </button>
+                <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                    <i class="bi bi-plus-circle me-1"></i> Nuovo Fermo
+                </button>
+            </div>
+        </div>
+
+        <!-- Alert messaggi -->
+        <div id="alertContainer"></div>
+
+        <!-- Syncfusion Scheduler (div container) -->
+        <div id="schedule"></div>
+    </div>
+</div>
+
+<!-- Modal Crea/Modifica Fermo -->
+<div class="modal fade" id="fermoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="fermoModalTitle">Nuovo Fermo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fermoForm">
+                    <input type="hidden" id="fermoId" />
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="codiceCentro" class="form-label">Centro di Lavoro *</label>
+                            <select id="codiceCentro" class="form-select" required>
+                                <option value="">-- Seleziona Centro --</option>
+                                @if (centri != null)
+                                {
+                                    foreach (var centro in centri)
+                                    {
+                                        <option value="@centro.CodiceCentro">@centro.CodiceCentro - @centro.DescrizioneCentro</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="applicaATutti" />
+                                <label class="form-check-label" for="applicaATutti">
+                                    <strong>Applica a TUTTI i centri</strong>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="dataInizio" class="form-label">Data Inizio *</label>
+                            <input type="datetime-local" id="dataInizio" class="form-control" required />
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="dataFine" class="form-label">Data Fine</label>
+                            <input type="datetime-local" id="dataFine" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoFermo" class="form-label">Tipo Fermo *</label>
+                            <select id="tipoFermo" class="form-select" required>
+                                <option value="0">Week End</option>
+                                <option value="1">Festivo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="isPianificato" checked />
+                                <label class="form-check-label" for="isPianificato">
+                                    Fermo Pianificato
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="motivo" class="form-label">Motivo</label>
+                        <input type="text" id="motivo" class="form-control" maxlength="200" placeholder="Descrizione breve del fermo" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Note</label>
+                        <textarea id="note" class="form-control" rows="3" placeholder="Note aggiuntive"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" id="btnDeleteFermo" onclick="deleteFermo()" style="display:none;">
+                    <i class="bi bi-trash"></i> Elimina
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveFermo()">
+                    <i class="bi bi-save"></i> Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Genera Weekend -->
+<div class="modal fade" id="generaWeekendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Genera Weekend Automaticamente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generaWeekendForm">
+                    <div class="mb-3">
+                        <label for="weekendDataInizio" class="form-label">Data Inizio Periodo *</label>
+                        <input type="date" id="weekendDataInizio" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="weekendDataFine" class="form-label">Data Fine Periodo *</label>
+                        <input type="date" id="weekendDataFine" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="weekendMotivo" class="form-label">Motivo</label>
+                        <input type="text" id="weekendMotivo" class="form-control" value="Weekend" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="weekendApplicaATutti" checked />
+                            <label class="form-check-label" for="weekendApplicaATutti">
+                                <strong>Applica a tutti i centri</strong>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Verranno creati fermi per tutti i sabati e domeniche nel periodo selezionato.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-success" onclick="generaWeekend()">
+                    <i class="bi bi-calendar-week"></i> Genera
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template per header settimana -->
+<script id="weekHeaderTemplate" type="text/x-template">
+    <div class="week-header-content">
+        <span class="week-label">Week ${getWeekNumber(data.date)}</span>
+    </div>
+</script>
+
+<!-- Template per header giorno -->
+<script id="dayHeaderTemplate" type="text/x-template">
+    <div class="day-header-content">
+        <span class="day-compact">${data.date.getDate()} ${getDayNameShort(data.date)}</span>
+    </div>
+</script>
+
+<!-- Template per header ora -->
+<script id="hourHeaderTemplate" type="text/x-template">
+    <div class="hour-header-content">
+        <span class="hour-label">${formatHour(data.date)}</span>
+    </div>
+</script>
+
+<!-- Template per header risorse (centri di lavoro) -->
+<script id="resourceHeaderTemplate" type="text/x-template">
+    <div class="resource-header-content">
+        <span class="resource-name">${data.resourceData.Name}</span>
+    </div>
+</script>
+
+@section Scripts {
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+        } else {
+            console.warn('Syncfusion non ancora caricato');
+        }
+        
+        let scheduleObj;
+        let currentEventId = null;
+        let centriLavoro = [];
+        
+        // Colori per centri (stesso array del controller)
+        const coloriCentri = [
+            "#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6",
+            "#1abc9c", "#e67e22", "#34495e", "#16a085", "#c0392b"
+        ];
+
+        // Funzioni helper per template
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+
+        function getDayNameShort(date) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            const dayName = days[date.getDay()];
+            console.log(`getDayNameShort chiamata: ${date.toDateString()} -> ${dayName}`);
+            return dayName;
+        }
+
+        function formatHour(date) {
+            return String(date.getHours()).padStart(2, '0');
+        }
+
+        // Inizializzazione al caricamento della pagina
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM caricato');
+            
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+                console.log('Licenza Syncfusion registrata');
+                
+                // Carica localizzazione italiana minima
+                if (ej.base.L10n) {
+                    ej.base.L10n.load({
+                        'it': {
+                            'schedule': {
+                                'day': 'Giorno',
+                                'week': 'Settimana',
+                                'month': 'Mese',
+                                'today': 'Oggi'
+                            }
+                        }
+                    });
+                }
+                console.log('Localizzazione italiana caricata');
+            } else {
+                console.error('Syncfusion EJ2 non caricato!');
+            }
+            
+            // Carica prima i centri di lavoro
+            await loadCentriLavoro();
+            
+            // Crea lo scheduler manualmente
+            setTimeout(() => {
+                try {
+                    console.log('Creazione scheduler...');
+                    
+                    // Verifica che Syncfusion sia disponibile
+                    if (typeof ej === 'undefined' || !ej.schedule || !ej.schedule.Schedule) {
+                        console.error('ej.schedule.Schedule non disponibile');
+                        showAlert('Errore: Libreria Syncfusion non caricata', 'danger');
+                        return;
+                    }
+                    
+                    // Verifica che ci siano centri di lavoro
+                    if (!centriLavoro || centriLavoro.length === 0) {
+                        console.warn('Impossibile creare lo scheduler: nessun centro di lavoro disponibile');
+                        showAlert(
+                            '<strong>Impossibile visualizzare il calendario</strong><br>' +
+                            'Non ci sono centri di lavoro attivi. Per favore:<br>' +
+                            '1. Vai su <a href="/CentriLavoro" class="alert-link">Gestione Centri di Lavoro</a><br>' +
+                            '2. Assicurati che almeno un centro di lavoro abbia <strong>Attivo = Sì</strong><br>' +
+                            '3. Ricarica questa pagina',
+                            'warning'
+                        );
+                        return;
+                    }
+                    
+                    // Configura le risorse (centri di lavoro)
+                    // IMPORTANTE: usa camelCase perché ASP.NET Core serializza in camelCase
+                    const resourceDataSource = centriLavoro.map(centro => ({
+                        Id: centro.id,      // camelCase dal JSON
+                        Name: centro.name,   // camelCase dal JSON
+                        Color: centro.color  // camelCase dal JSON
+                    }));
+
+                    console.log('Resources configurate:', resourceDataSource);
+                    console.log(`Numero di centri: ${resourceDataSource.length}`);
+                    
+                    // Crea istanza Schedule con visualizzazione Timeline
+                    scheduleObj = new ej.schedule.Schedule({
+                        width: '100%',
+                        height: '100%',
+                        currentView: 'TimelineWeek',
+                        selectedDate: new Date(),
+                        showQuickInfo: false,
+                        // Abilita drag & drop e resize
+                        allowDragAndDrop: true,
+                        allowResizing: true,
+                        views: [
+                            { 
+                                option: 'TimelineDay',
+                                displayName: 'Giorno',
+                                isSelected: false,
+                                timeScale: {
+                                    enable: true,
+                                    interval: 60,
+                                    slotCount: 1
+                                }
+                            },
+                            { 
+                                option: 'TimelineWeek',
+                                displayName: 'Settimana',
+                                isSelected: false,
+                                timeScale: {
+                                    enable: true,
+                                    interval: 480,
+                                    slotCount: 1
+                                }
+                            },
+                            { 
+                                option: 'TimelineWeek',
+                                displayName: '2 Settimane',
+                                isSelected: true,
+                                interval: 2,
+                                timeScale: {
+                                    enable: true,
+                                    interval: 480,  // 8 ore per vista 2 settimane
+                                    slotCount: 1
+                                }
+                            },
+                            { 
+                                option: 'TimelineMonth',
+                                displayName: '4 Settimane',
+                                isSelected: false,
+                                interval: 4,
+                                timeScale: {
+                                    enable: true,
+                                    interval: 480,  // 8 ore per vista 2 settimane
+                                    slotCount: 1
+                                }
+                            }
+                        ],
+                        eventSettings: {
+                            dataSource: [],
+                            fields: {
+                                id: 'Id',
+                                subject: { name: 'Subject' },
+                                startTime: { name: 'StartTime' },
+                                endTime: { name: 'EndTime' },
+                                description: { name: 'Description' }
+                            }
+                        },
+                        group: {
+                            resources: ['Rooms']
+                        },
+                        resources: [{
+                            field: 'RoomId',
+                            title: 'Centro di Lavoro',
+                            name: 'Rooms',
+                            allowMultiple: false,
+                            dataSource: resourceDataSource,
+                            textField: 'Name',
+                            idField: 'Id',
+                            colorField: 'Color'
+                        }],
+                        timeScale: {
+                            enable: true,
+                            interval: 480,
+                            slotCount: 1
+                        },
+                        workHours: {
+                            highlight: false,
+                            start: '00:00',
+                            end: '23:59'
+                        },
+                        startHour: '00:00',
+                        endHour: '23:59',
+                        timeFormat: 'HH:mm',
+                        dateFormat: 'dd/MM/yyyy',
+                        firstDayOfWeek: 1,  // Inizia la settimana di lunedì (0=domenica, 1=lunedì)
+                        showWeekNumber: true,
+                        rowAutoHeight: true,
+                        allowMultipleResource: false,
+                        allowOverlap: true,
+                        allowQuickInfo: false,
+                        showQuickInfo: false,
+                        readonly: false,
+                        showHeaderBar: true,
+                        showTimeIndicator: true,
+                        headerRows: [
+                            { 
+                                option: 'Week',
+                                template: '#weekHeaderTemplate'
+                            },
+                            { 
+                                option: 'Date',
+                                template: '#dayHeaderTemplate'
+                            },
+                            { 
+                                option: 'Hour',
+                                template: '#hourHeaderTemplate'
+                            }
+                        ],
+                        // Eventi per forzare gli stili dopo ogni rendering
+                        navigating: function(args) {
+                            setTimeout(() => forzaStiliCentriLavoro(), 100);
+                        },
+                        dataBound: function(args) {
+                            setTimeout(() => forzaStiliCentriLavoro(), 100);
+                        },
+                        eventClick: onEventClick,
+                        cellClick: onCellClick,
+                        dragStop: onDragStop,
+                        resizeStop: onResizeStop,
+                        eventRendered: onEventRendered
+                    });
+                    
+                    // Appendi al DOM
+                    scheduleObj.appendTo('#schedule');
+                    console.log('✅ Scheduler creato con successo');
+                    console.log(`   📊 ${scheduleObj.resources[0].dataSource.length} centri configurati come risorse`);
+                    console.log(`   👁️ Vista corrente: ${scheduleObj.currentView}`);
+                    
+                    // Forza lo stile dei nomi dei centri dopo il rendering
+                    setTimeout(() => {
+                        forzaStiliCentriLavoro();
+                    }, 1000);
+                    
+                    // Carica dati fermi
+                    loadFermi();
+                    
+                } catch (error) {
+                    console.error('Errore creazione scheduler:', error);
+                    showAlert('Errore durante la creazione del calendario: ' + error.message, 'danger');
+                }
+            }, 500);
+            
+            // Imposta date default per genera weekend (mese corrente)
+            const oggi = new Date();
+            document.getElementById('weekendDataInizio').value = oggi.toISOString().split('T')[0];
+            const fineMese = new Date(oggi.getFullYear(), oggi.getMonth() + 1, 0);
+            document.getElementById('weekendDataFine').value = fineMese.toISOString().split('T')[0];
+            console.log('Date default impostate');
+        });
+
+        // Forza gli stili dei nomi dei centri di lavoro con JavaScript diretto
+        function forzaStiliCentriLavoro() {
+            console.log('🎨 Forzatura stili nomi centri di lavoro...');
+            
+            // Trova tutte le celle delle risorse (nomi centri)
+            const celleRisorse = document.querySelectorAll(
+                '.e-schedule .e-resource-cells, ' +
+                '.e-schedule .e-left-indent-wrap td, ' +
+                '.e-schedule .e-resource-left-td'
+            );
+            
+            console.log(`   Trovate ${celleRisorse.length} celle risorsa`);
+            
+            celleRisorse.forEach(cella => {
+                // Applica stili inline (hanno la precedenza su tutto)
+                cella.style.fontSize = '1.1rem';
+                cella.style.fontWeight = '700';
+                cella.style.color = '#2c3e50';
+                cella.style.lineHeight = '1.4';
+                
+                // Applica anche a tutti i figli
+                const figli = cella.querySelectorAll('*');
+                figli.forEach(figlio => {
+                    figlio.style.fontSize = '1.1rem';
+                    figlio.style.fontWeight = '700';
+                    figlio.style.color = '#2c3e50';
+                });
+            });
+            
+            console.log('✅ Stili forzati applicati');
+        }
+        
+        // Carica centri di lavoro
+        async function loadCentriLavoro() {
+            try {
+                console.log('Caricamento centri di lavoro...');
+                const response = await fetch('@Url.Action("GetCentriLavoro", "CalendarioFermi")');
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Dati ricevuti:', data);
+                
+                if (data.error) {
+                    throw new Error(`Errore server: ${data.message}`);
+                }
+                
+                // Verifica se data è un array
+                if (!Array.isArray(data)) {
+                    console.error('I dati ricevuti non sono un array:', data);
+                    throw new Error('Formato dati non valido');
+                }
+                
+                centriLavoro = data;
+                console.log(`✅ Caricati ${centriLavoro.length} centri di lavoro:`, 
+                    centriLavoro.map(c => `${c.id} - ${c.name}`).join(', '));
+                
+                if (centriLavoro.length === 0) {
+                    console.warn('⚠️ NESSUN CENTRO DI LAVORO ATTIVO TROVATO!');
+                    showAlert(
+                        '<strong>Attenzione!</strong> Non ci sono centri di lavoro attivi nel database. ' +
+                        'Vai su <a href="/CentriLavoro" class="alert-link">Gestione Centri di Lavoro</a> per attivarne almeno uno.',
+                        'warning'
+                    );
+                }
+            } catch (error) {
+                console.error('Errore nel caricamento dei centri di lavoro:', error);
+                showAlert(
+                    '<strong>Errore!</strong> ' + error.message + 
+                    '<br>Controlla la console del browser (F12) per dettagli.',
+                    'danger'
+                );
+                centriLavoro = []; // Assicurati che sia un array vuoto
+            }
+        }
+
+        // Carica fermi dal server
+        async function loadFermi() {
+            console.log('📅 Caricamento fermi...');
+            try {
+                const response = await fetch('@Url.Action("GetFermi", "CalendarioFermi")');
+                const fermiFetch = await response.json();
+                
+                if (fermiFetch.length > 0) {
+                    // DEBUG: mostra struttura primo fermo
+                    console.log('📋 Primo fermo ricevuto dal server:', fermiFetch[0]);
+                    console.log('   Chiavi disponibili:', Object.keys(fermiFetch[0]));
+                    
+                    // usa camelCase per leggere codiceCentro
+                    const centriConFermi = [...new Set(fermiFetch.map(f => f.codiceCentro))].filter(Boolean);
+                    console.log(`✅ Caricati ${fermiFetch.length} fermi per i centri:`, centriConFermi.join(', '));
+                } else {
+                    console.log('ℹ️ Nessun fermo nel database (situazione pulita)');
+                    console.log(`   Centri disponibili: ${centriLavoro.map(c => c.id).join(', ')}`);
+                }
+                
+                // Mappa gli eventi includendo RoomId per la visualizzazione timeline
+                // IMPORTANTE: ASP.NET Core serializza in camelCase, quindi usiamo lowercase
+                const eventi = fermiFetch.map(fermo => ({
+                    Id: fermo.id,
+                    Subject: fermo.subject,
+                    StartTime: new Date(fermo.startTime),
+                    EndTime: new Date(fermo.endTime),
+                    Description: fermo.description,
+                    CategoryColor: fermo.categoryColor,
+                    RoomId: fermo.codiceCentro, // IMPORTANTE: mappa codiceCentro a RoomId per le risorse
+                    CodiceCentro: fermo.codiceCentro,
+                    DescrizioneCentro: fermo.descrizioneCentro,
+                    TipoFermo: fermo.tipoFermo,
+                    IsPianificato: fermo.isPianificato,
+                    StatoFermo: fermo.statoFermo
+                }));
+                
+                if (scheduleObj) {
+                    // Aggiorna data source dello scheduler
+                    scheduleObj.eventSettings.dataSource = eventi;
+                    
+                    // FORZA IL REFRESH DELLO SCHEDULER
+                    scheduleObj.refreshEvents();
+                    console.log(`✅ Scheduler aggiornato con ${eventi.length} fermi`);
+                } else {
+                    console.error('scheduleObj non disponibile');
+                }
+                
+            } catch (error) {
+                console.error('Errore caricamento fermi:', error);
+                showAlert('Errore durante il caricamento dei fermi', 'danger');
+            }
+        }
+
+        // Personalizza il rendering degli eventi
+        function onEventRendered(args) {
+            const eventData = args.data;
+            
+            // Forza sempre il colore rosso FRIMA per tutti gli eventi
+            const coloreRossoFRIMA = '#e74c3c';
+            const coloreBordo = '#c0392b';
+            
+            console.log(`🎨 Rendering evento: ${eventData.Subject} - Colore: ${coloreRossoFRIMA}`);
+            
+            // Usa setProperty con 'important' per forzare i colori
+            args.element.style.setProperty('background-color', coloreRossoFRIMA, 'important');
+            args.element.style.setProperty('border-color', coloreBordo, 'important');
+            args.element.style.setProperty('color', 'white', 'important');
+            
+            // Aggiungi icona per tipo fermo
+            const tipoFermo = eventData.TipoFermo;
+            let icon = '';
+            if (tipoFermo === 'WeekEnd') {
+                icon = '<i class="bi bi-calendar-x me-1"></i>';
+            } else if (tipoFermo === 'Festivo') {
+                icon = '<i class="bi bi-calendar-event me-1"></i>';
+            }
+            
+            // Aggiungi icona al subject
+            const subjectElement = args.element.querySelector('.e-subject');
+            if (subjectElement && icon) {
+                subjectElement.innerHTML = icon + subjectElement.innerHTML;
+            }
+            
+            // Verifica colore applicato
+            console.log(`   ✅ Colore applicato: bg=${args.element.style.backgroundColor}, border=${args.element.style.borderColor}`);
+        }
+
+        // Click su cella vuota -> crea nuovo
+        function onCellClick(args) {
+            if (!args.element.classList.contains('e-work-cells')) return;
+            
+            // Ottieni il centro di lavoro dalla risorsa (riga) cliccata
+            const centroId = args.groupIndex !== undefined ? centriLavoro[args.groupIndex]?.id : null;
+            openCreateModal(args.startTime, centroId);
+        }
+
+        // Click su evento esistente
+        function onEventClick(args) {
+            args.cancel = true; // Previeni popup default
+            openEditModal(args.event);
+        }
+
+        // Drag & Drop terminato
+        async function onDragStop(args) {
+            const evento = args.data;
+            
+            try {
+                // RoomId contiene il nuovo centro di lavoro dopo il drag
+                const nuovoCentro = evento.RoomId || evento.CodiceCentro;
+                
+                console.log('🔄 Drag completato - Evento:', evento.Id, 'Nuovo Centro:', nuovoCentro);
+                console.log('   Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
+                console.log('   Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
+                
+                const response = await fetch(`@Url.Action("UpdateFermo", "CalendarioFermi")/${evento.Id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: evento.Id,
+                        codiceCentro: nuovoCentro, // Usa il nuovo centro dopo il drag
+                        dataInizioFermo: evento.StartTime,
+                        dataFineFermo: evento.EndTime,
+                        tipoFermo: evento.TipoFermo === 'WeekEnd' ? 0 : 1,
+                        motivo: evento.Subject.split(':')[1]?.trim() || evento.Subject,
+                        note: evento.Description,
+                        isPianificato: evento.IsPianificato
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Ricarica i fermi per aggiornare la visualizzazione (senza banner)
+                    setTimeout(() => loadFermi(), 300);
+                } else {
+                    // Mostra errore solo se fallisce
+                    showAlert('❌ ' + (result.message || 'Errore nello spostamento'), 'danger');
+                    loadFermi(); // Ricarica per annullare le modifiche
+                }
+            } catch (error) {
+                console.error('Errore aggiornamento fermo:', error);
+                showAlert('❌ Errore durante lo spostamento: ' + error.message, 'danger');
+                loadFermi();
+            }
+        }
+
+        // Resize terminato
+        async function onResizeStop(args) {
+            const evento = args.data;
+            
+            try {
+                console.log('↔️ Resize completato - Evento:', evento.Id);
+                console.log('   Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
+                console.log('   Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
+                
+                const response = await fetch(`@Url.Action("UpdateFermo", "CalendarioFermi")/${evento.Id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: evento.Id,
+                        codiceCentro: evento.RoomId || evento.CodiceCentro,
+                        dataInizioFermo: evento.StartTime,
+                        dataFineFermo: evento.EndTime,
+                        tipoFermo: evento.TipoFermo === 'WeekEnd' ? 0 : 1,
+                        motivo: evento.Subject.split(':')[1]?.trim() || evento.Subject,
+                        note: evento.Description,
+                        isPianificato: evento.IsPianificato
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Ricarica i fermi per aggiornare la visualizzazione (senza banner)
+                    setTimeout(() => loadFermi(), 300);
+                } else {
+                    // Mostra errore solo se fallisce
+                    showAlert('❌ ' + (result.message || 'Errore nella modifica durata'), 'danger');
+                    loadFermi();
+                }
+            } catch (error) {
+                console.error('Errore resize fermo:', error);
+                showAlert('❌ Errore durante il ridimensionamento: ' + error.message, 'danger');
+                loadFermi();
+            }
+        }
+
+        // Apri modal creazione
+        function openCreateModal(startDate = null, centroId = null) {
+            currentEventId = null;
+            document.getElementById('fermoModalTitle').textContent = 'Nuovo Fermo';
+            document.getElementById('fermoForm').reset();
+            document.getElementById('fermoId').value = '';
+            document.getElementById('btnDeleteFermo').style.display = 'none';
+            
+            if (startDate) {
+                const dataStr = formatDateTimeLocal(startDate);
+                document.getElementById('dataInizio').value = dataStr;
+            }
+            
+            // Preimposta il centro di lavoro se fornito
+            if (centroId) {
+                document.getElementById('codiceCentro').value = centroId;
+            }
+            
+            // Rimuovi TUTTI i backdrop esistenti
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            
+            const modalElement = document.getElementById('fermoModal');
+            
+            // Distruggi istanza esistente se presente
+            let modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.dispose();
+            }
+            
+            // Crea nuova istanza SENZA backdrop
+            modal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: true,
+                focus: true
+            });
+            
+            modal.show();
+            
+            // Rimuovi backdrop dopo apertura
+            setTimeout(() => {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.style.display = 'none';
+                });
+            }, 100);
+        }
+
+        // Apri modal modifica
+        function openEditModal(evento) {
+            currentEventId = evento.Id;
+            document.getElementById('fermoModalTitle').textContent = 'Modifica Fermo';
+            document.getElementById('fermoId').value = evento.Id;
+            document.getElementById('codiceCentro').value = evento.CodiceCentro;
+            document.getElementById('dataInizio').value = formatDateTimeLocal(evento.StartTime);
+            document.getElementById('dataFine').value = formatDateTimeLocal(evento.EndTime);
+            document.getElementById('tipoFermo').value = evento.TipoFermo === 'WeekEnd' ? 0 : 1;
+            document.getElementById('motivo').value = evento.Subject.split(':')[1]?.trim() || '';
+            document.getElementById('note').value = evento.Description || '';
+            document.getElementById('isPianificato').checked = evento.IsPianificato;
+            document.getElementById('applicaATutti').checked = false;
+            document.getElementById('btnDeleteFermo').style.display = 'block';
+            
+            // Rimuovi TUTTI i backdrop esistenti
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            
+            const modalElement = document.getElementById('fermoModal');
+            
+            // Distruggi istanza esistente se presente
+            let modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.dispose();
+            }
+            
+            // Crea nuova istanza SENZA backdrop
+            modal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: true,
+                focus: true
+            });
+            
+            modal.show();
+            
+            // Rimuovi backdrop dopo apertura
+            setTimeout(() => {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.style.display = 'none';
+                });
+            }, 100);
+        }
+
+        // Salva fermo (crea o aggiorna)
+        async function saveFermo() {
+            const id = document.getElementById('fermoId').value;
+            const isEdit = id !== '';
+            
+            const data = {
+                id: isEdit ? parseInt(id) : null,
+                codiceCentro: document.getElementById('codiceCentro').value,
+                dataInizioFermo: document.getElementById('dataInizio').value,
+                dataFineFermo: document.getElementById('dataFine').value || null,
+                tipoFermo: parseInt(document.getElementById('tipoFermo').value),
+                motivo: document.getElementById('motivo').value,
+                note: document.getElementById('note').value,
+                isPianificato: document.getElementById('isPianificato').checked,
+                applicaATuttiICentri: document.getElementById('applicaATutti').checked
+            };
+            
+            // Validazione base
+            if (!data.codiceCentro && !data.applicaATuttiICentri) {
+                showAlert('Seleziona un centro o spunta "Applica a tutti i centri"', 'warning');
+                return;
+            }
+            
+            try {
+                const url = isEdit 
+                    ? `@Url.Action("UpdateFermo", "CalendarioFermi")/${id}`
+                    : '@Url.Action("CreateFermo", "CalendarioFermi")';
+                
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                console.log('Invio dati:', data);
+                console.log('URL:', url, 'Method:', method);
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (result.success) {
+                    const message = result.message || 'Fermo salvato con successo';
+                    
+                    // Chiudi il modal prima di mostrare l'alert (per evitare warning ARIA)
+                    const modalElement = document.getElementById('fermoModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Mostra alert e ricarica dopo la chiusura del modal
+                    setTimeout(() => {
+                        showAlert(message, 'success');
+                        loadFermi();
+                    }, 200);
+                } else {
+                    const message = result.message || 'Errore durante il salvataggio';
+                    showAlert(message, 'danger');
+                }
+            } catch (error) {
+                console.error('Errore salvataggio:', error);
+                showAlert('Errore durante il salvataggio: ' + error.message, 'danger');
+            }
+        }
+
+        // Elimina fermo
+        async function deleteFermo() {
+            if (!confirm('Sei sicuro di voler eliminare questo fermo?')) return;
+            
+            const id = document.getElementById('fermoId').value;
+            
+            try {
+                const response = await fetch(`@Url.Action("DeleteFermo", "CalendarioFermi")/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('fermoModal')).hide();
+                    loadFermi();
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Errore eliminazione:', error);
+                showAlert('Errore durante l\'eliminazione', 'danger');
+            }
+        }
+
+        // Apri modal genera weekend
+        function openGeneraWeekendModal() {
+            console.log('Apertura modal genera weekend...');
+            try {
+                const modalElement = document.getElementById('generaWeekendModal');
+                console.log('Modal element:', modalElement);
+                
+                // Rimuovi TUTTI i backdrop esistenti
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                
+                // Distruggi istanza esistente se presente
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.dispose();
+                }
+                
+                // Crea nuova istanza SENZA backdrop
+                modal = new bootstrap.Modal(modalElement, {
+                    backdrop: 'static',  // Backdrop statico (non si chiude cliccando fuori)
+                    keyboard: true,
+                    focus: true
+                });
+                
+                modal.show();
+                console.log('Modal aperto');
+                
+                // Rimuovi backdrop dopo apertura (workaround)
+                setTimeout(() => {
+                    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                        backdrop.style.display = 'none';
+                    });
+                }, 100);
+            } catch (error) {
+                console.error('Errore apertura modal:', error);
+            }
+        }
+
+        // Genera weekend automaticamente
+        async function generaWeekend() {
+            const data = {
+                dataInizio: document.getElementById('weekendDataInizio').value,
+                dataFine: document.getElementById('weekendDataFine').value,
+                motivo: document.getElementById('weekendMotivo').value,
+                applicaATutti: document.getElementById('weekendApplicaATutti').checked,
+                centriSelezionati: []
+            };
+            
+            if (!data.dataInizio || !data.dataFine) {
+                showAlert('Seleziona date inizio e fine', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('@Url.Action("GeneraWeekend", "CalendarioFermi")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`${result.message}`, 'success');
+                    
+                    // Chiudi modal correttamente
+                    const modalElement = document.getElementById('generaWeekendModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Ricarica eventi calendario
+                    console.log('Ricarico calendario dopo generazione weekend...');
+                    await loadFermi();
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Errore generazione weekend:', error);
+                showAlert('Errore durante la generazione dei weekend', 'danger');
+            }
+        }
+
+        // Formatta data per input datetime-local
+        function formatDateTimeLocal(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        // Mostra alert
+        function showAlert(message, type = 'info') {
+            // Gestisci casi in cui message è undefined o null
+            if (!message || message === 'undefined') {
+                message = 'Operazione completata';
+                console.warn('showAlert chiamato con messaggio undefined');
+            }
+            
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.getElementById('alertContainer').innerHTML = alertHtml;
+            
+            // Auto-dismiss dopo 5 secondi
+            setTimeout(() => {
+                const alert = document.querySelector('#alertContainer .alert');
+                if (alert) {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }
+            }, 5000);
+        }
+    </script>
+}

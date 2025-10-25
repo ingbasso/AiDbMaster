@@ -64,7 +64,6 @@ namespace AiDbMaster.Controllers
                 var query = _context.OrdiniTestate
                     .Include(o => o.Cliente)
                     .Include(o => o.Agente)
-                    .Include(o => o.Magazzino)
                     .Include(o => o.Righe)
                     .AsQueryable();
 
@@ -74,9 +73,9 @@ namespace AiDbMaster.Controllers
                     query = query.Where(o => 
                         o.NumeroOrdine.ToString().Contains(search) ||
                         o.SerieOrdine.Contains(search) ||
-                        (o.Riferimento != null && o.Riferimento.Contains(search)) ||
+                        (o.RiferimentoOrdine != null && o.RiferimentoOrdine.Contains(search)) ||
                         (o.Cliente != null && o.Cliente.RagioneSociale != null && o.Cliente.RagioneSociale.Contains(search)) ||
-                        (o.Note != null && o.Note.Contains(search)));
+                        (o.NoteTestata != null && o.NoteTestata.Contains(search)));
                 }
 
                 // Filtro per tipo ordine
@@ -203,8 +202,7 @@ namespace AiDbMaster.Controllers
                         OrdiniConConsegna = g.Count(o => o.DataConsegna.HasValue),
                         OrdiniScaduti = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date < dataOggi),
                         OrdiniInScadenza = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date == dataOggi),
-                        ValoreTotale = g.SelectMany(o => o.Righe).Sum(r => r.ValoreRiga),
-                        ColliTotali = g.Sum(o => o.TotaleColli)
+                        ValoreTotale = g.SelectMany(o => o.Righe).Sum(r => r.ValoreRiga)
                     })
                     .FirstOrDefaultAsync();
 
@@ -241,7 +239,6 @@ namespace AiDbMaster.Controllers
                 var ordine = await _context.OrdiniTestate
                     .Include(o => o.Cliente)
                     .Include(o => o.Agente)
-                    .Include(o => o.Magazzino)
                     .Include(o => o.Righe)
                         .ThenInclude(r => r.Articolo)
                     .Include(o => o.Righe)
@@ -308,7 +305,6 @@ namespace AiDbMaster.Controllers
                 var ordini = await _context.OrdiniTestate
                     .Include(o => o.Cliente)
                     .Include(o => o.Agente)
-                    .Include(o => o.Magazzino)
                     .OrderByDescending(o => o.DataOrdine)
                     .Select(o => new
                     {
@@ -324,11 +320,8 @@ namespace AiDbMaster.Controllers
                         RagioneSocialeCliente = o.Cliente != null ? o.Cliente.RagioneSociale : null,
                         o.CodiceAgente,
                         DescrizioneAgente = o.Agente != null ? o.Agente.DescrizioneAgente : null,
-                        o.CodiceMagazzino,
-                        DescrizioneMagazzino = o.Magazzino != null ? o.Magazzino.DescrizioneMagazzino : null,
-                        o.TotaleColli,
-                        o.Riferimento,
-                        o.Note,
+                        o.RiferimentoOrdine,
+                        o.NoteTestata,
                         DescrizioneTipoOrdine = o.DescrizioneTipoOrdine,
                         StatoOrdine = o.StatoOrdine,
                         GiorniAllaConsegna = o.GiorniAllaConsegna,
@@ -368,8 +361,6 @@ namespace AiDbMaster.Controllers
                         OrdiniInScadenza = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date == DateTime.Today),
                         ClientiDistinti = g.Select(o => o.CodiceCliente).Distinct().Count(),
                         AgentiDistinti = g.Select(o => o.CodiceAgente).Distinct().Count(),
-                        MagazziniDistinti = g.Select(o => o.CodiceMagazzino).Distinct().Count(),
-                        ColliTotali = g.Sum(o => o.TotaleColli),
                         AnnoMinimo = g.Min(o => o.AnnoOrdine),
                         AnnoMassimo = g.Max(o => o.AnnoOrdine)
                     })
@@ -381,8 +372,7 @@ namespace AiDbMaster.Controllers
                     .Select(g => new
                     {
                         TipoOrdine = g.Key,
-                        Conteggio = g.Count(),
-                        ColliTotali = g.Sum(o => o.TotaleColli)
+                        Conteggio = g.Count()
                     })
                     .ToListAsync();
 
@@ -392,8 +382,7 @@ namespace AiDbMaster.Controllers
                     .Select(g => new
                     {
                         Anno = g.Key,
-                        Conteggio = g.Count(),
-                        ColliTotali = g.Sum(o => o.TotaleColli)
+                        Conteggio = g.Count()
                     })
                     .OrderByDescending(s => s.Anno)
                     .ToListAsync();
@@ -517,7 +506,7 @@ namespace AiDbMaster.Controllers
                     .Include(o => o.Cliente)
                     .Where(o => o.NumeroOrdine.ToString().Contains(term) ||
                                o.SerieOrdine.Contains(term) ||
-                               (o.Riferimento != null && o.Riferimento.Contains(term)) ||
+                               (o.RiferimentoOrdine != null && o.RiferimentoOrdine.Contains(term)) ||
                                (o.Cliente != null && o.Cliente.RagioneSociale != null && o.Cliente.RagioneSociale.Contains(term)))
                     .OrderByDescending(o => o.DataOrdine)
                     .Take(20)

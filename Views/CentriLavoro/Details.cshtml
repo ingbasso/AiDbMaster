@@ -9,7 +9,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-eye me-2"></i>Dettagli Centro di Lavoro</h2>
             <div>
-                <a asp-action="Edit" asp-route-id="@Model?.IdCentroLavoro" class="btn btn-warning">
+                <a asp-action="Edit" asp-route-id="@Model?.CodiceCentro" class="btn btn-warning">
                     <i class="bi bi-pencil"></i> Modifica
                 </a>
                 <a asp-action="Index" class="btn btn-outline-secondary">
@@ -25,7 +25,7 @@
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-building-gear"></i> Informazioni Centro di Lavoro
-                            <span class="badge bg-light text-dark ms-2">ID: @Model?.IdCentroLavoro</span>
+                            <span class="badge bg-light text-dark ms-2">ID: @Model?.CodiceCentro</span>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -187,18 +187,18 @@
 
                 <!-- Card azioni rapide -->
                 <div class="card mt-4">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h6>
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2 d-md-flex">
-                            <a asp-action="Edit" asp-route-id="@Model?.IdCentroLavoro" class="btn btn-warning">
+                            <a asp-action="Edit" asp-route-id="@Model?.CodiceCentro" class="btn btn-warning">
                                 <i class="bi bi-pencil"></i> Modifica Centro
                             </a>
                             <a asp-action="Create" class="btn btn-success">
                                 <i class="bi bi-plus-circle"></i> Nuovo Centro
                             </a>
-                            <a asp-action="Delete" asp-route-id="@Model?.IdCentroLavoro" class="btn btn-outline-danger">
+                            <a asp-action="Delete" asp-route-id="@Model?.CodiceCentro" class="btn btn-outline-danger">
                                 <i class="bi bi-trash"></i> Elimina
                             </a>
                         </div>
@@ -209,13 +209,13 @@
             <div class="col-md-4">
                 <!-- Card statistiche -->
                 <div class="card">
-                    <div class="card-header bg-secondary text-white">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-graph-up"></i> Statistiche</h6>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <small class="text-muted">ID Univoco</small>
-                            <div class="fw-bold">#@Model?.IdCentroLavoro</div>
+                            <div class="fw-bold">#@Model?.CodiceCentro</div>
                         </div>
                         
                         <div class="mb-3">
@@ -245,7 +245,7 @@
 
                 <!-- Card navigazione -->
                 <div class="card mt-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-compass"></i> Navigazione</h6>
                     </div>
                     <div class="card-body">

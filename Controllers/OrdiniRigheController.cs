@@ -75,7 +75,7 @@ namespace AiDbMaster.Controllers
                         (r.DescrizioneArticolo != null && r.DescrizioneArticolo.Contains(search)) ||
                         r.NumeroOrdine.ToString().Contains(search) ||
                         r.SerieOrdine.Contains(search) ||
-                        (r.Note != null && r.Note.Contains(search)) ||
+                        (r.NoteRiga != null && r.NoteRiga.Contains(search)) ||
                         (r.Testata != null && r.Testata.Cliente != null && r.Testata.Cliente.RagioneSociale != null && r.Testata.Cliente.RagioneSociale.Contains(search)));
                 }
 
@@ -196,7 +196,7 @@ namespace AiDbMaster.Controllers
                         QuantitaTotale = g.Sum(r => r.Quantita),
                         QuantitaEvasa = g.Sum(r => r.QuantitaEvasa),
                         ValoreTotale = g.Sum(r => r.ValoreRiga),
-                        ValoreNetto = g.Sum(r => (r.Quantita * r.Prezzo * (1 - r.Sconto1 / 100) * (1 - r.Sconto2 / 100) * (1 - r.Sconto3 / 100))),
+                        ValoreNetto = g.Sum(r => r.Quantita * r.Prezzo),
                         ArticoliDistinti = g.Select(r => r.CodiceArticolo).Distinct().Count(),
                         MagazziniDistinti = g.Select(r => r.CodiceMagazzino).Distinct().Count()
                     })
@@ -237,8 +237,6 @@ namespace AiDbMaster.Controllers
                         .ThenInclude(t => t!.Cliente)
                     .Include(r => r.Testata)
                         .ThenInclude(t => t!.Agente)
-                    .Include(r => r.Testata)
-                        .ThenInclude(t => t!.Magazzino)
                     .Include(r => r.Articolo)
                     .Include(r => r.Magazzino)
                     .FirstOrDefaultAsync(r => r.Id == id);
@@ -285,7 +283,6 @@ namespace AiDbMaster.Controllers
                         QuantitaTotaleEvasa = g.Sum(r => r.QuantitaEvasa),
                         ValoreTotale = g.Sum(r => r.ValoreRiga),
                         PrezzoMedio = g.Average(r => r.Prezzo),
-                        ScontoMedio = g.Average(r => r.Sconto1 + r.Sconto2 + r.Sconto3),
                         OrdiniDistinti = g.Select(r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine }).Distinct().Count()
                     })
                     .FirstOrDefaultAsync();

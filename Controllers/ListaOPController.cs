@@ -56,18 +56,15 @@ namespace AiDbMaster.Controllers
 
             if (!string.IsNullOrEmpty(filtroCentro))
             {
-                if (int.TryParse(filtroCentro, out int centroId))
-                {
-                    query = query.Where(l => l.IdCentroLavoro == centroId);
-                    ViewBag.FiltroCentro = filtroCentro;
-                }
+                query = query.Where(l => l.CodiceCentro == filtroCentro);
+                ViewBag.FiltroCentro = filtroCentro;
             }
 
             if (!string.IsNullOrEmpty(filtroLavorazione))
             {
-                if (int.TryParse(filtroLavorazione, out int lavorazioneId))
+                if (short.TryParse(filtroLavorazione, out short lavorazioneId))
                 {
-                    query = query.Where(l => l.IdLavorazione == lavorazioneId);
+                    query = query.Where(l => l.CodiceLavorazione == lavorazioneId);
                     ViewBag.FiltroLavorazione = filtroLavorazione;
                 }
             }
@@ -188,7 +185,7 @@ namespace AiDbMaster.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("TipoOrdine,AnnoOrdine,SerieOrdine,NumeroOrdine,RigaOrdine,DescrOrdine,CodiceArticolo,DescrizioneArticolo,UnitaMisura,Quantita,QuantitaProdotta,DataInizioOP,TempoCiclo,DataInizioSetup,TempoSetup,IdStato,IdCentroLavoro,IdLavorazione,Note,DataFineOP,DataFinePrevista,Priorita,IdOperatore,CostoOrario,TempoEffettivo")] ListaOP listaOP)
+        public async Task<IActionResult> Create([Bind("TipoOrdine,AnnoOrdine,SerieOrdine,NumeroOrdine,RigaOrdine,DescrOrdine,CodiceArticolo,DescrizioneArticolo,UnitaMisura,Quantita,QuantitaProdotta,DataInizioOP,TempoCiclo,DataInizioSetup,TempoSetup,IdStato,CodiceCentro,CodiceLavorazione,Note,DataFineOP,DataFinePrevista,Priorita,IdOperatore,CostoOrario,TempoEffettivo,Modificato")] ListaOP listaOP)
         {
             if (ModelState.IsValid)
             {
@@ -229,7 +226,7 @@ namespace AiDbMaster.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdListaOP,TipoOrdine,AnnoOrdine,SerieOrdine,NumeroOrdine,RigaOrdine,DescrOrdine,CodiceArticolo,DescrizioneArticolo,UnitaMisura,Quantita,QuantitaProdotta,DataInizioOP,TempoCiclo,DataInizioSetup,TempoSetup,IdStato,IdCentroLavoro,IdLavorazione,Note,DataFineOP,DataFinePrevista,Priorita,IdOperatore,CostoOrario,TempoEffettivo")] ListaOP listaOP)
+        public async Task<IActionResult> Edit(int id, [Bind("IdListaOP,TipoOrdine,AnnoOrdine,SerieOrdine,NumeroOrdine,RigaOrdine,DescrOrdine,CodiceArticolo,DescrizioneArticolo,UnitaMisura,Quantita,QuantitaProdotta,DataInizioOP,TempoCiclo,DataInizioSetup,TempoSetup,IdStato,CodiceCentro,CodiceLavorazione,Note,DataFineOP,DataFinePrevista,Priorita,IdOperatore,CostoOrario,TempoEffettivo,Modificato")] ListaOP listaOP)
         {
             if (id != listaOP.IdListaOP)
             {
@@ -348,13 +345,13 @@ namespace AiDbMaster.Controllers
                 await _context.Operatori.Where(o => o.Attivo).OrderBy(o => o.Nome).ThenBy(o => o.Cognome).ToListAsync(),
                 "IdOperatore", "NomeCompleto", ordine?.IdOperatore);
 
-            ViewData["IdCentroLavoro"] = new SelectList(
+            ViewData["CodiceCentro"] = new SelectList(
                 await _context.CentriLavoro.Where(c => c.Attivo).OrderBy(c => c.DescrizioneCentro).ToListAsync(),
-                "IdCentroLavoro", "DescrizioneCentro", ordine?.IdCentroLavoro);
+                "CodiceCentro", "DescrizioneCentro", ordine?.CodiceCentro);
 
-            ViewData["IdLavorazione"] = new SelectList(
+            ViewData["CodiceLavorazione"] = new SelectList(
                 await _context.Lavorazioni.Where(l => l.Attivo).OrderBy(l => l.DescrizioneLavorazione).ToListAsync(),
-                "IdLavorazione", "DescrizioneLavorazione", ordine?.IdLavorazione);
+                "CodiceLavorazione", "DescrizioneLavorazione", ordine?.CodiceLavorazione);
 
             ViewData["Priorita"] = new SelectList(new[]
             {
@@ -387,13 +384,13 @@ namespace AiDbMaster.Controllers
             ViewBag.CentriLavoro = await _context.CentriLavoro
                 .Where(c => c.Attivo)
                 .OrderBy(c => c.DescrizioneCentro)
-                .Select(c => new { c.IdCentroLavoro, c.DescrizioneCentro })
+                .Select(c => new { c.CodiceCentro, c.DescrizioneCentro })
                 .ToListAsync();
 
             ViewBag.Lavorazioni = await _context.Lavorazioni
                 .Where(l => l.Attivo)
                 .OrderBy(l => l.DescrizioneLavorazione)
-                .Select(l => new { l.IdLavorazione, l.DescrizioneLavorazione, l.CodiceLavorazione })
+                .Select(l => new { l.CodiceLavorazione, l.DescrizioneLavorazione })
                 .ToListAsync();
 
             ViewBag.Priorita = new[]

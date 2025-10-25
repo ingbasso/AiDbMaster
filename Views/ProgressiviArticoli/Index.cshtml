@@ -99,7 +99,7 @@
                                 <input class="form-check-input" type="checkbox" id="soloConMovimenti" name="soloConMovimenti" 
                                        value="true" @(soloConMovimenti ? "checked" : "")>
                                 <label class="form-check-label" for="soloConMovimenti">
-                                    Solo con movimenti (Ordinato/Impegnato/Prenotato > 0)
+                                    Solo con movimenti (Ordinato Fornitori > 0)
                                 </label>
                             </div>
                         </div>
@@ -192,11 +192,11 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title">Impegnato</h6>
-                                <h4 class="mb-0">@statistiche.TotaleImpegnato.ToString("N0")</h4>
+                                <h6 class="card-title">Ord. Fornitori</h6>
+                                <h4 class="mb-0">@statistiche.TotaleOrdinatoFornitori.ToString("N0")</h4>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-lock" style="font-size: 1.5rem;"></i>
+                                <i class="bi bi-truck" style="font-size: 1.5rem;"></i>
                             </div>
                         </div>
                     </div>
@@ -315,7 +315,7 @@
                                            asp-route-pageSize="@pageSize"
                                            asp-route-sortOrder="@(sortOrder == "ordinato" ? "ordinato_desc" : "ordinato")"
                                            class="text-white text-decoration-none">
-                                            Ordinato
+                                            Ord. Fornitori
                                             @if (sortOrder == "ordinato")
                                             {
                                                 <i class="bi bi-arrow-up"></i>
@@ -326,28 +326,6 @@
                                             }
                                         </a>
                                     </th>
-                                    <th>
-                                        <a asp-action="Index" 
-                                           asp-route-search="@search"
-                                           asp-route-codiceArticolo="@codiceArticolo"
-                                           asp-route-codiceMagazzino="@codiceMagazzino"
-                                           asp-route-statoGiacenza="@statoGiacenza"
-                                           asp-route-soloConMovimenti="@soloConMovimenti"
-                                           asp-route-pageSize="@pageSize"
-                                           asp-route-sortOrder="@(sortOrder == "impegnato" ? "impegnato_desc" : "impegnato")"
-                                           class="text-white text-decoration-none">
-                                            Impegnato
-                                            @if (sortOrder == "impegnato")
-                                            {
-                                                <i class="bi bi-arrow-up"></i>
-                                            }
-                                            else if (sortOrder == "impegnato_desc")
-                                            {
-                                                <i class="bi bi-arrow-down"></i>
-                                            }
-                                        </a>
-                                    </th>
-                                    <th>Prenotato</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -374,29 +352,9 @@
                                             </strong>
                                         </td>
                                         <td>
-                                            @if (item.Ordinato > 0)
+                                            @if (item.OrdinatoFornitoriDataOdierna > 0)
                                             {
-                                                <span class="text-success">@item.Ordinato.ToString("N2")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">-</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (item.Impegnato > 0)
-                                            {
-                                                <span class="text-warning">@item.Impegnato.ToString("N2")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">-</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (item.Prenotato > 0)
-                                            {
-                                                <span class="text-info">@item.Prenotato.ToString("N2")</span>
+                                                <span class="text-success">@item.OrdinatoFornitoriDataOdierna.ToString("N2")</span>
                                             }
                                             else
                                             {

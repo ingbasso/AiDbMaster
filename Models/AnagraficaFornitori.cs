@@ -30,9 +30,9 @@ namespace AiDbMaster.Models
         /// </summary>
         [Required(ErrorMessage = "Il tipo anagrafica è obbligatorio")]
         [StringLength(1, ErrorMessage = "Il tipo anagrafica deve essere di 1 carattere")]
-        [Display(Name = "Tipo Anagrafica")]
-        [Column("an_tipo")]
-        public string TipoAnagrafica { get; set; } = string.Empty;
+        [Display(Name = "Tipo")]
+        [Column("Tipo")]
+        public string Tipo { get; set; } = string.Empty;
 
         /// <summary>
         /// Ragione sociale del fornitore
@@ -44,12 +44,12 @@ namespace AiDbMaster.Models
         public string RagioneSociale { get; set; } = string.Empty;
 
         /// <summary>
-        /// Descrizione aggiuntiva del fornitore
+        /// Descrizione ulteriore del fornitore
         /// </summary>
-        [StringLength(50, ErrorMessage = "La descrizione aggiuntiva non può superare i 50 caratteri")]
-        [Display(Name = "Descrizione Aggiuntiva")]
-        [Column("an_descr2")]
-        public string? DescrizioneAggiuntiva { get; set; }
+        [StringLength(50, ErrorMessage = "La descrizione ulteriore non può superare i 50 caratteri")]
+        [Display(Name = "Descrizione Ulteriore")]
+        [Column("DescrizioneUlteriore")]
+        public string? DescrizioneUlteriore { get; set; }
 
         /// <summary>
         /// Indirizzo del fornitore
@@ -88,7 +88,7 @@ namespace AiDbMaster.Models
         /// </summary>
         [StringLength(16, ErrorMessage = "Il codice fiscale non può superare i 16 caratteri")]
         [Display(Name = "Codice Fiscale")]
-        [Column("an_codfis")]
+        [Column("CodiceFiscale")]
         public string? CodiceFiscale { get; set; }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace AiDbMaster.Models
         /// </summary>
         [StringLength(11, ErrorMessage = "La partita IVA non può superare gli 11 caratteri")]
         [Display(Name = "Partita IVA")]
-        [Column("an_pariva")]
+        [Column("PartitaIva")]
         public string? PartitaIva { get; set; }
 
         /// <summary>
@@ -106,14 +106,6 @@ namespace AiDbMaster.Models
         [Display(Name = "Telefono")]
         [Column("Telefono")]
         public string? Telefono { get; set; }
-
-        /// <summary>
-        /// Numero di fax/telex del fornitore
-        /// </summary>
-        [StringLength(18, ErrorMessage = "Il fax non può superare i 18 caratteri")]
-        [Display(Name = "Fax/Telex")]
-        [Column("an_faxtlx")]
-        public string? FaxTelex { get; set; }
 
         /// <summary>
         /// Indirizzo completo formattato per la visualizzazione
@@ -155,8 +147,8 @@ namespace AiDbMaster.Models
             {
                 var parti = new List<string> { RagioneSociale };
                 
-                if (!string.IsNullOrEmpty(DescrizioneAggiuntiva))
-                    parti.Add($"- {DescrizioneAggiuntiva}");
+                if (!string.IsNullOrEmpty(DescrizioneUlteriore))
+                    parti.Add($"- {DescrizioneUlteriore}");
                 
                 return string.Join(" ", parti);
             }
@@ -174,9 +166,6 @@ namespace AiDbMaster.Models
                 
                 if (!string.IsNullOrEmpty(Telefono))
                     contatti.Add($"Tel: {Telefono}");
-                
-                if (!string.IsNullOrEmpty(FaxTelex))
-                    contatti.Add($"Fax: {FaxTelex}");
                 
                 return string.Join(" | ", contatti);
             }

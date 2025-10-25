@@ -37,9 +37,12 @@ namespace AiDbMaster.Services
             // Applica filtri
             if (!string.IsNullOrEmpty(search))
             {
+                // Prova a convertire la ricerca in numero per il codice
+                bool isNumericSearch = short.TryParse(search, out short searchCode);
+                
                 query = query.Where(l => 
                     l.DescrizioneLavorazione.Contains(search) ||
-                    (l.CodiceLavorazione != null && l.CodiceLavorazione.Contains(search)));
+                    (isNumericSearch && l.CodiceLavorazione == searchCode));
             }
 
             if (attivo.HasValue)
@@ -93,17 +96,17 @@ namespace AiDbMaster.Services
         }
 
         /// <summary>
-        /// Ottiene una lavorazione per ID
+        /// Ottiene una lavorazione per codice
         /// </summary>
-        public async Task<Lavorazioni?> GetLavorazioneByIdAsync(int id)
+        public async Task<Lavorazioni?> GetLavorazioneByIdAsync(short id)
         {
-            return await _context.Lavorazioni.FindAsync(id);
+            return await _context.Lavorazioni.FirstOrDefaultAsync(l => l.CodiceLavorazione == id);
         }
 
         /// <summary>
         /// Ottiene i dettagli di una lavorazione con informazioni aggiuntive
         /// </summary>
-        public async Task<LavorazioneDetailsViewModel?> GetLavorazioneDetailsAsync(int id)
+        public async Task<LavorazioneDetailsViewModel?> GetLavorazioneDetailsAsync(short id)
         {
             var lavorazione = await GetLavorazioneByIdAsync(id);
             if (lavorazione == null)
@@ -111,22 +114,22 @@ namespace AiDbMaster.Services
 
             // Trova ID precedente e successivo per la navigazione
             var previousId = await _context.Lavorazioni
-                .Where(l => l.IdLavorazione < id)
-                .OrderByDescending(l => l.IdLavorazione)
-                .Select(l => l.IdLavorazione)
+                .Where(l => l.CodiceLavorazione < id)
+                .OrderByDescending(l => l.CodiceLavorazione)
+                .Select(l => (short?)l.CodiceLavorazione)
                 .FirstOrDefaultAsync();
 
             var nextId = await _context.Lavorazioni
-                .Where(l => l.IdLavorazione > id)
-                .OrderBy(l => l.IdLavorazione)
-                .Select(l => l.IdLavorazione)
+                .Where(l => l.CodiceLavorazione > id)
+                .OrderBy(l => l.CodiceLavorazione)
+                .Select(l => (short?)l.CodiceLavorazione)
                 .FirstOrDefaultAsync();
 
             return new LavorazioneDetailsViewModel
             {
                 Lavorazione = lavorazione,
-                PreviousId = previousId == 0 ? null : previousId,
-                NextId = nextId == 0 ? null : nextId
+                PreviousId = previousId,
+                NextId = nextId
             };
         }
 
@@ -137,21 +140,18 @@ namespace AiDbMaster.Services
         {
             try
             {
-                // Verifica unicità del codice se specificato
-                if (!string.IsNullOrEmpty(model.CodiceLavorazione))
+                // Verifica unicità del codice
+                var esistente = await _context.Lavorazioni
+                    .FirstOrDefaultAsync(l => l.CodiceLavorazione == model.CodiceLavorazione);
+                
+                if (esistente != null)
                 {
-                    var esistente = await _context.Lavorazioni
-                        .FirstOrDefaultAsync(l => l.CodiceLavorazione == model.CodiceLavorazione);
-                    
-                    if (esistente != null)
-                    {
-                        return (false, "Esiste già una lavorazione con questo codice.", null);
-                    }
+                    return (false, "Esiste già una lavorazione con questo codice.", null);
                 }
 
                 var lavorazione = new Lavorazioni
                 {
-                    CodiceLavorazione = model.CodiceLavorazione?.ToUpper(),
+                    CodiceLavorazione = model.CodiceLavorazione,
                     DescrizioneLavorazione = model.DescrizioneLavorazione.Trim(),
                     Attivo = model.Attivo,
                     DataCreazione = DateTime.Now
@@ -160,8 +160,8 @@ namespace AiDbMaster.Services
                 _context.Lavorazioni.Add(lavorazione);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Lavorazione creata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                _logger.LogInformation("Lavorazione creata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                 return (true, "Lavorazione creata con successo!", lavorazione);
             }
@@ -180,26 +180,13 @@ namespace AiDbMaster.Services
         {
             try
             {
-                var lavorazione = await GetLavorazioneByIdAsync(model.IdLavorazione);
+                var lavorazione = await GetLavorazioneByIdAsync(model.CodiceLavorazione);
                 if (lavorazione == null)
                 {
                     return (false, "Lavorazione non trovata.");
                 }
 
-                // Verifica unicità del codice se specificato
-                if (!string.IsNullOrEmpty(model.CodiceLavorazione))
-                {
-                    var esistente = await _context.Lavorazioni
-                        .FirstOrDefaultAsync(l => l.CodiceLavorazione == model.CodiceLavorazione && 
-                                                 l.IdLavorazione != model.IdLavorazione);
-                    
-                    if (esistente != null)
-                    {
-                        return (false, "Esiste già una lavorazione con questo codice.");
-                    }
-                }
-
-                lavorazione.CodiceLavorazione = model.CodiceLavorazione?.ToUpper();
+                // Aggiorna solo la descrizione e lo stato (il codice è la chiave primaria, non si può modificare)
                 lavorazione.DescrizioneLavorazione = model.DescrizioneLavorazione.Trim();
                 lavorazione.Attivo = model.Attivo;
                 lavorazione.DataUltimaModifica = DateTime.Now;
@@ -207,15 +194,15 @@ namespace AiDbMaster.Services
                 _context.Lavorazioni.Update(lavorazione);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Lavorazione modificata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                _logger.LogInformation("Lavorazione modificata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                 return (true, "Lavorazione modificata con successo!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante la modifica della lavorazione - ID: {Id}", 
-                    model.IdLavorazione);
+                _logger.LogError(ex, "Errore durante la modifica della lavorazione - Codice: {Codice}", 
+                    model.CodiceLavorazione);
                 return (false, $"Errore durante la modifica: {ex.Message}");
             }
         }
@@ -223,7 +210,7 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Elimina una lavorazione
         /// </summary>
-        public async Task<(bool Success, string Message)> DeleteLavorazioneAsync(int id)
+        public async Task<(bool Success, string Message)> DeleteLavorazioneAsync(short id)
         {
             try
             {
@@ -239,8 +226,8 @@ namespace AiDbMaster.Services
                 _context.Lavorazioni.Remove(lavorazione);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Lavorazione eliminata con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                _logger.LogInformation("Lavorazione eliminata con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                 return (true, "Lavorazione eliminata con successo!");
             }
@@ -261,7 +248,6 @@ namespace AiDbMaster.Services
                 .OrderBy(l => l.DescrizioneLavorazione)
                 .Select(l => new LavorazioneApiViewModel
                 {
-                    Id = l.IdLavorazione,
                     Codice = l.CodiceLavorazione,
                     Descrizione = l.DescrizioneLavorazione,
                     Attivo = l.Attivo
@@ -276,7 +262,7 @@ namespace AiDbMaster.Services
         {
             var totaleLavorazioni = await _context.Lavorazioni.CountAsync();
             var lavorazioniAttive = await _context.Lavorazioni.CountAsync(l => l.Attivo);
-            var lavorazioniConCodice = await _context.Lavorazioni.CountAsync(l => l.CodiceLavorazione != null);
+            var lavorazioniConCodice = await _context.Lavorazioni.CountAsync(l => l.CodiceLavorazione > 0);
 
             var dataUltimaCreazione = await _context.Lavorazioni
                 .OrderByDescending(l => l.DataCreazione)
@@ -294,7 +280,6 @@ namespace AiDbMaster.Services
                 .Take(5)
                 .Select(l => new LavorazioneFrequencyViewModel
                 {
-                    IdLavorazione = l.IdLavorazione,
                     CodiceLavorazione = l.CodiceLavorazione,
                     DescrizioneLavorazione = l.DescrizioneLavorazione,
                     UltimoUtilizzo = l.DataCreazione
@@ -317,7 +302,7 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Verifica se una lavorazione può essere eliminata
         /// </summary>
-        public Task<(bool CanDelete, string Reason, int RelatedCount)> CanDeleteLavorazioneAsync(int id)
+        public Task<(bool CanDelete, string Reason, int RelatedCount)> CanDeleteLavorazioneAsync(short id)
         {
             // TODO: Implementare controlli per dati collegati
             // Ad esempio, verificare se ci sono ordini di produzione che utilizzano questa lavorazione
@@ -329,7 +314,7 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Attiva o disattiva una lavorazione
         /// </summary>
-        public async Task<(bool Success, string Message)> ToggleAttivoAsync(int id)
+        public async Task<(bool Success, string Message)> ToggleAttivoAsync(short id)
         {
             try
             {
@@ -346,8 +331,8 @@ namespace AiDbMaster.Services
                 await _context.SaveChangesAsync();
 
                 var stato = lavorazione.Attivo ? "attivata" : "disattivata";
-                _logger.LogInformation("Lavorazione {Stato} - ID: {Id}, Descrizione: {Descrizione}", 
-                    stato, lavorazione.IdLavorazione, lavorazione.DescrizioneLavorazione);
+                _logger.LogInformation("Lavorazione {Stato} - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    stato, lavorazione.CodiceLavorazione, lavorazione.DescrizioneLavorazione);
 
                 return (true, $"Lavorazione {stato} con successo!");
             }

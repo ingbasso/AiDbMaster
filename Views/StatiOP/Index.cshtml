@@ -48,7 +48,6 @@
                                 <option value="PR" selected="@(ViewBag.CurrentCodiceStato == "PR")">PR - Produzione</option>
                                 <option value="CH" selected="@(ViewBag.CurrentCodiceStato == "CH")">CH - Chiuso</option>
                                 <option value="SO" selected="@(ViewBag.CurrentCodiceStato == "SO")">SO - Sospeso</option>
-                                <option value="AN" selected="@(ViewBag.CurrentCodiceStato == "AN")">AN - Annullato</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -206,7 +205,6 @@
                                         "PR" => "bg-warning",   // Produzione - Giallo
                                         "CH" => "bg-success",   // Chiuso - Verde
                                         "SO" => "bg-secondary", // Sospeso - Grigio
-                                        "AN" => "bg-danger",    // Annullato - Rosso
                                         _ => "bg-primary"       // Default - Blu primario
                                     };
                                     
@@ -359,7 +357,6 @@
                             <li><span class="badge bg-warning text-dark">PR</span> Produzione - In lavorazione</li>
                             <li><span class="badge bg-success">CH</span> Chiuso - Completato</li>
                             <li><span class="badge bg-secondary">SO</span> Sospeso - Temporaneamente fermo</li>
-                            <li><span class="badge bg-danger">AN</span> Annullato - Cancellato</li>
                         </ul>
                     </div>
                     <div class="col-md-6">

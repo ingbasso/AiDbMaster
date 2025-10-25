@@ -34,7 +34,7 @@ namespace AiDbMaster.Models
         /// Note sulla sostituzione dell'articolo
         /// </summary>
         [Display(Name = "Note")]
-        [Column("apa_note")]
+        [Column("Note")]
         public string? Note { get; set; }
 
         /// <summary>

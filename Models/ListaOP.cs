@@ -117,16 +117,18 @@ namespace AiDbMaster.Models
         public int IdStato { get; set; }
 
         /// <summary>
-        /// FK verso la tabella CentriLavoro
+        /// FK verso la tabella CentriLavoro - Codice centro di lavoro
         /// </summary>
         [Required]
-        public int IdCentroLavoro { get; set; }
+        [StringLength(10)]
+        public string CodiceCentro { get; set; } = string.Empty;
 
         /// <summary>
-        /// FK verso la tabella Lavorazioni
+        /// FK verso la tabella Lavorazioni - Codice lavorazione
         /// </summary>
         [Required]
-        public int IdLavorazione { get; set; }
+        [Column(TypeName = "smallint")]
+        public short CodiceLavorazione { get; set; }
 
         /// <summary>
         /// Note sull'ordine di produzione
@@ -166,6 +168,13 @@ namespace AiDbMaster.Models
         /// Tempo effettivamente impiegato in secondi
         /// </summary>
         public float? TempoEffettivo { get; set; }
+
+        /// <summary>
+        /// Indica se l'ordine è stato modificato
+        /// </summary>
+        [Required]
+        [Display(Name = "Modificato")]
+        public bool Modificato { get; set; }
 
         // PROPRIETÀ CALCOLATE
 
@@ -234,13 +243,13 @@ namespace AiDbMaster.Models
         /// <summary>
         /// Centro di lavoro assegnato all'ordine
         /// </summary>
-        [ForeignKey("IdCentroLavoro")]
+        [ForeignKey("CodiceCentro")]
         public virtual CentroLavoro? CentroLavoro { get; set; }
 
         /// <summary>
         /// Lavorazione assegnata all'ordine
         /// </summary>
-        [ForeignKey("IdLavorazione")]
+        [ForeignKey("CodiceLavorazione")]
         public virtual Lavorazioni? Lavorazione { get; set; }
     }
 }

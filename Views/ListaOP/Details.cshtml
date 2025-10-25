@@ -77,7 +77,7 @@
                                 <dd class="col-sm-8">
                                     @if (Model.Lavorazione != null)
                                     {
-                                        @if (!string.IsNullOrEmpty(Model.Lavorazione.CodiceLavorazione))
+                                        @if (Model.Lavorazione.CodiceLavorazione > 0)
                                         {
                                             <span class="badge bg-info me-2">@Model.Lavorazione.CodiceLavorazione</span>
                                         }

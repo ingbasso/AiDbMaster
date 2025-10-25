@@ -21,7 +21,7 @@
             <!-- Informazioni Principali -->
             <div class="col-lg-8">
                 <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-building me-2"></i>Informazioni Principali</h5>
                     </div>
                     <div class="card-body">
@@ -41,9 +41,9 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.TipoAnagrafica)</label>
+                                    <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.Tipo)</label>
                                     <div class="form-control-plaintext bg-light p-2 rounded">
-                                        <span class="badge bg-secondary fs-6">@Html.DisplayFor(model => model.TipoAnagrafica)</span>
+                                        <span class="badge bg-secondary fs-6">@Html.DisplayFor(model => model.Tipo)</span>
                                     </div>
                                 </div>
                             </div>
@@ -56,12 +56,12 @@
                             </div>
                         </div>
 
-                        @if (!string.IsNullOrEmpty(Model.DescrizioneAggiuntiva))
+                        @if (!string.IsNullOrEmpty(Model.DescrizioneUlteriore))
                         {
                             <div class="mb-3">
-                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.DescrizioneAggiuntiva)</label>
+                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.DescrizioneUlteriore)</label>
                                 <div class="form-control-plaintext bg-light p-2 rounded">
-                                    @Html.DisplayFor(model => model.DescrizioneAggiuntiva)
+                                    @Html.DisplayFor(model => model.DescrizioneUlteriore)
                                 </div>
                             </div>
                         }
@@ -70,7 +70,7 @@
 
                 <!-- Indirizzo -->
                 <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Indirizzo</h5>
                     </div>
                     <div class="card-body">
@@ -140,7 +140,7 @@
 
                 <!-- Dati Fiscali -->
                 <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Dati Fiscali</h5>
                     </div>
                     <div class="card-body">
@@ -184,18 +184,6 @@
 
             <!-- Informazioni Aggiuntive -->
             <div class="col-lg-4">
-                <!-- ID Sistema -->
-                <div class="card mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-hash me-2"></i>Identificativo Sistema</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-control-plaintext bg-light p-2 rounded text-center">
-                            <span class="badge bg-dark fs-4">#@Html.DisplayFor(model => model.Id)</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Contatti -->
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
@@ -217,22 +205,7 @@
                             </div>
                         }
 
-                        @if (!string.IsNullOrEmpty(Model.FaxTelex))
-                        {
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">@Html.DisplayNameFor(model => model.FaxTelex)</label>
-                                <div class="form-control-plaintext bg-light p-2 rounded">
-                                    <i class="bi bi-printer me-2 text-secondary"></i>
-                                    @Html.DisplayFor(model => model.FaxTelex)
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
-                                            onclick="copyToClipboard('@Model.FaxTelex')" title="Copia Fax">
-                                        <i class="bi bi-clipboard"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        }
-
-                        @if (string.IsNullOrEmpty(Model.Telefono) && string.IsNullOrEmpty(Model.FaxTelex))
+                        @if (string.IsNullOrEmpty(Model.Telefono))
                         {
                             <div class="text-center text-muted">
                                 <i class="bi bi-telephone-x" style="font-size: 2rem;"></i>
@@ -244,48 +217,22 @@
 
                 <!-- Agente -->
                 <div class="card mb-4">
-                    <div class="card-header bg-secondary text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-person-workspace me-2"></i>Agente</h5>
                     </div>
                     <div class="card-body">
                         <div class="text-center">
-                            <span class="badge bg-warning text-dark fs-3">@Html.DisplayFor(model => model.CodiceAgente)</span>
-                            <p class="mt-2 text-muted">Codice Agente Assegnato</p>
+                            @if (Model.Agente != null && !string.IsNullOrEmpty(Model.Agente.DescrizioneAgente))
+                            {
+                                <h4 class="text-primary mb-2">@Model.Agente.DescrizioneAgente</h4>
+                                <span class="badge bg-warning text-dark fs-6">Codice: @Html.DisplayFor(model => model.CodiceAgente)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark fs-3">@Html.DisplayFor(model => model.CodiceAgente)</span>
+                                <p class="mt-2 text-muted">Codice Agente Assegnato</p>
+                            }
                         </div>
-                    </div>
-                </div>
-
-                <!-- Riepilogo -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Riepilogo</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="border-end">
-                                    <h6 class="text-muted">Tipo</h6>
-                                    <h4 class="text-primary">@Model.TipoAnagrafica</h4>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <h6 class="text-muted">Agente</h6>
-                                <h4 class="text-warning">@Model.CodiceAgente</h4>
-                            </div>
-                        </div>
-                        
-                        @if (!string.IsNullOrEmpty(Model.Provincia))
-                        {
-                            <hr>
-                            <div class="text-center">
-                                <h6 class="text-muted">Localizzazione</h6>
-                                <span class="badge bg-info fs-6">@Model.Provincia</span>
-                                @if (!string.IsNullOrEmpty(Model.Citta))
-                                {
-                                    <span class="ms-2">@Model.Citta</span>
-                                }
-                            </div>
-                        }
                     </div>
                 </div>
             </div>

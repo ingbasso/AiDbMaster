@@ -61,6 +61,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("DescrizioneUlteriore");
 
+                    b.Property<string>("MakeOrBuy")
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("MakeOrBuy");
+
                     b.Property<string>("SecondaUnitaMisura")
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)")
@@ -117,17 +122,12 @@ namespace AiDbMaster.Migrations
                     b.Property<string>("CodiceFiscale")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)")
-                        .HasColumnName("an_codfis");
+                        .HasColumnName("CodiceFiscale");
 
-                    b.Property<string>("DescrizioneAggiuntiva")
+                    b.Property<string>("DescrizioneUlteriore")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("an_descr2");
-
-                    b.Property<string>("FaxTelex")
-                        .HasMaxLength(18)
-                        .HasColumnType("nvarchar(18)")
-                        .HasColumnName("an_faxtlx");
+                        .HasColumnName("DescrizioneUlteriore");
 
                     b.Property<string>("Indirizzo")
                         .HasMaxLength(70)
@@ -137,7 +137,7 @@ namespace AiDbMaster.Migrations
                     b.Property<string>("PartitaIva")
                         .HasMaxLength(11)
                         .HasColumnType("nvarchar(11)")
-                        .HasColumnName("an_pariva");
+                        .HasColumnName("PartitaIva");
 
                     b.Property<string>("Provincia")
                         .HasMaxLength(2)
@@ -155,13 +155,15 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(18)")
                         .HasColumnName("Telefono");
 
-                    b.Property<string>("TipoAnagrafica")
+                    b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(1)
                         .HasColumnType("nvarchar(1)")
-                        .HasColumnName("an_tipo");
+                        .HasColumnName("Tipo");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CodiceAgente");
 
                     b.ToTable("AnagraficaClienti");
                 });
@@ -188,21 +190,16 @@ namespace AiDbMaster.Migrations
                     b.Property<string>("CodiceFiscale")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)")
-                        .HasColumnName("an_codfis");
+                        .HasColumnName("CodiceFiscale");
 
                     b.Property<int>("CodiceFornitore")
                         .HasColumnType("int")
                         .HasColumnName("CodiceFornitore");
 
-                    b.Property<string>("DescrizioneAggiuntiva")
+                    b.Property<string>("DescrizioneUlteriore")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("an_descr2");
-
-                    b.Property<string>("FaxTelex")
-                        .HasMaxLength(18)
-                        .HasColumnType("nvarchar(18)")
-                        .HasColumnName("an_faxtlx");
+                        .HasColumnName("DescrizioneUlteriore");
 
                     b.Property<string>("Indirizzo")
                         .HasMaxLength(70)
@@ -212,7 +209,7 @@ namespace AiDbMaster.Migrations
                     b.Property<string>("PartitaIva")
                         .HasMaxLength(11)
                         .HasColumnType("nvarchar(11)")
-                        .HasColumnName("an_pariva");
+                        .HasColumnName("PartitaIva");
 
                     b.Property<string>("Provincia")
                         .HasMaxLength(2)
@@ -230,11 +227,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(18)")
                         .HasColumnName("Telefono");
 
-                    b.Property<string>("TipoAnagrafica")
+                    b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(1)
                         .HasColumnType("nvarchar(1)")
-                        .HasColumnName("an_tipo");
+                        .HasColumnName("Tipo");
 
                     b.HasKey("Id");
 
@@ -332,30 +329,88 @@ namespace AiDbMaster.Migrations
 
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("apa_note");
+                        .HasColumnName("Note");
 
                     b.HasKey("CodiceArticolo", "CodiceArticoloSostitutivo");
 
                     b.ToTable("ArticoliSostitutivi");
                 });
 
-            modelBuilder.Entity("AiDbMaster.Models.CentroLavoro", b =>
+            modelBuilder.Entity("AiDbMaster.Models.CalendarioFermiCentriLavoro", b =>
                 {
-                    b.Property<int>("IdCentroLavoro")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCentroLavoro"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CodiceCentro")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("CodiceCentro");
+
+                    b.Property<DateTime>("DataCreazione")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataCreazione");
+
+                    b.Property<DateTime?>("DataFineFermo")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataFineFermo");
+
+                    b.Property<DateTime>("DataInizioFermo")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataInizioFermo");
+
+                    b.Property<DateTime?>("DataUltimaModifica")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataUltimaModifica");
+
+                    b.Property<bool>("IsPianificato")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsPianificato");
+
+                    b.Property<string>("Motivo")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Motivo");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Note");
+
+                    b.Property<int>("TipoFermo")
+                        .HasColumnType("int")
+                        .HasColumnName("TipoFermo");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodiceCentro")
+                        .HasDatabaseName("IX_CalendarioFermiCentriLavoro_CodiceCentro");
+
+                    b.HasIndex("DataFineFermo")
+                        .HasDatabaseName("IX_CalendarioFermiCentriLavoro_DataFineFermo");
+
+                    b.HasIndex("DataInizioFermo")
+                        .HasDatabaseName("IX_CalendarioFermiCentriLavoro_DataInizioFermo");
+
+                    b.HasIndex("TipoFermo")
+                        .HasDatabaseName("IX_CalendarioFermiCentriLavoro_TipoFermo");
+
+                    b.ToTable("CalendarioFermiCentriLavoro");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.CentroLavoro", b =>
+                {
+                    b.Property<string>("CodiceCentro")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<bool>("Attivo")
                         .HasColumnType("bit");
 
                     b.Property<int?>("CapacitaOraria")
                         .HasColumnType("int");
-
-                    b.Property<string>("CodiceCentro")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
 
                     b.Property<decimal?>("CostoOrarioStandard")
                         .HasColumnType("decimal(10,2)");
@@ -375,15 +430,10 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.HasKey("IdCentroLavoro");
+                    b.HasKey("CodiceCentro");
 
                     b.HasIndex("Attivo")
                         .HasDatabaseName("IX_CentriLavoro_Attivo");
-
-                    b.HasIndex("CodiceCentro")
-                        .IsUnique()
-                        .HasDatabaseName("IX_CentriLavoro_CodiceCentro")
-                        .HasFilter("[CodiceCentro] IS NOT NULL");
 
                     b.HasIndex("DescrizioneCentro")
                         .HasDatabaseName("IX_CentriLavoro_DescrizioneCentro");
@@ -510,18 +560,11 @@ namespace AiDbMaster.Migrations
 
             modelBuilder.Entity("AiDbMaster.Models.Lavorazioni", b =>
                 {
-                    b.Property<int>("IdLavorazione")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdLavorazione"));
+                    b.Property<short>("CodiceLavorazione")
+                        .HasColumnType("smallint");
 
                     b.Property<bool>("Attivo")
                         .HasColumnType("bit");
-
-                    b.Property<string>("CodiceLavorazione")
-                        .HasMaxLength(1)
-                        .HasColumnType("varchar(1)");
 
                     b.Property<DateTime>("DataCreazione")
                         .HasColumnType("datetime2");
@@ -534,77 +577,15 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("IdLavorazione");
+                    b.HasKey("CodiceLavorazione");
 
                     b.HasIndex("Attivo")
                         .HasDatabaseName("IX_Lavorazioni_Attivo");
-
-                    b.HasIndex("CodiceLavorazione")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Lavorazioni_CodiceLavorazione")
-                        .HasFilter("[CodiceLavorazione] IS NOT NULL");
 
                     b.HasIndex("DescrizioneLavorazione")
                         .HasDatabaseName("IX_Lavorazioni_DescrizioneLavorazione");
 
                     b.ToTable("Lavorazioni");
-
-                    b.HasData(
-                        new
-                        {
-                            IdLavorazione = 1,
-                            Attivo = true,
-                            CodiceLavorazione = "T",
-                            DataCreazione = new DateTime(2025, 8, 16, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1790),
-                            DescrizioneLavorazione = "Taglio"
-                        },
-                        new
-                        {
-                            IdLavorazione = 2,
-                            Attivo = true,
-                            CodiceLavorazione = "F",
-                            DataCreazione = new DateTime(2025, 8, 21, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1802),
-                            DescrizioneLavorazione = "Fresatura"
-                        },
-                        new
-                        {
-                            IdLavorazione = 3,
-                            Attivo = true,
-                            CodiceLavorazione = "T",
-                            DataCreazione = new DateTime(2025, 8, 26, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1811),
-                            DescrizioneLavorazione = "Tornitura"
-                        },
-                        new
-                        {
-                            IdLavorazione = 4,
-                            Attivo = true,
-                            CodiceLavorazione = "S",
-                            DataCreazione = new DateTime(2025, 8, 31, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1820),
-                            DescrizioneLavorazione = "Saldatura"
-                        },
-                        new
-                        {
-                            IdLavorazione = 5,
-                            Attivo = true,
-                            CodiceLavorazione = "A",
-                            DataCreazione = new DateTime(2025, 9, 5, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1823),
-                            DescrizioneLavorazione = "Assemblaggio"
-                        },
-                        new
-                        {
-                            IdLavorazione = 6,
-                            Attivo = true,
-                            DataCreazione = new DateTime(2025, 9, 10, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1829),
-                            DescrizioneLavorazione = "Controllo Qualità"
-                        },
-                        new
-                        {
-                            IdLavorazione = 7,
-                            Attivo = false,
-                            CodiceLavorazione = "P",
-                            DataCreazione = new DateTime(2025, 7, 27, 14, 29, 29, 179, DateTimeKind.Local).AddTicks(1835),
-                            DescrizioneLavorazione = "Verniciatura"
-                        });
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ListaOP", b =>
@@ -622,6 +603,14 @@ namespace AiDbMaster.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CodiceCentro")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<short>("CodiceLavorazione")
+                        .HasColumnType("smallint");
 
                     b.Property<decimal?>("CostoOrario")
                         .HasColumnType("decimal(10,2)");
@@ -647,17 +636,14 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("IdCentroLavoro")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdLavorazione")
-                        .HasColumnType("int");
-
                     b.Property<int?>("IdOperatore")
                         .HasColumnType("int");
 
                     b.Property<int>("IdStato")
                         .HasColumnType("int");
+
+                    b.Property<bool>("Modificato")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Note")
                         .HasMaxLength(400)
@@ -707,14 +693,14 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("CodiceArticolo")
                         .HasDatabaseName("IX_ListaOP_CodiceArticolo");
 
+                    b.HasIndex("CodiceCentro")
+                        .HasDatabaseName("IX_ListaOP_CodiceCentro");
+
+                    b.HasIndex("CodiceLavorazione")
+                        .HasDatabaseName("IX_ListaOP_CodiceLavorazione");
+
                     b.HasIndex("DataInizioOP")
                         .HasDatabaseName("IX_ListaOP_DataInizioOP");
-
-                    b.HasIndex("IdCentroLavoro")
-                        .HasDatabaseName("IX_ListaOP_IdCentroLavoro");
-
-                    b.HasIndex("IdLavorazione")
-                        .HasDatabaseName("IX_ListaOP_IdLavorazione");
 
                     b.HasIndex("IdOperatore")
                         .HasDatabaseName("IX_ListaOP_IdOperatore");
@@ -809,21 +795,13 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("CodiceArticolo");
 
-                    b.Property<short>("CodiceIva")
-                        .HasColumnType("smallint")
-                        .HasColumnName("mo_codiva");
-
                     b.Property<short>("CodiceMagazzino")
                         .HasColumnType("smallint")
-                        .HasColumnName("mo_magaz");
+                        .HasColumnName("CodiceMagazzino");
 
                     b.Property<decimal>("ColliEvasi")
                         .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_coleva");
-
-                    b.Property<decimal>("ColliPrenotati")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_colpre");
+                        .HasColumnName("ColliEvasi");
 
                     b.Property<DateTime>("DataConsegna")
                         .HasColumnType("datetime2")
@@ -834,15 +812,9 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("DescrizioneArticolo");
 
-                    b.Property<string>("FlagEvasionePrenotazione")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("nvarchar(1)")
-                        .HasColumnName("mo_flevapre");
-
-                    b.Property<string>("Note")
+                    b.Property<string>("NoteRiga")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("mo_note");
+                        .HasColumnName("NoteRiga");
 
                     b.Property<decimal>("NumeroColli")
                         .HasColumnType("decimal(18,4)")
@@ -852,25 +824,13 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("NumeroOrdine");
 
+                    b.Property<int>("PercentualeInclusione")
+                        .HasColumnType("int")
+                        .HasColumnName("PercentualeInclusione");
+
                     b.Property<decimal>("Prezzo")
                         .HasColumnType("decimal(18,4)")
                         .HasColumnName("Prezzo");
-
-                    b.Property<decimal>("PrezzoConIva")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_preziva");
-
-                    b.Property<decimal>("PrezzoListino")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_prelist");
-
-                    b.Property<decimal>("PrezzoValuta")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_prezvalc");
-
-                    b.Property<decimal>("Provvigione")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_provv");
 
                     b.Property<decimal>("Quantita")
                         .HasColumnType("decimal(18,4)")
@@ -878,27 +838,11 @@ namespace AiDbMaster.Migrations
 
                     b.Property<decimal>("QuantitaEvasa")
                         .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_quaeva");
-
-                    b.Property<decimal>("QuantitaPrenotata")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_quapre");
+                        .HasColumnName("QuantitaEvasa");
 
                     b.Property<int>("RigaOrdine")
                         .HasColumnType("int")
                         .HasColumnName("RigaOrdine");
-
-                    b.Property<decimal>("Sconto1")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_scont1");
-
-                    b.Property<decimal>("Sconto2")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_scont2");
-
-                    b.Property<decimal>("Sconto3")
-                        .HasColumnType("decimal(18,4)")
-                        .HasColumnName("mo_scont3");
 
                     b.Property<string>("SerieOrdine")
                         .IsRequired()
@@ -963,10 +907,6 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("CodiceCliente");
 
-                    b.Property<short>("CodiceMagazzino")
-                        .HasColumnType("smallint")
-                        .HasColumnName("td_magaz");
-
                     b.Property<DateTime?>("DataConsegna")
                         .HasColumnType("datetime2")
                         .HasColumnName("DataConsegna");
@@ -975,18 +915,18 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DataOrdine");
 
-                    b.Property<string>("Note")
+                    b.Property<string>("NoteTestata")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("td_note");
+                        .HasColumnName("NoteTestata");
 
                     b.Property<int>("NumeroOrdine")
                         .HasColumnType("int")
                         .HasColumnName("NumeroOrdine");
 
-                    b.Property<string>("Riferimento")
+                    b.Property<string>("RiferimentoOrdine")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("td_riferim");
+                        .HasColumnName("RiferimentoOrdine");
 
                     b.Property<string>("SerieOrdine")
                         .IsRequired()
@@ -994,19 +934,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(3)")
                         .HasColumnName("SerieOrdine");
 
-                    b.Property<short>("TipoBollaFattura")
-                        .HasColumnType("smallint")
-                        .HasColumnName("td_tipobf");
-
                     b.Property<string>("TipoOrdine")
                         .IsRequired()
                         .HasMaxLength(1)
                         .HasColumnType("nvarchar(1)")
                         .HasColumnName("TipoOrdine");
-
-                    b.Property<int>("TotaleColli")
-                        .HasColumnType("int")
-                        .HasColumnName("TotaleColli");
 
                     b.HasKey("Id");
 
@@ -1014,8 +946,6 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("CodiceCliente")
                         .HasDatabaseName("IX_OrdiniTestate_CodiceCliente");
-
-                    b.HasIndex("CodiceMagazzino");
 
                     b.HasIndex("DataOrdine")
                         .HasDatabaseName("IX_OrdiniTestate_DataOrdine");
@@ -1047,20 +977,12 @@ namespace AiDbMaster.Migrations
                         .HasColumnName("CodiceMagazzino");
 
                     b.Property<decimal>("Esistenza")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("decimal(27,9)")
                         .HasColumnName("Esistenza");
 
-                    b.Property<decimal>("Impegnato")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Impegnato");
-
-                    b.Property<decimal>("Ordinato")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Ordinato");
-
-                    b.Property<decimal>("Prenotato")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Prenotato");
+                    b.Property<decimal>("OrdinatoFornitoriDataOdierna")
+                        .HasColumnType("decimal(27,9)")
+                        .HasColumnName("OrdinatoFornitoriDataOdierna");
 
                     b.HasKey("Id");
 
@@ -1336,6 +1258,28 @@ namespace AiDbMaster.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.AnagraficaClienti", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.TabellaAgenti", "Agente")
+                        .WithMany()
+                        .HasForeignKey("CodiceAgente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Agente");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.CalendarioFermiCentriLavoro", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.CentroLavoro", "CentroLavoro")
+                        .WithMany()
+                        .HasForeignKey("CodiceCentro")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CentroLavoro");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Document", b =>
                 {
                     b.HasOne("AiDbMaster.Models.DocumentCategory", "Category")
@@ -1388,13 +1332,13 @@ namespace AiDbMaster.Migrations
                 {
                     b.HasOne("AiDbMaster.Models.CentroLavoro", "CentroLavoro")
                         .WithMany("OrdiniProduzione")
-                        .HasForeignKey("IdCentroLavoro")
+                        .HasForeignKey("CodiceCentro")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("AiDbMaster.Models.Lavorazioni", "Lavorazione")
                         .WithMany("OrdiniProduzione")
-                        .HasForeignKey("IdLavorazione")
+                        .HasForeignKey("CodiceLavorazione")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1463,18 +1407,9 @@ namespace AiDbMaster.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AiDbMaster.Models.TabellaMagazzini", "Magazzino")
-                        .WithMany()
-                        .HasForeignKey("CodiceMagazzino")
-                        .HasPrincipalKey("CodiceMagazzino")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Agente");
 
                     b.Navigation("Cliente");
-
-                    b.Navigation("Magazzino");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

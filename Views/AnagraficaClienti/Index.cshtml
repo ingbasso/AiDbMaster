@@ -262,7 +262,25 @@
                                         </a>
                                     </th>
                                     <th>Contatti</th>
-                                    <th>Agente</th>
+                                    <th>
+                                        <a asp-action="Index" 
+                                           asp-route-search="@search"
+                                           asp-route-tipoAnagrafica="@tipoAnagrafica"
+                                           asp-route-provincia="@provincia"
+                                           asp-route-pageSize="@pageSize"
+                                           asp-route-sortOrder="@(sortOrder == "agente" ? "agente_desc" : "agente")"
+                                           class="text-white text-decoration-none">
+                                            Agente
+                                            @if (sortOrder == "agente")
+                                            {
+                                                <i class="bi bi-arrow-up"></i>
+                                            }
+                                            else if (sortOrder == "agente_desc")
+                                            {
+                                                <i class="bi bi-arrow-down"></i>
+                                            }
+                                        </a>
+                                    </th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
@@ -279,14 +297,14 @@
                                         <td>
                                             <div>
                                                 <div class="fw-bold">@Html.DisplayFor(modelItem => item.RagioneSociale)</div>
-                                                @if (!string.IsNullOrEmpty(item.DescrizioneAggiuntiva))
+                                                @if (!string.IsNullOrEmpty(item.DescrizioneUlteriore))
                                                 {
-                                                    <small class="text-muted">@Html.DisplayFor(modelItem => item.DescrizioneAggiuntiva)</small>
+                                                    <small class="text-muted">@Html.DisplayFor(modelItem => item.DescrizioneUlteriore)</small>
                                                 }
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">@Html.DisplayFor(modelItem => item.TipoAnagrafica)</span>
+                                            <span class="badge bg-secondary">@Html.DisplayFor(modelItem => item.Tipo)</span>
                                         </td>
                                         <td>
                                             @if (!string.IsNullOrEmpty(item.Citta))
@@ -318,18 +336,24 @@
                                                 {
                                                     <div><i class="bi bi-telephone me-1"></i>@Html.DisplayFor(modelItem => item.Telefono)</div>
                                                 }
-                                                @if (!string.IsNullOrEmpty(item.FaxTelex))
-                                                {
-                                                    <div><i class="bi bi-printer me-1"></i>@Html.DisplayFor(modelItem => item.FaxTelex)</div>
-                                                }
-                                                @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.FaxTelex))
+                                                @if (string.IsNullOrEmpty(item.Telefono))
                                                 {
                                                     <span class="text-muted">-</span>
                                                 }
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-warning text-dark">@Html.DisplayFor(modelItem => item.CodiceAgente)</span>
+                                            @if (item.Agente != null && !string.IsNullOrEmpty(item.Agente.DescrizioneAgente))
+                                            {
+                                                <div>
+                                                    <div class="fw-bold">@item.Agente.DescrizioneAgente</div>
+                                                    <small class="text-muted">Cod. @item.CodiceAgente</small>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">@Html.DisplayFor(modelItem => item.CodiceAgente)</span>
+                                            }
                                         </td>
                                         <td>
                                             <div class="btn-group">

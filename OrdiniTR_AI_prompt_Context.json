@@ -1,0 +1,87 @@
+{
+  "database_name": "GestioneOrdiniClienti",
+  "tables": [
+    {
+      "table_name": "AnagraficaClienti",
+      "description": "Contiene le informazioni anagrafiche dei clienti.",
+      "columns": [
+	    { "name": "ID", "type": "int", "description": "Id univoco record" },
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo univoco del cliente" },
+        { "name": "RagioneSociale", "type": "varchar(50)", "description": "Nome o ragione sociale del cliente" },
+		{ "name": "DescrizioneUlteriore", "type": "varchar(50)", "description": "Ulteriore descrizione del cliente" },
+		{ "name": "Indirizzo", "type": "varchar(70)", "description": "Indirizzo del cliente" },
+		{ "name": "CAP", "type": "varchar(10)", "description": "Cap del cliente" },
+        { "name": "Citta", "type": "varchar(50)", "description": "Città del cliente" },
+        { "name": "Provincia", "type": "varchar(2)", "description": "Sigla della provincia del cliente" },
+		{ "name": "CodiceFiscale", "type": "varchar(16)", "description": "Codice Fiscale del cliente" },
+		{ "name": "PartitaIva", "type": "varchar(11)", "description": "Partita Iva del cliente" },
+		{ "name": "Telefono", "type": "varchar(18)", "description": "Telefono del cliente" },
+		{ "name": "CodiceAgente", "type": "smallint", "description": "Codice Agente del cliente" }
+      ],
+      "primary_key": ["Id"]
+    },
+    {
+      "table_name": "OrdiniTestate",
+      "description": "Contiene l’intestazione degli ordini effettuati dai clienti.",
+      "columns": [
+	    { "name": "ID", "type": "int", "description": "Id univoco Record" },
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo del cliente che ha effettuato l’ordine" },
+		{ "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente, 'O' = Ordine Fornitore" },
+		{ "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'Ordine" },
+		{ "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell’Ordine" },
+        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero identificativo dell’ordine" },
+		{ "name": "DataOrdine", "type": "datetime", "description": "Data in cui l’ordine è stato effettuato" },
+		{ "name": "RiferimentoOrdine", "type": "varchar(50)", "description": "Riferimenti ulteriori dell’ordine" },
+		{ "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’ordine" },
+		{ "name": "CodiceAgente", "type": "smallint", "description": "Identificativo dell’agente di vendita associato all’ordine" },
+        { "name": "NoteTestata", "type": "varchar(max)", "description": "Note dell’ordine" }
+      ],
+      "primary_key": ["ID"],
+      "foreign_keys": [
+        {
+          "column": "CodiceCliente",
+          "references": {
+            "table": "AnagraficaClienti",
+            "column": "CodiceCliente"
+          }
+        }
+      ]
+    },
+    {
+      "table_name": "OrdiniRighe",
+      "description": "Contiene le singole righe (dettagli) degli ordini cliente.",
+      "columns": [
+        { "name": "Id", "type": "int", "description": "Identificativo univoco Record" },
+		{ "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente, 'O' = Ordine Fornitore" },
+		{ "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'Ordine" },
+		{ "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell’ordine" },
+        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero dell’ordine associato alla riga" },
+        { "name": "RigaOrdine", "type": "int", "description": "Numero progressivo della riga nell’ordine" },
+		{ "name": "CodiceMagazzino", "type": "smallint", "description": "Codice Magazzino" },
+        { "name": "CodiceArticolo", "type": "varchar(50)", "description": "Codice identificativo dell’articolo ordinato" },
+		{ "name": "DescrizioneArticolo", "type": "nvarchar(50)", "description": "Descrizione dell’articolo" },
+        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’articolo" },
+        { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell’articolo" },
+		{ "name": "Quantita", "type": "decimal(10,3)", "description": "Quantità ordinata" },
+        { "name": "UnitaMisuraColli", "type": "varchar(3)", "description": "Unità di misura colli" },
+		{ "name": "NumeroColli", "type": "decimal(27,9)", "description": "Numero di colli ordinati" },	
+		{ "name": "ColliEvasi", "type": "decimal(27,9)", "description": "Numero di colli evasi" },
+		{ "name": "QuantitaEvasa", "type": "decimal(27,9)", "description": "Quantità evasa" },
+		{ "name": "Prezzo", "type": "decimal(24,6)", "description": "Prezzo unitario dell’articolo" },
+		{ "name": "NoteRiga", "type": "varchar(max)", "description": " " },
+        { "name": "ValoreRiga", "type": "money", "description": "Valore totale della riga ordine" },
+		{ "name": "PercentualeInclusione", "type": "int", "description": "PercentualeInclusione" }
+      ],
+      "primary_key": ["Id"],
+      "foreign_keys": [
+        {
+          "column": "NumeroOrdine",
+          "references": {
+            "table": "TestataOrdiniClienti",
+            "column": "NumeroOrdine"
+          }
+        }
+      ]
+    }
+  ]
+}

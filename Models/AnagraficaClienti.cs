@@ -30,9 +30,9 @@ namespace AiDbMaster.Models
         /// </summary>
         [Required(ErrorMessage = "Il tipo anagrafica è obbligatorio")]
         [StringLength(1, ErrorMessage = "Il tipo anagrafica deve essere di 1 carattere")]
-        [Display(Name = "Tipo Anagrafica")]
-        [Column("an_tipo")]
-        public string TipoAnagrafica { get; set; } = string.Empty;
+        [Display(Name = "Tipo")]
+        [Column("Tipo")]
+        public string Tipo { get; set; } = string.Empty;
 
         /// <summary>
         /// Ragione sociale del cliente
@@ -44,12 +44,12 @@ namespace AiDbMaster.Models
         public string RagioneSociale { get; set; } = string.Empty;
 
         /// <summary>
-        /// Descrizione aggiuntiva del cliente
+        /// Descrizione ulteriore del cliente
         /// </summary>
-        [StringLength(50, ErrorMessage = "La descrizione aggiuntiva non può superare i 50 caratteri")]
-        [Display(Name = "Descrizione Aggiuntiva")]
-        [Column("an_descr2")]
-        public string? DescrizioneAggiuntiva { get; set; }
+        [StringLength(50, ErrorMessage = "La descrizione ulteriore non può superare i 50 caratteri")]
+        [Display(Name = "Descrizione Ulteriore")]
+        [Column("DescrizioneUlteriore")]
+        public string? DescrizioneUlteriore { get; set; }
 
         /// <summary>
         /// Indirizzo del cliente
@@ -88,7 +88,7 @@ namespace AiDbMaster.Models
         /// </summary>
         [StringLength(16, ErrorMessage = "Il codice fiscale non può superare i 16 caratteri")]
         [Display(Name = "Codice Fiscale")]
-        [Column("an_codfis")]
+        [Column("CodiceFiscale")]
         public string? CodiceFiscale { get; set; }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace AiDbMaster.Models
         /// </summary>
         [StringLength(11, ErrorMessage = "La partita IVA non può superare gli 11 caratteri")]
         [Display(Name = "Partita IVA")]
-        [Column("an_pariva")]
+        [Column("PartitaIva")]
         public string? PartitaIva { get; set; }
 
         /// <summary>
@@ -108,20 +108,18 @@ namespace AiDbMaster.Models
         public string? Telefono { get; set; }
 
         /// <summary>
-        /// Numero di fax/telex del cliente
-        /// </summary>
-        [StringLength(18, ErrorMessage = "Il fax non può superare i 18 caratteri")]
-        [Display(Name = "Fax/Telex")]
-        [Column("an_faxtlx")]
-        public string? FaxTelex { get; set; }
-
-        /// <summary>
         /// Codice agente associato al cliente
         /// </summary>
         [Required(ErrorMessage = "Il codice agente è obbligatorio")]
         [Display(Name = "Codice Agente")]
         [Column("CodiceAgente")]
         public short CodiceAgente { get; set; }
+
+        /// <summary>
+        /// Agente associato al cliente (proprietà di navigazione)
+        /// </summary>
+        [ForeignKey("CodiceAgente")]
+        public virtual TabellaAgenti? Agente { get; set; }
 
         /// <summary>
         /// Indirizzo completo formattato per la visualizzazione
@@ -161,8 +159,8 @@ namespace AiDbMaster.Models
         {
             get
             {
-                if (!string.IsNullOrEmpty(DescrizioneAggiuntiva))
-                    return $"{RagioneSociale} - {DescrizioneAggiuntiva}";
+                if (!string.IsNullOrEmpty(DescrizioneUlteriore))
+                    return $"{RagioneSociale} - {DescrizioneUlteriore}";
                 return RagioneSociale;
             }
         }

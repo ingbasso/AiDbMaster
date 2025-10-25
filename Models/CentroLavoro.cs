@@ -10,10 +10,12 @@ namespace AiDbMaster.Models
     public class CentroLavoro
     {
         /// <summary>
-        /// Identificativo univoco del centro di lavoro
+        /// Codice identificativo del centro - Chiave primaria
         /// </summary>
         [Key]
-        public int IdCentroLavoro { get; set; }
+        [Required]
+        [StringLength(10)]
+        public string CodiceCentro { get; set; } = string.Empty;
 
         /// <summary>
         /// Descrizione del centro di lavoro
@@ -26,12 +28,6 @@ namespace AiDbMaster.Models
         /// Indica se il centro di lavoro è attivo
         /// </summary>
         public bool Attivo { get; set; } = true;
-
-        /// <summary>
-        /// Codice identificativo del centro (opzionale per future espansioni)
-        /// </summary>
-        [StringLength(10)]
-        public string? CodiceCentro { get; set; }
 
         /// <summary>
         /// Capacità produttiva oraria (opzionale)

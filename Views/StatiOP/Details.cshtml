@@ -8,7 +8,6 @@
         "PR" => "bg-warning",   // Produzione - Giallo
         "CH" => "bg-success",   // Chiuso - Verde
         "SO" => "bg-secondary", // Sospeso - Grigio
-        "AN" => "bg-danger",    // Annullato - Rosso
         _ => "bg-primary"       // Default - Blu primario
     };
 }
@@ -31,7 +30,7 @@
             <div class="col-md-8">
                 <!-- Card principale con i dati -->
                 <div class="card">
-                    <div class="card-header @colorClass text-white">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-flag"></i> Informazioni Stato OP
                             <span class="badge bg-light text-dark ms-2">ID: @Model?.IdStato</span>
@@ -120,9 +119,6 @@
                                                 case "SO":
                                                     <text><strong>Sospeso:</strong> Ordine temporaneamente fermo</text>
                                                     break;
-                                                case "AN":
-                                                    <text><strong>Annullato:</strong> Ordine cancellato</text>
-                                                    break;
                                                 default:
                                                     <text><strong>Stato personalizzato:</strong> @Model.DescrizioneStato</text>
                                                     break;
@@ -137,7 +133,7 @@
 
                 <!-- Card azioni rapide -->
                 <div class="card mt-4">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h6>
                     </div>
                     <div class="card-body">
@@ -165,7 +161,7 @@
             <div class="col-md-4">
                 <!-- Card statistiche -->
                 <div class="card">
-                    <div class="card-header bg-secondary text-white">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-graph-up"></i> Statistiche</h6>
                     </div>
                     <div class="card-body">
@@ -210,12 +206,12 @@
 
                 <!-- Card tipo stato -->
                 <div class="card mt-4">
-                    <div class="card-header @colorClass text-white">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-shield"></i> Tipo Stato</h6>
                     </div>
                     <div class="card-body">
                         @{
-                            var isSystemState = new[] { "ES", "PR", "CH", "SO", "AN" }.Contains(Model?.CodiceStato?.ToUpper());
+                            var isSystemState = new[] { "ES", "PR", "CH", "SO" }.Contains(Model?.CodiceStato?.ToUpper());
                         }
                         
                         @if (isSystemState)
@@ -239,7 +235,7 @@
 
                 <!-- Card navigazione -->
                 <div class="card mt-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-compass"></i> Navigazione</h6>
                     </div>
                     <div class="card-body">

@@ -278,14 +278,14 @@
                                         <td>
                                             <div>
                                                 <div class="fw-bold">@Html.DisplayFor(modelItem => item.RagioneSociale)</div>
-                                                @if (!string.IsNullOrEmpty(item.DescrizioneAggiuntiva))
+                                                @if (!string.IsNullOrEmpty(item.DescrizioneUlteriore))
                                                 {
-                                                    <small class="text-muted">@Html.DisplayFor(modelItem => item.DescrizioneAggiuntiva)</small>
+                                                    <small class="text-muted">@Html.DisplayFor(modelItem => item.DescrizioneUlteriore)</small>
                                                 }
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">@Html.DisplayFor(modelItem => item.TipoAnagrafica)</span>
+                                            <span class="badge bg-secondary">@Html.DisplayFor(modelItem => item.Tipo)</span>
                                         </td>
                                         <td>
                                             @if (!string.IsNullOrEmpty(item.Citta))
@@ -317,11 +317,7 @@
                                                 {
                                                     <div><i class="bi bi-telephone me-1"></i>@Html.DisplayFor(modelItem => item.Telefono)</div>
                                                 }
-                                                @if (!string.IsNullOrEmpty(item.FaxTelex))
-                                                {
-                                                    <div><i class="bi bi-printer me-1"></i>@Html.DisplayFor(modelItem => item.FaxTelex)</div>
-                                                }
-                                                @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.FaxTelex))
+                                                @if (string.IsNullOrEmpty(item.Telefono))
                                                 {
                                                     <span class="text-muted">-</span>
                                                 }

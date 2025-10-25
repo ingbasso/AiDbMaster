@@ -64,7 +64,7 @@ namespace AiDbMaster.Models
         /// </summary>
         [Required(ErrorMessage = "Il codice magazzino è obbligatorio")]
         [Display(Name = "Magazzino")]
-        [Column("mo_magaz")]
+        [Column("CodiceMagazzino")]
         public short CodiceMagazzino { get; set; }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace AiDbMaster.Models
         [Required(ErrorMessage = "I colli evasi sono obbligatori")]
         [Display(Name = "Colli Evasi")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        [Column("mo_coleva")]
+        [Column("ColliEvasi")]
         public decimal ColliEvasi { get; set; }
 
         /// <summary>
@@ -142,35 +142,8 @@ namespace AiDbMaster.Models
         [Required(ErrorMessage = "La quantità evasa è obbligatoria")]
         [Display(Name = "Quantità Evasa")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        [Column("mo_quaeva")]
+        [Column("QuantitaEvasa")]
         public decimal QuantitaEvasa { get; set; }
-
-        /// <summary>
-        /// Colli prenotati
-        /// </summary>
-        [Required(ErrorMessage = "I colli prenotati sono obbligatori")]
-        [Display(Name = "Colli Prenotati")]
-        [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        [Column("mo_colpre")]
-        public decimal ColliPrenotati { get; set; }
-
-        /// <summary>
-        /// Quantità prenotata
-        /// </summary>
-        [Required(ErrorMessage = "La quantità prenotata è obbligatoria")]
-        [Display(Name = "Quantità Prenotata")]
-        [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
-        [Column("mo_quapre")]
-        public decimal QuantitaPrenotata { get; set; }
-
-        /// <summary>
-        /// Flag evasione prenotazione
-        /// </summary>
-        [Required(ErrorMessage = "Il flag evasione prenotazione è obbligatorio")]
-        [StringLength(1, ErrorMessage = "Il flag deve essere di 1 carattere")]
-        [Display(Name = "Flag Evasione")]
-        [Column("mo_flevapre")]
-        public string FlagEvasionePrenotazione { get; set; } = string.Empty;
 
         /// <summary>
         /// Prezzo unitario
@@ -182,82 +155,18 @@ namespace AiDbMaster.Models
         public decimal Prezzo { get; set; }
 
         /// <summary>
-        /// Sconto 1 (percentuale)
+        /// Percentuale di inclusione dell'articolo nell'ordine
         /// </summary>
-        [Required(ErrorMessage = "Lo sconto 1 è obbligatorio")]
-        [Display(Name = "Sconto 1 %")]
-        [DisplayFormat(DataFormatString = "{0:N2}%", ApplyFormatInEditMode = true)]
-        [Column("mo_scont1")]
-        public decimal Sconto1 { get; set; }
-
-        /// <summary>
-        /// Sconto 2 (percentuale)
-        /// </summary>
-        [Required(ErrorMessage = "Lo sconto 2 è obbligatorio")]
-        [Display(Name = "Sconto 2 %")]
-        [DisplayFormat(DataFormatString = "{0:N2}%", ApplyFormatInEditMode = true)]
-        [Column("mo_scont2")]
-        public decimal Sconto2 { get; set; }
-
-        /// <summary>
-        /// Sconto 3 (percentuale)
-        /// </summary>
-        [Required(ErrorMessage = "Lo sconto 3 è obbligatorio")]
-        [Display(Name = "Sconto 3 %")]
-        [DisplayFormat(DataFormatString = "{0:N2}%", ApplyFormatInEditMode = true)]
-        [Column("mo_scont3")]
-        public decimal Sconto3 { get; set; }
-
-        /// <summary>
-        /// Provvigione (percentuale)
-        /// </summary>
-        [Required(ErrorMessage = "La provvigione è obbligatoria")]
-        [Display(Name = "Provvigione %")]
-        [DisplayFormat(DataFormatString = "{0:N2}%", ApplyFormatInEditMode = true)]
-        [Column("mo_provv")]
-        public decimal Provvigione { get; set; }
-
-        /// <summary>
-        /// Codice IVA
-        /// </summary>
-        [Required(ErrorMessage = "Il codice IVA è obbligatorio")]
-        [Display(Name = "Codice IVA")]
-        [Column("mo_codiva")]
-        public short CodiceIva { get; set; }
-
-        /// <summary>
-        /// Prezzo con IVA
-        /// </summary>
-        [Required(ErrorMessage = "Il prezzo IVA è obbligatorio")]
-        [Display(Name = "Prezzo + IVA")]
-        [DisplayFormat(DataFormatString = "{0:C}", ApplyFormatInEditMode = true)]
-        [Column("mo_preziva")]
-        public decimal PrezzoConIva { get; set; }
-
-        /// <summary>
-        /// Prezzo in valuta
-        /// </summary>
-        [Required(ErrorMessage = "Il prezzo valuta è obbligatorio")]
-        [Display(Name = "Prezzo Valuta")]
-        [DisplayFormat(DataFormatString = "{0:C}", ApplyFormatInEditMode = true)]
-        [Column("mo_prezvalc")]
-        public decimal PrezzoValuta { get; set; }
+        [Display(Name = "Percentuale Inclusione %")]
+        [Column("PercentualeInclusione")]
+        public int PercentualeInclusione { get; set; }
 
         /// <summary>
         /// Note della riga
         /// </summary>
         [Display(Name = "Note")]
-        [Column("mo_note")]
-        public string? Note { get; set; }
-
-        /// <summary>
-        /// Prezzo di listino
-        /// </summary>
-        [Required(ErrorMessage = "Il prezzo listino è obbligatorio")]
-        [Display(Name = "Prezzo Listino")]
-        [DisplayFormat(DataFormatString = "{0:C}", ApplyFormatInEditMode = true)]
-        [Column("mo_prelist")]
-        public decimal PrezzoListino { get; set; }
+        [Column("NoteRiga")]
+        public string? NoteRiga { get; set; }
 
         /// <summary>
         /// Valore totale della riga
@@ -375,25 +284,14 @@ namespace AiDbMaster.Models
 
 
         /// <summary>
-        /// Prezzo netto dopo gli sconti
+        /// Prezzo netto (senza sconti applicati)
         /// </summary>
         [NotMapped]
         public decimal PrezzoNetto
         {
             get
             {
-                var prezzoScontato = Prezzo;
-                
-                if (Sconto1 > 0)
-                    prezzoScontato = prezzoScontato * (1 - Sconto1 / 100);
-                
-                if (Sconto2 > 0)
-                    prezzoScontato = prezzoScontato * (1 - Sconto2 / 100);
-                
-                if (Sconto3 > 0)
-                    prezzoScontato = prezzoScontato * (1 - Sconto3 / 100);
-                
-                return Math.Round(prezzoScontato, 4);
+                return Math.Round(Prezzo, 4);
             }
         }
 
@@ -491,8 +389,8 @@ namespace AiDbMaster.Models
                 if (!string.IsNullOrEmpty(DescrizioneArticolo))
                     testo += $" {DescrizioneArticolo}";
                 
-                if (!string.IsNullOrEmpty(Note))
-                    testo += $" {Note}";
+                if (!string.IsNullOrEmpty(NoteRiga))
+                    testo += $" {NoteRiga}";
                 
                 testo += $" {StatoEvasione}";
                 

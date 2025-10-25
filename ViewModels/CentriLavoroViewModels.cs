@@ -8,9 +8,10 @@ namespace AiDbMaster.ViewModels
     /// </summary>
     public class CreateCentroLavoroViewModel
     {
+        [Required(ErrorMessage = "Il codice centro è obbligatorio")]
         [StringLength(10, ErrorMessage = "Il codice non può superare i 10 caratteri")]
         [Display(Name = "Codice Centro")]
-        public string? CodiceCentro { get; set; }
+        public string CodiceCentro { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La descrizione è obbligatoria")]
         [StringLength(100, ErrorMessage = "La descrizione non può superare i 100 caratteri")]
@@ -38,12 +39,10 @@ namespace AiDbMaster.ViewModels
     /// </summary>
     public class EditCentroLavoroViewModel
     {
-        [Required]
-        public int IdCentroLavoro { get; set; }
-
+        [Required(ErrorMessage = "Il codice centro è obbligatorio")]
         [StringLength(10, ErrorMessage = "Il codice non può superare i 10 caratteri")]
         [Display(Name = "Codice Centro")]
-        public string? CodiceCentro { get; set; }
+        public string CodiceCentro { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La descrizione è obbligatoria")]
         [StringLength(100, ErrorMessage = "La descrizione non può superare i 100 caratteri")]
@@ -134,8 +133,8 @@ namespace AiDbMaster.ViewModels
         public int OrdiniProduzioneCompletati { get; set; }
 
         // Navigazione
-        public int? PreviousId { get; set; }
-        public int? NextId { get; set; }
+        public string? PreviousId { get; set; }
+        public string? NextId { get; set; }
     }
 
     /// <summary>
@@ -187,8 +186,7 @@ namespace AiDbMaster.ViewModels
     /// </summary>
     public class CentroLavoroFrequencyViewModel
     {
-        public int IdCentroLavoro { get; set; }
-        public string? CodiceCentro { get; set; }
+        public string CodiceCentro { get; set; } = string.Empty;
         public string DescrizioneCentro { get; set; } = string.Empty;
         public int FrequenzaUtilizzo { get; set; }
         public DateTime UltimoUtilizzo { get; set; }
@@ -201,12 +199,11 @@ namespace AiDbMaster.ViewModels
     /// </summary>
     public class CentroLavoroApiViewModel
     {
-        public int Id { get; set; }
-        public string? Codice { get; set; }
+        public string Codice { get; set; } = string.Empty;
         public string Descrizione { get; set; } = string.Empty;
         public bool Attivo { get; set; }
         public int? CapacitaOraria { get; set; }
         public decimal? CostoOrarioStandard { get; set; }
-        public string DisplayText => !string.IsNullOrEmpty(Codice) ? $"{Codice} - {Descrizione}" : Descrizione;
+        public string DisplayText => $"{Codice} - {Descrizione}";
     }
 }

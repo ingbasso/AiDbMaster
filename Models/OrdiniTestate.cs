@@ -72,17 +72,9 @@ namespace AiDbMaster.Models
         /// Riferimento ordine
         /// </summary>
         [StringLength(50, ErrorMessage = "Il riferimento non può superare i 50 caratteri")]
-        [Display(Name = "Riferimento")]
-        [Column("td_riferim")]
-        public string? Riferimento { get; set; }
-
-        /// <summary>
-        /// Tipo bolla/fattura
-        /// </summary>
-        [Required(ErrorMessage = "Il tipo bolla/fattura è obbligatorio")]
-        [Display(Name = "Tipo Bolla/Fattura")]
-        [Column("td_tipobf")]
-        public short TipoBollaFattura { get; set; }
+        [Display(Name = "Riferimento Ordine")]
+        [Column("RiferimentoOrdine")]
+        public string? RiferimentoOrdine { get; set; }
 
         /// <summary>
         /// Data di consegna prevista
@@ -101,27 +93,11 @@ namespace AiDbMaster.Models
         public short CodiceAgente { get; set; }
 
         /// <summary>
-        /// Codice magazzino (relazione con TabellaMagazzini)
+        /// Note della testata ordine
         /// </summary>
-        [Required(ErrorMessage = "Il codice magazzino è obbligatorio")]
-        [Display(Name = "Codice Magazzino")]
-        [Column("td_magaz")]
-        public short CodiceMagazzino { get; set; }
-
-        /// <summary>
-        /// Totale colli dell'ordine
-        /// </summary>
-        [Required(ErrorMessage = "Il totale colli è obbligatorio")]
-        [Display(Name = "Totale Colli")]
-        [Column("TotaleColli")]
-        public int TotaleColli { get; set; }
-
-        /// <summary>
-        /// Note dell'ordine
-        /// </summary>
-        [Display(Name = "Note")]
-        [Column("td_note")]
-        public string? Note { get; set; }
+        [Display(Name = "Note Testata")]
+        [Column("NoteTestata")]
+        public string? NoteTestata { get; set; }
 
         // Proprietà di navigazione per le relazioni
         /// <summary>
@@ -135,12 +111,6 @@ namespace AiDbMaster.Models
         /// </summary>
         [ForeignKey("CodiceAgente")]
         public virtual TabellaAgenti? Agente { get; set; }
-
-        /// <summary>
-        /// Magazzino associato all'ordine
-        /// </summary>
-        [ForeignKey("CodiceMagazzino")]
-        public virtual TabellaMagazzini? Magazzino { get; set; }
 
         /// <summary>
         /// Righe dell'ordine
@@ -292,12 +262,10 @@ namespace AiDbMaster.Models
             {
                 var riepilogo = $"{NumeroOrdineCompleto} - {DescrizioneTipoOrdine}";
                 
-                if (!string.IsNullOrEmpty(Riferimento))
+                if (!string.IsNullOrEmpty(RiferimentoOrdine))
                 {
-                    riepilogo += $" (Rif: {Riferimento})";
+                    riepilogo += $" (Rif: {RiferimentoOrdine})";
                 }
-                
-                riepilogo += $" - {TotaleColli} colli";
                 
                 return riepilogo;
             }
@@ -340,14 +308,14 @@ namespace AiDbMaster.Models
             {
                 var testo = $"{NumeroOrdineCompleto} {DescrizioneTipoOrdine}";
                 
-                if (!string.IsNullOrEmpty(Riferimento))
-                    testo += $" {Riferimento}";
+                if (!string.IsNullOrEmpty(RiferimentoOrdine))
+                    testo += $" {RiferimentoOrdine}";
                 
                 if (Cliente != null)
                     testo += $" {Cliente.RagioneSociale} {Cliente.CodiceFiscale}";
                 
-                if (!string.IsNullOrEmpty(Note))
-                    testo += $" {Note}";
+                if (!string.IsNullOrEmpty(NoteTestata))
+                    testo += $" {NoteTestata}";
                 
                 return testo.ToLower();
             }

@@ -91,14 +91,14 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID del centro di lavoro</param>
         /// <returns>Vista con i dettagli del centro di lavoro</returns>
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(string? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var viewModel = await _centriLavoroService.GetCentroLavoroDetailsAsync(id.Value);
+            var viewModel = await _centriLavoroService.GetCentroLavoroDetailsAsync(id);
             if (viewModel == null)
             {
                 return NotFound();
@@ -150,14 +150,14 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID del centro di lavoro da modificare</param>
         /// <returns>Vista con il form di modifica</returns>
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(string? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var centroLavoro = await _centriLavoroService.GetCentroLavoroByIdAsync(id.Value);
+            var centroLavoro = await _centriLavoroService.GetCentroLavoroByIdAsync(id);
             if (centroLavoro == null)
             {
                 return NotFound();
@@ -165,7 +165,6 @@ namespace AiDbMaster.Controllers
 
             var model = new EditCentroLavoroViewModel
             {
-                IdCentroLavoro = centroLavoro.IdCentroLavoro,
                 CodiceCentro = centroLavoro.CodiceCentro,
                 DescrizioneCentro = centroLavoro.DescrizioneCentro,
                 CapacitaOraria = centroLavoro.CapacitaOraria,
@@ -188,9 +187,9 @@ namespace AiDbMaster.Controllers
         /// <returns>Redirect alla lista o vista con errori</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, EditCentroLavoroViewModel model)
+        public async Task<IActionResult> Edit(string id, EditCentroLavoroViewModel model)
         {
-            if (id != model.IdCentroLavoro)
+            if (id != model.CodiceCentro)
             {
                 return NotFound();
             }
@@ -218,7 +217,7 @@ namespace AiDbMaster.Controllers
         /// </summary>
         /// <param name="id">ID del centro di lavoro da eliminare</param>
         /// <returns>Vista con la conferma di eliminazione</returns>
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(string? id)
         {
             if (id == null)
             {
@@ -227,7 +226,7 @@ namespace AiDbMaster.Controllers
 
             var centroLavoro = await _context.CentriLavoro
                 .Include(c => c.OrdiniProduzione)
-                .FirstOrDefaultAsync(c => c.IdCentroLavoro == id);
+                .FirstOrDefaultAsync(c => c.CodiceCentro == id);
 
             if (centroLavoro == null)
             {
@@ -235,7 +234,7 @@ namespace AiDbMaster.Controllers
             }
 
             // Verifica se può essere eliminato
-            var canDelete = await _centriLavoroService.CanDeleteCentroLavoroAsync(id.Value);
+            var canDelete = await _centriLavoroService.CanDeleteCentroLavoroAsync(id);
             
             var viewModel = new DeleteCentroLavoroViewModel
             {
@@ -256,7 +255,7 @@ namespace AiDbMaster.Controllers
         /// <returns>Redirect alla lista</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(string id)
         {
             var result = await _centriLavoroService.DeleteCentroLavoroAsync(id);
             
@@ -322,7 +321,7 @@ namespace AiDbMaster.Controllers
         /// <returns>Risultato dell'operazione</returns>
         [HttpPost]
         [Route("api/centri-lavoro/toggle-attivo/{id}")]
-        public async Task<IActionResult> ToggleAttivo(int id)
+        public async Task<IActionResult> ToggleAttivo(string id)
         {
             try
             {

@@ -124,34 +124,34 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Ottiene un centro di lavoro per ID
         /// </summary>
-        public async Task<CentroLavoro?> GetCentroLavoroByIdAsync(int id)
+        public async Task<CentroLavoro?> GetCentroLavoroByIdAsync(string id)
         {
-            return await _context.CentriLavoro.FindAsync(id);
+            return await _context.CentriLavoro.FirstOrDefaultAsync(c => c.CodiceCentro == id);
         }
 
         /// <summary>
         /// Ottiene i dettagli di un centro di lavoro con informazioni aggiuntive
         /// </summary>
-        public async Task<CentroLavoroDetailsViewModel?> GetCentroLavoroDetailsAsync(int id)
+        public async Task<CentroLavoroDetailsViewModel?> GetCentroLavoroDetailsAsync(string id)
         {
             var centroLavoro = await _context.CentriLavoro
                 .Include(c => c.OrdiniProduzione)
-                .FirstOrDefaultAsync(c => c.IdCentroLavoro == id);
+                .FirstOrDefaultAsync(c => c.CodiceCentro == id);
 
             if (centroLavoro == null)
                 return null;
 
             // Trova ID precedente e successivo per la navigazione
             var previousId = await _context.CentriLavoro
-                .Where(c => c.IdCentroLavoro < id)
-                .OrderByDescending(c => c.IdCentroLavoro)
-                .Select(c => c.IdCentroLavoro)
+                .Where(c => string.Compare(c.CodiceCentro, id) < 0)
+                .OrderByDescending(c => c.CodiceCentro)
+                .Select(c => c.CodiceCentro)
                 .FirstOrDefaultAsync();
 
             var nextId = await _context.CentriLavoro
-                .Where(c => c.IdCentroLavoro > id)
-                .OrderBy(c => c.IdCentroLavoro)
-                .Select(c => c.IdCentroLavoro)
+                .Where(c => string.Compare(c.CodiceCentro, id) > 0)
+                .OrderBy(c => c.CodiceCentro)
+                .Select(c => c.CodiceCentro)
                 .FirstOrDefaultAsync();
 
             // Statistiche ordini di produzione
@@ -162,8 +162,8 @@ namespace AiDbMaster.Services
             return new CentroLavoroDetailsViewModel
             {
                 CentroLavoro = centroLavoro,
-                PreviousId = previousId == 0 ? null : previousId,
-                NextId = nextId == 0 ? null : nextId,
+                PreviousId = string.IsNullOrEmpty(previousId) ? null : previousId,
+                NextId = string.IsNullOrEmpty(nextId) ? null : nextId,
                 OrdiniProduzioneAssegnati = ordiniAssegnati,
                 OrdiniProduzioneAttivi = ordiniAttivi,
                 OrdiniProduzioneCompletati = ordiniCompletati
@@ -203,8 +203,8 @@ namespace AiDbMaster.Services
                 _context.CentriLavoro.Add(centroLavoro);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Centro di lavoro creato con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    centroLavoro.IdCentroLavoro, centroLavoro.DescrizioneCentro);
+                _logger.LogInformation("Centro di lavoro creato con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    centroLavoro.CodiceCentro, centroLavoro.DescrizioneCentro);
 
                 return (true, "Centro di lavoro creato con successo!", centroLavoro);
             }
@@ -223,24 +223,13 @@ namespace AiDbMaster.Services
         {
             try
             {
-                var centroLavoro = await GetCentroLavoroByIdAsync(model.IdCentroLavoro);
+                var centroLavoro = await GetCentroLavoroByIdAsync(model.CodiceCentro);
                 if (centroLavoro == null)
                 {
                     return (false, "Centro di lavoro non trovato.");
                 }
 
-                // Verifica unicità del codice se specificato
-                if (!string.IsNullOrEmpty(model.CodiceCentro))
-                {
-                    var esistente = await _context.CentriLavoro
-                        .FirstOrDefaultAsync(c => c.CodiceCentro == model.CodiceCentro && 
-                                                 c.IdCentroLavoro != model.IdCentroLavoro);
-                    
-                    if (esistente != null)
-                    {
-                        return (false, "Esiste già un centro di lavoro con questo codice.");
-                    }
-                }
+                // Il codice centro è la chiave primaria, quindi è garantita l'unicità
 
                 centroLavoro.CodiceCentro = model.CodiceCentro?.ToUpper();
                 centroLavoro.DescrizioneCentro = model.DescrizioneCentro.Trim();
@@ -253,15 +242,15 @@ namespace AiDbMaster.Services
                 _context.CentriLavoro.Update(centroLavoro);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Centro di lavoro modificato con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    centroLavoro.IdCentroLavoro, centroLavoro.DescrizioneCentro);
+                _logger.LogInformation("Centro di lavoro modificato con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    centroLavoro.CodiceCentro, centroLavoro.DescrizioneCentro);
 
                 return (true, "Centro di lavoro modificato con successo!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante la modifica del centro di lavoro - ID: {Id}", 
-                    model.IdCentroLavoro);
+                _logger.LogError(ex, "Errore durante la modifica del centro di lavoro - Codice: {Codice}", 
+                    model.CodiceCentro);
                 return (false, $"Errore durante la modifica: {ex.Message}");
             }
         }
@@ -269,13 +258,13 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Elimina un centro di lavoro
         /// </summary>
-        public async Task<(bool Success, string Message)> DeleteCentroLavoroAsync(int id)
+        public async Task<(bool Success, string Message)> DeleteCentroLavoroAsync(string id)
         {
             try
             {
                 var centroLavoro = await _context.CentriLavoro
                     .Include(c => c.OrdiniProduzione)
-                    .FirstOrDefaultAsync(c => c.IdCentroLavoro == id);
+                    .FirstOrDefaultAsync(c => c.CodiceCentro == id);
 
                 if (centroLavoro == null)
                 {
@@ -291,8 +280,8 @@ namespace AiDbMaster.Services
                 _context.CentriLavoro.Remove(centroLavoro);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Centro di lavoro eliminato con successo - ID: {Id}, Descrizione: {Descrizione}", 
-                    centroLavoro.IdCentroLavoro, centroLavoro.DescrizioneCentro);
+                _logger.LogInformation("Centro di lavoro eliminato con successo - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    centroLavoro.CodiceCentro, centroLavoro.DescrizioneCentro);
 
                 return (true, "Centro di lavoro eliminato con successo!");
             }
@@ -313,7 +302,6 @@ namespace AiDbMaster.Services
                 .OrderBy(c => c.DescrizioneCentro)
                 .Select(c => new CentroLavoroApiViewModel
                 {
-                    Id = c.IdCentroLavoro,
                     Codice = c.CodiceCentro,
                     Descrizione = c.DescrizioneCentro,
                     Attivo = c.Attivo,
@@ -362,7 +350,6 @@ namespace AiDbMaster.Services
                 .Take(5)
                 .Select(c => new CentroLavoroFrequencyViewModel
                 {
-                    IdCentroLavoro = c.IdCentroLavoro,
                     CodiceCentro = c.CodiceCentro,
                     DescrizioneCentro = c.DescrizioneCentro,
                     UltimoUtilizzo = c.DataCreazione,
@@ -379,7 +366,6 @@ namespace AiDbMaster.Services
                 .Take(5)
                 .Select(c => new CentroLavoroFrequencyViewModel
                 {
-                    IdCentroLavoro = c.IdCentroLavoro,
                     CodiceCentro = c.CodiceCentro,
                     DescrizioneCentro = c.DescrizioneCentro,
                     FrequenzaUtilizzo = c.OrdiniProduzione.Count,
@@ -410,10 +396,10 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Verifica se un centro di lavoro può essere eliminato
         /// </summary>
-        public async Task<(bool CanDelete, string Reason, int RelatedCount)> CanDeleteCentroLavoroAsync(int id)
+        public async Task<(bool CanDelete, string Reason, int RelatedCount)> CanDeleteCentroLavoroAsync(string id)
         {
             var ordiniCount = await _context.CentriLavoro
-                .Where(c => c.IdCentroLavoro == id)
+                .Where(c => c.CodiceCentro == id)
                 .SelectMany(c => c.OrdiniProduzione)
                 .CountAsync();
 
@@ -428,7 +414,7 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Attiva o disattiva un centro di lavoro
         /// </summary>
-        public async Task<(bool Success, string Message)> ToggleAttivoAsync(int id)
+        public async Task<(bool Success, string Message)> ToggleAttivoAsync(string id)
         {
             try
             {
@@ -445,8 +431,8 @@ namespace AiDbMaster.Services
                 await _context.SaveChangesAsync();
 
                 var stato = centroLavoro.Attivo ? "attivato" : "disattivato";
-                _logger.LogInformation("Centro di lavoro {Stato} - ID: {Id}, Descrizione: {Descrizione}", 
-                    stato, centroLavoro.IdCentroLavoro, centroLavoro.DescrizioneCentro);
+                _logger.LogInformation("Centro di lavoro {Stato} - Codice: {Codice}, Descrizione: {Descrizione}", 
+                    stato, centroLavoro.CodiceCentro, centroLavoro.DescrizioneCentro);
 
                 return (true, $"Centro di lavoro {stato} con successo!");
             }

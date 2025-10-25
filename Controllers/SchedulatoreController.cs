@@ -78,7 +78,7 @@ namespace AiDbMaster.Controllers
                     .OrderBy(c => c.DescrizioneCentro)
                     .Select(c => new
                     {
-                        Id = c.IdCentroLavoro,
+                        Id = c.CodiceCentro,
                         Nome = c.DescrizioneCentro
                     })
                     .ToListAsync();
@@ -108,7 +108,7 @@ namespace AiDbMaster.Controllers
                     .OrderBy(c => c.DescrizioneCentro)
                     .Select(c => new
                     {
-                        Id = c.IdCentroLavoro,
+                        Id = c.CodiceCentro,
                         Name = c.DescrizioneCentro,
                         Capacity = c.CapacitaOraria ?? 1
                     })
@@ -169,7 +169,7 @@ namespace AiDbMaster.Controllers
                         DataInizioOP = o.DataInizioOP,
                         DataFineOP = o.DataFineOP,
                         DataFinePrevista = o.DataFinePrevista,
-                        IdCentroLavoro = o.IdCentroLavoro,
+                        CodiceCentro = o.CodiceCentro,
                         IdStato = o.IdStato,
                         StatoDescrizione = o.Stato != null ? o.Stato.DescrizioneStato : "",
                         CentroLavoroDescrizione = o.CentroLavoro != null ? o.CentroLavoro.DescrizioneCentro : "",
@@ -184,41 +184,76 @@ namespace AiDbMaster.Controllers
                     })
                     .ToListAsync();
 
-                // Poi trasformiamo i dati in memoria
-                var ordini = ordiniFromDb.Select(o => new
+                // Poi trasformiamo i dati calcolando l'EndTime con i fermi
+                var ordiniList = new List<object>();
+                
+                foreach (var o in ordiniFromDb)
                 {
-                    Id = o.Id,
-                    Subject = $"{o.CodiceArticolo} Qta: {o.Quantita}",
-                    Description = o.DescrOrdine,
-                    StartTime = o.DataInizioOP,
-                    EndTime = o.IdStato == 3 ? o.DataFineOP : o.DataFinePrevista,
-                    RoomId = o.IdCentroLavoro,
-                    CategoryColor = GetStatoColor(o.IdStato),
-                    IsAllDay = false,
-                    RecurrenceRule = "",
-                    // Dati aggiuntivi per il tooltip e la modifica
-                    CodiceArticolo = o.CodiceArticolo,
-                    DescrizioneArticolo = o.DescrizioneArticolo,
-                    Quantita = o.Quantita,
-                    QuantitaProdotta = o.QuantitaProdotta,
-                    IdStato = o.IdStato,
-                    StatoDescrizione = o.StatoDescrizione,
-                    CentroLavoro = o.CentroLavoroDescrizione,
-                    IdCentroLavoro = o.IdCentroLavoro,
-                    Priorita = o.Priorita,
-                    PercentualeCompletamento = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 2) : 0,
-                    TipoOrdine = o.TipoOrdine,
-                    AnnoOrdine = o.AnnoOrdine,
-                    SerieOrdine = o.SerieOrdine,
-                    NumeroOrdine = o.NumeroOrdine,
-                    Note = o.Note,
-                    TempoCiclo = o.TempoCiclo,
-                    TempoSetup = o.TempoSetup
-                }).ToList();
+                    DateTime endTime;
+                    
+                    if (o.IdStato == 3) // Chiuso: usa DataFineOP
+                    {
+                        endTime = o.DataFineOP.Value;
+                    }
+                    else if (o.IdStato == 2) // In Produzione: usa DataFineOP
+                    {
+                        endTime = o.DataFineOP.Value;
+                    }
+                    else // Altri stati: calcola al volo + allunga per fermi
+                    {
+                        // Calcola EndTime teorico
+                        var endTimeTeorico = o.DataInizioOP.AddSeconds((double)(o.Quantita * (decimal)o.TempoCiclo));
+                        
+                        // Calcola sovrapposizioni con fermi
+                        var durataSovrapposizioneFermi = await CalcolaDurataSovrapposizioneFermi(
+                            o.CodiceCentro, 
+                            o.DataInizioOP, 
+                            endTimeTeorico
+                        );
+                        
+                        // Allunga l'EndTime per compensare i fermi
+                        endTime = endTimeTeorico.Add(durataSovrapposizioneFermi);
+                        
+                        if (durataSovrapposizioneFermi > TimeSpan.Zero)
+                        {
+                            _logger.LogInformation($"Ordine {o.Id}: EndTime allungato di {durataSovrapposizioneFermi.TotalMinutes} minuti per fermi");
+                        }
+                    }
+                    
+                    ordiniList.Add(new
+                    {
+                        Id = o.Id,
+                        Subject = $"{o.CodiceArticolo} Qta: {o.Quantita}",
+                        Description = o.DescrOrdine,
+                        StartTime = o.DataInizioOP,
+                        EndTime = endTime,
+                        RoomId = o.CodiceCentro,
+                        CategoryColor = GetStatoColor(o.IdStato),
+                        IsAllDay = false,
+                        RecurrenceRule = "",
+                        // Dati aggiuntivi per il tooltip e la modifica
+                        CodiceArticolo = o.CodiceArticolo,
+                        DescrizioneArticolo = o.DescrizioneArticolo,
+                        Quantita = o.Quantita,
+                        QuantitaProdotta = o.QuantitaProdotta,
+                        IdStato = o.IdStato,
+                        StatoDescrizione = o.StatoDescrizione,
+                        CentroLavoro = o.CentroLavoroDescrizione,
+                        CodiceCentro = o.CodiceCentro,
+                        Priorita = o.Priorita,
+                        PercentualeCompletamento = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 2) : 0,
+                        TipoOrdine = o.TipoOrdine,
+                        AnnoOrdine = o.AnnoOrdine,
+                        SerieOrdine = o.SerieOrdine,
+                        NumeroOrdine = o.NumeroOrdine,
+                        Note = o.Note,
+                        TempoCiclo = o.TempoCiclo,
+                        TempoSetup = o.TempoSetup
+                    });
+                }
 
-                _logger.LogInformation($"Primi 3 ordini: {string.Join(", ", ordini.Take(3).Select(o => $"Id:{o.Id}, RoomId:{o.RoomId}, Subject:{o.Subject}"))}");
-                _logger.LogInformation($"Caricati {ordini.Count} ordini di produzione");
-                return Json(ordini);
+                _logger.LogInformation($"Caricati {ordiniList.Count} ordini di produzione con calcolo fermi");
+                return Json(ordiniList);
             }
             catch (Exception ex)
             {
@@ -241,37 +276,184 @@ namespace AiDbMaster.Controllers
                     return NotFound("Ordine non trovato");
                 }
 
-                // Aggiorna le date
+                // Aggiorna la data di inizio
                 ordine.DataInizioOP = request.StartTime;
-                
-                // Aggiorna la data fine in base allo stato
-                if (ordine.IdStato == 3) // Chiuso
+
+                // LOGICA DRAG & DROP vs RESIZE
+                if (request.IsResize)
                 {
-                    ordine.DataFineOP = request.EndTime;
+                    // RESIZE: Ricalcola la quantità in base alla nuova durata
+                    var durataSecondi = (decimal)(request.EndTime - request.StartTime).TotalSeconds;
+                    
+                    if (ordine.TempoCiclo > 0)
+                    {
+                        ordine.Quantita = Math.Round(durataSecondi / (decimal)ordine.TempoCiclo, 2);
+                        _logger.LogInformation($"Ordine {ordine.IdListaOP} RESIZE: nuova durata {durataSecondi}s, " +
+                                             $"TempoCiclo {ordine.TempoCiclo}s, nuova Quantità {ordine.Quantita}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Ordine {ordine.IdListaOP}: TempoCiclo = 0, impossibile ricalcolare Quantità");
+                    }
+                    
+                    // Aggiorna la data fine in base allo stato
+                    if (ordine.IdStato == 3) // Chiuso - non dovrebbe mai arrivare qui (bloccato nel frontend)
+                    {
+                        return BadRequest("Gli ordini chiusi non possono essere modificati");
+                    }
+                    else if (ordine.IdStato == 2) // In Produzione
+                    {
+                        // Verifica che la nuova data fine non sia nel passato
+                        if (request.EndTime < DateTime.Now)
+                        {
+                            return BadRequest("Non puoi ridurre l'ordine a una data passata");
+                        }
+                        ordine.DataFineOP = request.EndTime;
+                        _logger.LogInformation($"Ordine {ordine.IdListaOP} in produzione: DataFineOP aggiornata a {request.EndTime:yyyy-MM-dd HH:mm}");
+                    }
+                    else // Altri stati (Emesso, Sospeso, Urgente...)
+                    {
+                        ordine.DataFinePrevista = request.EndTime;
+                        _logger.LogInformation($"Ordine {ordine.IdListaOP}: DataFinePrevista aggiornata a {request.EndTime:yyyy-MM-dd HH:mm}");
+                    }
                 }
                 else
                 {
-                    ordine.DataFinePrevista = request.EndTime;
+                    // DRAG & DROP: NON modificare il centro, NON modificare la quantità
+                    // La durata rimane invariata, quindi EndTime si ricalcola automaticamente dalla vista
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP} DRAG&DROP: " +
+                                         $"nuovo inizio {ordine.DataInizioOP:yyyy-MM-dd HH:mm}, " +
+                                         $"centro {ordine.CodiceCentro} (invariato), Quantità {ordine.Quantita} (invariata)");
+                    
+                    // Per gli stati != 2 e != 3, aggiorna DataFinePrevista considerando i fermi
+                    if (ordine.IdStato != 2 && ordine.IdStato != 3)
+                    {
+                        // Calcola EndTime teorico
+                        var endTimeTeorico = request.StartTime.AddSeconds((double)(ordine.Quantita * (decimal)ordine.TempoCiclo));
+                        
+                        // Calcola sovrapposizioni con fermi nel nuovo periodo
+                        var durataSovrapposizioneFermi = await CalcolaDurataSovrapposizioneFermi(
+                            ordine.CodiceCentro, 
+                            request.StartTime, 
+                            endTimeTeorico
+                        );
+                        
+                        // Allunga per compensare i fermi
+                        ordine.DataFinePrevista = endTimeTeorico.Add(durataSovrapposizioneFermi);
+                        
+                        if (durataSovrapposizioneFermi > TimeSpan.Zero)
+                        {
+                            _logger.LogInformation($"DataFinePrevista allungata di {durataSovrapposizioneFermi.TotalMinutes} minuti per fermi: {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"DataFinePrevista ricalcolata (nessun fermo): {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
+                        }
+                    }
                 }
 
-                // Aggiorna il centro di lavoro se cambiato
-                if (request.RoomId.HasValue)
-                {
-                    ordine.IdCentroLavoro = request.RoomId.Value;
-                }
+                // Imposta il flag Modificato per entrambi i casi
+                ordine.Modificato = true;
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Ordine {ordine.IdListaOP} aggiornato: nuovo centro {ordine.IdCentroLavoro}, " +
-                                     $"inizio {ordine.DataInizioOP:yyyy-MM-dd HH:mm}, " +
-                                     $"fine {(ordine.IdStato == 3 ? ordine.DataFineOP : ordine.DataFinePrevista):yyyy-MM-dd HH:mm}");
+                _logger.LogInformation($"Ordine {ordine.IdListaOP} aggiornato con successo (Modificato=1)");
 
-                return Ok(new { success = true, message = "Ordine aggiornato con successo" });
+                return Ok(new { 
+                    success = true, 
+                    message = "Ordine aggiornato con successo",
+                    nuovaQuantita = ordine.Quantita
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Errore nell'aggiornamento dell'ordine {request.Id}");
                 return StatusCode(500, "Errore nell'aggiornamento dell'ordine");
+            }
+        }
+
+        /// <summary>
+        /// API per ottenere i fermi dei centri di lavoro
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetFermiCentriLavoro(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var start = startDate ?? DateTime.Today.AddDays(-30);
+                var end = endDate ?? DateTime.Today.AddDays(90);
+
+                var fermi = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.DataInizioFermo >= start && f.DataFineFermo <= end && 
+                               (f.CodiceCentro != null && f.CodiceCentro != ""))
+                    .Select(f => new
+                    {
+                        Id = f.Id,
+                        CodiceCentro = f.CodiceCentro,
+                        DataInizio = f.DataInizioFermo,
+                        DataFine = f.DataFineFermo,
+                        Descrizione = f.Motivo ?? "",
+                        TipoFermo = f.TipoFermo.ToString()
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"Caricati {fermi.Count} fermi centri lavoro");
+
+                return Ok(fermi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel caricamento fermi centri lavoro");
+                return StatusCode(500, "Errore nel caricamento dei fermi");
+            }
+        }
+
+        /// <summary>
+        /// Calcola la durata totale delle sovrapposizioni con i fermi per un ordine
+        /// </summary>
+        private async Task<TimeSpan> CalcolaDurataSovrapposizioneFermi(
+            string codiceCentro, 
+            DateTime dataInizio, 
+            DateTime dataFine)
+        {
+            try
+            {
+                // Recupera i fermi del centro che si sovrappongono al periodo dell'ordine
+                var fermiSovrapposti = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.CodiceCentro == codiceCentro &&
+                               f.DataInizioFermo < dataFine &&
+                               f.DataFineFermo > dataInizio)
+                    .ToListAsync();
+
+                if (!fermiSovrapposti.Any())
+                {
+                    return TimeSpan.Zero;
+                }
+
+                TimeSpan durataTotale = TimeSpan.Zero;
+
+                foreach (var fermo in fermiSovrapposti)
+                {
+                    // Calcola l'intersezione tra ordine e fermo
+                    var inizioSovrapposizione = dataInizio > fermo.DataInizioFermo ? dataInizio : fermo.DataInizioFermo;
+                    var fineSovrapposizione = dataFine < fermo.DataFineFermo ? dataFine : fermo.DataFineFermo.Value;
+
+                    if (fineSovrapposizione > inizioSovrapposizione)
+                    {
+                        var durataSovrapposizione = fineSovrapposizione - inizioSovrapposizione;
+                        durataTotale += durataSovrapposizione;
+
+                        _logger.LogDebug($"Fermo sovrapposto: {fermo.Id}, durata: {durataSovrapposizione.TotalMinutes} minuti");
+                    }
+                }
+
+                _logger.LogInformation($"Centro {codiceCentro}: durata totale sovrapposizione fermi = {durataTotale.TotalMinutes} minuti");
+                return durataTotale;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Errore nel calcolo sovrapposizioni fermi per centro {codiceCentro}");
+                return TimeSpan.Zero;
             }
         }
 
@@ -294,10 +476,10 @@ namespace AiDbMaster.Controllers
         /// <summary>
         /// Ottiene un colore per il centro di lavoro (per differenziare visivamente)
         /// </summary>
-        private static string GetCentroLavoroColor(int idCentroLavoro)
+        private static string GetCentroLavoroColor(string codiceCentro)
         {
             var colors = new[] { "#E3F2FD", "#F3E5F5", "#E8F5E8", "#FFF3E0", "#FCE4EC", "#F1F8E9" };
-            return colors[idCentroLavoro % colors.Length];
+            return colors[Math.Abs(codiceCentro.GetHashCode()) % colors.Length];
         }
 
         /// <summary>
@@ -314,12 +496,21 @@ namespace AiDbMaster.Controllers
                     return NotFound("Ordine non trovato");
                 }
 
-                // Aggiorna i campi modificabili
-                ordine.Quantita = request.Quantita;
-                ordine.QuantitaProdotta = request.QuantitaProdotta;
+                // Aggiorna solo i campi forniti (non null)
+                if (request.Quantita.HasValue)
+                    ordine.Quantita = request.Quantita.Value;
+                
+                if (request.QuantitaProdotta.HasValue)
+                    ordine.QuantitaProdotta = request.QuantitaProdotta.Value;
+                
+                // IdStato viene sempre aggiornato
                 ordine.IdStato = request.IdStato;
-                ordine.IdCentroLavoro = request.IdCentroLavoro;
-                ordine.Note = request.Note;
+                
+                if (!string.IsNullOrEmpty(request.CodiceCentro))
+                    ordine.CodiceCentro = request.CodiceCentro;
+                
+                if (request.Note != null)
+                    ordine.Note = request.Note;
 
                 await _context.SaveChangesAsync();
 
@@ -341,7 +532,8 @@ namespace AiDbMaster.Controllers
         public int Id { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
-        public int? RoomId { get; set; }
+        public string? RoomId { get; set; }
+        public bool IsResize { get; set; } // true = resize, false = drag&drop
     }
 
     /// <summary>
@@ -350,10 +542,10 @@ namespace AiDbMaster.Controllers
     public class SaveOrderDetailsRequest
     {
         public int Id { get; set; }
-        public decimal Quantita { get; set; }
-        public decimal QuantitaProdotta { get; set; }
+        public decimal? Quantita { get; set; }
+        public decimal? QuantitaProdotta { get; set; }
         public int IdStato { get; set; }
-        public int IdCentroLavoro { get; set; }
-        public string Note { get; set; } = string.Empty;
+        public string? CodiceCentro { get; set; }
+        public string? Note { get; set; }
     }
 }

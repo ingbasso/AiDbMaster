@@ -380,6 +380,29 @@
             text-overflow: ellipsis;
         }
         
+        /* SUPER SPECIFICO: Forza dimensione nomi centri di lavoro */
+        #scheduler .e-schedule .e-timeline-view .e-resource-cells,
+        #scheduler .e-schedule .e-timeline-view .e-resource-cells *,
+        #scheduler .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td,
+        #scheduler .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td *,
+        #scheduler .e-schedule .e-timeline-view .e-resource-left-td,
+        #scheduler .e-schedule .e-timeline-view .e-resource-left-td * {
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #2c3e50 !important;
+            line-height: 1.4 !important;
+        }
+        
+        /* Forza anche sugli span e div interni */
+        #scheduler .e-schedule .e-resource-cells span,
+        #scheduler .e-schedule .e-resource-cells div,
+        #scheduler .e-schedule .e-left-indent-wrap span,
+        #scheduler .e-schedule .e-left-indent-wrap div {
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #2c3e50 !important;
+        }
+        
         /* Forza la visualizzazione di tutte le righe delle risorse */
         .e-schedule .e-timeline-view .e-content-table tbody tr {
             display: table-row !important;
@@ -455,6 +478,29 @@
         
         .e-schedule .e-appointment .e-subject {
             font-weight: 600;
+        }
+        
+        /* Stili per drag & drop e resize degli eventi */
+        .e-schedule .e-appointment {
+            cursor: move !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .e-schedule .e-appointment:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+            transform: translateY(-2px);
+        }
+        
+        .e-schedule .e-appointment.e-drag-clone,
+        .e-schedule .e-appointment.e-dragging {
+            opacity: 0.7 !important;
+            cursor: grabbing !important;
+        }
+        
+        /* Stili per resize handles */
+        .e-schedule .e-appointment .e-resize-handler {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 2px solid rgba(0, 0, 0, 0.3) !important;
         }
         
         /* Loading overlay */
@@ -551,6 +597,13 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <!-- Alert per ordini con restrizioni -->
+            <div id="orderClosedAlert" class="alert alert-warning alert-dismissible fade show m-3 mb-0" role="alert" style="display: none;">
+                <div class="alert-content">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Ordine Chiuso:</strong> Solo il campo "Stato" può essere modificato per ordini chiusi.
+                </div>
+            </div>
             <div class="modal-body">
                 <form id="orderDetailsForm">
                     <!-- Sezione Informazioni Prodotto -->
@@ -609,12 +662,12 @@
                             <input type="datetime-local" class="form-control" id="orderDataInizio">
                         </div>
                         <div class="col-lg-4 mb-2">
-                            <label for="orderDataFine" class="form-label">Data Fine</label>
-                            <input type="datetime-local" class="form-control" id="orderDataFine">
-                        </div>
-                        <div class="col-lg-4 mb-2">
                             <label for="orderDataFinePrevista" class="form-label">Data Fine Prevista</label>
                             <input type="datetime-local" class="form-control" id="orderDataFinePrevista">
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <label for="orderDataFine" class="form-label">Data Fine</label>
+                            <input type="datetime-local" class="form-control" id="orderDataFine">
                         </div>
                     </div>
 
@@ -724,6 +777,7 @@
         let scheduleObj;
         let centriLavoro = [];
         let ordiniData = [];
+        let fermiCentriLavoro = []; // Fermi dei centri di lavoro
         let ordiniOriginali = []; // Dati originali completi per il popup
 
         // Funzioni helper per il template
@@ -760,8 +814,10 @@
 
         // Funzione per ottenere il nome del giorno abbreviato (inglese 3 lettere)
         function getDayNameShort(date) {
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            return days[date.getDay()];
+            const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            const dayName = days[date.getDay()];
+            console.log(`getDayNameShort chiamata: ${date.toDateString()} -> ${dayName}`);
+            return dayName;
         }
 
         // Funzione per formattare l'ora in base alla vista corrente
@@ -770,6 +826,38 @@
             
             // Per tutte le viste, mostra solo l'ora in formato 24h
             return String(hour).padStart(2, '0');
+        }
+        
+        // Forza gli stili dei nomi dei centri di lavoro con JavaScript diretto
+        function forzaStiliCentriLavoro() {
+            console.log('🎨 Forzatura stili nomi centri di lavoro...');
+            
+            // Trova tutte le celle delle risorse (nomi centri)
+            const celleRisorse = document.querySelectorAll(
+                '.e-schedule .e-resource-cells, ' +
+                '.e-schedule .e-left-indent-wrap td, ' +
+                '.e-schedule .e-resource-left-td'
+            );
+            
+            console.log(`   Trovate ${celleRisorse.length} celle risorsa`);
+            
+            celleRisorse.forEach(cella => {
+                // Applica stili inline (hanno la precedenza su tutto)
+                cella.style.fontSize = '1.1rem';
+                cella.style.fontWeight = '700';
+                cella.style.color = '#2c3e50';
+                cella.style.lineHeight = '1.4';
+                
+                // Applica anche a tutti i figli
+                const figli = cella.querySelectorAll('*');
+                figli.forEach(figlio => {
+                    figlio.style.fontSize = '1.1rem';
+                    figlio.style.fontWeight = '700';
+                    figlio.style.color = '#2c3e50';
+                });
+            });
+            
+            console.log('✅ Stili forzati applicati');
         }
         
         // Funzione per formattare l'ora con intervalli specifici (per timeline)
@@ -794,6 +882,21 @@
             // Forza la registrazione della licenza
             if (typeof ej !== 'undefined' && ej.base) {
                 ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+                
+                // Carica localizzazione italiana minima
+                if (ej.base.L10n) {
+                    ej.base.L10n.load({
+                        'it': {
+                            'schedule': {
+                                'day': 'Giorno',
+                                'week': 'Settimana',
+                                'month': 'Mese',
+                                'today': 'Oggi'
+                            }
+                        }
+                    });
+                }
+                console.log('Localizzazione italiana caricata');
             }
             
             console.log('Inizializzazione Schedulatore...');
@@ -810,6 +913,10 @@
                 // Carica i centri di lavoro
                 console.log('Step 1: Caricamento centri di lavoro');
                 await loadCentriLavoro();
+                
+                // Carica i fermi dei centri di lavoro
+                console.log('Step 1.5: Caricamento fermi centri lavoro');
+                await loadFermiCentriLavoro();
                 
                 // Carica gli ordini di produzione
                 console.log('Step 2: Caricamento ordini di produzione');
@@ -882,6 +989,67 @@
                 console.error('Errore nel caricamento dei centri di lavoro:', error);
                 throw new Error(`Centri di lavoro: ${error.message}`);
             }
+        }
+
+        // Carica i fermi dei centri di lavoro
+        async function loadFermiCentriLavoro() {
+            try {
+                console.log('Caricamento fermi centri lavoro...');
+                const response = await fetch('@Url.Action("GetFermiCentriLavoro", "Schedulatore")');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                fermiCentriLavoro = data.map(f => ({
+                    codiceCentro: f.codiceCentro,
+                    dataInizio: new Date(f.dataInizio),
+                    dataFine: new Date(f.dataFine),
+                    descrizione: f.descrizione,
+                    tipoFermo: f.tipoFermo
+                }));
+                
+                console.log(`✅ Fermi centri lavoro caricati: ${fermiCentriLavoro.length}`);
+                if (fermiCentriLavoro.length > 0) {
+                    console.log('Esempio fermo:', fermiCentriLavoro[0]);
+                }
+            } catch (error) {
+                console.error('Errore nel caricamento fermi:', error);
+                // Non blocco l'inizializzazione se non ci sono fermi
+                fermiCentriLavoro = [];
+            }
+        }
+
+        // Calcola la sovrapposizione tra un ordine e i fermi del suo centro
+        function calcolaSovrapposizioneFermo(ordine) {
+            const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro === ordine.RoomId);
+            
+            const sovrapposizioni = [];
+            for (const fermo of fermiCentro) {
+                // Verifica sovrapposizione
+                if (ordine.StartTime < fermo.dataFine && ordine.EndTime > fermo.dataInizio) {
+                    const inizioSovrapposizione = ordine.StartTime > fermo.dataInizio ? ordine.StartTime : fermo.dataInizio;
+                    const fineSovrapposizione = ordine.EndTime < fermo.dataFine ? ordine.EndTime : fermo.dataFine;
+                    
+                    // Calcola la percentuale dell'evento occupata dal fermo
+                    const durataOrdine = ordine.EndTime - ordine.StartTime;
+                    const offsetInizio = inizioSovrapposizione - ordine.StartTime;
+                    const durataSovrapposizione = fineSovrapposizione - inizioSovrapposizione;
+                    
+                    const percentualeInizio = (offsetInizio / durataOrdine) * 100;
+                    const percentualeLarghezza = (durataSovrapposizione / durataOrdine) * 100;
+                    
+                    sovrapposizioni.push({
+                        percentualeInizio: percentualeInizio,
+                        percentualeLarghezza: percentualeLarghezza,
+                        descrizione: fermo.descrizione,
+                        tipoFermo: fermo.tipoFermo
+                    });
+                }
+            }
+            
+            return sovrapposizioni;
         }
 
         // Carica gli ordini di produzione
@@ -986,7 +1154,8 @@
                     }
                 },
                 group: {
-                    resources: ['Rooms']
+                    resources: ['Rooms'],
+                    allowGroupEdit: false  // NON permettere cambio centro durante drag & drop
                 },
                 resources: [{
                     field: 'RoomId',
@@ -1059,6 +1228,7 @@
                 // Formato ora 24h
                 timeFormat: 'HH:mm',
                 dateFormat: 'dd/MM/yyyy',
+                firstDayOfWeek: 1,  // Inizia la settimana di lunedì (0=domenica, 1=lunedì)
                 // Mostra numero settimana
                 showWeekNumber: true,
                 // Configurazione altezza righe e eventi
@@ -1071,6 +1241,8 @@
                 allowInline: false,    // Disabilita editing inline
                 allowKeyboardInteraction: false, // Disabilita interazioni tastiera
                 readonly: false,       // Mantieni modificabile via codice
+                allowDragAndDrop: true, // Abilita drag & drop degli ordini
+                allowResizing: true,    // Abilita ridimensionamento degli ordini
                 showHeaderBar: true,
                 showTimeIndicator: true,
                 // Configurazione per timeline
@@ -1098,6 +1270,12 @@
 
             scheduleObj.appendTo('#scheduler');
             console.log('Scheduler creato con successo');
+            
+            // Forza lo stile dei nomi dei centri dopo il rendering
+            setTimeout(() => {
+                forzaStiliCentriLavoro();
+            }, 1000);
+            
             } catch (error) {
                 console.error('Errore nella creazione dello scheduler:', error);
                 throw new Error(`Creazione scheduler: ${error.message}`);
@@ -1111,6 +1289,39 @@
             // Applica il colore basato sullo stato
             if (eventData.CategoryColor) {
                 args.element.style.backgroundColor = eventData.CategoryColor;
+            }
+            
+            // Calcola e visualizza sovrapposizioni con fermi
+            const sovrapposizioni = calcolaSovrapposizioneFermo(eventData);
+            if (sovrapposizioni.length > 0) {
+                args.element.style.position = 'relative';
+                
+                sovrapposizioni.forEach(sovr => {
+                    const fermoOverlay = document.createElement('div');
+                    fermoOverlay.className = 'fermo-overlay';
+                    fermoOverlay.style.cssText = `
+                        position: absolute;
+                        top: 0;
+                        left: ${sovr.percentualeInizio}%;
+                        width: ${sovr.percentualeLarghezza}%;
+                        height: 100%;
+                        background: repeating-linear-gradient(
+                            -45deg,
+                            rgba(255, 0, 0, 0.3),
+                            rgba(255, 0, 0, 0.3) 10px,
+                            rgba(255, 0, 0, 0.5) 10px,
+                            rgba(255, 0, 0, 0.5) 20px
+                        );
+                        border-left: 2px solid #ff0000;
+                        border-right: 2px solid #ff0000;
+                        pointer-events: none;
+                        z-index: 1;
+                    `;
+                    fermoOverlay.title = `⚠️ FERMO: ${sovr.descrizione || sovr.tipoFermo}`;
+                    args.element.appendChild(fermoOverlay);
+                    
+                    console.log(`⚠️ Ordine ${eventData.Id} in conflitto con fermo: ${sovr.percentualeInizio.toFixed(1)}% - ${(sovr.percentualeInizio + sovr.percentualeLarghezza).toFixed(1)}%`);
+                });
             }
             
             // Aggiungi barra di progressione personalizzata
@@ -1128,6 +1339,7 @@
                     border-radius: 4px;
                     overflow: hidden;
                     box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+                    z-index: 2;
                 `;
                 
                 const progressBar = document.createElement('div');
@@ -1217,7 +1429,8 @@
                 }
                 
                 console.log('Drag completato per ordine:', args.data.Id);
-                await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, args.data.RoomId);
+                // DRAG & DROP: isResize = false, NON passare roomId (il centro non cambia)
+                await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, null, false);
             }
         }
 
@@ -1229,11 +1442,23 @@
                 // Controllo per ordini chiusi
                 if (idStato === 3) {
                     showInfo('Gli ordini chiusi non possono essere modificati');
+                    args.cancel = true;
                     return;
                 }
                 
+                // Controllo per ordini in produzione: la nuova data fine non può essere nel passato
+                if (idStato === 2) {
+                    const now = new Date();
+                    if (args.data.EndTime < now) {
+                        showError('Non puoi ridurre l\'ordine a una data passata. Gli ordini in produzione possono essere solo estesi nel futuro.');
+                        args.cancel = true;
+                        return;
+                    }
+                }
+                
                 console.log('Resize completato per ordine:', args.data.Id, 'Stato:', idStato);
-                await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, args.data.RoomId);
+                // RESIZE: isResize = true, ricalcola la quantità in base alla nuova durata
+                await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, null, true);
             }
         }
 
@@ -1245,6 +1470,100 @@
                 return originalData;
             }
             return null;
+        }
+
+        // Gestisce i campi readonly in base allo stato dell'ordine
+        function setFieldsReadonlyByStatus(idStato) {
+            const isChiuso = (idStato == 3); // Stato Chiuso
+            const isInProduzione = (idStato == 2); // Stato In Produzione
+            
+            // Lista dei campi che devono diventare readonly quando l'ordine è chiuso
+            const fieldsToDisableWhenClosed = [
+                'orderQuantita',
+                'orderQuantitaProdotta', 
+                'orderDataInizio',
+                'orderDataFine',
+                'orderDataFinePrevista',
+                'orderCentroLavoro',
+                'orderPriorita',
+                'orderNote'
+            ];
+            
+            // Lista dei campi che devono diventare readonly quando l'ordine è in produzione
+            const fieldsToDisableWhenInProduction = [
+                'orderCentroLavoro',
+                'orderDataInizio'
+            ];
+            
+            // Imposta readonly per tutti i campi se chiuso
+            fieldsToDisableWhenClosed.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.readOnly = isChiuso;
+                    field.disabled = isChiuso;
+                    
+                    // Aggiungi classe visiva per indicare campo disabilitato
+                    if (isChiuso) {
+                        field.classList.add('bg-light', 'text-muted');
+                    } else {
+                        field.classList.remove('bg-light', 'text-muted');
+                    }
+                }
+            });
+            
+            // Imposta readonly per campi specifici se in produzione (ma non chiuso)
+            if (isInProduzione && !isChiuso) {
+                fieldsToDisableWhenInProduction.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.readOnly = true;
+                        field.disabled = true;
+                        field.classList.add('bg-light', 'text-muted');
+                    }
+                });
+            }
+            
+            // Il campo Stato rimane sempre modificabile
+            const statoField = document.getElementById('orderStato');
+            if (statoField) {
+                statoField.readOnly = false;
+                statoField.disabled = false;
+                statoField.classList.remove('bg-light', 'text-muted');
+            }
+            
+            // Aggiorna il pulsante di salvataggio
+            const saveButton = document.getElementById('saveOrderChanges');
+            if (saveButton) {
+                if (isChiuso) {
+                    saveButton.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Cambia Stato';
+                    saveButton.title = 'Solo il cambio di stato è permesso per ordini chiusi';
+                } else if (isInProduzione) {
+                    saveButton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salva Modifiche';
+                    saveButton.title = 'Centro di Lavoro e Data Inizio non modificabili per ordini in produzione';
+                } else {
+                    saveButton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salva Modifiche';
+                    saveButton.title = 'Salva tutte le modifiche';
+                }
+            }
+            
+            // Mostra/nascondi l'alert per ordini con restrizioni
+            const alert = document.getElementById('orderClosedAlert');
+            if (alert) {
+                const alertContent = alert.querySelector('.alert-content');
+                if (isChiuso) {
+                    alert.style.display = 'block';
+                    if (alertContent) {
+                        alertContent.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i><strong>Ordine Chiuso:</strong> Solo il campo "Stato" può essere modificato per ordini chiusi.';
+                    }
+                } else if (isInProduzione) {
+                    alert.style.display = 'block';
+                    if (alertContent) {
+                        alertContent.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Ordine In Produzione:</strong> Centro di Lavoro e Data Inizio non possono essere modificati.';
+                    }
+                } else {
+                    alert.style.display = 'none';
+                }
+            }
         }
 
         // Carica i centri di lavoro nel dropdown
@@ -1354,9 +1673,11 @@
                 });
                 
                 // Imposta stato
-                document.getElementById('orderStato').value = fullData.idStato || fullData.IdStato || eventData.IdStato || '';
+                const currentStato = fullData.idStato || fullData.IdStato || eventData.IdStato || '';
+                document.getElementById('orderStato').value = currentStato;
                 
-                
+                // Gestisci i campi readonly in base allo stato
+                setFieldsReadonlyByStatus(currentStato);
                 
                 // Mostra il modal con configurazione senza backdrop
                 const modalElement = document.getElementById('orderDetailsModal');
@@ -1463,11 +1784,14 @@
                 
                 const resourceRows = document.querySelectorAll('.e-content-wrap .e-content-table tbody tr');
                 console.log(`Righe di contenuto: ${resourceRows.length}`);
+                
+                // Forza gli stili dei nomi dei centri
+                forzaStiliCentriLavoro();
             }, 100);
         }
 
         // Aggiorna un ordine sul server
-        async function updateOrdine(id, startTime, endTime, roomId) {
+        async function updateOrdine(id, startTime, endTime, roomId, isResize = false) {
             try {
                 showLoading(true);
                 
@@ -1481,14 +1805,22 @@
                         Id: id,
                         StartTime: startTime,
                         EndTime: endTime,
-                        RoomId: roomId
+                        RoomId: roomId,
+                        IsResize: isResize
                     })
                 });
 
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    showSuccess('Ordine aggiornato con successo');
+                    const azione = isResize ? 'ridimensionato' : 'spostato';
+                    showSuccess(`Ordine ${azione} con successo` + 
+                               (result.nuovaQuantita ? ` - Nuova quantità: ${result.nuovaQuantita}` : ''));
+                    
+                    // Ricarica i dati per aggiornare la visualizzazione (specialmente per resize che cambia la quantità)
+                    if (isResize) {
+                        await refreshData();
+                    }
                 } else {
                     throw new Error(result.message || 'Errore nell\'aggiornamento');
                 }
@@ -1553,6 +1885,15 @@
                 
                 quantitaInput.addEventListener('input', calcolaPercentuale);
                 quantitaProdottaInput.addEventListener('input', calcolaPercentuale);
+            }
+
+            // Event listener per il cambio di stato
+            const statoSelect = document.getElementById('orderStato');
+            if (statoSelect) {
+                statoSelect.addEventListener('change', function() {
+                    const newStato = this.value;
+                    setFieldsReadonlyByStatus(newStato);
+                });
             }
 
             // Event listener per salvare le modifiche
@@ -1626,20 +1967,52 @@
                 showLoading(true);
                 
                 const orderId = document.getElementById('orderIdListaOP').value;
-                const quantita = document.getElementById('orderQuantita').value;
-                const quantitaProdotta = document.getElementById('orderQuantitaProdotta').value;
                 const stato = document.getElementById('orderStato').value;
-                const centroLavoro = document.getElementById('orderCentroLavoro').value;
-                const note = document.getElementById('orderNote').value;
                 
-                const requestData = {
-                    Id: parseInt(orderId),
-                    Quantita: parseFloat(quantita),
-                    QuantitaProdotta: parseFloat(quantitaProdotta),
-                    IdStato: parseInt(stato),
-                    IdCentroLavoro: parseInt(centroLavoro),
-                    Note: note
-                };
+                // Controlla lo stato originale dell'ordine
+                const originalData = findOriginalOrderData(orderId);
+                const originalStato = originalData ? (originalData.idStato || originalData.IdStato) : null;
+                const wasChiuso = originalStato == 3;
+                const wasInProduzione = originalStato == 2;
+                
+                let requestData;
+                
+                if (wasChiuso) {
+                    // Per ordini originariamente chiusi, invia solo lo stato
+                    requestData = {
+                        Id: parseInt(orderId),
+                        IdStato: parseInt(stato)
+                    };
+                } else if (wasInProduzione) {
+                    // Per ordini in produzione, invia tutti i campi tranne Centro di Lavoro e Data Inizio
+                    const quantita = document.getElementById('orderQuantita').value;
+                    const quantitaProdotta = document.getElementById('orderQuantitaProdotta').value;
+                    const note = document.getElementById('orderNote').value;
+                    
+                    requestData = {
+                        Id: parseInt(orderId),
+                        Quantita: parseFloat(quantita),
+                        QuantitaProdotta: parseFloat(quantitaProdotta),
+                        IdStato: parseInt(stato),
+                        Note: note
+                        // Centro di Lavoro e Data Inizio non vengono inviati
+                    };
+                } else {
+                    // Per ordini in altri stati, invia tutti i campi
+                    const quantita = document.getElementById('orderQuantita').value;
+                    const quantitaProdotta = document.getElementById('orderQuantitaProdotta').value;
+                    const centroLavoro = document.getElementById('orderCentroLavoro').value;
+                    const note = document.getElementById('orderNote').value;
+                    
+                    requestData = {
+                        Id: parseInt(orderId),
+                        Quantita: parseFloat(quantita),
+                        QuantitaProdotta: parseFloat(quantitaProdotta),
+                        IdStato: parseInt(stato),
+                        IdCentroLavoro: parseInt(centroLavoro),
+                        Note: note
+                    };
+                }
 
                 const response = await fetch('/Schedulatore/SaveOrderDetails', {
                     method: 'POST',

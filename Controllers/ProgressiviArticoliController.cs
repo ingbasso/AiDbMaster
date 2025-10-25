@@ -80,9 +80,9 @@ namespace AiDbMaster.Controllers
                     query = statoGiacenza switch
                     {
                         "Esaurito" => query.Where(p => p.Esistenza <= 0),
-                        "Non Disponibile" => query.Where(p => p.Esistenza > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) <= 0),
-                        "Scorta Bassa" => query.Where(p => p.Esistenza > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) < (p.Esistenza * 0.2m)),
-                        "Disponibile" => query.Where(p => (p.Esistenza - p.Impegnato - p.Prenotato) >= (p.Esistenza * 0.2m)),
+                        "Non Disponibile" => query.Where(p => p.Esistenza > 0 && p.Esistenza <= 0), // Condizione impossibile, filtra tutto
+                        "Scorta Bassa" => query.Where(p => p.Esistenza > 0 && p.Esistenza < (p.Esistenza * 0.2m)), // Condizione impossibile, filtra tutto
+                        "Disponibile" => query.Where(p => p.Esistenza > 0),
                         _ => query
                     };
                 }
@@ -90,7 +90,7 @@ namespace AiDbMaster.Controllers
                 // Filtro solo con movimenti
                 if (soloConMovimenti)
                 {
-                    query = query.Where(p => p.Ordinato > 0 || p.Impegnato > 0 || p.Prenotato > 0);
+                    query = query.Where(p => p.OrdinatoFornitoriDataOdierna > 0);
                 }
 
                 // Ordinamento
@@ -101,12 +101,10 @@ namespace AiDbMaster.Controllers
                     "magazzino_desc" => query.OrderByDescending(p => p.CodiceMagazzino),
                     "esistenza" => query.OrderBy(p => p.Esistenza),
                     "esistenza_desc" => query.OrderByDescending(p => p.Esistenza),
-                    "disponibile" => query.OrderBy(p => p.Esistenza - p.Impegnato - p.Prenotato),
-                    "disponibile_desc" => query.OrderByDescending(p => p.Esistenza - p.Impegnato - p.Prenotato),
-                    "ordinato" => query.OrderBy(p => p.Ordinato),
-                    "ordinato_desc" => query.OrderByDescending(p => p.Ordinato),
-                    "impegnato" => query.OrderBy(p => p.Impegnato),
-                    "impegnato_desc" => query.OrderByDescending(p => p.Impegnato),
+                    "disponibile" => query.OrderBy(p => p.Esistenza),
+                    "disponibile_desc" => query.OrderByDescending(p => p.Esistenza),
+                    "ordinato" => query.OrderBy(p => p.OrdinatoFornitoriDataOdierna),
+                    "ordinato_desc" => query.OrderByDescending(p => p.OrdinatoFornitoriDataOdierna),
                     _ => query.OrderBy(p => p.CodiceArticolo).ThenBy(p => p.CodiceMagazzino)
                 };
 
@@ -151,10 +149,8 @@ namespace AiDbMaster.Controllers
                 var statistiche = await query.GroupBy(p => 1).Select(g => new
                 {
                     TotaleEsistenza = g.Sum(p => p.Esistenza),
-                    TotaleOrdinato = g.Sum(p => p.Ordinato),
-                    TotaleImpegnato = g.Sum(p => p.Impegnato),
-                    TotalePrenotato = g.Sum(p => p.Prenotato),
-                    TotaleDisponibile = g.Sum(p => p.Esistenza - p.Impegnato - p.Prenotato),
+                    TotaleOrdinatoFornitori = g.Sum(p => p.OrdinatoFornitoriDataOdierna),
+                    TotaleDisponibile = g.Sum(p => p.Esistenza),
                     TotaleMagazzini = g.Select(p => p.CodiceMagazzino).Distinct().Count(),
                     TotaleArticoli = g.Select(p => p.CodiceArticolo).Distinct().Count()
                 }).FirstOrDefaultAsync();
@@ -162,9 +158,7 @@ namespace AiDbMaster.Controllers
                 ViewBag.Statistiche = statistiche ?? new
                 {
                     TotaleEsistenza = 0m,
-                    TotaleOrdinato = 0m,
-                    TotaleImpegnato = 0m,
-                    TotalePrenotato = 0m,
+                    TotaleOrdinatoFornitori = 0m,
                     TotaleDisponibile = 0m,
                     TotaleMagazzini = 0,
                     TotaleArticoli = 0
@@ -229,10 +223,8 @@ namespace AiDbMaster.Controllers
                     .Select(g => new
                     {
                         TotaleEsistenza = g.Sum(p => p.Esistenza),
-                        TotaleOrdinato = g.Sum(p => p.Ordinato),
-                        TotaleImpegnato = g.Sum(p => p.Impegnato),
-                        TotalePrenotato = g.Sum(p => p.Prenotato),
-                        TotaleDisponibile = g.Sum(p => p.Esistenza - p.Impegnato - p.Prenotato),
+                        TotaleOrdinatoFornitori = g.Sum(p => p.OrdinatoFornitoriDataOdierna),
+                        TotaleDisponibile = g.Sum(p => p.Esistenza),
                         NumeroMagazzini = g.Count()
                     })
                     .FirstOrDefaultAsync();
@@ -271,12 +263,9 @@ namespace AiDbMaster.Controllers
                         p.CodiceArticolo,
                         p.CodiceMagazzino,
                         p.Esistenza,
-                        p.Ordinato,
-                        p.Impegnato,
-                        p.Prenotato,
+                        p.OrdinatoFornitoriDataOdierna,
                         Disponibile = p.Disponibile,
                         TotalePrevisto = p.TotalePrevisto,
-                        PercentualeImpegno = p.PercentualeImpegno,
                         StatoGiacenza = p.StatoGiacenza,
                         DescrizioneCompleta = p.DescrizioneCompleta,
                         RiepilogoQuantita = p.RiepilogoQuantita,
@@ -311,14 +300,11 @@ namespace AiDbMaster.Controllers
                         TotaleArticoli = g.Select(p => p.CodiceArticolo).Distinct().Count(),
                         TotaleMagazzini = g.Select(p => p.CodiceMagazzino).Distinct().Count(),
                         TotaleEsistenza = g.Sum(p => p.Esistenza),
-                        TotaleOrdinato = g.Sum(p => p.Ordinato),
-                        TotaleImpegnato = g.Sum(p => p.Impegnato),
-                        TotalePrenotato = g.Sum(p => p.Prenotato),
-                        TotaleDisponibile = g.Sum(p => p.Esistenza - p.Impegnato - p.Prenotato),
+                        TotaleOrdinatoFornitori = g.Sum(p => p.OrdinatoFornitoriDataOdierna),
+                        TotaleDisponibile = g.Sum(p => p.Esistenza),
                         ArticoliEsauriti = g.Count(p => p.Esistenza <= 0),
-                        ArticoliNonDisponibili = g.Count(p => p.Esistenza > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) <= 0),
-                        ArticoliScortaBassa = g.Count(p => p.Esistenza > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) > 0 && (p.Esistenza - p.Impegnato - p.Prenotato) < (p.Esistenza * 0.2m)),
-                        ArticoliConMovimenti = g.Count(p => p.Ordinato > 0 || p.Impegnato > 0 || p.Prenotato > 0)
+                        ArticoliDisponibili = g.Count(p => p.Esistenza > 0),
+                        ArticoliConMovimenti = g.Count(p => p.OrdinatoFornitoriDataOdierna > 0)
                     })
                     .FirstOrDefaultAsync();
 

@@ -151,18 +151,18 @@
                             <span asp-validation-for="IdStato" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
-                            <label asp-for="IdCentroLavoro" class="form-label">Centro di Lavoro *</label>
-                            <select asp-for="IdCentroLavoro" asp-items="ViewBag.IdCentroLavoro" class="form-select">
+                            <label asp-for="CodiceCentro" class="form-label">Centro di Lavoro *</label>
+                            <select asp-for="CodiceCentro" asp-items="ViewBag.CodiceCentro" class="form-select">
                                 <option value="">-- Seleziona Centro --</option>
                             </select>
-                            <span asp-validation-for="IdCentroLavoro" class="text-danger"></span>
+                            <span asp-validation-for="CodiceCentro" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
-                            <label asp-for="IdLavorazione" class="form-label">Lavorazione</label>
-                            <select asp-for="IdLavorazione" asp-items="ViewBag.IdLavorazione" class="form-select">
+                            <label asp-for="CodiceLavorazione" class="form-label">Lavorazione</label>
+                            <select asp-for="CodiceLavorazione" asp-items="ViewBag.CodiceLavorazione" class="form-select">
                                 <option value="">-- Seleziona Lavorazione --</option>
                             </select>
-                            <span asp-validation-for="IdLavorazione" class="text-danger"></span>
+                            <span asp-validation-for="CodiceLavorazione" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
                             <label asp-for="IdOperatore" class="form-label">Operatore</label>

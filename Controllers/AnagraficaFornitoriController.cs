@@ -56,7 +56,7 @@ namespace AiDbMaster.Controllers
                     query = query.Where(f => 
                         f.RagioneSociale.Contains(search) ||
                         f.CodiceFornitore.ToString().Contains(search) ||
-                        (f.DescrizioneAggiuntiva != null && f.DescrizioneAggiuntiva.Contains(search)) ||
+                        (f.DescrizioneUlteriore != null && f.DescrizioneUlteriore.Contains(search)) ||
                         (f.Citta != null && f.Citta.Contains(search)) ||
                         (f.CodiceFiscale != null && f.CodiceFiscale.Contains(search)) ||
                         (f.PartitaIva != null && f.PartitaIva.Contains(search)));
@@ -65,7 +65,7 @@ namespace AiDbMaster.Controllers
                 // Filtro per tipo anagrafica
                 if (!string.IsNullOrEmpty(tipoAnagrafica))
                 {
-                    query = query.Where(f => f.TipoAnagrafica == tipoAnagrafica);
+                    query = query.Where(f => f.Tipo == tipoAnagrafica);
                 }
 
                 // Filtro per provincia
@@ -82,8 +82,8 @@ namespace AiDbMaster.Controllers
                     "ragione_desc" => query.OrderByDescending(f => f.RagioneSociale),
                     "citta" => query.OrderBy(f => f.Citta),
                     "citta_desc" => query.OrderByDescending(f => f.Citta),
-                    "tipo" => query.OrderBy(f => f.TipoAnagrafica),
-                    "tipo_desc" => query.OrderByDescending(f => f.TipoAnagrafica),
+                    "tipo" => query.OrderBy(f => f.Tipo),
+                    "tipo_desc" => query.OrderByDescending(f => f.Tipo),
                     _ => query.OrderBy(f => f.CodiceFornitore)
                 };
 
@@ -108,8 +108,8 @@ namespace AiDbMaster.Controllers
 
                 // Dati per i filtri dropdown
                 ViewBag.TipiAnagrafica = await _context.AnagraficaFornitori
-                    .Where(f => !string.IsNullOrEmpty(f.TipoAnagrafica))
-                    .Select(f => f.TipoAnagrafica)
+                    .Where(f => !string.IsNullOrEmpty(f.Tipo))
+                    .Select(f => f.Tipo)
                     .Distinct()
                     .OrderBy(t => t)
                     .ToListAsync();
@@ -187,9 +187,9 @@ namespace AiDbMaster.Controllers
                     {
                         f.Id,
                         f.CodiceFornitore,
-                        f.TipoAnagrafica,
+                        f.Tipo,
                         f.RagioneSociale,
-                        f.DescrizioneAggiuntiva,
+                        f.DescrizioneUlteriore,
                         f.Indirizzo,
                         f.Cap,
                         f.Citta,
@@ -197,7 +197,6 @@ namespace AiDbMaster.Controllers
                         f.CodiceFiscale,
                         f.PartitaIva,
                         f.Telefono,
-                        f.FaxTelex,
                         IndirizzoCompleto = f.IndirizzoCompleto,
                         NomeCompleto = f.NomeCompleto,
                         ContattiCompleti = f.ContattiCompleti

@@ -10,18 +10,13 @@ namespace AiDbMaster.Models
     public class Lavorazioni
     {
         /// <summary>
-        /// Identificativo univoco della lavorazione (IDENTITY(1,1))
+        /// Codice della lavorazione - Chiave primaria
         /// </summary>
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int IdLavorazione { get; set; }
-
-        /// <summary>
-        /// Codice della lavorazione (varchar(1) NULL)
-        /// </summary>
-        [StringLength(1)]
-        [Column(TypeName = "varchar(1)")]
-        public string? CodiceLavorazione { get; set; }
+        [Required]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Column(TypeName = "smallint")]
+        public short CodiceLavorazione { get; set; }
 
         /// <summary>
         /// Descrizione della lavorazione (NOT NULL)
