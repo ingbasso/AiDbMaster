@@ -1,0 +1,585 @@
+@{
+    ViewData["Title"] = "Schedulatore Ordini di Produzione";
+    ViewBag.UseFluidContainer = true;
+}
+
+<!-- CSS Custom - COPIATO DA CALENDARIO FERMI -->
+<style>
+    #schedule {
+        height: calc(100vh - 250px);
+        min-height: 600px;
+        width: 100%;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .e-schedule {
+        height: 100% !important;
+        min-height: 600px;
+    }
+    
+    .toolbar-buttons {
+        margin-bottom: 15px;
+    }
+    
+    /* Stili per timeline view */
+    .e-schedule .e-timeline-view .e-resource-left-td {
+        min-width: 200px !important;
+        width: 200px !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-left-indent-wrap {
+        width: 200px !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-resource-cells {
+        display: table-cell !important;
+        visibility: visible !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-content-table tbody tr {
+        display: table-row !important;
+        height: auto !important;
+        min-height: 60px;
+    }
+    
+    .resource-header-content {
+        padding: 12px;
+        font-weight: 600;
+    }
+    
+    .resource-name {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1.3rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+    }
+    
+    /* SUPER SPECIFICO: Forza dimensione nomi centri di lavoro */
+    #schedule .e-schedule .e-timeline-view .e-resource-cells,
+    #schedule .e-schedule .e-timeline-view .e-resource-cells *,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td *,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td * {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* Forza anche sugli span e div interni */
+    #schedule .e-schedule .e-resource-cells span,
+    #schedule .e-schedule .e-resource-cells div,
+    #schedule .e-schedule .e-left-indent-wrap span,
+    #schedule .e-schedule .e-left-indent-wrap div {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+    }
+    
+    /* Stili per eventi ordini */
+    .e-schedule .e-appointment,
+    #schedule .e-schedule .e-appointment,
+    #schedule .e-appointment {
+        min-height: 80px !important;
+        height: auto !important;
+        padding: 10px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        cursor: move !important;
+        transition: all 0.2s ease !important;
+        color: white !important;
+        position: relative !important;
+    }
+    
+    .e-schedule .e-appointment:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        transform: translateY(-2px);
+    }
+    
+    .e-schedule .e-appointment .e-subject,
+    #schedule .e-appointment .e-subject {
+        font-weight: bold !important;
+        margin-bottom: 4px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        color: white !important;
+    }
+    
+    /* Forza testo bianco per tutto il contenuto degli eventi */
+    .e-schedule .e-appointment *,
+    #schedule .e-appointment * {
+        color: white !important;
+    }
+    
+    /* Barra progressiva */
+    .progress-bar-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 8px;
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 0 0 6px 6px;
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        background-color: rgba(255,255,255,0.9);
+        transition: width 0.3s ease;
+    }
+    
+    .completion-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.3);
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-top: 4px;
+    }
+    
+    /* Header styles */
+    #schedule .e-schedule .week-header-content,
+    .week-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 8px 4px !important;
+        background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 0.9rem !important;
+        border-radius: 4px 4px 0 0 !important;
+    }
+    
+    #schedule .e-schedule .day-header-content,
+    .day-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 6px 4px !important;
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        min-width: 70px !important;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="content-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <h2 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Schedulatore Ordini di Produzione</h2>
+                <!-- Legenda colori stati (caricata dinamicamente) -->
+                <div id="legenda-stati" class="d-flex gap-2" style="font-size: 0.85rem;">
+                    <!-- Popolata dinamicamente da JavaScript -->
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="refreshScheduler()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Aggiorna
+                </button>
+                <button type="button" class="btn btn-info" onclick="todayScheduler()">
+                    <i class="bi bi-calendar-day me-1"></i> Oggi
+                </button>
+            </div>
+        </div>
+
+        <!-- Syncfusion Scheduler -->
+        <div id="schedule"></div>
+    </div>
+</div>
+
+<!-- Template per header risorse -->
+<script id="resourceHeaderTemplate" type="text/x-template">
+    <div class="resource-header-content">
+        <span class="resource-name">${data.resourceData.Name}</span>
+    </div>
+</script>
+
+@section Scripts {
+    <script>
+        // Registra licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+        }
+        
+        let scheduleObj;
+        let centriLavoro = [];
+        let ordiniProduzione = [];
+        let statiOrdini = [];
+        
+        // Carica e mostra la legenda degli stati
+        async function loadLegendaStati() {
+            try {
+                const response = await fetch('/Schedulatore2/GetStatiOrdini');
+                statiOrdini = await response.json();
+                
+                const legendaDiv = document.getElementById('legenda-stati');
+                legendaDiv.innerHTML = '';
+                
+                statiOrdini.forEach(stato => {
+                    const statoDiv = document.createElement('div');
+                    statoDiv.className = 'd-flex align-items-center';
+                    statoDiv.innerHTML = `
+                        <div style="width: 20px; height: 20px; background-color: ${stato.colore}; border-radius: 3px; margin-right: 5px;"></div>
+                        <span style="font-size: 0.85rem;">${stato.descrizione}</span>
+                    `;
+                    legendaDiv.appendChild(statoDiv);
+                });
+                
+                console.log('Legenda stati caricata:', statiOrdini.length, 'stati');
+            } catch (error) {
+                console.error('Errore caricamento stati:', error);
+            }
+        }
+        
+        // Inizializzazione
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM caricato - Schedulatore2');
+            
+            // Forza registrazione licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+                console.log('Licenza Syncfusion registrata');
+            }
+            
+            // Carica legenda stati
+            await loadLegendaStati();
+            
+            // Carica dati
+            await loadData();
+            
+            // Crea scheduler
+            setTimeout(() => {
+                createScheduler();
+            }, 500);
+        });
+        
+        // Carica centri e ordini
+        async function loadData() {
+            try {
+                // Carica centri di lavoro
+                const centriResponse = await fetch('/Schedulatore2/GetCentriLavoro');
+                const centriData = await centriResponse.json();
+                
+                // Mappa in PascalCase come CalendarioFermi
+                centriLavoro = centriData.map(c => ({
+                    Id: c.id,
+                    Name: c.name,
+                    Color: c.color
+                }));
+                
+                console.log('Centri di lavoro caricati:', centriLavoro.length);
+                
+                // Carica ordini produzione
+                const ordiniResponse = await fetch('/Schedulatore2/GetOrdiniProduzione');
+                const ordiniData = await ordiniResponse.json();
+                
+                // Mappa in PascalCase e aggiungi RoomId
+                ordiniProduzione = ordiniData.map(o => ({
+                    Id: o.id,
+                    Subject: o.subject,
+                    Description: o.description || '',
+                    StartTime: new Date(o.startTime),
+                    EndTime: new Date(o.endTime),
+                    RoomId: o.roomId,
+                    CategoryColor: o.categoryColor,
+                    // Dati aggiuntivi per rendering
+                    CodiceArticolo: o.codiceArticolo,
+                    PercentualeCompletamento: o.percentualeCompletamento || 0
+                }));
+                
+                console.log('Ordini di produzione caricati:', ordiniProduzione.length);
+                
+            } catch (error) {
+                console.error('Errore caricamento dati:', error);
+            }
+        }
+        
+        // Crea scheduler - CONFIGURAZIONE COPIATA DA CALENDARIO FERMI
+        function createScheduler() {
+            try {
+                console.log('Creazione scheduler...');
+                
+                if (typeof ej === 'undefined' || !ej.schedule || !ej.schedule.Schedule) {
+                    console.error('Syncfusion Schedule non disponibile');
+                    return;
+                }
+                
+                if (!centriLavoro || centriLavoro.length === 0) {
+                    console.warn('Nessun centro di lavoro disponibile');
+                    return;
+                }
+                
+                // Crea istanza Schedule - STESSA CONFIGURAZIONE DEL CALENDARIO FERMI
+                scheduleObj = new ej.schedule.Schedule({
+                    width: '100%',
+                    height: '100%',
+                    currentView: 'TimelineWeek',
+                    selectedDate: new Date(),
+                    showQuickInfo: false,
+                    allowDragAndDrop: true,
+                    allowResizing: true,
+                    views: [
+                        { 
+                            option: 'TimelineDay',
+                            displayName: 'Giorno',
+                            isSelected: false,
+                            timeScale: {
+                                enable: true,
+                                interval: 60,
+                                slotCount: 1
+                            }
+                        },
+                        { 
+                            option: 'TimelineWeek',
+                            displayName: 'Settimana',
+                            isSelected: false,
+                            timeScale: {
+                                enable: true,
+                                interval: 480,
+                                slotCount: 1
+                            }
+                        },
+                        { 
+                            option: 'TimelineWeek',
+                            displayName: '2 Settimane',
+                            isSelected: true,
+                            interval: 2,
+                            timeScale: {
+                                enable: true,
+                                interval: 480,
+                                slotCount: 1
+                            }
+                        }
+                    ],
+                    eventSettings: {
+                        dataSource: ordiniProduzione,
+                        fields: {
+                            id: 'Id',
+                            subject: { name: 'Subject' },
+                            startTime: { name: 'StartTime' },
+                            endTime: { name: 'EndTime' },
+                            description: { name: 'Description' }
+                        }
+                    },
+                    group: {
+                        resources: ['Rooms']
+                    },
+                    resources: [{
+                        field: 'RoomId',
+                        title: 'Centro di Lavoro',
+                        name: 'Rooms',
+                        allowMultiple: false,
+                        dataSource: centriLavoro,
+                        textField: 'Name',
+                        idField: 'Id',
+                        colorField: 'Color'
+                    }],
+                    timeScale: {
+                        enable: true,
+                        interval: 480,
+                        slotCount: 1
+                    },
+                    workHours: {
+                        highlight: false,
+                        start: '00:00',
+                        end: '23:59'
+                    },
+                    startHour: '00:00',
+                    endHour: '23:59',
+                    timeFormat: 'HH:mm',
+                    dateFormat: 'dd/MM/yyyy',
+                    firstDayOfWeek: 1,
+                    showWeekNumber: true,
+                    rowAutoHeight: true,  // CHIAVE: Altezza automatica
+                    allowMultipleResource: false,
+                    allowOverlap: true,   // CHIAVE: Permette sovrapposizioni
+                    allowQuickInfo: false,
+                    readonly: false,
+                    showHeaderBar: true,
+                    showTimeIndicator: true,
+                    eventRendered: onEventRendered,
+                    dragStop: onDragStop,
+                    resizeStop: onResizeStop
+                });
+                
+                // Appendi al DOM
+                scheduleObj.appendTo('#schedule');
+                console.log('✅ Scheduler creato con successo');
+                console.log(`   📊 ${scheduleObj.resources[0].dataSource.length} centri configurati`);
+                console.log(`   📅 ${ordiniProduzione.length} ordini caricati`);
+                
+            } catch (error) {
+                console.error('Errore creazione scheduler:', error);
+            }
+        }
+        
+        // Rendering eventi con colori e percentuale produzione
+        function onEventRendered(args) {
+            const eventData = args.data;
+            
+            // Applica colore
+            if (eventData.CategoryColor) {
+                args.element.style.backgroundColor = eventData.CategoryColor;
+                args.element.style.borderLeft = `4px solid ${darkenColor(eventData.CategoryColor, 20)}`;
+            }
+            
+            // Forza top a 7px per tutti gli eventi
+            args.element.style.top = '7px';
+            
+            // Aggiungi barra progressiva con percentuale
+            if (eventData.PercentualeCompletamento !== undefined) {
+                // Barra progressiva in basso
+                const progressBar = document.createElement('div');
+                progressBar.className = 'progress-bar-container';
+                progressBar.style.cssText = `
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 18px;
+                    background-color: rgba(0,0,0,0.3);
+                    border-radius: 0 0 6px 6px;
+                    overflow: hidden;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                
+                const progressFill = document.createElement('div');
+                progressFill.className = 'progress-bar-fill';
+                progressFill.style.cssText = `
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    height: 100%;
+                    background-color: rgba(255,255,255,0.4);
+                    width: ${eventData.PercentualeCompletamento}%;
+                    transition: width 0.3s ease;
+                `;
+                
+                // Testo percentuale centrato nella barra
+                const percentualeText = document.createElement('span');
+                percentualeText.style.cssText = `
+                    position: relative;
+                    z-index: 10;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                    color: white;
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                `;
+                percentualeText.textContent = `${Math.round(eventData.PercentualeCompletamento)}%`;
+                
+                progressBar.appendChild(progressFill);
+                progressBar.appendChild(percentualeText);
+                args.element.appendChild(progressBar);
+            }
+            
+            console.log(`Evento ${eventData.Id}: ${eventData.Subject} - ${Math.round(eventData.PercentualeCompletamento)}% completato`);
+        }
+        
+        // Drag stop
+        async function onDragStop(args) {
+            console.log('Drag stop:', args.data.Id);
+            args.cancel = true;
+            
+            const updateData = {
+                Id: args.data.Id,
+                StartTime: args.data.StartTime,
+                EndTime: args.data.EndTime,
+                RoomId: args.data.RoomId,
+                IsResize: false
+            };
+            
+            try {
+                const response = await fetch('/Schedulatore2/UpdateOrdine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('Ordine aggiornato');
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Errore aggiornamento:', error);
+                location.reload();
+            }
+        }
+        
+        // Resize stop
+        async function onResizeStop(args) {
+            console.log('Resize stop:', args.data.Id);
+            args.cancel = true;
+            
+            const updateData = {
+                Id: args.data.Id,
+                StartTime: args.data.StartTime,
+                EndTime: args.data.EndTime,
+                RoomId: args.data.RoomId,
+                IsResize: true
+            };
+            
+            try {
+                const response = await fetch('/Schedulatore2/UpdateOrdine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('Resize completato');
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Errore resize:', error);
+                location.reload();
+            }
+        }
+        
+        // Utility: scurisce colore
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + 
+                   (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+                   .toString(16).slice(1);
+        }
+        
+        // Utility functions
+        function refreshScheduler() {
+            location.reload();
+        }
+        
+        function todayScheduler() {
+            if (scheduleObj) {
+                scheduleObj.selectedDate = new Date();
+            }
+        }
+    </script>
+}

@@ -199,6 +199,12 @@
                                         </a>
                                     </li>
                                     <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="Schedulatore2" asp-action="Index">
+                                            <i class="bi bi-calendar2-check"></i>
+                                            <span>Schedulatore2</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item">
                                         <a class="sidebar-link" asp-controller="ListaOP" asp-action="Index">
                                             <i class="bi bi-list-ul"></i>
                                             <span>Ordini di Produzione</span>
@@ -719,8 +725,9 @@
             // Ripristina lo stato dopo il caricamento della pagina
             $(window).on('load', function() {
                 console.log('Page loaded, checking sidebar state'); // Debug
+                // RIMOSSO: loadSidebarState() già chiamato al DOMContentLoaded (riga 711)
                 setTimeout(() => {
-                    loadSidebarState();
+                    // loadSidebarState(); // <-- COMMENTATO per evitare lampeggiamento
                     setActiveMenuItem();
                 }, 100); // Piccolo delay per assicurarsi che tutto sia caricato
             });
@@ -782,10 +789,15 @@
             // ===== ANIMAZIONI FLUIDE AGGIUNTIVE =====
             
             // Aggiungi classe per animazioni quando sidebar si apre/chiude
-            $('#sidebar').on('transitionstart', function() {
-                $('body').addClass('sidebar-transitioning');
-            }).on('transitionend', function() {
-                $('body').removeClass('sidebar-transitioning');
+            // SOLO dopo che la pagina è completamente caricata per evitare lampeggiamenti
+            $(window).on('load', function() {
+                setTimeout(() => {
+                    $('#sidebar').on('transitionstart', function() {
+                        $('body').addClass('sidebar-transitioning');
+                    }).on('transitionend', function() {
+                        $('body').removeClass('sidebar-transitioning');
+                    });
+                }, 500); // Delay per assicurarsi che la sidebar sia stabilizzata
             });
             
             // Prevenzione doppio click già integrata sopra
