@@ -118,6 +118,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
             font-size: 0.85rem !important;
             line-height: 1.3 !important;
+            margin: 2px 0 !important;  /* Margine verticale ridotto tra eventi sovrapposti */
         }
         
         /* Contenuto degli eventi */
@@ -128,14 +129,9 @@
             white-space: normal !important;
         }
         
-        /* Altezza righe delle risorse (centri di lavoro) */
-        .e-schedule .e-timeline-view .e-content-table tbody tr {
-            height: 80px !important;
-        }
-        
-        /* Spazio tra gli eventi sovrapposti */
-        .e-schedule .e-appointment.e-appointment-border {
-            margin-bottom: 2px !important;
+        /* Nascondi l'elemento time di default di Syncfusion (mostra solo orari senza giorni) */
+        .e-schedule .e-appointment .e-time {
+            display: none !important;
         }
         
         /* Stili responsivi per altezza eventi */
@@ -147,25 +143,26 @@
             }
             
             .e-schedule .e-timeline-view .e-content-table tbody tr {
-                height: 60px !important;
+                height: auto !important;
+                min-height: 60px !important;
             }
         }
         
         /* Vista giorno - eventi più alti */
         .e-schedule.e-timeline-day .e-appointment {
-            min-height: 80px !important;
-            padding: 12px !important;
+            min-height: 50px !important;
+            padding: 8px !important;
         }
         
-        /* Vista settimana/2 settimane - eventi medi */
+        /* Vista settimana/2 settimane - eventi compatti */
         .e-schedule.e-timeline-week .e-appointment {
-            min-height: 60px !important;
+            min-height: 50px !important;
             padding: 8px !important;
         }
         
         /* Vista mese - eventi più compatti */
         .e-schedule.e-timeline-month .e-appointment {
-            min-height: 45px !important;
+            min-height: 50px !important;
             padding: 6px !important;
             font-size: 0.8rem !important;
         }
@@ -403,11 +400,12 @@
             color: #2c3e50 !important;
         }
         
-        /* Forza la visualizzazione di tutte le righe delle risorse */
+        /* Forza la visualizzazione di tutte le righe delle risorse con altezza automatica */
+        /* Permette a rowAutoHeight di espandere le righe quando ci sono eventi sovrapposti */
         .e-schedule .e-timeline-view .e-content-table tbody tr {
             display: table-row !important;
             height: auto !important;
-            min-height: 50px;
+            min-height: 60px !important;
         }
         
         .scheduler-toolbar {
@@ -469,15 +467,6 @@
         
         .e-schedule .e-timeline-view .e-resource-cells {
             border-right: 1px solid #e0e0e0;
-        }
-        
-        .e-schedule .e-appointment {
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        
-        .e-schedule .e-appointment .e-subject {
-            font-weight: 600;
         }
         
         /* Stili per drag & drop e resize degli eventi */
@@ -1117,6 +1106,7 @@
                 }));
 
                 console.log('Resources configurate per Syncfusion:', resourceDataSource);
+                console.log('🔍 DEBUG Resources IDs:', resourceDataSource.map(r => ({ Id: r.Id, Type: typeof r.Id, Name: r.Name })));
 
                 // Configura gli eventi (ordini) - solo se ci sono ordini
                 const eventData = ordiniData ? ordiniData.map(ordine => ({
@@ -1137,6 +1127,28 @@
 
                 console.log('Eventi configurati per Syncfusion (primi 3):', eventData.slice(0, 3));
                 console.log(`Configurazione completata: ${resourceDataSource.length} centri, ${eventData.length} eventi`);
+                
+                // DEBUG: Verifica RoomId degli ordini 2025/6
+                const ordini2025_6 = eventData.filter(e => e.Subject.includes('2025') && e.Subject.includes('6'));
+                console.log('🔍 DEBUG Ordini 2025/6:', ordini2025_6.map(o => ({
+                    Id: o.Id,
+                    Subject: o.Subject,
+                    RoomId: o.RoomId,
+                    RoomIdType: typeof o.RoomId,
+                    StartTime: o.StartTime,
+                    EndTime: o.EndTime
+                })));
+                
+                // DEBUG: Stampa tabella leggibile
+                console.log('=== TABELLA ORDINI 2025/6 ===');
+                ordini2025_6.forEach(o => {
+                    console.log(`ID: ${o.Id} | Subject: ${o.Subject} | RoomId: "${o.RoomId}" (${typeof o.RoomId})`);
+                });
+                
+                console.log('=== TABELLA RESOURCES ===');
+                resourceDataSource.forEach(r => {
+                    console.log(`ID: "${r.Id}" (${typeof r.Id}) | Name: ${r.Name}`);
+                });
 
             // Crea lo scheduler
             scheduleObj = new ej.schedule.Schedule({
@@ -1282,6 +1294,12 @@
             }
         }
 
+        // Funzione helper per ottenere il nome abbreviato del giorno in italiano
+        function getDayNameShortItalian(date) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            return days[date.getDay()];
+        }
+
         // Personalizza il rendering degli eventi
         function onEventRendered(args) {
             const eventData = args.data;
@@ -1289,6 +1307,45 @@
             // Applica il colore basato sullo stato
             if (eventData.CategoryColor) {
                 args.element.style.backgroundColor = eventData.CategoryColor;
+            }
+            
+            // Personalizza il contenuto dell'evento con orari e giorni
+            const subjectElement = args.element.querySelector('.e-subject');
+            if (subjectElement && eventData.StartTime && eventData.EndTime) {
+                const startDate = new Date(eventData.StartTime);
+                const endDate = new Date(eventData.EndTime);
+                
+                const startDay = getDayNameShortItalian(startDate);
+                const endDay = getDayNameShortItalian(endDate);
+                const startTime = startDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                const endTime = endDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                
+                // Crea il contenuto: prima riga = Subject, seconda riga = orari con giorni
+                const timeInfo = document.createElement('div');
+                timeInfo.style.cssText = `
+                    font-size: 0.75rem;
+                    font-weight: normal;
+                    margin-top: 2px;
+                    opacity: 0.95;
+                `;
+                timeInfo.textContent = `${startDay} ${startTime} - ${endDay} ${endTime}`;
+                
+                // Svuota il subject e ricostruiscilo
+                const originalText = subjectElement.textContent;
+                subjectElement.innerHTML = '';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.style.cssText = 'font-weight: bold;';
+                titleDiv.textContent = originalText;
+                
+                subjectElement.appendChild(titleDiv);
+                subjectElement.appendChild(timeInfo);
+            }
+            
+            // Rimuovi l'elemento time di default di Syncfusion (la terza riga con solo orari)
+            const timeElement = args.element.querySelector('.e-time');
+            if (timeElement) {
+                timeElement.remove();
             }
             
             // Calcola e visualizza sovrapposizioni con fermi
@@ -1383,18 +1440,18 @@
                 args.element.appendChild(progressContainer);
             }
 
-            // Aggiungi click listener diretto all'elemento
+            // Aggiungi doppio click listener per aprire il modal
             args.element.style.cursor = 'pointer';
             args.element.style.pointerEvents = 'auto';
             
             // Rimuovi eventuali listener esistenti
             args.element.onclick = null;
+            args.element.ondblclick = null;
             
-            args.element.addEventListener('click', function(e) {
-                console.log('=== CLICK EVENTO CATTURATO ===');
+            args.element.addEventListener('dblclick', function(e) {
+                console.log('=== DOPPIO CLICK EVENTO CATTURATO ===');
                 console.log('Event target:', e.target);
                 console.log('Event data:', eventData);
-                console.log('Pointer events:', window.getComputedStyle(args.element).pointerEvents);
                 
                 e.preventDefault();
                 e.stopPropagation();
@@ -1405,11 +1462,6 @@
                 
                 return false;
             }, true); // Use capture phase
-            
-            // Aggiungi anche un listener per mousedown come backup
-            args.element.addEventListener('mousedown', function(e) {
-                console.log('MouseDown su evento:', eventData.Id);
-            });
         }
 
         // Gestisce il drag & drop
@@ -1420,15 +1472,23 @@
                 // Controllo aggiuntivo per sicurezza (non dovrebbe mai arrivare qui per stati bloccati)
                 if (idStato === 3) {
                     showInfo('Gli ordini chiusi non possono essere spostati');
+                    args.cancel = true;
                     return;
                 }
                 
                 if (idStato === 2) {
                     showInfo('Gli ordini in produzione non possono essere spostati. Usa il resize per modificare la durata');
+                    args.cancel = true;
                     return;
                 }
                 
+                // IMPORTANTE: Cancella l'aggiornamento locale di Syncfusion
+                // Gestiamo il refresh manualmente dopo la risposta del server
+                args.cancel = true;
+                
                 console.log('Drag completato per ordine:', args.data.Id);
+                console.log('StartTime:', args.data.StartTime, 'EndTime:', args.data.EndTime);
+                
                 // DRAG & DROP: isResize = false, NON passare roomId (il centro non cambia)
                 await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, null, false);
             }
@@ -1456,7 +1516,13 @@
                     }
                 }
                 
+                // IMPORTANTE: Cancella l'aggiornamento locale di Syncfusion
+                // Gestiamo il refresh manualmente dopo la risposta del server
+                args.cancel = true;
+                
                 console.log('Resize completato per ordine:', args.data.Id, 'Stato:', idStato);
+                console.log('StartTime:', args.data.StartTime, 'EndTime:', args.data.EndTime);
+                
                 // RESIZE: isResize = true, ricalcola la quantità in base alla nuova durata
                 await updateOrdine(args.data.Id, args.data.StartTime, args.data.EndTime, null, true);
             }
@@ -1817,19 +1883,17 @@
                     showSuccess(`Ordine ${azione} con successo` + 
                                (result.nuovaQuantita ? ` - Nuova quantità: ${result.nuovaQuantita}` : ''));
                     
-                    // Ricarica i dati per aggiornare la visualizzazione (specialmente per resize che cambia la quantità)
-                    if (isResize) {
-                        await refreshData();
-                    }
+                    // Ricarica SEMPRE i dati per aggiornare la visualizzazione
+                    // Questo è essenziale per mostrare l'EndTime ricalcolato con i fermi
+                    await refreshData();
                 } else {
                     throw new Error(result.message || 'Errore nell\'aggiornamento');
                 }
             } catch (error) {
                 console.error('Errore nell\'aggiornamento dell\'ordine:', error);
                 showError('Errore nell\'aggiornamento dell\'ordine');
-                
-                // Ricarica i dati per ripristinare lo stato precedente
-                await refreshData();
+                // In caso di errore, NON ricaricare la pagina
+                // L'utente deve vedere l'errore e lo stato precedente rimane invariato
             } finally {
                 showLoading(false);
             }
@@ -2043,38 +2107,12 @@
             }
         }
 
-        // Ricarica i dati
+        // Ricarica i dati con refresh completo della pagina
         async function refreshData() {
-            try {
-                showLoading(true);
-                await loadOrdiniProduzione();
-                
-                if (scheduleObj) {
-                    const eventData = ordiniData.map(ordine => ({
-                        Id: ordine.Id,
-                        Subject: ordine.Subject,
-                        StartTime: new Date(ordine.StartTime),
-                        EndTime: new Date(ordine.EndTime),
-                        RoomId: ordine.RoomId,
-                        CategoryColor: ordine.CategoryColor,
-                        Description: ordine.Description,
-                        CodiceArticolo: ordine.CodiceArticolo,
-                        Quantita: ordine.Quantita,
-                        IdStato: ordine.IdStato,
-                        StatoDescrizione: ordine.StatoDescrizione,
-                        PercentualeCompletamento: ordine.PercentualeCompletamento
-                    }));
-                    
-                    scheduleObj.eventSettings.dataSource = eventData;
-                }
-                
-                showSuccess('Dati aggiornati');
-            } catch (error) {
-                console.error('Errore nel refresh dei dati:', error);
-                showError('Errore nell\'aggiornamento dei dati');
-            } finally {
-                showLoading(false);
-            }
+            console.log('=== REFRESH COMPLETO DELLA PAGINA ===');
+            // Refresh completo per garantire sincronizzazione perfetta
+            // dopo operazioni di resize/drag&drop
+            location.reload();
         }
 
         // Utility functions

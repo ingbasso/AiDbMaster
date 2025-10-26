@@ -223,7 +223,7 @@ namespace AiDbMaster.Controllers
                     ordiniList.Add(new
                     {
                         Id = o.Id,
-                        Subject = $"{o.CodiceArticolo} Qta: {o.Quantita}",
+                        Subject = $"Ord. {o.TipoOrdine}-{o.AnnoOrdine}-{o.SerieOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)}",
                         Description = o.DescrOrdine,
                         StartTime = o.DataInizioOP,
                         EndTime = endTime,
@@ -282,18 +282,41 @@ namespace AiDbMaster.Controllers
                 // LOGICA DRAG & DROP vs RESIZE
                 if (request.IsResize)
                 {
-                    // RESIZE: Ricalcola la quantità in base alla nuova durata
-                    var durataSecondi = (decimal)(request.EndTime - request.StartTime).TotalSeconds;
+                    // RESIZE: Ricalcola la quantità in base alla nuova durata NETTA (senza fermi)
+                    // L'utente ha fatto resize sull'evento VISUALE che include i fermi
+                    // Dobbiamo sottrarre i fermi per ottenere la durata di produzione effettiva
                     
-                    if (ordine.TempoCiclo > 0)
+                    var durataVisualeSecondi = (decimal)(request.EndTime - request.StartTime).TotalSeconds;
+                    
+                    // Trova i fermi sovrapposti nel periodo visuale
+                    var durataSovrapposizioneFermiVisuale = await CalcolaDurataSovrapposizioneFermi(
+                        ordine.CodiceCentro,
+                        request.StartTime,
+                        request.EndTime
+                    );
+                    
+                    // Calcola la durata NETTA (senza fermi)
+                    var durataNettatSecondi = durataVisualeSecondi - (decimal)durataSovrapposizioneFermiVisuale.TotalSeconds;
+                    
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP} RESIZE: " +
+                                         $"durata visuale={durataVisualeSecondi}s, " +
+                                         $"fermi={durataSovrapposizioneFermiVisuale.TotalSeconds}s, " +
+                                         $"durata netta={durataNettatSecondi}s");
+                    
+                    if (ordine.TempoCiclo > 0 && durataNettatSecondi > 0)
                     {
-                        ordine.Quantita = Math.Round(durataSecondi / (decimal)ordine.TempoCiclo, 2);
-                        _logger.LogInformation($"Ordine {ordine.IdListaOP} RESIZE: nuova durata {durataSecondi}s, " +
-                                             $"TempoCiclo {ordine.TempoCiclo}s, nuova Quantità {ordine.Quantita}");
+                        ordine.Quantita = Math.Round(durataNettatSecondi / (decimal)ordine.TempoCiclo, 2);
+                        _logger.LogInformation($"Nuova Quantità calcolata: {ordine.Quantita} " +
+                                             $"(TempoCiclo: {ordine.TempoCiclo}s)");
+                    }
+                    else if (ordine.TempoCiclo <= 0)
+                    {
+                        _logger.LogWarning($"Ordine {ordine.IdListaOP}: TempoCiclo = 0, impossibile ricalcolare Quantità");
                     }
                     else
                     {
-                        _logger.LogWarning($"Ordine {ordine.IdListaOP}: TempoCiclo = 0, impossibile ricalcolare Quantità");
+                        _logger.LogWarning($"Ordine {ordine.IdListaOP}: durata netta <= 0, l'ordine è completamente coperto da fermi");
+                        ordine.Quantita = 0;
                     }
                     
                     // Aggiorna la data fine in base allo stato
@@ -313,8 +336,11 @@ namespace AiDbMaster.Controllers
                     }
                     else // Altri stati (Emesso, Sospeso, Urgente...)
                     {
+                        // Per il resize: DataFinePrevista = EndTime impostato dall'utente
+                        // L'utente ha già posizionato l'evento tenendo conto dei fermi visualizzati
+                        // NON ricalcolare i fermi, altrimenti verrebbero contati due volte
                         ordine.DataFinePrevista = request.EndTime;
-                        _logger.LogInformation($"Ordine {ordine.IdListaOP}: DataFinePrevista aggiornata a {request.EndTime:yyyy-MM-dd HH:mm}");
+                        _logger.LogInformation($"RESIZE - DataFinePrevista impostata a {ordine.DataFinePrevista:yyyy-MM-dd HH:mm} (come indicato dall'utente)");
                     }
                 }
                 else
