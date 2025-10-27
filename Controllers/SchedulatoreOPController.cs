@@ -133,11 +133,14 @@ namespace AiDbMaster.Controllers
                     // Usa DataFinePrevista (che ora contiene l'EndTime calcolato)
                     var endTime = o.DataFinePrevista ?? o.DataInizioOP.AddHours(1);
                     
+                    // Calcola percentuale completamento
+                    var percentuale = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 1) : 0;
+                    
                     return new
                     {
                         // Dati per Syncfusion Schedule
                         Id = o.IdListaOP,
-                        Subject = $"Ord. {o.AnnoOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)}",
+                        Subject = $"Ord. {o.AnnoOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)} ({percentuale}%)",
                         StartTime = o.DataInizioOP,
                         EndTime = endTime,
                         RoomId = o.CodiceCentro, // Per associare alla risorsa (centro di lavoro)
@@ -191,6 +194,44 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore nel recupero degli ordini di produzione");
+                return StatusCode(500, new { error = true, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// API: Ottiene i fermi dei centri di lavoro per colorare il calendario
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetFermiCentriLavoro(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                // Range default: 1 mese prima/dopo oggi se non specificato
+                var start = startDate ?? DateTime.Today.AddMonths(-1);
+                var end = endDate ?? DateTime.Today.AddMonths(1);
+
+                _logger.LogInformation($"📅 Caricamento fermi centri dal {start:yyyy-MM-dd} al {end:yyyy-MM-dd}");
+
+                var fermi = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.DataInizioFermo <= end && (f.DataFineFermo == null || f.DataFineFermo >= start))
+                    .OrderBy(f => f.DataInizioFermo)
+                    .Select(f => new
+                    {
+                        Id = f.Id,
+                        CodiceCentro = f.CodiceCentro,
+                        DataInizio = f.DataInizioFermo,
+                        DataFine = f.DataFineFermo,
+                        Descrizione = f.Motivo
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"✅ Caricati {fermi.Count} fermi");
+
+                return Ok(fermi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel caricamento fermi centri di lavoro");
                 return StatusCode(500, new { error = true, message = ex.Message });
             }
         }

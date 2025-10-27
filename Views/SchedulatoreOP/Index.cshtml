@@ -270,6 +270,7 @@
         
         let scheduleObj;
         let centriLavoro = [];
+        let fermiCentriLavoro = [];
         
         // Funzioni helper per template
         function getWeekNumber(date) {
@@ -300,8 +301,9 @@
                 console.log('Licenza Syncfusion registrata');
             }
             
-            // Carica prima i centri di lavoro
+            // Carica prima i centri di lavoro e i fermi
             await loadCentriLavoro();
+            await loadFermiCentriLavoro();
             
             // Crea lo scheduler
             setTimeout(() => {
@@ -337,6 +339,34 @@
                 console.error('Errore caricamento centri:', error);
                 showAlert('Errore nel caricamento dei centri di lavoro', 'danger');
                 centriLavoro = [];
+            }
+        }
+
+        // Carica fermi centri di lavoro
+        async function loadFermiCentriLavoro() {
+            try {
+                console.log('📅 Caricamento fermi centri di lavoro...');
+                const response = await fetch('@Url.Action("GetFermiCentriLavoro", "SchedulatoreOP")');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const fermiJson = await response.json();
+                console.log('📋 Fermi ricevuti dal server:', fermiJson);
+                
+                // Salva i fermi
+                fermiCentriLavoro = fermiJson.map(f => ({
+                    codiceCentro: f.codiceCentro,
+                    dataInizio: new Date(f.dataInizio),
+                    dataFine: new Date(f.dataFine),
+                    descrizione: f.descrizione
+                }));
+                
+                console.log(`✅ Caricati ${fermiCentriLavoro.length} fermi`);
+            } catch (error) {
+                console.error('Errore caricamento fermi:', error);
+                fermiCentriLavoro = [];
             }
         }
 
@@ -477,7 +507,8 @@
                     resizeStart: onResizeStart,
                     resizeStop: onResizeStop,
                     dragStart: onDragStart,
-                    dragStop: onDragStop
+                    dragStop: onDragStop,
+                    renderCell: onRenderCell
                 });
                 
                 // Appendi al DOM
@@ -490,6 +521,33 @@
             } catch (error) {
                 console.error('Errore creazione scheduler:', error);
                 showAlert('Errore durante la creazione del calendario: ' + error.message, 'danger');
+            }
+        }
+
+        // Carica fermi centri di lavoro (Block Events nativi Syncfusion)
+        async function loadFermi() {
+            console.log('🚫 Caricamento fermi centri di lavoro...');
+            try {
+                const response = await fetch('@Url.Action("GetFermiCentriLavoro", "SchedulatoreOP")');
+                const fermiJson = await response.json();
+                
+                console.log(`✅ Ricevuti ${fermiJson.length} fermi dal server`);
+                
+                // Mappa fermi come Block Events nativi di Syncfusion
+                const blockEvents = fermiJson.map(f => ({
+                    Id: 'FERMO_' + f.codiceCentro + '_' + f.id, // ID univoco
+                    Subject: f.descrizione || 'Fermo',
+                    StartTime: new Date(f.dataInizio),
+                    EndTime: new Date(f.dataFine),
+                    IsBlock: true, // Proprietà nativa Syncfusion per Block Events
+                    ResourceID: f.codiceCentro // Associa al centro di lavoro
+                }));
+                
+                console.log(`✅ Mappati ${blockEvents.length} block events`);
+                return blockEvents;
+            } catch (error) {
+                console.error('❌ Errore caricamento fermi:', error);
+                return [];
             }
         }
 
@@ -572,6 +630,38 @@
             args.element.style.setProperty('background-color', colore, 'important');
             args.element.style.setProperty('border-color', colore, 'important');
             args.element.style.setProperty('color', 'white', 'important');
+            
+            // Applica 75% trasparenza a TUTTI gli eventi (opacity 0.75)
+            args.element.style.setProperty('opacity', '0.75', 'important');
+        }
+
+        // Renderizzazione celle - colora celle in fermo (evento nativo Syncfusion)
+        function onRenderCell(args) {
+            // Solo per celle di tipo work cells (non header)
+            if (args.elementType === 'workCells') {
+                const cellDate = new Date(args.date);
+                const groupIndex = args.groupIndex;
+                
+                // Ottieni il centro di lavoro per questa riga (risorsa)
+                if (scheduleObj && scheduleObj.resourceCollection && scheduleObj.resourceCollection.length > 0) {
+                    const resource = scheduleObj.resourceCollection[0].dataSource[groupIndex];
+                    if (resource) {
+                        const codiceCentro = resource.Id;
+                        
+                        // Controlla se la data cade in un periodo di fermo per questo centro
+                        const isFermo = fermiCentriLavoro.some(fermo => {
+                            return fermo.codiceCentro === codiceCentro &&
+                                   cellDate >= fermo.dataInizio &&
+                                   cellDate <= fermo.dataFine;
+                        });
+                        
+                        if (isFermo) {
+                            // Colora la cella con grigio più scuro (funzionalità nativa)
+                            args.element.style.backgroundColor = 'rgba(52, 58, 64, 0.35)';
+                        }
+                    }
+                }
+            }
         }
 
         // Click su evento -> mostra popup
@@ -671,10 +761,12 @@
                     evento.DataFinePrevista = result.dataFinePrevista;
                     evento.Modificato = 1;
                     
-                    // Aggiorna il subject con la nuova quantità
+                    // Aggiorna il subject con la nuova quantità e percentuale
                     const annoOrdine = evento.AnnoOrdine;
                     const numeroOrdine = evento.NumeroOrdine;
-                    evento.Subject = `Ord. ${annoOrdine}-${numeroOrdine} Qta: ${Math.floor(result.nuovaQuantita)}`;
+                    const quantitaProdotta = evento.QuantitaProdotta || 0;
+                    const percentuale = result.nuovaQuantita > 0 ? ((quantitaProdotta / result.nuovaQuantita) * 100).toFixed(1) : 0;
+                    evento.Subject = `Ord. ${annoOrdine}-${numeroOrdine} Qta: ${Math.floor(result.nuovaQuantita)} (${percentuale}%)`;
                     
                     // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
                     scheduleObj.saveEvent(evento);
