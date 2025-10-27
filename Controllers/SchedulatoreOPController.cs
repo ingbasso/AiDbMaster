@@ -102,14 +102,36 @@ namespace AiDbMaster.Controllers
                     _logger.LogWarning($"Nessun ordine nel range. Prime 5 date in DB: {string.Join(", ", dateOrdini.Select(d => d.ToString("yyyy-MM-dd")))}");
                 }
 
-                // Mappa gli ordini in eventi per Syncfusion
+                // PRIMA: Aggiorna DataFinePrevista nel database per tutti gli ordini
+                bool hasChanges = false;
+                foreach (var ordine in ordini)
+                {
+                    // Calcola EndTime
+                    var durataSecondi = (double)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                    var endTimeCalcolato = durataSecondi > 0 
+                        ? ordine.DataInizioOP.AddSeconds(durataSecondi)
+                        : ordine.DataInizioOP.AddHours(1);
+                    
+                    // Aggiorna SEMPRE DataFinePrevista con l'EndTime calcolato
+                    if (ordine.DataFinePrevista != endTimeCalcolato)
+                    {
+                        ordine.DataFinePrevista = endTimeCalcolato;
+                        hasChanges = true;
+                    }
+                }
+                
+                // Salva tutte le modifiche in un colpo solo
+                if (hasChanges)
+                {
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"✅ Aggiornati DataFinePrevista per {ordini.Count} ordini");
+                }
+                
+                // POI: Mappa gli ordini in eventi per Syncfusion
                 var eventi = ordini.Select(o =>
                 {
-                    // Calcolo EndTime con protezione da valori negativi
-                    var durataSecondi = (double)(o.Quantita * (decimal)o.TempoCiclo);
-                    var endTime = durataSecondi > 0 
-                        ? o.DataInizioOP.AddSeconds(durataSecondi)
-                        : o.DataInizioOP.AddHours(1); // Default 1 ora se calcolo non valido
+                    // Usa DataFinePrevista (che ora contiene l'EndTime calcolato)
+                    var endTime = o.DataFinePrevista ?? o.DataInizioOP.AddHours(1);
                     
                     return new
                     {
