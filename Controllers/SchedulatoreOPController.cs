@@ -196,6 +196,152 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// API: Aggiorna ordine dopo resize nel calendario
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateOrdineResize([FromBody] ResizeOrdineRequest request)
+        {
+            try
+            {
+                _logger.LogInformation($"📥 Richiesta resize ricevuta - ID: {request.Id}, StartTime: {request.StartTime:yyyy-MM-dd HH:mm:ss}, EndTime: {request.EndTime:yyyy-MM-dd HH:mm:ss}");
+                
+                var ordine = await _context.ListaOP.FindAsync(request.Id);
+                if (ordine == null)
+                {
+                    return NotFound(new { success = false, message = "Ordine non trovato" });
+                }
+                
+                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}, DataInizioOP DB: {ordine.DataInizioOP:yyyy-MM-dd HH:mm:ss}");
+
+                // ===== VALIDAZIONE 1: Campo Modificato =====
+                if (ordine.Modificato == 7)
+                {
+                    _logger.LogWarning($"Tentativo di resize ordine {ordine.IdListaOP} con Modificato=7 (bloccato)");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "❌ Impossibile modificare: l'ordine è BLOCCATO (Modificato=7)" 
+                    });
+                }
+
+                // ===== VALIDAZIONE 2: Stati non modificabili =====
+                if (ordine.IdStato == 3)
+                {
+                    return BadRequest(new { success = false, message = "❌ Impossibile modificare: ordine in Stato 3" });
+                }
+                
+                if (ordine.IdStato == 4)
+                {
+                    return BadRequest(new { success = false, message = "❌ Impossibile modificare: ordine in Stato 4" });
+                }
+
+                // ===== VALIDAZIONE 3: IdStato=2 non può modificare DataInizio =====
+                if (ordine.IdStato == 2)
+                {
+                    // Normalizza entrambe le date a UTC per confronto corretto
+                    var dataInizioOPUtc = ordine.DataInizioOP.Kind == DateTimeKind.Unspecified 
+                        ? DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local).ToUniversalTime()
+                        : ordine.DataInizioOP.ToUniversalTime();
+                    
+                    var startTimeUtc = request.StartTime.ToUniversalTime();
+                    
+                    var differenzaSecondi = Math.Abs((startTimeUtc - dataInizioOPUtc).TotalSeconds);
+                    
+                    _logger.LogInformation($"🔍 CONTROLLO IdStato=2:");
+                    _logger.LogInformation($"   DataInizioOP DB:  {ordine.DataInizioOP:yyyy-MM-dd HH:mm:ss} (Kind: {ordine.DataInizioOP.Kind}) → UTC: {dataInizioOPUtc:yyyy-MM-dd HH:mm:ss}");
+                    _logger.LogInformation($"   StartTime Request: {request.StartTime:yyyy-MM-dd HH:mm:ss} (Kind: {request.StartTime.Kind}) → UTC: {startTimeUtc:yyyy-MM-dd HH:mm:ss}");
+                    _logger.LogInformation($"   Differenza: {differenzaSecondi:F3} secondi");
+                    
+                    if (differenzaSecondi > 2)
+                    {
+                        _logger.LogWarning($"❌ BLOCCATO - Differenza {differenzaSecondi:F3}s > 2s");
+                        return BadRequest(new { 
+                            success = false, 
+                            message = "❌ Ordine OP in Produzione, non posso alterare Data Inizio OP" 
+                        });
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"✅ OK - Differenza {differenzaSecondi:F3}s <= 2s");
+                    }
+                }
+
+                // ===== CALCOLO E AGGIORNAMENTO =====
+                
+                // Normalizza date a UTC per confronto corretto (con tolleranza di 2 secondi)
+                var requestStartTimeUtc = request.StartTime.ToUniversalTime();
+                var requestEndTimeUtc = request.EndTime.ToUniversalTime();
+                
+                var ordineDataInizioOPUtc = ordine.DataInizioOP.Kind == DateTimeKind.Unspecified 
+                    ? DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local).ToUniversalTime()
+                    : ordine.DataInizioOP.ToUniversalTime();
+                
+                bool dataInizioModificata = Math.Abs((requestStartTimeUtc - ordineDataInizioOPUtc).TotalSeconds) > 2;
+                
+                bool dataFineModificata;
+                if (ordine.DataFinePrevista.HasValue)
+                {
+                    var ordineDataFinePrevistaUtc = ordine.DataFinePrevista.Value.Kind == DateTimeKind.Unspecified 
+                        ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local).ToUniversalTime()
+                        : ordine.DataFinePrevista.Value.ToUniversalTime();
+                    dataFineModificata = Math.Abs((requestEndTimeUtc - ordineDataFinePrevistaUtc).TotalSeconds) > 2;
+                }
+                else
+                {
+                    dataFineModificata = true; // Se DataFinePrevista è null, consideriamo sempre modificata
+                }
+
+                if (dataInizioModificata && ordine.IdStato == 1)
+                {
+                    // IdStato = 1: Modifica DataInizio
+                    ordine.DataInizioOP = request.StartTime;
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Modificata DataInizioOP a {request.StartTime:yyyy-MM-dd HH:mm}");
+                }
+
+                if (dataFineModificata && (ordine.IdStato == 1 || ordine.IdStato == 2))
+                {
+                    // IdStato = 1 o 2: Modifica DataFine
+                    ordine.DataFinePrevista = request.EndTime;
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Modificata DataFinePrevista a {request.EndTime:yyyy-MM-dd HH:mm}");
+                }
+
+                // Ricalcola Quantità
+                if (ordine.TempoCiclo > 0 && ordine.DataFinePrevista.HasValue)
+                {
+                    var durataSecondi = (decimal)(ordine.DataFinePrevista.Value - ordine.DataInizioOP).TotalSeconds;
+                    var vecchiaQuantita = ordine.Quantita;
+                    ordine.Quantita = Math.Round(durataSecondi / (decimal)ordine.TempoCiclo, 3);
+                    
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Quantità aggiornata da {vecchiaQuantita} a {ordine.Quantita} " +
+                                         $"(Durata: {durataSecondi}s, TempoCiclo: {ordine.TempoCiclo}s)");
+                }
+                else
+                {
+                    _logger.LogWarning($"Ordine {ordine.IdListaOP}: Impossibile ricalcolare Quantità (TempoCiclo={ordine.TempoCiclo}, DataFinePrevista={ordine.DataFinePrevista})");
+                }
+
+                // Imposta Modificato = 1
+                ordine.Modificato = 1;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} aggiornato tramite resize");
+
+                return Ok(new { 
+                    success = true, 
+                    message = "✅ Ordine aggiornato con successo",
+                    nuovaQuantita = ordine.Quantita,
+                    dataInizioOP = ordine.DataInizioOP,
+                    dataFinePrevista = ordine.DataFinePrevista
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Errore nell'aggiornamento resize ordine {request.Id}");
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Ottiene il colore in base allo stato dell'ordine
         /// </summary>
         private static string GetColorByStato(int idStato)
@@ -209,6 +355,16 @@ namespace AiDbMaster.Controllers
                 _ => "#808080"  // Grigio (default)
             };
         }
+    }
+
+    /// <summary>
+    /// Modello per la richiesta di resize ordine
+    /// </summary>
+    public class ResizeOrdineRequest
+    {
+        public int Id { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
     }
 }
 

@@ -474,6 +474,7 @@
                     ],
                     eventClick: onEventClick,
                     eventRendered: onEventRendered,
+                    resizeStart: onResizeStart,
                     resizeStop: onResizeStop
                 });
                 
@@ -577,19 +578,121 @@
             showOrderPopup(args.event);
         }
 
+        // Variabili globali per tracciare il resize
+        let originalStartTime = null;
+        let originalEndTime = null;
+
+        // Resize evento iniziato - salva valori originali
+        function onResizeStart(args) {
+            const evento = args.data;
+            originalStartTime = new Date(evento.StartTime);
+            originalEndTime = new Date(evento.EndTime);
+            console.log('🔄 RESIZE START - Valori originali salvati:', {
+                startTime: originalStartTime.toLocaleString('it-IT'),
+                endTime: originalEndTime.toLocaleString('it-IT')
+            });
+        }
+
         // Resize evento terminato
-        function onResizeStop(args) {
+        async function onResizeStop(args) {
             const evento = args.data;
             
-            console.log('🔄 RESIZE completato:');
-            console.log('  Ordine:', evento.Subject);
+            console.log('🔄 RESIZE rilevato:');
+            console.log('  Ordine:', evento.Subject, '(ID:', evento.Id, ')');
             console.log('  Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
             console.log('  Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
-            console.log('  Durata (ore):', ((new Date(evento.EndTime) - new Date(evento.StartTime)) / 3600000).toFixed(2));
             
-            // TODO: Qui possiamo salvare le modifiche sul server
-            // Per ora solo log per debug
-            showAlert(`✅ Evento ridimensionato: ${evento.Subject}`, 'info');
+            // ===== VALIDAZIONI CLIENT-SIDE =====
+            
+            // 1. Modificato = 7 (bloccato)
+            if (evento.Modificato === 7) {
+                showAlert('❌ Impossibile modificare: ordine BLOCCATO (Modificato=7)', 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
+            // 2. IdStato = 3 o 4 (non modificabili)
+            if (evento.IdStato === 3 || evento.IdStato === 4) {
+                showAlert(`❌ Impossibile modificare: ordine in Stato ${evento.IdStato}`, 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
+            // 3. IdStato = 2 e tentativo di modificare DataInizio
+            if (evento.IdStato === 2 && originalStartTime !== null) {
+                // Verifica se StartTime è cambiato rispetto all'originale salvato in resizeStart
+                const nuovaDataInizio = new Date(evento.StartTime);
+                
+                // Confronto con tolleranza di 1 secondo per evitare problemi con millisecondi
+                const differenzaSecondi = Math.abs((nuovaDataInizio.getTime() - originalStartTime.getTime()) / 1000);
+                
+                console.log('🔍 Controllo DataInizio per IdStato=2:', {
+                    originale: originalStartTime.toLocaleString('it-IT'),
+                    nuova: nuovaDataInizio.toLocaleString('it-IT'),
+                    differenzaSecondi: differenzaSecondi
+                });
+                
+                if (differenzaSecondi > 1) {
+                    showAlert('❌ Ordine OP in Produzione, non posso alterare Data Inizio OP', 'danger');
+                    args.cancel = true;
+                    originalStartTime = null;
+                    originalEndTime = null;
+                    loadOrdini(); // Ricarica per ripristinare
+                    return;
+                }
+            }
+            
+            // ===== CHIAMATA API PER SALVARE =====
+            
+            try {
+                const response = await fetch('@Url.Action("UpdateOrdineResize", "SchedulatoreOP")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: evento.Id,
+                        startTime: evento.StartTime,
+                        endTime: evento.EndTime
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Ordine salvato:', result);
+                    
+                    // Aggiorna i campi dell'evento con i valori dal server
+                    evento.Quantita = result.nuovaQuantita;
+                    evento.DataInizioOP = result.dataInizioOP;
+                    evento.DataFinePrevista = result.dataFinePrevista;
+                    evento.Modificato = 1;
+                    
+                    // Aggiorna il subject con la nuova quantità
+                    const annoOrdine = evento.AnnoOrdine;
+                    const numeroOrdine = evento.NumeroOrdine;
+                    evento.Subject = `Ord. ${annoOrdine}-${numeroOrdine} Qta: ${Math.floor(result.nuovaQuantita)}`;
+                    
+                    // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
+                    scheduleObj.saveEvent(evento);
+                    
+                    showAlert(`✅ ${result.message} - Nuova Quantità: ${result.nuovaQuantita.toFixed(3)}`, 'success');
+                } else {
+                    // Errore dal server
+                    showAlert(result.message, 'danger');
+                    args.cancel = true;
+                    loadOrdini(); // Ricarica per ripristinare
+                }
+            } catch (error) {
+                console.error('❌ Errore salvataggio resize:', error);
+                showAlert('❌ Errore durante il salvataggio: ' + error.message, 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+            } finally {
+                // Reset valori originali
+                originalStartTime = null;
+                originalEndTime = null;
+            }
         }
 
         // Mostra popup con dettagli ordine
