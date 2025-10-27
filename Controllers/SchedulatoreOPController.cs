@@ -342,6 +342,78 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// API: Aggiorna ordine dopo drag&drop nel calendario
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateOrdineDragDrop([FromBody] DragDropOrdineRequest request)
+        {
+            try
+            {
+                _logger.LogInformation($"📥 Richiesta drag&drop ricevuta - ID: {request.Id}, StartTime: {request.StartTime:yyyy-MM-dd HH:mm:ss}, EndTime: {request.EndTime:yyyy-MM-dd HH:mm:ss}, RoomId: {request.RoomId}");
+                
+                var ordine = await _context.ListaOP.FindAsync(request.Id);
+                if (ordine == null)
+                {
+                    return NotFound(new { success = false, message = "Ordine non trovato" });
+                }
+                
+                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}, CodiceCentro: {ordine.CodiceCentro}");
+
+                // ===== VALIDAZIONE 1: Solo IdStato = 1 può fare drag&drop =====
+                if (ordine.IdStato != 1)
+                {
+                    _logger.LogWarning($"Tentativo di drag&drop ordine {ordine.IdListaOP} con IdStato={ordine.IdStato} (solo 1 ammesso)");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = $"❌ Impossibile spostare: solo ordini con Stato 1 (Emesso) possono essere spostati. Stato corrente: {ordine.IdStato}" 
+                    });
+                }
+
+                // ===== VALIDAZIONE 2: Non si può cambiare centro di lavoro =====
+                if (request.RoomId != ordine.CodiceCentro)
+                {
+                    _logger.LogWarning($"Tentativo di cambiare centro di lavoro per ordine {ordine.IdListaOP}: {ordine.CodiceCentro} → {request.RoomId}");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "❌ Impossibile cambiare Centro di Lavoro. Puoi solo spostare nel tempo." 
+                    });
+                }
+
+                // ===== AGGIORNAMENTO =====
+                
+                var vecchiaDataInizio = ordine.DataInizioOP;
+                var vecchiaDataFine = ordine.DataFinePrevista;
+                
+                // Aggiorna DataInizioOP
+                ordine.DataInizioOP = request.StartTime;
+                
+                // Aggiorna DataFinePrevista
+                ordine.DataFinePrevista = request.EndTime;
+                
+                // Imposta Modificato = 1
+                ordine.Modificato = 1;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} spostato tramite drag&drop:");
+                _logger.LogInformation($"   DataInizioOP: {vecchiaDataInizio:yyyy-MM-dd HH:mm} → {ordine.DataInizioOP:yyyy-MM-dd HH:mm}");
+                _logger.LogInformation($"   DataFinePrevista: {vecchiaDataFine:yyyy-MM-dd HH:mm} → {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
+
+                return Ok(new { 
+                    success = true, 
+                    message = "✅ Ordine spostato con successo",
+                    dataInizioOP = ordine.DataInizioOP,
+                    dataFinePrevista = ordine.DataFinePrevista
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Errore nell'aggiornamento drag&drop ordine {request.Id}");
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Ottiene il colore in base allo stato dell'ordine
         /// </summary>
         private static string GetColorByStato(int idStato)
@@ -365,6 +437,17 @@ namespace AiDbMaster.Controllers
         public int Id { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
+    }
+
+    /// <summary>
+    /// Modello per la richiesta di drag&drop ordine
+    /// </summary>
+    public class DragDropOrdineRequest
+    {
+        public int Id { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string RoomId { get; set; } = string.Empty;
     }
 }
 

@@ -376,7 +376,7 @@
                     currentView: 'TimelineWeek',
                     selectedDate: new Date(),
                     showQuickInfo: false,
-                    allowDragAndDrop: false,
+                    allowDragAndDrop: true,
                     allowResizing: true,
                     readonly: false,
                     views: [
@@ -475,7 +475,9 @@
                     eventClick: onEventClick,
                     eventRendered: onEventRendered,
                     resizeStart: onResizeStart,
-                    resizeStop: onResizeStop
+                    resizeStop: onResizeStop,
+                    dragStart: onDragStart,
+                    dragStop: onDragStop
                 });
                 
                 // Appendi al DOM
@@ -578,9 +580,10 @@
             showOrderPopup(args.event);
         }
 
-        // Variabili globali per tracciare il resize
+        // Variabili globali per tracciare il resize e drag
         let originalStartTime = null;
         let originalEndTime = null;
+        let originalRoomId = null;
 
         // Resize evento iniziato - salva valori originali
         function onResizeStart(args) {
@@ -692,6 +695,95 @@
                 // Reset valori originali
                 originalStartTime = null;
                 originalEndTime = null;
+            }
+        }
+
+        // Drag evento iniziato - salva valori originali
+        function onDragStart(args) {
+            const evento = args.data;
+            originalStartTime = new Date(evento.StartTime);
+            originalEndTime = new Date(evento.EndTime);
+            originalRoomId = evento.RoomId;
+            
+            console.log('🔄 DRAG START - Valori originali salvati:', {
+                startTime: originalStartTime.toLocaleString('it-IT'),
+                endTime: originalEndTime.toLocaleString('it-IT'),
+                roomId: originalRoomId
+            });
+        }
+
+        // Drag evento terminato
+        async function onDragStop(args) {
+            const evento = args.data;
+            
+            console.log('🔄 DRAG rilevato:');
+            console.log('  Ordine:', evento.Subject, '(ID:', evento.Id, ')');
+            console.log('  Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
+            console.log('  Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
+            console.log('  Centro:', evento.RoomId);
+            
+            // ===== VALIDAZIONI CLIENT-SIDE =====
+            
+            // 1. Solo IdStato = 1 può fare drag&drop
+            if (evento.IdStato !== 1) {
+                showAlert(`❌ Impossibile spostare: solo ordini con Stato 1 (Emesso) possono essere spostati. Stato corrente: ${evento.IdStato}`, 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
+            // 2. Non si può cambiare centro di lavoro
+            if (originalRoomId !== null && evento.RoomId !== originalRoomId) {
+                showAlert('❌ Impossibile cambiare Centro di Lavoro. Puoi solo spostare nel tempo.', 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
+            // ===== CHIAMATA API PER SALVARE =====
+            
+            try {
+                const response = await fetch('@Url.Action("UpdateOrdineDragDrop", "SchedulatoreOP")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: evento.Id,
+                        startTime: evento.StartTime,
+                        endTime: evento.EndTime,
+                        roomId: evento.RoomId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Ordine spostato e salvato:', result);
+                    
+                    // Aggiorna i campi dell'evento con i valori dal server
+                    evento.DataInizioOP = result.dataInizioOP;
+                    evento.DataFinePrevista = result.dataFinePrevista;
+                    evento.Modificato = 1;
+                    
+                    // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
+                    scheduleObj.saveEvent(evento);
+                    
+                    showAlert(`✅ ${result.message}`, 'success');
+                } else {
+                    // Errore dal server
+                    showAlert(result.message, 'danger');
+                    args.cancel = true;
+                    loadOrdini(); // Ricarica per ripristinare
+                }
+            } catch (error) {
+                console.error('❌ Errore salvataggio drag&drop:', error);
+                showAlert('❌ Errore durante il salvataggio: ' + error.message, 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+            } finally {
+                // Reset valori originali
+                originalStartTime = null;
+                originalEndTime = null;
+                originalRoomId = null;
             }
         }
 
