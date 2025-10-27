@@ -171,10 +171,11 @@ namespace AiDbMaster.Models
 
         /// <summary>
         /// Indica se l'ordine è stato modificato
+        /// 0 = Non modificato, 1 = Modificato, 7 = Bloccato
         /// </summary>
         [Required]
         [Display(Name = "Modificato")]
-        public bool Modificato { get; set; }
+        public int Modificato { get; set; }
 
         // PROPRIETÀ CALCOLATE
 

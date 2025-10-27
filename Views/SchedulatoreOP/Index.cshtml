@@ -1,0 +1,791 @@
+@{
+    ViewData["Title"] = "Schedulatore Ordini di Produzione";
+    ViewBag.UseFluidContainer = true;
+}
+
+<!-- CSS Custom -->
+<style>
+    #schedule {
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        width: 100%;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .e-schedule {
+        height: 100% !important;
+        min-height: 600px;
+    }
+    
+    /* Stili per timeline view */
+    .e-schedule .e-timeline-view .e-resource-left-td {
+        min-width: 200px !important;
+        width: 200px !important;
+    }
+    
+    .e-schedule .e-timeline-view .e-left-indent-wrap {
+        width: 200px !important;
+    }
+    
+    /* Nomi centri di lavoro */
+    #schedule .e-schedule .e-timeline-view .e-resource-cells,
+    #schedule .e-schedule .e-timeline-view .e-resource-cells *,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td,
+    #schedule .e-schedule .e-timeline-view .e-left-indent-wrap table tbody tr td *,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td,
+    #schedule .e-schedule .e-timeline-view .e-resource-left-td * {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* Stili eventi */
+    .e-schedule .e-appointment {
+        min-height: 50px !important;
+        height: auto !important;
+        padding: 8px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .e-schedule .e-appointment:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        transform: translateY(-2px);
+    }
+    
+    .e-schedule .e-appointment .e-subject {
+        font-weight: bold !important;
+        margin-bottom: 4px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+    }
+    
+    /* Header styles per timeline */
+    .week-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 8px 4px !important;
+        background: linear-gradient(135deg, #3498db, #2980b9) !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 0.9rem !important;
+        border-radius: 4px 4px 0 0 !important;
+    }
+    
+    .day-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 6px 4px !important;
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        min-width: 70px !important;
+    }
+    
+    .day-compact {
+        font-weight: bold !important;
+        font-size: 0.9rem !important;
+        color: #495057 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    
+    .hour-header-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 4px !important;
+        background: #ffffff !important;
+        border-right: 1px solid #e9ecef !important;
+        min-width: 60px !important;
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+        color: #495057 !important;
+    }
+    
+    /* Popup Trascinabile */
+    #ordinePopup {
+        display: none;
+        position: fixed;
+        background: white;
+        border: 2px solid #3498db;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        z-index: 100000;
+        min-width: 500px;
+        max-width: 700px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    #ordinePopup.dragging {
+        cursor: move !important;
+    }
+    
+    .popup-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 15px;
+        border-radius: 6px 6px 0 0;
+        cursor: move;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .popup-header h5 {
+        margin: 0;
+        font-weight: bold;
+    }
+    
+    .popup-close {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .popup-close:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    
+    .popup-body {
+        padding: 20px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+    
+    .info-label {
+        font-size: 0.75rem;
+        color: #666;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    
+    .info-value {
+        font-size: 0.95rem;
+        color: #2c3e50;
+        font-weight: 500;
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #3498db;
+    }
+    
+    .info-value.highlight {
+        background: #e3f2fd;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .stato-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: white;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="content-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-calendar2-check me-2 text-primary"></i>Schedulatore Ordini di Produzione</h2>
+        </div>
+
+        <!-- Alert messaggi -->
+        <div id="alertContainer"></div>
+
+        <!-- Syncfusion Scheduler -->
+        <div id="schedule"></div>
+    </div>
+</div>
+
+<!-- Popup Trascinabile per Dettagli Ordine -->
+<div id="ordinePopup">
+    <div class="popup-header" id="popupHeader">
+        <h5><i class="bi bi-clipboard-data me-2"></i>Dettagli Ordine</h5>
+        <button class="popup-close" onclick="closePopup()">&times;</button>
+    </div>
+    <div class="popup-body" id="popupBody">
+        <!-- Contenuto dinamico inserito via JavaScript -->
+    </div>
+</div>
+
+<!-- Template per header settimana -->
+<script id="weekHeaderTemplate" type="text/x-template">
+    <div class="week-header-content">
+        <span class="week-label">Week ${getWeekNumber(data.date)}</span>
+    </div>
+</script>
+
+<!-- Template per header giorno -->
+<script id="dayHeaderTemplate" type="text/x-template">
+    <div class="day-header-content">
+        <span class="day-compact">${data.date.getDate()} ${getDayNameShort(data.date)}</span>
+    </div>
+</script>
+
+<!-- Template per header ora -->
+<script id="hourHeaderTemplate" type="text/x-template">
+    <div class="hour-header-content">
+        <span class="hour-label">${formatHour(data.date)}</span>
+    </div>
+</script>
+
+@section Scripts {
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+        }
+        
+        let scheduleObj;
+        let centriLavoro = [];
+        
+        // Funzioni helper per template
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+
+        function getDayNameShort(date) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            return days[date.getDay()];
+        }
+
+        function formatHour(date) {
+            return String(date.getHours()).padStart(2, '0');
+        }
+
+        // Inizializzazione al caricamento della pagina
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM caricato - SchedulatoreOP');
+            
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+                console.log('Licenza Syncfusion registrata');
+            }
+            
+            // Carica prima i centri di lavoro
+            await loadCentriLavoro();
+            
+            // Crea lo scheduler
+            setTimeout(() => {
+                createScheduler();
+            }, 500);
+            
+            // Abilita drag del popup
+            makeDraggable(document.getElementById('ordinePopup'), document.getElementById('popupHeader'));
+        });
+
+        // Carica centri di lavoro
+        async function loadCentriLavoro() {
+            try {
+                console.log('Caricamento centri di lavoro...');
+                const response = await fetch('@Url.Action("GetCentriLavoro", "SchedulatoreOP")');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const dataJson = await response.json();
+                console.log('📋 Centri ricevuti dal server:', dataJson);
+                
+                // Mappa da camelCase a PascalCase (anche se qui di solito funziona)
+                centriLavoro = dataJson.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    capacity: c.capacity
+                }));
+                
+                console.log(`✅ Caricati ${centriLavoro.length} centri di lavoro:`, centriLavoro.map(c => c.name).join(', '));
+            } catch (error) {
+                console.error('Errore caricamento centri:', error);
+                showAlert('Errore nel caricamento dei centri di lavoro', 'danger');
+                centriLavoro = [];
+            }
+        }
+
+        // Crea lo scheduler
+        function createScheduler() {
+            try {
+                console.log('Creazione scheduler...');
+                
+                if (typeof ej === 'undefined' || !ej.schedule || !ej.schedule.Schedule) {
+                    console.error('ej.schedule.Schedule non disponibile');
+                    showAlert('Errore: Libreria Syncfusion non caricata', 'danger');
+                    return;
+                }
+                
+                if (!centriLavoro || centriLavoro.length === 0) {
+                    showAlert(
+                        '<strong>Nessun centro di lavoro disponibile</strong><br>' +
+                        'Vai su <a href="/CentriLavoro" class="alert-link">Gestione Centri di Lavoro</a> per attivarne almeno uno.',
+                        'warning'
+                    );
+                    return;
+                }
+                
+                // Configura le risorse (centri di lavoro) - Syncfusion vuole PascalCase
+                const resourceDataSource = centriLavoro.map(centro => ({
+                    Id: centro.id,
+                    Name: centro.name
+                }));
+
+                console.log('Resources configurate:', resourceDataSource);
+                console.log(`📊 ${resourceDataSource.length} centri configurati come risorse`);
+                
+                // Crea istanza Schedule con visualizzazione Timeline 2 Settimane
+                scheduleObj = new ej.schedule.Schedule({
+                    width: '100%',
+                    height: '100%',
+                    currentView: 'TimelineWeek',
+                    selectedDate: new Date(),
+                    showQuickInfo: false,
+                    allowDragAndDrop: false,
+                    allowResizing: false,
+                    readonly: true,
+                    views: [
+                        { 
+                            option: 'TimelineDay',
+                            displayName: 'Giorno',
+                            timeScale: {
+                                enable: true,
+                                interval: 60,
+                                slotCount: 1
+                            }
+                        },
+                        { 
+                            option: 'TimelineWeek',
+                            displayName: 'Settimana',
+                            timeScale: {
+                                enable: true,
+                                interval: 480,
+                                slotCount: 1
+                            }
+                        },
+                        { 
+                            option: 'TimelineWeek',
+                            displayName: '2 Settimane',
+                            isSelected: true,
+                            interval: 2,
+                            timeScale: {
+                                enable: true,
+                                interval: 480,
+                                slotCount: 1
+                            }
+                        },
+                        { 
+                            option: 'TimelineMonth',
+                            displayName: '4 Settimane',
+                            interval: 4,
+                            timeScale: {
+                                enable: true,
+                                interval: 480,
+                                slotCount: 1
+                            }
+                        }
+                    ],
+                    eventSettings: {
+                        dataSource: [],
+                        fields: {
+                            id: 'Id',
+                            subject: { name: 'Subject' },
+                            startTime: { name: 'StartTime' },
+                            endTime: { name: 'EndTime' }
+                        }
+                    },
+                    group: {
+                        resources: ['Rooms']
+                    },
+                    resources: [{
+                        field: 'RoomId',
+                        title: 'Centro di Lavoro',
+                        name: 'Rooms',
+                        allowMultiple: false,
+                        dataSource: resourceDataSource,
+                        textField: 'Name',
+                        idField: 'Id'
+                    }],
+                    timeScale: {
+                        enable: true,
+                        interval: 480,
+                        slotCount: 1
+                    },
+                    workHours: {
+                        highlight: false,
+                        start: '00:00',
+                        end: '23:59'
+                    },
+                    startHour: '00:00',
+                    endHour: '23:59',
+                    timeFormat: 'HH:mm',
+                    dateFormat: 'dd/MM/yyyy',
+                    firstDayOfWeek: 1,
+                    showWeekNumber: true,
+                    rowAutoHeight: true,
+                    headerRows: [
+                        { 
+                            option: 'Week',
+                            template: '#weekHeaderTemplate'
+                        },
+                        { 
+                            option: 'Date',
+                            template: '#dayHeaderTemplate'
+                        },
+                        { 
+                            option: 'Hour',
+                            template: '#hourHeaderTemplate'
+                        }
+                    ],
+                    eventClick: onEventClick,
+                    eventRendered: onEventRendered
+                });
+                
+                // Appendi al DOM
+                scheduleObj.appendTo('#schedule');
+                console.log('✅ Scheduler creato con successo');
+                
+                // Carica ordini di produzione
+                loadOrdini();
+                
+            } catch (error) {
+                console.error('Errore creazione scheduler:', error);
+                showAlert('Errore durante la creazione del calendario: ' + error.message, 'danger');
+            }
+        }
+
+        // Carica ordini di produzione
+        async function loadOrdini() {
+            console.log('📅 Caricamento ordini di produzione...');
+            try {
+                const response = await fetch('@Url.Action("GetOrdiniProduzione", "SchedulatoreOP")');
+                const ordiniJson = await response.json();
+                
+                console.log(`✅ Ricevuti ${ordiniJson.length} ordini dal server`);
+                console.log('📋 Primo ordine ricevuto:', ordiniJson[0]);
+                
+                // IMPORTANTE: ASP.NET Core serializza in camelCase, mappiamo a PascalCase per Syncfusion
+                const ordini = ordiniJson.map(o => ({
+                    // Campi Syncfusion (PascalCase)
+                    Id: o.id,
+                    Subject: o.subject,
+                    StartTime: new Date(o.startTime),
+                    EndTime: new Date(o.endTime),
+                    RoomId: o.roomId,
+                    CategoryColor: o.categoryColor,
+                    IsAllDay: o.isAllDay,
+                    
+                    // TUTTI i campi extra per il popup (mantieni camelCase originale)
+                    TipoOrdine: o.tipoOrdine,
+                    AnnoOrdine: o.annoOrdine,
+                    SerieOrdine: o.serieOrdine,
+                    NumeroOrdine: o.numeroOrdine,
+                    RigaOrdine: o.rigaOrdine,
+                    DescrOrdine: o.descrOrdine,
+                    CodiceArticolo: o.codiceArticolo,
+                    DescrizioneArticolo: o.descrizioneArticolo,
+                    UnitaMisura: o.unitaMisura,
+                    Quantita: o.quantita,
+                    QuantitaProdotta: o.quantitaProdotta,
+                    DataInizioOP: o.dataInizioOP,
+                    TempoCiclo: o.tempoCiclo,
+                    DataInizioSetup: o.dataInizioSetup,
+                    TempoSetup: o.tempoSetup,
+                    IdStato: o.idStato,
+                    StatoDescrizione: o.statoDescrizione,
+                    CodiceCentro: o.codiceCentro,
+                    CentroLavoroDescrizione: o.centroLavoroDescrizione,
+                    CodiceLavorazione: o.codiceLavorazione,
+                    Note: o.note,
+                    DataFineOP: o.dataFineOP,
+                    DataFinePrevista: o.dataFinePrevista,
+                    Priorita: o.priorita,
+                    IdOperatore: o.idOperatore,
+                    CostoOrario: o.costoOrario,
+                    TempoEffettivo: o.tempoEffettivo,
+                    Modificato: o.modificato,
+                    PercentualeCompletamento: o.percentualeCompletamento
+                }));
+                
+                console.log(`✅ Mappati ${ordini.length} ordini per Syncfusion`);
+                console.log('📋 Primo ordine mappato:', ordini[0]);
+                
+                if (scheduleObj) {
+                    // Aggiorna data source dello scheduler
+                    scheduleObj.eventSettings.dataSource = ordini;
+                    scheduleObj.refreshEvents();
+                    console.log(`✅ Scheduler aggiornato con ${ordini.length} ordini`);
+                } else {
+                    console.error('❌ scheduleObj non disponibile!');
+                }
+                
+            } catch (error) {
+                console.error('Errore caricamento ordini:', error);
+                showAlert('Errore durante il caricamento degli ordini', 'danger');
+            }
+        }
+
+        // Personalizza rendering eventi (applica colori da CategoryColor)
+        function onEventRendered(args) {
+            const eventData = args.data;
+            const colore = eventData.CategoryColor || '#808080';
+            
+            args.element.style.setProperty('background-color', colore, 'important');
+            args.element.style.setProperty('border-color', colore, 'important');
+            args.element.style.setProperty('color', 'white', 'important');
+        }
+
+        // Click su evento -> mostra popup
+        function onEventClick(args) {
+            args.cancel = true; // Previeni popup default Syncfusion
+            showOrderPopup(args.event);
+        }
+
+        // Mostra popup con dettagli ordine
+        function showOrderPopup(ordine) {
+            const popup = document.getElementById('ordinePopup');
+            const body = document.getElementById('popupBody');
+            
+            // Genera HTML con TUTTI i campi
+            body.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-item full-width">
+                        <div class="info-label">Ordine</div>
+                        <div class="info-value highlight">
+                            ${ordine.TipoOrdine}-${ordine.AnnoOrdine}/${ordine.SerieOrdine}/${ordine.NumeroOrdine} - Riga ${ordine.RigaOrdine}
+                        </div>
+                    </div>
+                    
+                    <div class="info-item full-width">
+                        <div class="info-label">Descrizione Ordine</div>
+                        <div class="info-value">${ordine.DescrOrdine || '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Codice Articolo</div>
+                        <div class="info-value">${ordine.CodiceArticolo}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Descrizione Articolo</div>
+                        <div class="info-value">${ordine.DescrizioneArticolo}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Quantità</div>
+                        <div class="info-value highlight">${ordine.Quantita.toFixed(3)} ${ordine.UnitaMisura}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Quantità Prodotta</div>
+                        <div class="info-value">${ordine.QuantitaProdotta.toFixed(3)} ${ordine.UnitaMisura} (${ordine.PercentualeCompletamento.toFixed(1)}%)</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Data Inizio OP</div>
+                        <div class="info-value">${formatDateTime(ordine.DataInizioOP)}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Data Fine Calcolata</div>
+                        <div class="info-value">${formatDateTime(ordine.EndTime)}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Ciclo</div>
+                        <div class="info-value">${ordine.TempoCiclo} secondi</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Setup</div>
+                        <div class="info-value">${ordine.TempoSetup || 0} minuti</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Stato</div>
+                        <div class="info-value">
+                            <span class="stato-badge" style="background-color: ${ordine.CategoryColor}">
+                                ${ordine.StatoDescrizione}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Centro di Lavoro</div>
+                        <div class="info-value">${ordine.CodiceCentro} - ${ordine.CentroLavoroDescrizione}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Codice Lavorazione</div>
+                        <div class="info-value">${ordine.CodiceLavorazione}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Priorità</div>
+                        <div class="info-value">${ordine.Priorita || '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Data Fine OP</div>
+                        <div class="info-value">${ordine.DataFineOP ? formatDateTime(ordine.DataFineOP) : '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Data Fine Prevista</div>
+                        <div class="info-value">${ordine.DataFinePrevista ? formatDateTime(ordine.DataFinePrevista) : '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">ID Operatore</div>
+                        <div class="info-value">${ordine.IdOperatore || '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Costo Orario</div>
+                        <div class="info-value">${ordine.CostoOrario ? '€ ' + ordine.CostoOrario.toFixed(2) : '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Effettivo</div>
+                        <div class="info-value">${ordine.TempoEffettivo ? ordine.TempoEffettivo + ' secondi' : '-'}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Modificato</div>
+                        <div class="info-value">${getModificatoLabel(ordine.Modificato)}</div>
+                    </div>
+                    
+                    ${ordine.Note ? `
+                    <div class="info-item full-width">
+                        <div class="info-label">Note</div>
+                        <div class="info-value">${ordine.Note}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Mostra popup al centro dello schermo
+            popup.style.display = 'block';
+            popup.style.left = '50%';
+            popup.style.top = '50%';
+            popup.style.transform = 'translate(-50%, -50%)';
+        }
+
+        // Chiudi popup
+        function closePopup() {
+            document.getElementById('ordinePopup').style.display = 'none';
+        }
+
+        // Rendi popup trascinabile
+        function makeDraggable(element, header) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            
+            header.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                element.classList.add('dragging');
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                element.style.top = (element.offsetTop - pos2) + 'px';
+                element.style.left = (element.offsetLeft - pos1) + 'px';
+                element.style.transform = 'none';
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                element.classList.remove('dragging');
+            }
+        }
+
+        // Helper: formatta data e ora
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Helper: label per campo Modificato
+        function getModificatoLabel(modificato) {
+            switch(modificato) {
+                case 0: return '❌ Non modificato';
+                case 1: return '✏️ Modificato';
+                case 7: return '🔒 Bloccato';
+                default: return '-';
+            }
+        }
+
+        // Mostra alert
+        function showAlert(message, type = 'info') {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.getElementById('alertContainer').innerHTML = alertHtml;
+            
+            setTimeout(() => {
+                const alert = document.querySelector('#alertContainer .alert');
+                if (alert) {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }
+            }, 5000);
+        }
+    </script>
+}
+

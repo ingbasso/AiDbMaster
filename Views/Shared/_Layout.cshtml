@@ -193,15 +193,9 @@
                                         </a>
                                     </li>
                                     <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Schedulatore" asp-action="Index">
-                                            <i class="bi bi-calendar3"></i>
-                                            <span>Schedulatore</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Schedulatore2" asp-action="Index">
+                                        <a class="sidebar-link" asp-controller="SchedulatoreOP" asp-action="Index">
                                             <i class="bi bi-calendar2-check"></i>
-                                            <span>Schedulatore2</span>
+                                            <span>Schedulatore OP</span>
                                         </a>
                                     </li>
                                     <li class="sidebar-item">
@@ -722,16 +716,6 @@
                 saveSidebarState(isOpen);
             });
             
-            // Ripristina lo stato dopo il caricamento della pagina
-            $(window).on('load', function() {
-                console.log('Page loaded, checking sidebar state'); // Debug
-                // RIMOSSO: loadSidebarState() già chiamato al DOMContentLoaded (riga 711)
-                setTimeout(() => {
-                    // loadSidebarState(); // <-- COMMENTATO per evitare lampeggiamento
-                    setActiveMenuItem();
-                }, 100); // Piccolo delay per assicurarsi che tutto sia caricato
-            });
-            
             // ===== PULSANTE "TORNA IN ALTO" =====
             
             var scrollToTop = $('#scrollToTop');
@@ -784,20 +768,6 @@
                         }
                     }
                 }
-            });
-            
-            // ===== ANIMAZIONI FLUIDE AGGIUNTIVE =====
-            
-            // Aggiungi classe per animazioni quando sidebar si apre/chiude
-            // SOLO dopo che la pagina è completamente caricata per evitare lampeggiamenti
-            $(window).on('load', function() {
-                setTimeout(() => {
-                    $('#sidebar').on('transitionstart', function() {
-                        $('body').addClass('sidebar-transitioning');
-                    }).on('transitionend', function() {
-                        $('body').removeClass('sidebar-transitioning');
-                    });
-                }, 500); // Delay per assicurarsi che la sidebar sia stabilizzata
             });
             
             // Prevenzione doppio click già integrata sopra
