@@ -460,6 +460,128 @@ namespace AiDbMaster.Controllers
                 return StatusCode(500, new { success = false, message = "Errore durante la generazione dei weekend: " + ex.Message });
             }
         }
+
+        /// <summary>
+        /// API: Genera fermi settimanali (turni notturni + weekend) per un range di settimane
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> GeneraFermiSettimanali([FromBody] GeneraFermiSettimanaliViewModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { success = false, message = "Dati non validi" });
+                }
+
+                // Carica centri
+                var centri = model.ApplicaATutti
+                    ? await _context.CentriLavoro
+                        .Where(c => c.Attivo == true)
+                        .Select(c => c.CodiceCentro)
+                        .ToListAsync()
+                    : new List<string>(); // Se non applica a tutti, dovremmo gestire centri selezionati
+
+                if (!centri.Any())
+                {
+                    return BadRequest(new { success = false, message = "Nessun centro attivo trovato" });
+                }
+
+                var fermiCreati = 0;
+
+                // Per ogni settimana nel range
+                for (int numSettimana = model.DaSettimana; numSettimana <= model.ASettimana; numSettimana++)
+                {
+                    // Calcola il lunedì della settimana
+                    var lunedi = GetMondayOfWeek(model.Anno, numSettimana);
+                    _logger.LogInformation($"Settimana {numSettimana}/{model.Anno}: Lunedì = {lunedi:dd/MM/yyyy}");
+
+                    foreach (var centro in centri)
+                    {
+                        // 1. Lun 22:00 - Mar 06:00
+                        await CreaFermoNotturno(lunedi, DayOfWeek.Monday, centro, model.Motivo);
+                        fermiCreati++;
+
+                        // 2. Mar 22:00 - Mer 06:00
+                        await CreaFermoNotturno(lunedi, DayOfWeek.Tuesday, centro, model.Motivo);
+                        fermiCreati++;
+
+                        // 3. Mer 22:00 - Gio 06:00
+                        await CreaFermoNotturno(lunedi, DayOfWeek.Wednesday, centro, model.Motivo);
+                        fermiCreati++;
+
+                        // 4. Gio 22:00 - Ven 06:00
+                        await CreaFermoNotturno(lunedi, DayOfWeek.Thursday, centro, model.Motivo);
+                        fermiCreati++;
+
+                        // 5. Weekend: Ven 22:00 - Lun 06:00 (settimana successiva)
+                        var venerdi = lunedi.AddDays(4); // Venerdì della settimana
+                        var lunediSuccessivo = lunedi.AddDays(7); // Lunedì settimana successiva
+                        
+                        _logger.LogInformation($"  Weekend: {venerdi:dd/MM/yyyy} 22:00 → {lunediSuccessivo:dd/MM/yyyy} 06:00");
+                        
+                        var fermoWeekend = new CalendarioFermiCentriLavoro
+                        {
+                            CodiceCentro = centro,
+                            DataInizioFermo = venerdi.Date.AddHours(22),
+                            DataFineFermo = lunediSuccessivo.Date.AddHours(6),
+                            TipoFermo = TipoFermo.WeekEnd,
+                            Motivo = model.Motivo ?? "Fermo programmato",
+                            IsPianificato = true,
+                            DataCreazione = DateTime.Now
+                        };
+                        _context.CalendarioFermiCentriLavoro.Add(fermoWeekend);
+                        fermiCreati++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Generati {fermiCreati} fermi settimanali per {centri.Count} centri");
+
+                return Ok(new 
+                { 
+                    success = true, 
+                    message = $"Generati {fermiCreati} fermi per {centri.Count} centro/i", 
+                    count = fermiCreati
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante la generazione dei fermi settimanali");
+                return StatusCode(500, new { success = false, message = "Errore: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Helper: Crea fermo turno notturno (giorno 22:00 - giorno+1 06:00)
+        /// </summary>
+        private async Task CreaFermoNotturno(DateTime lunediSettimana, DayOfWeek giorno, string centro, string? motivo)
+        {
+            var giornoInizio = lunediSettimana.AddDays((int)giorno - (int)DayOfWeek.Monday);
+            var giornoFine = giornoInizio.AddDays(1);
+
+            var fermo = new CalendarioFermiCentriLavoro
+            {
+                CodiceCentro = centro,
+                DataInizioFermo = giornoInizio.Date.AddHours(22),
+                DataFineFermo = giornoFine.Date.AddHours(6),
+                TipoFermo = TipoFermo.TurnoNotturno,
+                Motivo = motivo ?? "Fermo programmato",
+                IsPianificato = true,
+                DataCreazione = DateTime.Now
+            };
+            _context.CalendarioFermiCentriLavoro.Add(fermo);
+        }
+
+        /// <summary>
+        /// Helper: Ottiene il lunedì di una settimana specifica dell'anno (ISO 8601)
+        /// </summary>
+        private DateTime GetMondayOfWeek(int anno, int numeroSettimana)
+        {
+            // Usa ISOWeek di .NET per calcolare correttamente secondo lo standard ISO 8601
+            return System.Globalization.ISOWeek.ToDateTime(anno, numeroSettimana, DayOfWeek.Monday);
+        }
     }
 }
 

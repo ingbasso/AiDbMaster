@@ -243,7 +243,7 @@
             <h2><i class="bi bi-calendar-x me-2 text-danger"></i>Calendario Fermi Centri di Lavoro</h2>
             <div>
                 <button type="button" class="btn btn-success" onclick="openGeneraWeekendModal()">
-                    <i class="bi bi-calendar-week me-1"></i> Genera Weekend
+                    <i class="bi bi-calendar-week me-1"></i> Genera Fermi Settimanali
                 </button>
                 <button type="button" class="btn btn-primary" onclick="openCreateModal()">
                     <i class="bi bi-plus-circle me-1"></i> Nuovo Fermo
@@ -357,24 +357,36 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Genera Weekend Automaticamente</h5>
+                <h5 class="modal-title">Genera Fermi Settimanali</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="generaWeekendForm">
-                    <div class="mb-3">
-                        <label for="weekendDataInizio" class="form-label">Data Inizio Periodo *</label>
-                        <input type="date" id="weekendDataInizio" class="form-control" required />
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="weekendAnno" class="form-label">Anno *</label>
+                            <input type="number" id="weekendAnno" class="form-control" min="2020" max="2100" required />
+                            <small class="text-muted">Anno per cui generare i fermi</small>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="weekendDataFine" class="form-label">Data Fine Periodo *</label>
-                        <input type="date" id="weekendDataFine" class="form-control" required />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendDaSettimana" class="form-label">Da Settimana *</label>
+                            <input type="number" id="weekendDaSettimana" class="form-control" min="1" max="53" required />
+                            <small class="text-muted">Settimana di inizio (1-53)</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendASettimana" class="form-label">A Settimana *</label>
+                            <input type="number" id="weekendASettimana" class="form-control" min="1" max="53" required />
+                            <small class="text-muted">Settimana di fine (1-53)</small>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="weekendMotivo" class="form-label">Motivo</label>
-                        <input type="text" id="weekendMotivo" class="form-control" value="Weekend" />
+                        <input type="text" id="weekendMotivo" class="form-control" value="Fermo programmato" />
                     </div>
 
                     <div class="mb-3">
@@ -388,14 +400,18 @@
 
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        Verranno creati fermi per tutti i sabati e domeniche nel periodo selezionato.
+                        <strong>Verranno creati i seguenti fermi per ogni settimana:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Turni notturni (Lun-Gio): 22:00-06:00</li>
+                            <li>Weekend: Ven 22:00 - Lun 06:00</li>
+                        </ul>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                <button type="button" class="btn btn-success" onclick="generaWeekend()">
-                    <i class="bi bi-calendar-week"></i> Genera
+                <button type="button" class="btn btn-success" onclick="generaFermiSettimanali()">
+                    <i class="bi bi-calendar-week"></i> Genera Fermi
                 </button>
             </div>
         </div>
@@ -561,32 +577,32 @@
                             { 
                                 option: 'TimelineWeek',
                                 displayName: 'Settimana',
-                                isSelected: false,
+                                isSelected: true,
                                 timeScale: {
                                     enable: true,
-                                    interval: 480,
+                                    interval: 120,
                                     slotCount: 1
                                 }
                             },
                             { 
                                 option: 'TimelineWeek',
                                 displayName: '2 Settimane',
-                                isSelected: true,
+                                isSelected: false,
                                 interval: 2,
                                 timeScale: {
                                     enable: true,
-                                    interval: 480,  // 8 ore per vista 2 settimane
+                                    interval: 120,  // 8 ore per vista 2 settimane
                                     slotCount: 1
                                 }
                             },
                             { 
-                                option: 'TimelineMonth',
+                                option: 'TimelineWeek',
                                 displayName: '4 Settimane',
                                 isSelected: false,
                                 interval: 4,
                                 timeScale: {
                                     enable: true,
-                                    interval: 480,  // 8 ore per vista 2 settimane
+                                    interval: 120,  
                                     slotCount: 1
                                 }
                             }
@@ -685,13 +701,6 @@
                     showAlert('Errore durante la creazione del calendario: ' + error.message, 'danger');
                 }
             }, 500);
-            
-            // Imposta date default per genera weekend (mese corrente)
-            const oggi = new Date();
-            document.getElementById('weekendDataInizio').value = oggi.toISOString().split('T')[0];
-            const fineMese = new Date(oggi.getFullYear(), oggi.getMonth() + 1, 0);
-            document.getElementById('weekendDataFine').value = fineMese.toISOString().split('T')[0];
-            console.log('Date default impostate');
         });
 
         // Forza gli stili dei nomi dei centri di lavoro con JavaScript diretto
@@ -851,6 +860,8 @@
                 icon = '<i class="bi bi-calendar-x me-1"></i>';
             } else if (tipoFermo === 'Festivo') {
                 icon = '<i class="bi bi-calendar-event me-1"></i>';
+            } else if (tipoFermo === 'TurnoNotturno') {
+                icon = '<i class="bi bi-moon-fill me-1"></i>';
             }
             
             // Aggiungi icona al subject
@@ -1153,8 +1164,19 @@
 
         // Apri modal genera weekend
         function openGeneraWeekendModal() {
-            console.log('Apertura modal genera weekend...');
+            console.log('Apertura modal genera fermi settimanali...');
             try {
+                // Inizializza anno corrente
+                const annoCorrente = new Date().getFullYear();
+                document.getElementById('weekendAnno').value = annoCorrente;
+                
+                // Inizializza settimane (settimana corrente e +10)
+                const now = new Date();
+                const onejan = new Date(now.getFullYear(), 0, 1);
+                const weekNum = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+                document.getElementById('weekendDaSettimana').value = weekNum;
+                document.getElementById('weekendASettimana').value = Math.min(weekNum + 10, 53);
+                
                 const modalElement = document.getElementById('generaWeekendModal');
                 console.log('Modal element:', modalElement);
                 
@@ -1167,9 +1189,9 @@
                     modal.dispose();
                 }
                 
-                // Crea nuova istanza SENZA backdrop
+                // Crea nuova istanza
                 modal = new bootstrap.Modal(modalElement, {
-                    backdrop: 'static',  // Backdrop statico (non si chiude cliccando fuori)
+                    backdrop: 'static',
                     keyboard: true,
                     focus: true
                 });
@@ -1188,23 +1210,53 @@
             }
         }
 
-        // Genera weekend automaticamente
-        async function generaWeekend() {
-            const data = {
-                dataInizio: document.getElementById('weekendDataInizio').value,
-                dataFine: document.getElementById('weekendDataFine').value,
-                motivo: document.getElementById('weekendMotivo').value,
-                applicaATutti: document.getElementById('weekendApplicaATutti').checked,
-                centriSelezionati: []
-            };
+        // Genera fermi settimanali automaticamente
+        async function generaFermiSettimanali() {
+            const anno = parseInt(document.getElementById('weekendAnno').value);
+            const daSettimana = parseInt(document.getElementById('weekendDaSettimana').value);
+            const aSettimana = parseInt(document.getElementById('weekendASettimana').value);
+            const motivo = document.getElementById('weekendMotivo').value;
+            const applicaATutti = document.getElementById('weekendApplicaATutti').checked;
             
-            if (!data.dataInizio || !data.dataFine) {
-                showAlert('Seleziona date inizio e fine', 'warning');
+            // Validazioni
+            if (!anno || !daSettimana || !aSettimana) {
+                showAlert('Compila tutti i campi obbligatori', 'warning');
                 return;
             }
             
+            if (aSettimana < daSettimana) {
+                showAlert('"A Settimana" non può essere minore di "Da Settimana"', 'warning');
+                return;
+            }
+            
+            if (daSettimana < 1 || daSettimana > 53 || aSettimana < 1 || aSettimana > 53) {
+                showAlert('Le settimane devono essere comprese tra 1 e 53', 'warning');
+                return;
+            }
+            
+            // Calcola numero totale fermi
+            const numeroSettimane = aSettimana - daSettimana + 1;
+            const fermiPerSettimana = 5; // 4 notturni + 1 weekend
+            const totaleFermi = numeroSettimane * fermiPerSettimana;
+            
+            // Messaggio di conferma
+            const conferma = confirm(`Stai per generare ${totaleFermi} fermi per ${numeroSettimane} settimane (${fermiPerSettimana} fermi per settimana).\n\nConfermi?`);
+            if (!conferma) {
+                return;
+            }
+            
+            const data = {
+                anno: anno,
+                daSettimana: daSettimana,
+                aSettimana: aSettimana,
+                motivo: motivo,
+                applicaATutti: applicaATutti
+            };
+            
             try {
-                const response = await fetch('@Url.Action("GeneraWeekend", "CalendarioFermi")', {
+                showAlert('Generazione fermi in corso...', 'info');
+                
+                const response = await fetch('@Url.Action("GeneraFermiSettimanali", "CalendarioFermi")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -1213,24 +1265,24 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert(`${result.message}`, 'success');
+                    showAlert(`✅ ${result.message}`, 'success');
                     
-                    // Chiudi modal correttamente
+                    // Chiudi modal
                     const modalElement = document.getElementById('generaWeekendModal');
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     if (modal) {
                         modal.hide();
                     }
                     
-                    // Ricarica eventi calendario
-                    console.log('Ricarico calendario dopo generazione weekend...');
+                    // Ricarica calendario
+                    console.log('Ricarico calendario dopo generazione fermi...');
                     await loadFermi();
                 } else {
                     showAlert(result.message, 'danger');
                 }
             } catch (error) {
-                console.error('Errore generazione weekend:', error);
-                showAlert('Errore durante la generazione dei weekend', 'danger');
+                console.error('Errore generazione fermi:', error);
+                showAlert('Errore durante la generazione dei fermi', 'danger');
             }
         }
 

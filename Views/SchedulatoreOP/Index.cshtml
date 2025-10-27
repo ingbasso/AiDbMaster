@@ -212,13 +212,58 @@
         font-weight: 600;
         color: white;
     }
+    
+    /* Legenda stati */
+    .legenda-container {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 6px 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .legenda-title {
+        font-weight: 600;
+        color: #495057;
+        margin-right: 6px;
+        font-size: 0.8rem;
+    }
+    
+    .legenda-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+    }
+    
+    .legenda-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid rgba(0,0,0,0.15);
+    }
+    
+    .legenda-label {
+        color: #495057;
+        font-weight: 500;
+    }
 </style>
 
 <div class="container-fluid">
     <div class="content-container">
-        <!-- Header -->
+        <!-- Header con Legenda -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2><i class="bi bi-calendar2-check me-2 text-primary"></i>Schedulatore Ordini di Produzione</h2>
+            
+            <!-- Legenda Stati in linea (popolata dinamicamente) -->
+            <div class="legenda-container">
+                <span class="legenda-title">Legenda:</span>
+                <div class="legenda-items-container" style="display: flex; gap: 12px; align-items: center;">
+                    <!-- Contenuto generato dinamicamente da JavaScript -->
+                </div>
+            </div>
         </div>
 
         <!-- Alert messaggi -->
@@ -271,6 +316,7 @@
         let scheduleObj;
         let centriLavoro = [];
         let fermiCentriLavoro = [];
+        let statiOP = [];
         
         // Funzioni helper per template
         function getWeekNumber(date) {
@@ -301,9 +347,13 @@
                 console.log('Licenza Syncfusion registrata');
             }
             
-            // Carica prima i centri di lavoro e i fermi
+            // Carica prima i centri di lavoro, stati e fermi
+            await loadStatiOP();
             await loadCentriLavoro();
             await loadFermiCentriLavoro();
+            
+            // Genera la legenda dinamicamente
+            generateLegenda();
             
             // Crea lo scheduler
             setTimeout(() => {
@@ -313,6 +363,63 @@
             // Abilita drag del popup
             makeDraggable(document.getElementById('ordinePopup'), document.getElementById('popupHeader'));
         });
+
+        // Carica stati OP
+        async function loadStatiOP() {
+            try {
+                console.log('📋 Caricamento stati OP...');
+                const response = await fetch('@Url.Action("GetStatiOP", "SchedulatoreOP")');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const statiJson = await response.json();
+                console.log('📋 Stati ricevuti dal server:', statiJson);
+                
+                statiOP = statiJson.map(s => ({
+                    id: s.id,
+                    descrizione: s.descrizione
+                }));
+                
+                console.log(`✅ Caricati ${statiOP.length} stati OP`);
+            } catch (error) {
+                console.error('Errore caricamento stati:', error);
+                statiOP = [];
+            }
+        }
+
+        // Genera legenda dinamicamente
+        function generateLegenda() {
+            const legendaContainer = document.querySelector('.legenda-items-container');
+            if (!legendaContainer) return;
+            
+            // Funzione helper per ottenere il colore
+            function getColorByStato(idStato) {
+                const colors = {
+                    1: '#FFA500', // Arancione
+                    2: '#1E90FF', // Blu
+                    3: '#9370DB', // Viola
+                    4: '#32CD32'  // Verde
+                };
+                return colors[idStato] || '#808080';
+            }
+            
+            // Genera HTML per ogni stato
+            let html = '';
+            statiOP.forEach(stato => {
+                const color = getColorByStato(stato.id);
+                html += `
+                    <div class="legenda-item">
+                        <div class="legenda-color" style="background-color: ${color};"></div>
+                        <span class="legenda-label">${stato.descrizione}</span>
+                    </div>
+                `;
+            });
+            
+            legendaContainer.innerHTML = html;
+            console.log('✅ Legenda generata dinamicamente con ${statiOP.length} stati');
+        }
 
         // Carica centri di lavoro
         async function loadCentriLavoro() {
@@ -422,16 +529,16 @@
                         { 
                             option: 'TimelineWeek',
                             displayName: 'Settimana',
+                            isSelected: true,
                             timeScale: {
                                 enable: true,
-                                interval: 480,
+                                interval: 60,
                                 slotCount: 1
                             }
                         },
                         { 
                             option: 'TimelineWeek',
                             displayName: '2 Settimane',
-                            isSelected: true,
                             interval: 2,
                             timeScale: {
                                 enable: true,
@@ -440,7 +547,7 @@
                             }
                         },
                         { 
-                            option: 'TimelineMonth',
+                            option: 'TimelineWeek',
                             displayName: '4 Settimane',
                             interval: 4,
                             timeScale: {
@@ -503,12 +610,14 @@
                         }
                     ],
                     eventClick: onEventClick,
+                    eventDoubleClick: onEventClick, // Doppio click = stesso comportamento
                     eventRendered: onEventRendered,
                     resizeStart: onResizeStart,
                     resizeStop: onResizeStop,
                     dragStart: onDragStart,
                     dragStop: onDragStop,
-                    renderCell: onRenderCell
+                    renderCell: onRenderCell,
+                    popupOpen: onPopupOpen // Blocca popup nativi
                 });
                 
                 // Appendi al DOM
@@ -668,6 +777,19 @@
         function onEventClick(args) {
             args.cancel = true; // Previeni popup default Syncfusion
             showOrderPopup(args.event);
+        }
+
+        // Blocca TUTTI i popup nativi di Syncfusion
+        function onPopupOpen(args) {
+            // Tipi di popup nativi da bloccare:
+            // - 'QuickInfo' = popup rapido info
+            // - 'Editor' = editor eventi
+            // - 'DeleteAlert' = conferma eliminazione
+            // - 'ViewEventInfo' = visualizzazione evento
+            // - 'EventContainer' = contenitore evento
+            
+            args.cancel = true; // Blocca qualsiasi popup nativo
+            console.log('🚫 Popup nativo Syncfusion bloccato:', args.type);
         }
 
         // Variabili globali per tracciare il resize e drag

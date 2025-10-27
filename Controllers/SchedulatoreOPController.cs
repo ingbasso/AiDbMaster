@@ -199,6 +199,34 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// API: Ottiene gli stati OP per la legenda
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetStatiOP()
+        {
+            try
+            {
+                var stati = await _context.StatiOP
+                    .OrderBy(s => s.IdStato)
+                    .Select(s => new
+                    {
+                        Id = s.IdStato,
+                        Descrizione = s.DescrizioneStato
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"✅ Caricati {stati.Count} stati OP");
+
+                return Ok(stati);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel caricamento stati OP");
+                return StatusCode(500, new { error = true, message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// API: Ottiene i fermi dei centri di lavoro per colorare il calendario
         /// </summary>
         [HttpGet]

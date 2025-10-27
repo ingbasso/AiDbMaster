@@ -86,6 +86,33 @@ namespace AiDbMaster.ViewModels
     }
 
     /// <summary>
+    /// ViewModel per generare fermi settimanali (turni notturni + weekend)
+    /// </summary>
+    public class GeneraFermiSettimanaliViewModel
+    {
+        [Required(ErrorMessage = "L'anno è obbligatorio")]
+        [Range(2020, 2100, ErrorMessage = "Anno deve essere tra 2020 e 2100")]
+        [Display(Name = "Anno")]
+        public int Anno { get; set; } = DateTime.Now.Year;
+
+        [Required(ErrorMessage = "Da Settimana è obbligatorio")]
+        [Range(1, 53, ErrorMessage = "Da Settimana deve essere tra 1 e 53")]
+        [Display(Name = "Da Settimana")]
+        public int DaSettimana { get; set; } = 1;
+
+        [Required(ErrorMessage = "A Settimana è obbligatorio")]
+        [Range(1, 53, ErrorMessage = "A Settimana deve essere tra 1 e 53")]
+        [Display(Name = "A Settimana")]
+        public int ASettimana { get; set; } = 1;
+
+        [Display(Name = "Applica a tutti i centri")]
+        public bool ApplicaATutti { get; set; } = true;
+
+        [Display(Name = "Motivo")]
+        public string? Motivo { get; set; } = "Fermo programmato";
+    }
+
+    /// <summary>
     /// Risposta API per operazioni CRUD
     /// </summary>
     public class FermoApiResponse

@@ -17,7 +17,13 @@ namespace AiDbMaster.Models
         /// Fermo per festività
         /// </summary>
         [Display(Name = "Festivo")]
-        Festivo = 1
+        Festivo = 1,
+
+        /// <summary>
+        /// Fermo per turno notturno (22:00-06:00)
+        /// </summary>
+        [Display(Name = "Turno Notturno")]
+        TurnoNotturno = 2
     }
 }
 
