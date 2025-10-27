@@ -377,8 +377,8 @@
                     selectedDate: new Date(),
                     showQuickInfo: false,
                     allowDragAndDrop: false,
-                    allowResizing: false,
-                    readonly: true,
+                    allowResizing: true,
+                    readonly: false,
                     views: [
                         { 
                             option: 'TimelineDay',
@@ -473,7 +473,8 @@
                         }
                     ],
                     eventClick: onEventClick,
-                    eventRendered: onEventRendered
+                    eventRendered: onEventRendered,
+                    resizeStop: onResizeStop
                 });
                 
                 // Appendi al DOM
@@ -574,6 +575,21 @@
         function onEventClick(args) {
             args.cancel = true; // Previeni popup default Syncfusion
             showOrderPopup(args.event);
+        }
+
+        // Resize evento terminato
+        function onResizeStop(args) {
+            const evento = args.data;
+            
+            console.log('🔄 RESIZE completato:');
+            console.log('  Ordine:', evento.Subject);
+            console.log('  Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
+            console.log('  Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
+            console.log('  Durata (ore):', ((new Date(evento.EndTime) - new Date(evento.StartTime)) / 3600000).toFixed(2));
+            
+            // TODO: Qui possiamo salvare le modifiche sul server
+            // Per ora solo log per debug
+            showAlert(`✅ Evento ridimensionato: ${evento.Subject}`, 'info');
         }
 
         // Mostra popup con dettagli ordine
