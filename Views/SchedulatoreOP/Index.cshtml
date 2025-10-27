@@ -257,7 +257,7 @@
 <!-- Template per header ora -->
 <script id="hourHeaderTemplate" type="text/x-template">
     <div class="hour-header-content">
-        <span class="hour-label">${formatHour(data.date)}</span>
+        <span class="hour-label">${getDayNameShort(data.date)}.${formatHour(data.date)}</span>
     </div>
 </script>
 
