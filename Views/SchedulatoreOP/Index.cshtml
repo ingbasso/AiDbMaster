@@ -120,9 +120,9 @@
         border-radius: 8px;
         box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         z-index: 100000;
-        min-width: 500px;
-        max-width: 700px;
-        max-height: 80vh;
+        min-width: 1100px;
+        max-width: 1400px;
+        max-height: 70vh;
         overflow-y: auto;
     }
     
@@ -167,7 +167,7 @@
     
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 15px;
     }
     
@@ -178,6 +178,14 @@
     
     .info-item.full-width {
         grid-column: 1 / -1;
+    }
+    
+    .info-item.span-2 {
+        grid-column: span 2;
+    }
+    
+    .info-item.span-3 {
+        grid-column: span 3;
     }
     
     .info-label {
@@ -238,6 +246,25 @@
         font-size: 0.75rem;
     }
     
+    /* Stili filtro centri */
+    #filtroCentroLavoro {
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    #filtroCentroLavoro:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    #filtroCentroLavoro option {
+        padding: 8px;
+    }
+    
     .legenda-color {
         width: 14px;
         height: 14px;
@@ -248,6 +275,107 @@
     .legenda-label {
         color: #495057;
         font-weight: 500;
+    }
+    
+    /* Stili per campi input modificabili nel popup */
+    .info-input {
+        width: 100%;
+        padding: 8px;
+        font-size: 0.95rem;
+        color: #2c3e50;
+        border: 2px solid #3498db;
+        border-radius: 4px;
+        background: #ffffff;
+        transition: all 0.2s;
+    }
+    
+    .info-input:focus {
+        outline: none;
+        border-color: #2980b9;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    .info-input:disabled {
+        background: #e9ecef;
+        border-color: #ced4da;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .info-value.calculated {
+        background: #e8f5e9;
+        border-left: 3px solid #4caf50;
+        font-weight: 600;
+    }
+    
+    /* Pulsante Salva Modifiche */
+    .popup-footer {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .btn-save-changes {
+        padding: 10px 24px;
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .btn-save-changes:hover {
+        background: linear-gradient(135deg, #45a049, #3d8b40);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transform: translateY(-1px);
+    }
+    
+    .btn-save-changes:active {
+        transform: translateY(0);
+    }
+    
+    .btn-save-changes:disabled {
+        background: #95a5a6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Alert Fermo Centro Lavoro */
+    .alert-fermo-centro {
+        display: none;
+        padding: 12px 16px;
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        border-radius: 6px;
+        color: #856404;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-top: 15px;
+        animation: slideDown 0.3s ease;
+    }
+    
+    .alert-fermo-centro.visible {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 
@@ -269,6 +397,22 @@
         <!-- Alert messaggi -->
         <div id="alertContainer"></div>
 
+        <!-- Filtro Centri di Lavoro -->
+        <div class="mb-3">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label for="filtroCentroLavoro" class="form-label fw-bold mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filtra per Centro di Lavoro:
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <select id="filtroCentroLavoro" class="form-select">
+                        <option value="all" selected>Tutti i Centri di Lavoro</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <!-- Syncfusion Scheduler -->
         <div id="schedule"></div>
     </div>
@@ -282,6 +426,11 @@
     </div>
     <div class="popup-body" id="popupBody">
         <!-- Contenuto dinamico inserito via JavaScript -->
+    </div>
+    <div class="popup-footer" id="popupFooter" style="display: none;">
+        <button type="button" class="btn-save-changes" onclick="saveOrdineModifiche()">
+            <i class="bi bi-check-circle me-2"></i>Salva Modifiche
+        </button>
     </div>
 </div>
 
@@ -362,6 +511,16 @@
             
             // Abilita drag del popup
             makeDraggable(document.getElementById('ordinePopup'), document.getElementById('popupHeader'));
+            
+            // Aggiungi event listener al filtro centri
+            const filtroCentro = document.getElementById('filtroCentroLavoro');
+            if (filtroCentro) {
+                filtroCentro.addEventListener('change', function(e) {
+                    const centroId = e.target.value;
+                    console.log('📍 Filtro centro cambiato:', centroId);
+                    filtraPerCentro(centroId);
+                });
+            }
         });
 
         // Carica stati OP
@@ -442,11 +601,71 @@
                 }));
                 
                 console.log(`✅ Caricati ${centriLavoro.length} centri di lavoro:`, centriLavoro.map(c => c.name).join(', '));
+                
+                // Popola il dropdown del filtro
+                popolaFiltroCentri();
             } catch (error) {
                 console.error('Errore caricamento centri:', error);
                 showAlert('Errore nel caricamento dei centri di lavoro', 'danger');
                 centriLavoro = [];
             }
+        }
+
+        // Popola il dropdown del filtro centri
+        function popolaFiltroCentri() {
+            const select = document.getElementById('filtroCentroLavoro');
+            if (!select) return;
+            
+            // Reset dropdown
+            select.innerHTML = '<option value="all" selected>Tutti i Centri di Lavoro</option>';
+            
+            // Aggiungi opzione per ogni centro
+            centriLavoro.forEach(centro => {
+                const option = document.createElement('option');
+                option.value = centro.id;
+                option.textContent = centro.name;
+                select.appendChild(option);
+            });
+            
+            console.log(`✅ Dropdown filtro popolato con ${centriLavoro.length} centri`);
+        }
+
+        // Filtra il calendario per centro di lavoro
+        function filtraPerCentro(centroId) {
+            if (!scheduleObj) {
+                console.warn('Scheduler non ancora inizializzato');
+                return;
+            }
+            
+            console.log(`🔍 Filtraggio per centro: ${centroId}`);
+            
+            let resourceDataSource;
+            
+            if (centroId === 'all') {
+                // Mostra tutti i centri
+                resourceDataSource = centriLavoro.map(centro => ({
+                    Id: centro.id,
+                    Name: centro.name
+                }));
+            } else {
+                // Mostra solo il centro selezionato
+                const centroSelezionato = centriLavoro.find(c => c.id == centroId);
+                if (centroSelezionato) {
+                    resourceDataSource = [{
+                        Id: centroSelezionato.id,
+                        Name: centroSelezionato.name
+                    }];
+                } else {
+                    console.error('Centro non trovato:', centroId);
+                    return;
+                }
+            }
+            
+            // Aggiorna le risorse del calendario
+            scheduleObj.resources[0].dataSource = resourceDataSource;
+            scheduleObj.refreshEvents();
+            
+            console.log(`✅ Filtro applicato. Visualizzati ${resourceDataSource.length} centri`);
         }
 
         // Carica fermi centri di lavoro
@@ -702,6 +921,9 @@
                     CodiceCentro: o.codiceCentro,
                     CentroLavoroDescrizione: o.centroLavoroDescrizione,
                     CodiceLavorazione: o.codiceLavorazione,
+                    DescrizioneLavorazione: o.descrizioneLavorazione,
+                    CodiceOperatore: o.codiceOperatore,
+                    NomeOperatore: o.nomeOperatore,
                     Note: o.note,
                     DataFineOP: o.dataFineOP,
                     DataFinePrevista: o.dataFinePrevista,
@@ -1001,67 +1223,46 @@
             }
         }
 
+        // Variabile globale per mantenere i dati dell'ordine corrente
+        let currentOrdine = null;
+
         // Mostra popup con dettagli ordine
         function showOrderPopup(ordine) {
             const popup = document.getElementById('ordinePopup');
             const body = document.getElementById('popupBody');
+            const footer = document.getElementById('popupFooter');
             
-            // Genera HTML con TUTTI i campi
+            // Salva l'ordine corrente
+            currentOrdine = ordine;
+            
+            // Determina se i campi sono modificabili
+            const isModificabile = (ordine.IdStato === 1 || ordine.IdStato === 2) && ordine.Modificato !== 7;
+            const canEditDataInizio = ordine.IdStato === 1 && ordine.Modificato !== 7;
+            const canEditQuantita = (ordine.IdStato === 1 || ordine.IdStato === 2) && ordine.Modificato !== 7;
+            
+            // Formatta data per input datetime-local
+            const formatDateForInput = (dateString) => {
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+            
+            // Genera HTML con layout riorganizzato in 4 righe
             body.innerHTML = `
                 <div class="info-grid">
-                    <div class="info-item full-width">
+                    <!-- PRIMA RIGA: Ordine (3 col) + Stato (2 col) -->
+                    <div class="info-item span-3">
                         <div class="info-label">Ordine</div>
                         <div class="info-value highlight">
                             ${ordine.TipoOrdine}-${ordine.AnnoOrdine}/${ordine.SerieOrdine}/${ordine.NumeroOrdine} - Riga ${ordine.RigaOrdine}
                         </div>
                     </div>
                     
-                    <div class="info-item full-width">
-                        <div class="info-label">Descrizione Ordine</div>
-                        <div class="info-value">${ordine.DescrOrdine || '-'}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Codice Articolo</div>
-                        <div class="info-value">${ordine.CodiceArticolo}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Descrizione Articolo</div>
-                        <div class="info-value">${ordine.DescrizioneArticolo}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Quantità</div>
-                        <div class="info-value highlight">${ordine.Quantita.toFixed(3)} ${ordine.UnitaMisura}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Quantità Prodotta</div>
-                        <div class="info-value">${ordine.QuantitaProdotta.toFixed(3)} ${ordine.UnitaMisura} (${ordine.PercentualeCompletamento.toFixed(1)}%)</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Data Inizio OP</div>
-                        <div class="info-value">${formatDateTime(ordine.DataInizioOP)}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Data Fine Calcolata</div>
-                        <div class="info-value">${formatDateTime(ordine.EndTime)}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Tempo Ciclo</div>
-                        <div class="info-value">${ordine.TempoCiclo} secondi</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Tempo Setup</div>
-                        <div class="info-value">${ordine.TempoSetup || 0} minuti</div>
-                    </div>
-                    
-                    <div class="info-item">
+                    <div class="info-item span-2">
                         <div class="info-label">Stato</div>
                         <div class="info-value">
                             <span class="stato-badge" style="background-color: ${ordine.CategoryColor}">
@@ -1070,34 +1271,82 @@
                         </div>
                     </div>
                     
+                    <!-- SECONDA RIGA: Codice Articolo + Descrizione Articolo + Quantità + Quantità Prodotta -->
+                    <div class="info-item">
+                        <div class="info-label">Codice Articolo</div>
+                        <div class="info-value">${ordine.CodiceArticolo}</div>
+                    </div>
+                    
+                    <div class="info-item span-2">
+                        <div class="info-label">Descrizione Articolo</div>
+                        <div class="info-value">${ordine.DescrizioneArticolo}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Quantità ${canEditQuantita ? '✏️' : ''}</div>
+                        ${canEditQuantita ? `
+                            <input type="number" 
+                                   id="inputQuantita" 
+                                   class="info-input" 
+                                   value="${ordine.Quantita}" 
+                                   step="1" 
+                                   min="1"
+                                   onchange="ricalcolaDataFinePrevista()">
+                        ` : `
+                            <div class="info-value highlight">${Math.floor(ordine.Quantita)} ${ordine.UnitaMisura}</div>
+                        `}
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Quantità Prodotta</div>
+                        <div class="info-value">${Math.floor(ordine.QuantitaProdotta)} ${ordine.UnitaMisura} (${ordine.PercentualeCompletamento.toFixed(1)}%)</div>
+                    </div>
+                    
+                    <!-- TERZA RIGA: Data Inizio OP + Data Fine Prevista + Tempo Ciclo + Tempo Setup + Centro di Lavoro -->
+                    <div class="info-item">
+                        <div class="info-label">Data Inizio OP ${canEditDataInizio ? '✏️' : ''}</div>
+                        ${canEditDataInizio ? `
+                            <input type="datetime-local" 
+                                   id="inputDataInizioOP" 
+                                   class="info-input" 
+                                   value="${formatDateForInput(ordine.DataInizioOP)}"
+                                   onchange="ricalcolaDataFinePrevista()">
+                        ` : `
+                            <div class="info-value">${formatDateTime(ordine.DataInizioOP)}</div>
+                        `}
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Data Fine Prevista ${isModificabile ? '🔄' : ''}</div>
+                        <div class="info-value ${isModificabile ? 'calculated' : ''}" id="displayDataFinePrevista">
+                            ${ordine.DataFinePrevista ? formatDateTime(ordine.DataFinePrevista) : '-'}
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Ciclo</div>
+                        <div class="info-value">${ordine.TempoCiclo} sec</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Setup</div>
+                        <div class="info-value">${ordine.TempoSetup || 0} min</div>
+                    </div>
+                    
                     <div class="info-item">
                         <div class="info-label">Centro di Lavoro</div>
                         <div class="info-value">${ordine.CodiceCentro} - ${ordine.CentroLavoroDescrizione}</div>
                     </div>
                     
-                    <div class="info-item">
-                        <div class="info-label">Codice Lavorazione</div>
-                        <div class="info-value">${ordine.CodiceLavorazione}</div>
+                    <!-- QUARTA RIGA: Lavorazione + Operatore + Costo Orario -->
+                    <div class="info-item span-2">
+                        <div class="info-label">Lavorazione</div>
+                        <div class="info-value">${ordine.DescrizioneLavorazione || ordine.CodiceLavorazione || '-'}</div>
                     </div>
                     
-                    <div class="info-item">
-                        <div class="info-label">Priorità</div>
-                        <div class="info-value">${ordine.Priorita || '-'}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Data Fine OP</div>
-                        <div class="info-value">${ordine.DataFineOP ? formatDateTime(ordine.DataFineOP) : '-'}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Data Fine Prevista</div>
-                        <div class="info-value">${ordine.DataFinePrevista ? formatDateTime(ordine.DataFinePrevista) : '-'}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">ID Operatore</div>
-                        <div class="info-value">${ordine.IdOperatore || '-'}</div>
+                    <div class="info-item span-2">
+                        <div class="info-label">Operatore</div>
+                        <div class="info-value">${ordine.CodiceOperatore && ordine.NomeOperatore ? ordine.CodiceOperatore + ' - ' + ordine.NomeOperatore : (ordine.IdOperatore || '-')}</div>
                     </div>
                     
                     <div class="info-item">
@@ -1105,16 +1354,7 @@
                         <div class="info-value">${ordine.CostoOrario ? '€ ' + ordine.CostoOrario.toFixed(2) : '-'}</div>
                     </div>
                     
-                    <div class="info-item">
-                        <div class="info-label">Tempo Effettivo</div>
-                        <div class="info-value">${ordine.TempoEffettivo ? ordine.TempoEffettivo + ' secondi' : '-'}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">Modificato</div>
-                        <div class="info-value">${getModificatoLabel(ordine.Modificato)}</div>
-                    </div>
-                    
+                    <!-- NOTE (se presenti, full-width) -->
                     ${ordine.Note ? `
                     <div class="info-item full-width">
                         <div class="info-label">Note</div>
@@ -1122,18 +1362,214 @@
                     </div>
                     ` : ''}
                 </div>
+                
+                <!-- Alert Fermo Centro Lavoro -->
+                <div class="alert-fermo-centro" id="alertFermoCentro">
+                    ⚠️ ATTENZIONE: Fermo Centro Lavoro Rilevato
+                </div>
             `;
+            
+            // Mostra/nascondi footer con pulsante Salva
+            if (isModificabile) {
+                footer.style.display = 'flex';
+            } else {
+                footer.style.display = 'none';
+            }
             
             // Mostra popup al centro dello schermo
             popup.style.display = 'block';
             popup.style.left = '50%';
             popup.style.top = '50%';
             popup.style.transform = 'translate(-50%, -50%)';
+            
+            // Controlla se c'è sovrapposizione con fermi (controllo iniziale)
+            if (isModificabile) {
+                controllaFermiCentroLavoro();
+            }
+        }
+
+        // Ricalcola Data Fine Prevista in tempo reale
+        function ricalcolaDataFinePrevista() {
+            if (!currentOrdine) return;
+            
+            // Ottieni valori dai campi input (se esistono)
+            const inputDataInizio = document.getElementById('inputDataInizioOP');
+            const inputQuantita = document.getElementById('inputQuantita');
+            
+            // Usa i valori dai campi se esistono, altrimenti usa valori originali
+            const dataInizioOP = inputDataInizio ? new Date(inputDataInizio.value) : new Date(currentOrdine.DataInizioOP);
+            const quantita = inputQuantita ? parseFloat(inputQuantita.value) : currentOrdine.Quantita;
+            
+            // Parametri fissi dall'ordine
+            const tempoCiclo = currentOrdine.TempoCiclo; // secondi
+            const tempoSetup = currentOrdine.TempoSetup || 0; // minuti
+            
+            // Calcola durata totale
+            const durataLavorazioneSecondi = quantita * tempoCiclo;
+            const tempoSetupSecondi = tempoSetup * 60; // Converti minuti in secondi
+            const durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
+            
+            // Calcola DataFinePrevista
+            const dataFinePrevista = new Date(dataInizioOP.getTime() + (durataTotaleSecondi * 1000));
+            
+            // Aggiorna il display
+            const displayDataFinePrevista = document.getElementById('displayDataFinePrevista');
+            if (displayDataFinePrevista) {
+                displayDataFinePrevista.textContent = formatDateTime(dataFinePrevista);
+            }
+            
+            console.log('🔄 Ricalcolo Data Fine Prevista:', {
+                dataInizioOP: dataInizioOP.toLocaleString('it-IT'),
+                quantita: quantita,
+                tempoCiclo: tempoCiclo,
+                tempoSetup: tempoSetup,
+                durataLavorazioneSecondi: durataLavorazioneSecondi,
+                tempoSetupSecondi: tempoSetupSecondi,
+                durataTotaleSecondi: durataTotaleSecondi,
+                dataFinePrevista: dataFinePrevista.toLocaleString('it-IT')
+            });
+            
+            // Controlla sovrapposizione con fermi centro lavoro
+            controllaFermiCentroLavoro();
+        }
+
+        // Controlla se il range ordine si sovrappone con fermi del centro lavoro
+        function controllaFermiCentroLavoro() {
+            if (!currentOrdine) return;
+            
+            // Ottieni range dell'ordine
+            const inputDataInizio = document.getElementById('inputDataInizioOP');
+            const inputQuantita = document.getElementById('inputQuantita');
+            
+            const dataInizioOP = inputDataInizio ? new Date(inputDataInizio.value) : new Date(currentOrdine.DataInizioOP);
+            const quantita = inputQuantita ? parseFloat(inputQuantita.value) : currentOrdine.Quantita;
+            
+            // Calcola DataFinePrevista
+            const tempoCiclo = currentOrdine.TempoCiclo;
+            const tempoSetup = currentOrdine.TempoSetup || 0;
+            const durataLavorazioneSecondi = quantita * tempoCiclo;
+            const tempoSetupSecondi = tempoSetup * 60;
+            const durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
+            const dataFinePrevista = new Date(dataInizioOP.getTime() + (durataTotaleSecondi * 1000));
+            
+            // Filtra fermi per il centro di lavoro corrente
+            const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro === currentOrdine.CodiceCentro);
+            
+            // Controlla sovrapposizione
+            let hasSovrapposizione = false;
+            for (const fermo of fermiCentro) {
+                // Due range si sovrappongono se: startA < endB AND endA > startB
+                if (dataInizioOP < fermo.dataFine && dataFinePrevista > fermo.dataInizio) {
+                    hasSovrapposizione = true;
+                    console.log('⚠️ Sovrapposizione rilevata con fermo:', {
+                        fermoInizio: fermo.dataInizio.toLocaleString('it-IT'),
+                        fermoFine: fermo.dataFine.toLocaleString('it-IT'),
+                        ordineInizio: dataInizioOP.toLocaleString('it-IT'),
+                        ordineFine: dataFinePrevista.toLocaleString('it-IT'),
+                        descrizione: fermo.descrizione
+                    });
+                    break;
+                }
+            }
+            
+            // Mostra/nascondi alert
+            const alertFermo = document.getElementById('alertFermoCentro');
+            if (alertFermo) {
+                if (hasSovrapposizione) {
+                    alertFermo.classList.add('visible');
+                } else {
+                    alertFermo.classList.remove('visible');
+                }
+            }
+        }
+
+        // Salva modifiche ordine
+        async function saveOrdineModifiche() {
+            if (!currentOrdine) {
+                showAlert('❌ Nessun ordine selezionato', 'danger');
+                return;
+            }
+            
+            // Ottieni valori dai campi input
+            const inputDataInizio = document.getElementById('inputDataInizioOP');
+            const inputQuantita = document.getElementById('inputQuantita');
+            
+            // Valida che almeno un campo sia modificabile e presente
+            if (!inputQuantita) {
+                showAlert('❌ Nessun campo modificabile trovato', 'danger');
+                return;
+            }
+            
+            // Prepara i dati da inviare
+            const dataInizioOP = inputDataInizio ? new Date(inputDataInizio.value) : new Date(currentOrdine.DataInizioOP);
+            const quantita = parseFloat(inputQuantita.value);
+            
+            // Validazione quantità
+            if (quantita <= 0 || isNaN(quantita)) {
+                showAlert('❌ La quantità deve essere maggiore di zero', 'danger');
+                return;
+            }
+            
+            // Disabilita il pulsante durante il salvataggio
+            const btnSave = document.querySelector('.btn-save-changes');
+            const originalText = btnSave.innerHTML;
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Salvataggio...';
+            
+            try {
+                console.log('💾 Invio dati modifica:', {
+                    id: currentOrdine.Id,
+                    dataInizioOP: dataInizioOP.toISOString(),
+                    quantita: quantita
+                });
+                
+                const response = await fetch('@Url.Action("UpdateOrdineManuale", "SchedulatoreOP")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: currentOrdine.Id,
+                        dataInizioOP: dataInizioOP.toISOString(),
+                        quantita: quantita
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Ordine salvato con successo:', result);
+                    
+                    // Aggiorna i dati dell'ordine corrente
+                    currentOrdine.DataInizioOP = result.dataInizioOP;
+                    currentOrdine.Quantita = result.quantita;
+                    currentOrdine.DataFinePrevista = result.dataFinePrevista;
+                    currentOrdine.Modificato = 1;
+                    
+                    showAlert(result.message, 'success');
+                    
+                    // Chiudi popup
+                    closePopup();
+                    
+                    // Ricarica ordini per aggiornare il calendario
+                    await loadOrdini();
+                    
+                } else {
+                    // Errore dal server
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('❌ Errore salvataggio:', error);
+                showAlert('❌ Errore durante il salvataggio: ' + error.message, 'danger');
+            } finally {
+                // Riabilita il pulsante
+                btnSave.disabled = false;
+                btnSave.innerHTML = originalText;
+            }
         }
 
         // Chiudi popup
         function closePopup() {
             document.getElementById('ordinePopup').style.display = 'none';
+            currentOrdine = null;
         }
 
         // Rendi popup trascinabile

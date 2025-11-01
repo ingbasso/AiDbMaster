@@ -475,12 +475,33 @@ namespace AiDbMaster.Controllers
                 }
 
                 // Carica centri
-                var centri = model.ApplicaATutti
-                    ? await _context.CentriLavoro
+                List<string> centri;
+                
+                if (model.ApplicaATutti)
+                {
+                    // Applica a tutti i centri attivi
+                    centri = await _context.CentriLavoro
                         .Where(c => c.Attivo == true)
                         .Select(c => c.CodiceCentro)
-                        .ToListAsync()
-                    : new List<string>(); // Se non applica a tutti, dovremmo gestire centri selezionati
+                        .ToListAsync();
+                }
+                else if (!string.IsNullOrEmpty(model.CodiceCentro))
+                {
+                    // Applica solo al centro selezionato
+                    var centroEsiste = await _context.CentriLavoro
+                        .AnyAsync(c => c.CodiceCentro == model.CodiceCentro && c.Attivo == true);
+                    
+                    if (!centroEsiste)
+                    {
+                        return BadRequest(new { success = false, message = "Centro di lavoro non trovato o non attivo" });
+                    }
+                    
+                    centri = new List<string> { model.CodiceCentro };
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "Seleziona un centro o applica a tutti" });
+                }
 
                 if (!centri.Any())
                 {
@@ -498,32 +519,32 @@ namespace AiDbMaster.Controllers
 
                     foreach (var centro in centri)
                     {
-                        // 1. Lun 22:00 - Mar 06:00
+                        // 1. Lun 20:00 - Mar 06:00 (Turno Notturno)
                         await CreaFermoNotturno(lunedi, DayOfWeek.Monday, centro, model.Motivo);
                         fermiCreati++;
 
-                        // 2. Mar 22:00 - Mer 06:00
+                        // 2. Mar 20:00 - Mer 06:00 (Turno Notturno)
                         await CreaFermoNotturno(lunedi, DayOfWeek.Tuesday, centro, model.Motivo);
                         fermiCreati++;
 
-                        // 3. Mer 22:00 - Gio 06:00
+                        // 3. Mer 20:00 - Gio 06:00 (Turno Notturno)
                         await CreaFermoNotturno(lunedi, DayOfWeek.Wednesday, centro, model.Motivo);
                         fermiCreati++;
 
-                        // 4. Gio 22:00 - Ven 06:00
+                        // 4. Gio 20:00 - Ven 06:00 (Turno Notturno)
                         await CreaFermoNotturno(lunedi, DayOfWeek.Thursday, centro, model.Motivo);
                         fermiCreati++;
 
-                        // 5. Weekend: Ven 22:00 - Lun 06:00 (settimana successiva)
+                        // 5. Weekend: Ven 20:00 - Lun 06:00 (settimana successiva)
                         var venerdi = lunedi.AddDays(4); // Venerdì della settimana
                         var lunediSuccessivo = lunedi.AddDays(7); // Lunedì settimana successiva
                         
-                        _logger.LogInformation($"  Weekend: {venerdi:dd/MM/yyyy} 22:00 → {lunediSuccessivo:dd/MM/yyyy} 06:00");
+                        _logger.LogInformation($"  Weekend: {venerdi:dd/MM/yyyy} 20:00 → {lunediSuccessivo:dd/MM/yyyy} 06:00");
                         
                         var fermoWeekend = new CalendarioFermiCentriLavoro
                         {
                             CodiceCentro = centro,
-                            DataInizioFermo = venerdi.Date.AddHours(22),
+                            DataInizioFermo = venerdi.Date.AddHours(20),
                             DataFineFermo = lunediSuccessivo.Date.AddHours(6),
                             TipoFermo = TipoFermo.WeekEnd,
                             Motivo = model.Motivo ?? "Fermo programmato",
@@ -554,7 +575,7 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
-        /// Helper: Crea fermo turno notturno (giorno 22:00 - giorno+1 06:00)
+        /// Helper: Crea fermo turno notturno (giorno 20:00 - giorno+1 06:00)
         /// </summary>
         private async Task CreaFermoNotturno(DateTime lunediSettimana, DayOfWeek giorno, string centro, string? motivo)
         {
@@ -564,7 +585,7 @@ namespace AiDbMaster.Controllers
             var fermo = new CalendarioFermiCentriLavoro
             {
                 CodiceCentro = centro,
-                DataInizioFermo = giornoInizio.Date.AddHours(22),
+                DataInizioFermo = giornoInizio.Date.AddHours(20),
                 DataFineFermo = giornoFine.Date.AddHours(6),
                 TipoFermo = TipoFermo.TurnoNotturno,
                 Motivo = motivo ?? "Fermo programmato",

@@ -45,6 +45,37 @@
         min-height: 60px;
     }
     
+    /* Larghezza colonne per vista mese - ALLARGATE */
+    .e-schedule.e-timeline-month .e-date-header-wrap table td,
+    .e-schedule.e-timeline-month .e-content-wrap table td,
+    .e-schedule .e-timeline-month .e-date-header-wrap table td,
+    .e-schedule .e-timeline-month .e-content-wrap table td {
+        min-width: 150px !important;
+        width: 150px !important;
+        max-width: 150px !important;
+    }
+    
+    .e-schedule.e-timeline-month .e-header-cells,
+    .e-schedule .e-timeline-month .e-header-cells {
+        min-width: 150px !important;
+        width: 150px !important;
+        max-width: 150px !important;
+    }
+    
+    .e-schedule.e-timeline-month .e-work-cells,
+    .e-schedule .e-timeline-month .e-work-cells {
+        min-width: 150px !important;
+        width: 150px !important;
+        max-width: 150px !important;
+    }
+    
+    /* Forza larghezza anche per tutte le celle nella timeline */
+    #schedule .e-timeline-month .e-content-wrap .e-work-cells,
+    #schedule .e-timeline-month .e-date-header-wrap .e-header-cells {
+        min-width: 150px !important;
+        width: 150px !important;
+    }
+    
     .resource-header-content {
         padding: 12px;
         font-weight: 600;
@@ -96,7 +127,7 @@
         line-height: 1.3 !important;
         cursor: move !important;
         transition: all 0.2s ease !important;
-        background-color: #e74c3c !important;
+        background-color: rgba(231, 76, 60, 0.75) !important;
         border-color: #c0392b !important;
         color: white !important;
     }
@@ -104,6 +135,14 @@
     .e-schedule .e-appointment:hover {
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
         transform: translateY(-2px);
+    }
+    
+    /* Nascondi orario nativo di Syncfusion negli eventi */
+    .e-schedule .e-appointment .e-time,
+    .e-schedule .e-appointment .e-appointment-time,
+    #schedule .e-appointment .e-time,
+    #schedule .e-appointment .e-appointment-time {
+        display: none !important;
     }
     
     .e-schedule .e-appointment.e-drag-clone,
@@ -140,8 +179,8 @@
         justify-content: center !important;
         align-items: center !important;
         padding: 8px 4px !important;
-        background: linear-gradient(135deg, #e74c3c, #c0392b) !important; /* Rosso FRIMA come gli eventi */
-        color: white !important;
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important; /* Blu tenue */
+        color: #1976d2 !important;
         font-weight: bold !important;
         font-size: 0.9rem !important;
         border-radius: 4px 4px 0 0 !important;
@@ -149,8 +188,8 @@
     
     #schedule .e-schedule .week-label,
     .week-label {
-        text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
-        color: white !important;
+        text-shadow: none !important;
+        color: #1976d2 !important;
     }
     
     #schedule .e-schedule .day-header-content,
@@ -354,64 +393,66 @@
 
 <!-- Modal Genera Weekend -->
 <div class="modal fade" id="generaWeekendModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
+            <div class="modal-header bg-success text-white" id="generaWeekendModalHeader" style="cursor: move;">
                 <h5 class="modal-title">Genera Fermi Settimanali</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="generaWeekendForm">
                     <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="weekendAnno" class="form-label">Anno *</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendAnno" class="form-label fw-bold">Anno *</label>
                             <input type="number" id="weekendAnno" class="form-control" min="2020" max="2100" required />
                             <small class="text-muted">Anno per cui generare i fermi</small>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="weekendDaSettimana" class="form-label">Da Settimana *</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendDaSettimana" class="form-label fw-bold">Da Settimana *</label>
                             <input type="number" id="weekendDaSettimana" class="form-control" min="1" max="53" required />
                             <small class="text-muted">Settimana di inizio (1-53)</small>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="weekendASettimana" class="form-label">A Settimana *</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendASettimana" class="form-label fw-bold">A Settimana *</label>
                             <input type="number" id="weekendASettimana" class="form-control" min="1" max="53" required />
                             <small class="text-muted">Settimana di fine (1-53)</small>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="weekendMotivo" class="form-label">Motivo</label>
-                        <input type="text" id="weekendMotivo" class="form-control" value="Fermo programmato" />
-                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendCentroLavoro" class="form-label fw-bold">Centro di Lavoro *</label>
+                            <select id="weekendCentroLavoro" class="form-select" required>
+                                <option value="all" selected>Tutti i Centri di Lavoro</option>
+                            </select>
+                            <small class="text-muted">Centro a cui applicare i fermi</small>
+                        </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="weekendApplicaATutti" checked />
-                            <label class="form-check-label" for="weekendApplicaATutti">
-                                <strong>Applica a tutti i centri</strong>
-                            </label>
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendMotivo" class="form-label fw-bold">Motivo</label>
+                            <input type="text" id="weekendMotivo" class="form-control" value="Fermo programmato" />
+                            <small class="text-muted">Descrizione del fermo (opzionale)</small>
                         </div>
                     </div>
 
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
+                        <i class="bi bi-info-circle me-2"></i>
                         <strong>Verranno creati i seguenti fermi per ogni settimana:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Turni notturni (Lun-Gio): 22:00-06:00</li>
-                            <li>Weekend: Ven 22:00 - Lun 06:00</li>
+                            <li><strong>Turni notturni (Lun-Gio):</strong> 20:00-06:00</li>
+                            <li><strong>Weekend:</strong> Ven 20:00 - Lun 06:00</li>
                         </ul>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Annulla
+                </button>
                 <button type="button" class="btn btn-success" onclick="generaFermiSettimanali()">
-                    <i class="bi bi-calendar-week"></i> Genera Fermi
+                    <i class="bi bi-calendar-week me-1"></i> Genera Fermi
                 </button>
             </div>
         </div>
@@ -421,7 +462,7 @@
 <!-- Template per header settimana -->
 <script id="weekHeaderTemplate" type="text/x-template">
     <div class="week-header-content">
-        <span class="week-label">Week ${getWeekNumber(data.date)}</span>
+        <span class="week-label">Settimana ${getWeekNumber(data.date)}</span>
     </div>
 </script>
 
@@ -495,20 +536,87 @@
                 ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
                 console.log('Licenza Syncfusion registrata');
                 
-                // Carica localizzazione italiana minima
+                // Carica localizzazione italiana
                 if (ej.base.L10n) {
                     ej.base.L10n.load({
                         'it': {
                             'schedule': {
                                 'day': 'Giorno',
                                 'week': 'Settimana',
+                                'workWeek': 'Settimana lavorativa',
                                 'month': 'Mese',
-                                'today': 'Oggi'
+                                'year': 'Anno',
+                                'agenda': 'Agenda',
+                                'weekAgenda': 'Agenda settimana',
+                                'workWeekAgenda': 'Agenda settimana lavorativa',
+                                'monthAgenda': 'Agenda mese',
+                                'today': 'Oggi',
+                                'noEvents': 'Nessun evento',
+                                'emptyContainer': 'Non ci sono eventi programmati in questo giorno.',
+                                'allDay': 'Tutto il giorno',
+                                'start': 'Inizio',
+                                'end': 'Fine',
+                                'more': 'più',
+                                'close': 'Chiudi',
+                                'cancel': 'Annulla',
+                                'noTitle': '(Nessun titolo)',
+                                'delete': 'Elimina',
+                                'deleteEvent': 'Elimina evento',
+                                'deleteMultipleEvent': 'Elimina eventi multipli',
+                                'selectedItems': 'Elementi selezionati',
+                                'deleteSeries': 'Elimina serie',
+                                'edit': 'Modifica',
+                                'editSeries': 'Modifica serie',
+                                'editEvent': 'Modifica evento',
+                                'createEvent': 'Crea',
+                                'subject': 'Oggetto',
+                                'addTitle': 'Aggiungi titolo',
+                                'moreDetails': 'Altri dettagli',
+                                'save': 'Salva',
+                                'editContent': 'Vuoi modificare solo questo evento o l\'intera serie?',
+                                'deleteContent': 'Sei sicuro di voler eliminare questo evento?',
+                                'deleteMultipleContent': 'Sei sicuro di voler eliminare gli eventi selezionati?',
+                                'newEvent': 'Nuovo evento',
+                                'title': 'Titolo',
+                                'location': 'Luogo',
+                                'description': 'Descrizione',
+                                'timezone': 'Fuso orario',
+                                'startTimezone': 'Fuso orario inizio',
+                                'endTimezone': 'Fuso orario fine',
+                                'repeat': 'Ripeti',
+                                'saveButton': 'Salva',
+                                'cancelButton': 'Annulla',
+                                'deleteButton': 'Elimina',
+                                'recurrence': 'Ricorrenza',
+                                'wrongPattern': 'Il modello di ricorrenza non è valido.',
+                                'seriesChangeAlert': 'Vuoi annullare le modifiche apportate a istanze specifiche di questa serie e abbinarle nuovamente all\'intera serie?',
+                                'createError': 'La durata dell\'evento deve essere inferiore alla frequenza con cui si verifica. Riduci la durata o modifica il modello di ricorrenza nell\'editor eventi ricorrenti.',
+                                'sameDayAlert': 'Due occorrenze dello stesso evento non possono verificarsi nello stesso giorno.',
+                                'occurenceAlert': 'Impossibile riprogrammare un\'occorrenza dell\'appuntamento ricorrente se salta un\'occorrenza successiva dello stesso appuntamento.',
+                                'editRecurrence': 'Modifica ricorrenza',
+                                'repeats': 'Ripetizioni',
+                                'alert': 'Avviso',
+                                'startEndError': 'La data di fine selezionata si verifica prima della data di inizio.',
+                                'invalidDateError': 'Il valore della data inserito non è valido.',
+                                'blockAlert': 'Gli eventi non possono essere programmati nell\'intervallo di tempo bloccato.',
+                                'ok': 'Ok',
+                                'yes': 'Sì',
+                                'no': 'No',
+                                'occurrence': 'Occorrenza',
+                                'series': 'Serie',
+                                'previous': 'Precedente',
+                                'next': 'Successivo',
+                                'timelineDay': 'Timeline Giorno',
+                                'timelineWeek': 'Timeline Settimana',
+                                'timelineWorkWeek': 'Timeline Settimana Lavorativa',
+                                'timelineMonth': 'Timeline Mese',
+                                'timelineYear': 'Timeline Anno'
                             }
                         }
                     });
                 }
-                console.log('Localizzazione italiana caricata');
+                
+                console.log('Localizzazione italiana completa caricata');
             } else {
                 console.error('Syncfusion EJ2 non caricato!');
             }
@@ -561,8 +669,8 @@
                         selectedDate: new Date(),
                         showQuickInfo: false,
                         // Abilita drag & drop e resize
-                        allowDragAndDrop: true,
-                        allowResizing: true,
+                        allowDragAndDrop: false,
+                        allowResizing: false,
                         views: [
                             { 
                                 option: 'TimelineDay',
@@ -602,10 +710,20 @@
                                 interval: 4,
                                 timeScale: {
                                     enable: true,
-                                    interval: 120,  
+                                    interval: 720,  
+                                    slotCount: 2
+                                }
+                            },
+                           /* { 
+                                option: 'TimelineMonth',
+                                displayName: 'Mese',
+                                isSelected: false,
+                                timeScale: {
+                                    enable: true,
+                                    interval: 1440,  // 1440 minuti = 1 giorno
                                     slotCount: 1
                                 }
-                            }
+                            }*/
                         ],
                         eventSettings: {
                             dataSource: [],
@@ -660,12 +778,10 @@
                                 template: '#weekHeaderTemplate'
                             },
                             { 
-                                option: 'Date',
-                                template: '#dayHeaderTemplate'
+                                option: 'Date'
                             },
                             { 
-                                option: 'Hour',
-                                template: '#hourHeaderTemplate'
+                                option: 'Hour'
                             }
                         ],
                         // Eventi per forzare gli stili dopo ogni rendering
@@ -674,6 +790,20 @@
                         },
                         dataBound: function(args) {
                             setTimeout(() => forzaStiliCentriLavoro(), 100);
+                        },
+                        renderCell: function(args) {
+                            // Personalizza gli header delle date in italiano
+                            if (args.elementType === 'dateHeader') {
+                                const giorni = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+                                const mesi = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+                                const data = new Date(args.date);
+                                const giorno = giorni[data.getDay()];
+                                const mese = mesi[data.getMonth()];
+                                const giornoNum = data.getDate();
+                                
+                                // Modifica il contenuto della cella
+                                args.element.innerHTML = `<span>${giorno} ${giornoNum} ${mese}</span>`;
+                            }
                         },
                         eventClick: onEventClick,
                         cellClick: onCellClick,
@@ -853,21 +983,47 @@
             args.element.style.setProperty('border-color', coloreBordo, 'important');
             args.element.style.setProperty('color', 'white', 'important');
             
-            // Aggiungi icona per tipo fermo
+            // Ottieni il tipo fermo e l'icona
             const tipoFermo = eventData.TipoFermo;
             let icon = '';
+            let tipoFermoLabel = '';
+            
             if (tipoFermo === 'WeekEnd') {
                 icon = '<i class="bi bi-calendar-x me-1"></i>';
+                tipoFermoLabel = 'WeekEnd';
             } else if (tipoFermo === 'Festivo') {
                 icon = '<i class="bi bi-calendar-event me-1"></i>';
+                tipoFermoLabel = 'Festivo';
             } else if (tipoFermo === 'TurnoNotturno') {
                 icon = '<i class="bi bi-moon-fill me-1"></i>';
+                tipoFermoLabel = 'Turno Notturno';
             }
             
-            // Aggiungi icona al subject
+            // Formatta giorno abbreviato e orari
+            const startTime = new Date(eventData.StartTime);
+            const endTime = new Date(eventData.EndTime);
+            
+            const giornoInizio = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][startTime.getDay()];
+            const giornoFine = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][endTime.getDay()];
+            const oraInizio = startTime.getHours().toString().padStart(2, '0') + ':' + startTime.getMinutes().toString().padStart(2, '0');
+            const oraFine = endTime.getHours().toString().padStart(2, '0') + ':' + endTime.getMinutes().toString().padStart(2, '0');
+            
+            // Crea template con due righe
+            const nuovoContenuto = `
+                <div style="line-height: 1.2;">
+                    <div style="font-weight: bold; font-size: 0.9em;">
+                        ${icon}${tipoFermoLabel}
+                    </div>
+                    <div style="font-size: 0.75em; margin-top: 2px; opacity: 0.9;">
+                        ${giornoInizio}. ${oraInizio} - ${giornoFine}. ${oraFine}
+                    </div>
+                </div>
+            `;
+            
+            // Sostituisci il contenuto dell'evento
             const subjectElement = args.element.querySelector('.e-subject');
-            if (subjectElement && icon) {
-                subjectElement.innerHTML = icon + subjectElement.innerHTML;
+            if (subjectElement) {
+                subjectElement.innerHTML = nuovoContenuto;
             }
             
             // Verifica colore applicato
@@ -1162,6 +1318,68 @@
             }
         }
 
+        // Popola dropdown centri di lavoro per modal weekend
+        function popolaDropdownCentriWeekend() {
+            const select = document.getElementById('weekendCentroLavoro');
+            if (!select) return;
+            
+            // Reset dropdown
+            select.innerHTML = '<option value="all" selected>Tutti i Centri di Lavoro</option>';
+            
+            // Aggiungi opzione per ogni centro
+            centriLavoro.forEach(centro => {
+                const option = document.createElement('option');
+                option.value = centro.id;
+                option.textContent = centro.name;
+                select.appendChild(option);
+            });
+            
+            console.log(`✅ Dropdown centri popolato con ${centriLavoro.length} centri`);
+        }
+
+        // Rendi il modal trascinabile
+        function makeModalDraggable(modalElement, headerElement) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            
+            if (!modalElement || !headerElement) return;
+            
+            headerElement.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                headerElement.style.cursor = 'grabbing';
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                const dialogElement = modalElement.querySelector('.modal-dialog');
+                if (dialogElement) {
+                    dialogElement.style.transform = `translate(${-pos1}px, ${-pos2}px)`;
+                    dialogElement.style.margin = '0';
+                    dialogElement.style.position = 'relative';
+                    dialogElement.style.top = pos4 - pos2 + 'px';
+                    dialogElement.style.left = pos3 - pos1 + 'px';
+                }
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                headerElement.style.cursor = 'move';
+            }
+        }
+
         // Apri modal genera weekend
         function openGeneraWeekendModal() {
             console.log('Apertura modal genera fermi settimanali...');
@@ -1176,6 +1394,9 @@
                 const weekNum = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
                 document.getElementById('weekendDaSettimana').value = weekNum;
                 document.getElementById('weekendASettimana').value = Math.min(weekNum + 10, 53);
+                
+                // Popola dropdown centri di lavoro
+                popolaDropdownCentriWeekend();
                 
                 const modalElement = document.getElementById('generaWeekendModal');
                 console.log('Modal element:', modalElement);
@@ -1199,6 +1420,9 @@
                 modal.show();
                 console.log('Modal aperto');
                 
+                // Rendi il modal trascinabile
+                makeModalDraggable(modalElement, document.getElementById('generaWeekendModalHeader'));
+                
                 // Rimuovi backdrop dopo apertura (workaround)
                 setTimeout(() => {
                     document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
@@ -1216,7 +1440,9 @@
             const daSettimana = parseInt(document.getElementById('weekendDaSettimana').value);
             const aSettimana = parseInt(document.getElementById('weekendASettimana').value);
             const motivo = document.getElementById('weekendMotivo').value;
-            const applicaATutti = document.getElementById('weekendApplicaATutti').checked;
+            const centroLavoro = document.getElementById('weekendCentroLavoro').value;
+            const applicaATutti = centroLavoro === 'all';
+            const codiceCentro = applicaATutti ? null : parseInt(centroLavoro);
             
             // Validazioni
             if (!anno || !daSettimana || !aSettimana) {
@@ -1237,10 +1463,20 @@
             // Calcola numero totale fermi
             const numeroSettimane = aSettimana - daSettimana + 1;
             const fermiPerSettimana = 5; // 4 notturni + 1 weekend
-            const totaleFermi = numeroSettimane * fermiPerSettimana;
+            
+            let totaleFermi;
+            let centroNome = 'tutti i centri';
+            
+            if (applicaATutti) {
+                totaleFermi = numeroSettimane * fermiPerSettimana * centriLavoro.length;
+            } else {
+                totaleFermi = numeroSettimane * fermiPerSettimana;
+                const centro = centriLavoro.find(c => c.id == codiceCentro);
+                centroNome = centro ? centro.name : 'centro selezionato';
+            }
             
             // Messaggio di conferma
-            const conferma = confirm(`Stai per generare ${totaleFermi} fermi per ${numeroSettimane} settimane (${fermiPerSettimana} fermi per settimana).\n\nConfermi?`);
+            const conferma = confirm(`Stai per generare ${totaleFermi} fermi per ${centroNome}.\nPeriodo: ${numeroSettimane} settimane (${fermiPerSettimana} fermi per settimana).\n\nConfermi?`);
             if (!conferma) {
                 return;
             }
@@ -1250,7 +1486,8 @@
                 daSettimana: daSettimana,
                 aSettimana: aSettimana,
                 motivo: motivo,
-                applicaATutti: applicaATutti
+                applicaATutti: applicaATutti,
+                codiceCentro: codiceCentro
             };
             
             try {

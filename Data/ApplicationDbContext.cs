@@ -31,6 +31,7 @@ namespace AiDbMaster.Data
         public DbSet<ListaOP> ListaOP { get; set; }
         public DbSet<Lavorazioni> Lavorazioni { get; set; }
         public DbSet<CalendarioFermiCentriLavoro> CalendarioFermiCentriLavoro { get; set; }
+        public DbSet<TempiAsciugatura> TempiAsciugatura { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

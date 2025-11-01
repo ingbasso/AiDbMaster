@@ -108,6 +108,9 @@ namespace AiDbMaster.ViewModels
         [Display(Name = "Applica a tutti i centri")]
         public bool ApplicaATutti { get; set; } = true;
 
+        [Display(Name = "Codice Centro")]
+        public string? CodiceCentro { get; set; }
+
         [Display(Name = "Motivo")]
         public string? Motivo { get; set; } = "Fermo programmato";
     }

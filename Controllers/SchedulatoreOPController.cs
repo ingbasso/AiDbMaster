@@ -85,6 +85,8 @@ namespace AiDbMaster.Controllers
                 var ordini = await _context.ListaOP
                     .Include(o => o.Stato)
                     .Include(o => o.CentroLavoro)
+                    .Include(o => o.Lavorazione)
+                    .Include(o => o.Operatore)
                     .Where(o => o.DataInizioOP >= start && o.DataInizioOP <= end)
                     .ToListAsync();
                 
@@ -169,11 +171,14 @@ namespace AiDbMaster.Controllers
                     CodiceCentro = o.CodiceCentro,
                     CentroLavoroDescrizione = o.CentroLavoro?.DescrizioneCentro ?? "",
                     CodiceLavorazione = o.CodiceLavorazione,
+                    DescrizioneLavorazione = o.Lavorazione?.DescrizioneLavorazione ?? "",
                     Note = o.Note,
                     DataFineOP = o.DataFineOP,
                     DataFinePrevista = o.DataFinePrevista,
                     Priorita = o.Priorita,
                     IdOperatore = o.IdOperatore,
+                    CodiceOperatore = o.Operatore?.CodiceOperatore ?? "",
+                    NomeOperatore = o.Operatore != null ? $"{o.Operatore.Cognome} {o.Operatore.Nome}".Trim() : "",
                     CostoOrario = o.CostoOrario,
                     TempoEffettivo = o.TempoEffettivo,
                     Modificato = o.Modificato,
@@ -483,6 +488,125 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// API: Aggiorna ordine manualmente dal popup (Data Inizio OP e Quantità)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateOrdineManuale([FromBody] UpdateOrdineManualRequest request)
+        {
+            try
+            {
+                _logger.LogInformation($"📥 Richiesta modifica manuale - ID: {request.Id}, DataInizioOP: {request.DataInizioOP:yyyy-MM-dd HH:mm:ss}, Quantità: {request.Quantita}");
+                
+                var ordine = await _context.ListaOP.FindAsync(request.Id);
+                if (ordine == null)
+                {
+                    return NotFound(new { success = false, message = "Ordine non trovato" });
+                }
+                
+                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}");
+
+                // ===== VALIDAZIONE 1: Solo IdStato = 1 o 2 possono essere modificati manualmente =====
+                if (ordine.IdStato != 1 && ordine.IdStato != 2)
+                {
+                    _logger.LogWarning($"Tentativo di modifica manuale ordine {ordine.IdListaOP} con IdStato={ordine.IdStato}");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = $"❌ Impossibile modificare: solo ordini con Stato 1 o 2 possono essere modificati. Stato corrente: {ordine.IdStato}" 
+                    });
+                }
+
+                // ===== VALIDAZIONE 2: Campo Modificato =====
+                if (ordine.Modificato == 7)
+                {
+                    _logger.LogWarning($"Tentativo di modifica ordine {ordine.IdListaOP} con Modificato=7 (bloccato)");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "❌ Impossibile modificare: l'ordine è BLOCCATO (Modificato=7)" 
+                    });
+                }
+
+                // ===== VALIDAZIONE 3: Se IdStato=2, DataInizioOP non può essere modificata =====
+                if (ordine.IdStato == 2)
+                {
+                    var dataInizioOPUtc = ordine.DataInizioOP.Kind == DateTimeKind.Unspecified 
+                        ? DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local).ToUniversalTime()
+                        : ordine.DataInizioOP.ToUniversalTime();
+                    
+                    var requestDataInizioUtc = request.DataInizioOP.ToUniversalTime();
+                    var differenzaSecondi = Math.Abs((requestDataInizioUtc - dataInizioOPUtc).TotalSeconds);
+                    
+                    if (differenzaSecondi > 2)
+                    {
+                        _logger.LogWarning($"❌ Tentativo di modificare DataInizioOP con IdStato=2");
+                        return BadRequest(new { 
+                            success = false, 
+                            message = "❌ Ordine in Produzione: impossibile modificare Data Inizio OP" 
+                        });
+                    }
+                }
+
+                // ===== VALIDAZIONE 4: Quantità deve essere > 0 =====
+                if (request.Quantita <= 0)
+                {
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "❌ La quantità deve essere maggiore di zero" 
+                    });
+                }
+
+                // ===== AGGIORNAMENTO =====
+                
+                var vecchiaDataInizio = ordine.DataInizioOP;
+                var vecchiaQuantita = ordine.Quantita;
+                var vecchiaDataFinePrevista = ordine.DataFinePrevista;
+                
+                // Aggiorna DataInizioOP (solo se IdStato = 1)
+                if (ordine.IdStato == 1)
+                {
+                    ordine.DataInizioOP = request.DataInizioOP;
+                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: DataInizioOP modificata da {vecchiaDataInizio:yyyy-MM-dd HH:mm} a {ordine.DataInizioOP:yyyy-MM-dd HH:mm}");
+                }
+                
+                // Aggiorna Quantità
+                ordine.Quantita = request.Quantita;
+                _logger.LogInformation($"Ordine {ordine.IdListaOP}: Quantità modificata da {vecchiaQuantita} a {ordine.Quantita}");
+                
+                // Calcola DataFinePrevista
+                // Formula: DataFinePrevista = DataInizioOP + (Quantità × TempoCiclo secondi) + (TempoSetup minuti × 60)
+                var durataLavorazioneSecondi = (double)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                var tempoSetupSecondi = (ordine.TempoSetup ?? 0) * 60; // Converti minuti in secondi
+                var durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
+                
+                ordine.DataFinePrevista = ordine.DataInizioOP.AddSeconds(durataTotaleSecondi);
+                
+                _logger.LogInformation($"Ordine {ordine.IdListaOP}: DataFinePrevista calcolata = {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
+                _logger.LogInformation($"  - Durata lavorazione: {durataLavorazioneSecondi}s (Quantità {ordine.Quantita} × TempoCiclo {ordine.TempoCiclo}s)");
+                _logger.LogInformation($"  - Tempo setup: {tempoSetupSecondi}s ({ordine.TempoSetup ?? 0} minuti)");
+                _logger.LogInformation($"  - Durata totale: {durataTotaleSecondi}s");
+                
+                // Imposta Modificato = 1
+                ordine.Modificato = 1;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} aggiornato manualmente");
+
+                return Ok(new { 
+                    success = true, 
+                    message = "✅ Ordine aggiornato con successo",
+                    dataInizioOP = ordine.DataInizioOP,
+                    quantita = ordine.Quantita,
+                    dataFinePrevista = ordine.DataFinePrevista
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Errore nell'aggiornamento manuale ordine {request.Id}");
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Ottiene il colore in base allo stato dell'ordine
         /// </summary>
         private static string GetColorByStato(int idStato)
@@ -517,6 +641,16 @@ namespace AiDbMaster.Controllers
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string RoomId { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Modello per la richiesta di modifica manuale ordine
+    /// </summary>
+    public class UpdateOrdineManualRequest
+    {
+        public int Id { get; set; }
+        public DateTime DataInizioOP { get; set; }
+        public decimal Quantita { get; set; }
     }
 }
 

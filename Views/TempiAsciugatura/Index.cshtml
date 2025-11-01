@@ -1,0 +1,316 @@
+@{
+    ViewData["Title"] = "Tempi di Asciugatura";
+}
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2><i class="fas fa-calendar-day"></i> Tempi di Asciugatura Mensili</h2>
+            <p class="text-muted">
+                Configura i giorni di asciugatura necessari per ogni mese dell'anno.
+                Questi valori vengono utilizzati per calcolare la data di vendibilità dei prodotti.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> Configurazione Mensile
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Grid Syncfusion -->
+                    <div id="GridTempiAsciugatura"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+            }
+
+            // Inizializzazione del Grid Syncfusion
+            var grid = new ej.grids.Grid({
+                dataSource: [],
+                allowPaging: false,
+                allowSorting: true,
+                allowFiltering: false,
+                height: 500,
+                enableStickyHeader: true,
+                editSettings: {
+                    allowEditing: true,
+                    allowAdding: false,
+                    allowDeleting: false,
+                    mode: 'Normal'
+                },
+                toolbar: ['Update', 'Cancel'],
+                columns: [
+                    {
+                        field: 'idMese',
+                        headerText: 'ID',
+                        isPrimaryKey: true,
+                        width: 80,
+                        textAlign: 'Center',
+                        allowEditing: false
+                    },
+                    {
+                        field: 'mese',
+                        headerText: 'Mese',
+                        width: 150,
+                        allowEditing: false
+                    },
+                    {
+                        field: 'giorniAsciugatura',
+                        headerText: 'Giorni di Asciugatura',
+                        width: 200,
+                        textAlign: 'Center',
+                        editType: 'numericedit',
+                        edit: {
+                            params: {
+                                min: 0,
+                                max: 365,
+                                step: 1,
+                                format: 'N0',
+                                validateDecimalOnType: true,
+                                decimals: 0
+                            }
+                        },
+                        validationRules: {
+                            required: true,
+                            min: 0,
+                            max: 365
+                        }
+                    },
+                    {
+                        headerText: 'Azioni',
+                        width: 150,
+                        textAlign: 'Center',
+                        commands: [
+                            {
+                                type: 'Edit',
+                                buttonOption: {
+                                    iconCss: 'e-icons e-edit',
+                                    cssClass: 'e-flat'
+                                }
+                            },
+                            {
+                                type: 'Save',
+                                buttonOption: {
+                                    iconCss: 'e-icons e-update',
+                                    cssClass: 'e-flat'
+                                }
+                            },
+                            {
+                                type: 'Cancel',
+                                buttonOption: {
+                                    iconCss: 'e-icons e-cancel-icon',
+                                    cssClass: 'e-flat'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                actionBegin: function(args) {
+                    if (args.requestType === 'save') {
+                        // Salvataggio dei dati
+                        salvaTempoAsciugatura(args.data);
+                    }
+                },
+                actionComplete: function(args) {
+                    if (args.requestType === 'save') {
+                        console.log('Salvataggio completato');
+                    }
+                },
+                created: function() {
+                    console.log('Grid Tempi Asciugatura creato');
+                    caricaDati();
+                }
+            });
+
+            grid.appendTo('#GridTempiAsciugatura');
+
+            // Funzione per caricare i dati dal server
+            function caricaDati() {
+                fetch('/api/tempi-asciugatura')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Errore nel caricamento dei dati');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Dati caricati:', data);
+                        grid.dataSource = data;
+                    })
+                    .catch(error => {
+                        console.error('Errore durante il caricamento:', error);
+                        mostraMessaggio('Errore durante il caricamento dei dati', 'error');
+                    });
+            }
+
+            // Funzione per salvare i dati sul server
+            function salvaTempoAsciugatura(data) {
+                fetch('/api/tempi-asciugatura/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Errore nel salvataggio dei dati');
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    console.log('Salvataggio completato:', result);
+                    mostraMessaggio('Dati salvati con successo', 'success');
+                    caricaDati(); // Ricarica i dati
+                })
+                .catch(error => {
+                    console.error('Errore durante il salvataggio:', error);
+                    mostraMessaggio('Errore durante il salvataggio dei dati', 'error');
+                });
+            }
+
+            // Funzione per mostrare messaggi all'utente
+            function mostraMessaggio(messaggio, tipo) {
+                var toast = new ej.notifications.Toast({
+                    title: tipo === 'success' ? 'Successo' : 'Errore',
+                    content: messaggio,
+                    cssClass: tipo === 'success' ? 'e-toast-success' : 'e-toast-danger',
+                    position: {
+                        X: 'Right',
+                        Y: 'Top'
+                    },
+                    showCloseButton: true,
+                    timeOut: 3000
+                });
+                toast.appendTo(document.body);
+                toast.show();
+            }
+        });
+    </script>
+
+    <style>
+        /* Layout principale */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border: none;
+            border-radius: 8px;
+            margin: 0 auto;
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            border-radius: 8px 8px 0 0 !important;
+            padding: 1rem 1.25rem;
+        }
+
+        .card-title {
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        #GridTempiAsciugatura {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        /* Stili per il grid */
+        .e-grid {
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .e-grid .e-headercell {
+            background-color: #0d6efd;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .e-grid .e-rowcell {
+            padding: 12px 10px;
+        }
+
+        /* Scrollbar personalizzata */
+        .e-grid .e-gridcontent::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Stili per le icone */
+        .fas {
+            margin-right: 8px;
+        }
+
+        /* Messaggi informativi */
+        .text-muted {
+            font-size: 0.95rem;
+        }
+
+        /* Toast personalizzati */
+        .e-toast-success {
+            background-color: #28a745 !important;
+        }
+
+        .e-toast-danger {
+            background-color: #dc3545 !important;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+        }
+    </style>
+}
+
