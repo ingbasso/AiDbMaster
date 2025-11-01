@@ -1,0 +1,31 @@
+{
+  "main": {
+    "it": {
+      "identity": {
+        "version": {
+          "_cldrVersion": "36"
+        },
+        "language": "it"
+      },
+      "numbers": {
+        "defaultNumberingSystem": "latn",
+        "minimumGroupingDigits": "1",
+        "symbols-numberSystem-latn": {
+          "decimal": ",",
+          "group": ".",
+          "list": ";",
+          "percentSign": "%",
+          "plusSign": "+",
+          "minusSign": "-",
+          "exponential": "E",
+          "superscriptingExponent": "×",
+          "perMille": "‰",
+          "infinity": "∞",
+          "nan": "NaN",
+          "timeSeparator": ":"
+        }
+      }
+    }
+  }
+}
+

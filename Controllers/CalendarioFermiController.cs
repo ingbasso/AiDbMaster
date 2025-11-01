@@ -520,19 +520,19 @@ namespace AiDbMaster.Controllers
                     foreach (var centro in centri)
                     {
                         // 1. Lun 20:00 - Mar 06:00 (Turno Notturno)
-                        await CreaFermoNotturno(lunedi, DayOfWeek.Monday, centro, model.Motivo);
+                        CreaFermoNotturno(lunedi, DayOfWeek.Monday, centro, model.Motivo);
                         fermiCreati++;
 
                         // 2. Mar 20:00 - Mer 06:00 (Turno Notturno)
-                        await CreaFermoNotturno(lunedi, DayOfWeek.Tuesday, centro, model.Motivo);
+                        CreaFermoNotturno(lunedi, DayOfWeek.Tuesday, centro, model.Motivo);
                         fermiCreati++;
 
                         // 3. Mer 20:00 - Gio 06:00 (Turno Notturno)
-                        await CreaFermoNotturno(lunedi, DayOfWeek.Wednesday, centro, model.Motivo);
+                        CreaFermoNotturno(lunedi, DayOfWeek.Wednesday, centro, model.Motivo);
                         fermiCreati++;
 
                         // 4. Gio 20:00 - Ven 06:00 (Turno Notturno)
-                        await CreaFermoNotturno(lunedi, DayOfWeek.Thursday, centro, model.Motivo);
+                        CreaFermoNotturno(lunedi, DayOfWeek.Thursday, centro, model.Motivo);
                         fermiCreati++;
 
                         // 5. Weekend: Ven 20:00 - Lun 06:00 (settimana successiva)
@@ -577,7 +577,7 @@ namespace AiDbMaster.Controllers
         /// <summary>
         /// Helper: Crea fermo turno notturno (giorno 20:00 - giorno+1 06:00)
         /// </summary>
-        private async Task CreaFermoNotturno(DateTime lunediSettimana, DayOfWeek giorno, string centro, string? motivo)
+        private void CreaFermoNotturno(DateTime lunediSettimana, DayOfWeek giorno, string centro, string? motivo)
         {
             var giornoInizio = lunediSettimana.AddDays((int)giorno - (int)DayOfWeek.Monday);
             var giornoFine = giornoInizio.AddDays(1);

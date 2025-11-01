@@ -191,7 +191,7 @@ namespace AiDbMaster.Services
 
                 var centroLavoro = new CentroLavoro
                 {
-                    CodiceCentro = model.CodiceCentro?.ToUpper(),
+                    CodiceCentro = model.CodiceCentro?.ToUpper() ?? string.Empty,
                     DescrizioneCentro = model.DescrizioneCentro.Trim(),
                     CapacitaOraria = model.CapacitaOraria,
                     CostoOrarioStandard = model.CostoOrarioStandard,
@@ -231,7 +231,7 @@ namespace AiDbMaster.Services
 
                 // Il codice centro è la chiave primaria, quindi è garantita l'unicità
 
-                centroLavoro.CodiceCentro = model.CodiceCentro?.ToUpper();
+                centroLavoro.CodiceCentro = model.CodiceCentro?.ToUpper() ?? string.Empty;
                 centroLavoro.DescrizioneCentro = model.DescrizioneCentro.Trim();
                 centroLavoro.CapacitaOraria = model.CapacitaOraria;
                 centroLavoro.CostoOrarioStandard = model.CostoOrarioStandard;

@@ -1,0 +1,946 @@
+@{
+    ViewData["Title"] = "FC Prova - Scheduler Test";
+    ViewBag.UseFluidContainer = true;
+}
+
+<style>
+    #schedule {
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        width: 100%;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-calendar-check"></i> FC Prova - Test Scheduler</h2>
+                <p class="text-muted mb-0">Scheduler Timeline con multi-risorsa - Dati da CalendarioFermiCentriLavoro</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-success me-2" id="btnGeneraFermiSettimanali">
+                    <i class="bi bi-calendar-week me-1"></i> Genera Fermi Settimanali
+                </button>
+                <button type="button" class="btn btn-primary" id="btnNuovoFermo">
+                    <i class="bi bi-plus-circle me-1"></i> Nuovo Fermo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div id="schedule"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Fermo -->
+<div class="modal fade" id="fermoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white" id="fermoModalHeader" style="cursor: move;">
+                <h5 class="modal-title" id="fermoModalTitle">Modifica Fermo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fermoForm">
+                    <input type="hidden" id="fermoId" />
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editCodiceCentro" class="form-label">Centro di Lavoro *</label>
+                            <select id="editCodiceCentro" class="form-select" required>
+                                <option value="">-- Seleziona Centro --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="editTipoFermo" class="form-label">Tipo Fermo *</label>
+                            <select id="editTipoFermo" class="form-select" required>
+                                <option value="1">Fermo Notturno</option>
+                                <option value="2">Weekend</option>
+                                <option value="3">Manutenzione</option>
+                                <option value="4">Festivo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editDataInizio" class="form-label">Data Inizio *</label>
+                            <input type="datetime-local" id="editDataInizio" class="form-control" required />
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="editDataFine" class="form-label">Data Fine *</label>
+                            <input type="datetime-local" id="editDataFine" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="editMotivo" class="form-label">Motivo</label>
+                            <input type="text" id="editMotivo" class="form-control" maxlength="200" value="Fermo Programmato" />
+                            <small class="text-muted">Facoltativo - Descrizione del fermo</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editIsPianificato" />
+                                <label class="form-check-label" for="editIsPianificato">
+                                    <strong>Fermo Pianificato</strong>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="btnDeleteFermo">
+                    <i class="bi bi-trash"></i> Elimina
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="btnSaveFermo">
+                    <i class="bi bi-save"></i> Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Genera Fermi Settimanali -->
+<div class="modal fade" id="generaWeekendModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white" id="generaWeekendModalHeader" style="cursor: move;">
+                <h5 class="modal-title">Genera Fermi Settimanali</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generaWeekendForm">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendAnno" class="form-label fw-bold">Anno *</label>
+                            <input type="number" id="weekendAnno" class="form-control" min="2020" max="2100" required />
+                            <small class="text-muted">Anno per cui generare i fermi</small>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendDaSettimana" class="form-label fw-bold">Da Settimana *</label>
+                            <input type="number" id="weekendDaSettimana" class="form-control" min="1" max="53" required />
+                            <small class="text-muted">Settimana di inizio (1-53)</small>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="weekendASettimana" class="form-label fw-bold">A Settimana *</label>
+                            <input type="number" id="weekendASettimana" class="form-control" min="1" max="53" required />
+                            <small class="text-muted">Settimana di fine (1-53)</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendCentroLavoro" class="form-label fw-bold">Centro di Lavoro *</label>
+                            <select id="weekendCentroLavoro" class="form-select" required>
+                                <option value="all" selected>Tutti i Centri di Lavoro</option>
+                            </select>
+                            <small class="text-muted">Centro a cui applicare i fermi</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="weekendMotivo" class="form-label fw-bold">Motivo</label>
+                            <input type="text" id="weekendMotivo" class="form-control" value="Fermo programmato" />
+                            <small class="text-muted">Descrizione del fermo (opzionale)</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Verranno creati i seguenti fermi per ogni settimana:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Fermi Notturni (Lun-Gio):</strong> 20:00-06:00</li>
+                            <li><strong>Weekend:</strong> Ven 20:00 - Lun 06:00</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Annulla
+                </button>
+                <button type="button" class="btn btn-success" id="btnGeneraFermi">
+                    <i class="bi bi-calendar-week me-1"></i> Genera Fermi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template per header settimana -->
+<script id="weekHeaderTemplate" type="text/x-template">
+    <div>Settimana ${getWeekNumber(data.date)}</div>
+</script>
+
+@section Styles {
+    <style>
+        /* Posiziona i modal più in basso per evitare che siano coperti dall'header */
+        #fermoModal .modal-dialog,
+        #generaWeekendModal .modal-dialog {
+            margin-top: 80px;
+        }
+        
+        /* Assicura che i modal siano sopra tutto */
+        #fermoModal,
+        #generaWeekendModal {
+            z-index: 10000 !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Funzione helper per calcolare il numero di settimana
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+        
+        // Funzione per caricare i file CLDR italiani (come da documentazione Syncfusion)
+        function loadCultureFiles(name) {
+            var files = ['ca-gregorian.json', 'numberingSystems.json', 'numbers.json', 'timeZoneNames.json'];
+            var loader = ej.base.loadCldr;
+            var loadCulture = function (prop) {
+                var val, ajax;
+                if (files[prop] === 'numberingSystems.json') {
+                    ajax = new ej.base.Ajax('/cldr-data/supplemental/' + files[prop], 'GET', false);
+                } else {
+                    ajax = new ej.base.Ajax('/cldr-data/main/' + name + '/' + files[prop], 'GET', false);
+                }
+                ajax.onSuccess = function (value) {
+                    val = value;
+                };
+                ajax.send();
+                loader(JSON.parse(val));
+            };
+            for (var prop = 0; prop < files.length; prop++) {
+                loadCulture(prop);
+            }
+        }
+    </script>
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+        }
+        
+        // Script per inizializzare i controlli Syncfusion
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+                console.log('Licenza Syncfusion registrata');
+                
+                // Carica i file CLDR italiani
+                try {
+                    loadCultureFiles('it');
+                    console.log('✅ File CLDR italiani caricati');
+                } catch (error) {
+                    console.error('❌ Errore caricamento CLDR:', error);
+                }
+                
+                // Carica localizzazione italiana completa (solo L10n, no CLDR inline)
+                if (ej.base.L10n) {
+                    ej.base.L10n.load({
+                        'it': {
+                            'schedule': {
+                                'day': 'Giorno',
+                                'week': 'Settimana',
+                                'workWeek': 'Settimana lavorativa',
+                                'month': 'Mese',
+                                'today': 'Oggi',
+                                'noEvents': 'Nessun evento',
+                                'allDay': 'Tutto il giorno',
+                                'start': 'Inizio',
+                                'end': 'Fine',
+                                'more': 'più',
+                                'close': 'Chiudi',
+                                'cancel': 'Annulla',
+                                'delete': 'Elimina',
+                                'save': 'Salva',
+                                'previous': 'Precedente',
+                                'next': 'Successivo',
+                                'timelineDay': 'Timeline Giorno',
+                                'timelineWeek': 'Timeline Settimana',
+                                'timelineMonth': 'Timeline Mese'
+                            },
+                            'calendar': {
+                                'today': 'Oggi',
+                                'weekHeader': 'Sett'
+                            },
+                            'datepicker': {
+                                'placeholder': 'Seleziona una data',
+                                'today': 'Oggi'
+                            },
+                            'daterangepicker': {
+                                'placeholder': 'Seleziona un intervallo',
+                                'startLabel': 'Data Inizio',
+                                'endLabel': 'Data Fine',
+                                'applyText': 'Applica',
+                                'cancelText': 'Annulla',
+                                'selectedDays': 'Giorni Selezionati',
+                                'days': 'giorni',
+                                'customRange': 'Intervallo personalizzato'
+                            }
+                        }
+                    });
+                }
+                
+                console.log('Localizzazione italiana caricata');
+            }
+            
+            // Variabili globali
+            let scheduleObj;
+            let centriLavoro = [];
+            let fermi = [];
+            
+            // Carica centri di lavoro
+            async function loadCentriLavoro() {
+                try {
+                    console.log('Caricamento centri di lavoro...');
+                    const response = await fetch('@Url.Action("GetCentriLavoro", "FCProva")');
+                    centriLavoro = await response.json();
+                    console.log('✅ Caricati centri:', centriLavoro);
+                    
+                    // Carica fermi
+                    await loadFermi();
+                    
+                    // Crea scheduler
+                    createScheduler();
+                    
+                } catch (error) {
+                    console.error('Errore caricamento centri:', error);
+                }
+            }
+            
+            // Carica fermi
+            async function loadFermi() {
+                try {
+                    console.log('Caricamento fermi...');
+                    const response = await fetch('@Url.Action("GetFermi", "FCProva")');
+                    fermi = await response.json();
+                    console.log('✅ Caricati fermi:', fermi.length);
+                    console.log('Primo fermo:', fermi[0]);
+                } catch (error) {
+                    console.error('Errore caricamento fermi:', error);
+                }
+            }
+            
+            // Crea scheduler
+            function createScheduler() {
+                console.log('Creazione scheduler...');
+                
+                // Prepara datasource risorse (i dati dal server sono in camelCase)
+                const resourceDataSource = centriLavoro.map(c => ({
+                    Id: c.id,
+                    Name: c.name,
+                    Color: c.color
+                }));
+                
+                console.log('Risorse:', resourceDataSource);
+                console.log('Primo centro grezzo:', centriLavoro[0]);
+                
+                scheduleObj = new ej.schedule.Schedule({
+                    width: '100%',
+                    height: '100%',
+                    locale: 'it',  // Imposta la cultura italiana
+                    currentView: 'TimelineWeek',
+                    selectedDate: new Date(),
+                    timeFormat: 'HH',  // Solo ore in formato 24h
+                    rowAutoHeight: true,  // Espande automaticamente le righe per mostrare tutti gli eventi
+                    showWeekNumber: true,  // Mostra il numero della settimana
+                    firstDayOfWeek: 1,  // Inizia da lunedì
+                    showQuickInfo: false,  // Disabilita popup quick info
+                    quickInfoOnSelectionEnd: false,  // Disabilita popup su selezione
+                    editorTemplate: null,  // Disabilita editor nativo
+                    views: [
+                        { 
+                            option: 'TimelineDay', 
+                            displayName: 'Giorno',
+                            interval: 3,
+                            timeScale: {
+                                enable: true,
+                                interval: 60,  // 60 minuti = 1 ora
+                                slotCount: 1
+                            }
+                        },
+                        { option: 'TimelineWeek', displayName: 'Settimana' },
+                        { 
+                            option: 'TimelineWeek', 
+                            displayName: '4 Settimane',
+                            interval: 4,
+                            timeScale: {
+                                enable: true,
+                                interval: 120,
+                                slotCount: 1
+                            }
+                        },
+                      //  { option: 'TimelineMonth', displayName: 'Mese' }
+                    ],
+                    group: {
+                        resources: ['Centri']
+                    },
+                    resources: [{
+                        field: 'codiceCentro',
+                        title: 'Centro di Lavoro',
+                        name: 'Centri',
+                        allowMultiple: false,
+                        dataSource: resourceDataSource,
+                        textField: 'Name',
+                        idField: 'Id',
+                        colorField: 'Color'
+                    }],
+                    headerRows: [
+                        { option: 'Week', template: '#weekHeaderTemplate' },
+                        { option: 'Date' },
+                        { option: 'Hour' }
+                    ],
+                    timeScale: {
+                        enable: true,
+                        interval: 120,
+                        slotCount: 1
+                    },
+                    renderCell: function(args) {
+                        // Personalizza gli header delle date in italiano
+                        if (args.elementType === 'dateHeader') {
+                            const giorni = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+                            const mesi = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+                            const data = new Date(args.date);
+                            const giorno = giorni[data.getDay()];
+                            const mese = mesi[data.getMonth()];
+                            const giornoNum = data.getDate();
+                            
+                            // Modifica il contenuto della cella
+                            args.element.innerHTML = `<span>${giorno} ${giornoNum} ${mese}</span>`;
+                        }
+                    },
+                    eventSettings: {
+                        dataSource: fermi,
+                        fields: {
+                            id: 'id',
+                            subject: { name: 'subject' },
+                            startTime: { name: 'startTime' },
+                            endTime: { name: 'endTime' }
+                        },
+                        template: function(data) {
+                            // Giorni abbreviati in italiano
+                            const giorni = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+                            
+                            // Mappa TipoFermo
+                            const tipiFermo = {
+                                1: 'Fermo Notturno',
+                                2: 'Weekend',
+                                3: 'Manutenzione',
+                                4: 'Festivo'
+                            };
+                            
+                            const startDate = new Date(data.startTime);
+                            const endDate = new Date(data.endTime);
+                            
+                            const giornoInizio = giorni[startDate.getDay()];
+                            const giornoFine = giorni[endDate.getDay()];
+                            const oraInizio = startDate.getHours().toString().padStart(2, '0');
+                            const oraFine = endDate.getHours().toString().padStart(2, '0');
+                            
+                            const tipoFermoLabel = tipiFermo[data.tipoFermo] || 'Fermo';
+                            
+                            return `
+                                <div style="padding: 5px; line-height: 1.4;">
+                                    <div style="font-weight: bold; font-size: 0.9em;">
+                                        ${tipoFermoLabel}
+                                    </div>
+                                    <div style="font-size: 0.8em; margin-top: 2px;">
+                                        ${giornoInizio}.${oraInizio} - ${giornoFine}.${oraFine}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    },
+                    eventClick: function(args) {
+                        // Previeni comportamento predefinito
+                        args.cancel = true;
+                        
+                        // Apri modal personalizzato
+                        mostraDettagliFermo(args.event);
+                    }
+                });
+                
+                scheduleObj.appendTo('#schedule');
+                console.log('✅ Scheduler creato');
+            }
+            
+            // Apri modal creazione nuovo fermo
+            function openCreateModal() {
+                console.log('Apertura modal creazione fermo');
+                
+                // Popola il dropdown dei centri di lavoro
+                const selectCentro = document.getElementById('editCodiceCentro');
+                selectCentro.innerHTML = '<option value="">-- Seleziona Centro --</option>';
+                centriLavoro.forEach(centro => {
+                    const option = document.createElement('option');
+                    option.value = centro.id;
+                    option.textContent = `${centro.id} - ${centro.name}`;
+                    selectCentro.appendChild(option);
+                });
+                
+                // Reset del form
+                document.getElementById('fermoModalTitle').textContent = 'Nuovo Fermo';
+                document.getElementById('fermoForm').reset();
+                document.getElementById('fermoId').value = '';
+                document.getElementById('btnDeleteFermo').style.display = 'none';
+                
+                // Ripristina il valore di default per Motivo
+                document.getElementById('editMotivo').value = 'Fermo Programmato';
+                
+                // Rimuovi TUTTI i backdrop esistenti prima di aprire
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                
+                // Apri il modal
+                const modalElement = document.getElementById('fermoModal');
+                
+                // Distruggi istanza esistente se presente
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.dispose();
+                }
+                
+                // Crea nuova istanza SENZA backdrop
+                modal = new bootstrap.Modal(modalElement, {
+                    backdrop: false,  // Nessun backdrop per evitare blocchi
+                    keyboard: true,
+                    focus: true
+                });
+                
+                modal.show();
+                
+                // Rendi il modal trascinabile
+                setTimeout(() => makeModalDraggable('fermoModal', 'fermoModalHeader'), 100);
+            }
+            
+            // Funzione per mostrare i dettagli del fermo (modifica)
+            function mostraDettagliFermo(evento) {
+                console.log('Mostra dettagli fermo:', evento);
+                
+                // Popola il dropdown dei centri di lavoro
+                const selectCentro = document.getElementById('editCodiceCentro');
+                selectCentro.innerHTML = '<option value="">-- Seleziona Centro --</option>';
+                centriLavoro.forEach(centro => {
+                    const option = document.createElement('option');
+                    option.value = centro.id;
+                    option.textContent = `${centro.id} - ${centro.name}`;
+                    selectCentro.appendChild(option);
+                });
+                
+                // Popola i campi del form
+                document.getElementById('fermoModalTitle').textContent = 'Modifica Fermo';
+                document.getElementById('fermoId').value = evento.id;
+                document.getElementById('editCodiceCentro').value = evento.codiceCentro;
+                document.getElementById('editTipoFermo').value = evento.tipoFermo;
+                document.getElementById('editDataInizio').value = formatDateTimeLocal(evento.startTime);
+                document.getElementById('editDataFine').value = formatDateTimeLocal(evento.endTime);
+                document.getElementById('editMotivo').value = evento.motivo || '';
+                document.getElementById('editIsPianificato').checked = evento.isPianificato;
+                document.getElementById('btnDeleteFermo').style.display = 'block';
+                
+                // Rimuovi TUTTI i backdrop esistenti prima di aprire
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                
+                // Apri il modal
+                const modalElement = document.getElementById('fermoModal');
+                
+                // Distruggi istanza esistente se presente
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.dispose();
+                }
+                
+                // Crea nuova istanza SENZA backdrop
+                modal = new bootstrap.Modal(modalElement, {
+                    backdrop: false,  // Nessun backdrop per evitare blocchi
+                    keyboard: true,
+                    focus: true
+                });
+                
+                modal.show();
+                
+                // Rendi il modal trascinabile
+                setTimeout(() => makeModalDraggable('fermoModal', 'fermoModalHeader'), 100);
+            }
+            
+            // Funzione per formattare data/ora per datetime-local input
+            function formatDateTimeLocal(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                const anno = date.getFullYear();
+                const mese = (date.getMonth() + 1).toString().padStart(2, '0');
+                const giorno = date.getDate().toString().padStart(2, '0');
+                const ore = date.getHours().toString().padStart(2, '0');
+                const minuti = date.getMinutes().toString().padStart(2, '0');
+                return `${anno}-${mese}-${giorno}T${ore}:${minuti}`;
+            }
+            
+            // Funzione per salvare fermo (crea o modifica)
+            async function saveFermo() {
+                try {
+                    const idValue = document.getElementById('fermoId').value;
+                    const isEdit = idValue !== '';
+                    
+                    const data = {
+                        id: isEdit ? parseInt(idValue) : 0,
+                        codiceCentro: document.getElementById('editCodiceCentro').value,
+                        dataInizioFermo: document.getElementById('editDataInizio').value,
+                        dataFineFermo: document.getElementById('editDataFine').value,
+                        tipoFermo: parseInt(document.getElementById('editTipoFermo').value),
+                        motivo: document.getElementById('editMotivo').value || null,
+                        isPianificato: document.getElementById('editIsPianificato').checked
+                    };
+                    
+                    // Validazione centro di lavoro
+                    if (!data.codiceCentro) {
+                        alert('Seleziona un centro di lavoro');
+                        return;
+                    }
+                    
+                    // Validazione date
+                    if (!data.dataInizioFermo) {
+                        alert('Inserisci la data di inizio');
+                        return;
+                    }
+                    
+                    if (!data.dataFineFermo) {
+                        alert('Inserisci la data di fine');
+                        return;
+                    }
+                    
+                    const dataInizio = new Date(data.dataInizioFermo);
+                    const dataFine = new Date(data.dataFineFermo);
+                    
+                    if (dataFine <= dataInizio) {
+                        alert('⚠️ La data di fine deve essere maggiore della data di inizio');
+                        return;
+                    }
+                    
+                    console.log(isEdit ? 'Aggiornamento fermo:' : 'Creazione nuovo fermo:', data);
+                    
+                    const url = isEdit 
+                        ? '@Url.Action("UpdateFermo", "FCProva")' 
+                        : '@Url.Action("CreateFermo", "FCProva")';
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Errore nel salvataggio');
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ Fermo salvato:', result);
+                    
+                    // Chiudi modal
+                    const modalElement = document.getElementById('fermoModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Ricarica i dati
+                    await loadFermi();
+                    scheduleObj.eventSettings.dataSource = fermi;
+                    scheduleObj.refresh();
+                    
+                } catch (error) {
+                    console.error('Errore salvataggio fermo:', error);
+                    alert('Errore nel salvataggio del fermo');
+                }
+            }
+            
+            // Funzione per eliminare fermo
+            async function deleteFermo() {
+                if (!confirm('Sei sicuro di voler eliminare questo fermo?')) {
+                    return;
+                }
+                
+                try {
+                    const id = parseInt(document.getElementById('fermoId').value);
+                    
+                    console.log('Eliminazione fermo:', id);
+                    
+                    const response = await fetch('@Url.Action("DeleteFermo", "FCProva")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: id })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Errore nell\'eliminazione');
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ Fermo eliminato:', result);
+                    
+                    // Chiudi modal
+                    const modalElement = document.getElementById('fermoModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Ricarica i dati
+                    await loadFermi();
+                    scheduleObj.eventSettings.dataSource = fermi;
+                    scheduleObj.refresh();
+                    
+                    alert('Fermo eliminato con successo!');
+                } catch (error) {
+                    console.error('Errore eliminazione fermo:', error);
+                    alert('Errore nell\'eliminazione del fermo');
+                }
+            }
+            
+            // Funzione per rendere il modal trascinabile
+            function makeModalDraggable(modalId, headerId) {
+                const modal = document.getElementById(modalId);
+                const header = document.getElementById(headerId);
+                const dialog = modal.querySelector('.modal-dialog');
+                
+                if (!header || !dialog) return;
+                
+                let isDragging = false;
+                let currentX;
+                let currentY;
+                let initialX;
+                let initialY;
+                let xOffset = 0;
+                let yOffset = 0;
+                
+                header.addEventListener('mousedown', dragStart);
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+                
+                function dragStart(e) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+                    
+                    if (e.target === header || header.contains(e.target)) {
+                        isDragging = true;
+                    }
+                }
+                
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                        
+                        xOffset = currentX;
+                        yOffset = currentY;
+                        
+                        setTranslate(currentX, currentY, dialog);
+                    }
+                }
+                
+                function dragEnd() {
+                    initialX = currentX;
+                    initialY = currentY;
+                    isDragging = false;
+                }
+                
+                function setTranslate(xPos, yPos, el) {
+                    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+                }
+            }
+            
+            // Funzione per popolare dropdown centri nel modal weekend
+            function popolaDropdownCentriWeekend() {
+                const select = document.getElementById('weekendCentroLavoro');
+                if (!select) return;
+                
+                // Reset dropdown
+                select.innerHTML = '<option value="all" selected>Tutti i Centri di Lavoro</option>';
+                
+                // Aggiungi opzione per ogni centro
+                centriLavoro.forEach(centro => {
+                    const option = document.createElement('option');
+                    option.value = centro.id;
+                    option.textContent = `${centro.id} - ${centro.name}`;
+                    select.appendChild(option);
+                });
+                
+                console.log(`✅ Dropdown centri popolato con ${centriLavoro.length} centri`);
+            }
+            
+            // Funzione per aprire modal genera fermi settimanali
+            function openGeneraWeekendModal() {
+                console.log('Apertura modal genera fermi settimanali...');
+                
+                // Inizializza anno corrente
+                const annoCorrente = new Date().getFullYear();
+                document.getElementById('weekendAnno').value = annoCorrente;
+                
+                // Inizializza settimane (settimana corrente e +10)
+                const now = new Date();
+                const onejan = new Date(now.getFullYear(), 0, 1);
+                const weekNum = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+                document.getElementById('weekendDaSettimana').value = weekNum;
+                document.getElementById('weekendASettimana').value = Math.min(weekNum + 10, 53);
+                
+                // Popola dropdown centri di lavoro
+                popolaDropdownCentriWeekend();
+                
+                // Rimuovi TUTTI i backdrop esistenti
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+                
+                const modalElement = document.getElementById('generaWeekendModal');
+                
+                // Distruggi istanza esistente se presente
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.dispose();
+                }
+                
+                // Crea nuova istanza SENZA backdrop
+                modal = new bootstrap.Modal(modalElement, {
+                    backdrop: false,
+                    keyboard: true,
+                    focus: true
+                });
+                
+                modal.show();
+                
+                // Rendi il modal trascinabile
+                setTimeout(() => makeModalDraggable('generaWeekendModal', 'generaWeekendModalHeader'), 100);
+            }
+            
+            // Funzione per generare fermi settimanali
+            async function generaFermiSettimanali() {
+                const anno = parseInt(document.getElementById('weekendAnno').value);
+                const daSettimana = parseInt(document.getElementById('weekendDaSettimana').value);
+                const aSettimana = parseInt(document.getElementById('weekendASettimana').value);
+                const motivo = document.getElementById('weekendMotivo').value;
+                const centroLavoro = document.getElementById('weekendCentroLavoro').value;
+                const applicaATutti = centroLavoro === 'all';
+                const codiceCentro = applicaATutti ? null : centroLavoro;
+                
+                // Validazioni
+                if (!anno || !daSettimana || !aSettimana) {
+                    alert('Compila tutti i campi obbligatori');
+                    return;
+                }
+                
+                if (aSettimana < daSettimana) {
+                    alert('"A Settimana" non può essere minore di "Da Settimana"');
+                    return;
+                }
+                
+                if (daSettimana < 1 || daSettimana > 53 || aSettimana < 1 || aSettimana > 53) {
+                    alert('Le settimane devono essere comprese tra 1 e 53');
+                    return;
+                }
+                
+                // Calcola numero totale fermi
+                const numeroSettimane = aSettimana - daSettimana + 1;
+                const fermiPerSettimana = 5; // 4 notturni + 1 weekend
+                
+                let totaleFermi;
+                let centroNome = 'tutti i centri';
+                
+                if (applicaATutti) {
+                    totaleFermi = numeroSettimane * fermiPerSettimana * centriLavoro.length;
+                } else {
+                    totaleFermi = numeroSettimane * fermiPerSettimana;
+                    const centro = centriLavoro.find(c => c.id === codiceCentro);
+                    centroNome = centro ? `${centro.id} - ${centro.name}` : 'centro selezionato';
+                }
+                
+                // Messaggio di conferma
+                const conferma = confirm(`Stai per generare ${totaleFermi} fermi per ${centroNome}.\nPeriodo: ${numeroSettimane} settimane (${fermiPerSettimana} fermi per settimana).\n\nConfermi?`);
+                if (!conferma) {
+                    return;
+                }
+                
+                const data = {
+                    anno: anno,
+                    daSettimana: daSettimana,
+                    aSettimana: aSettimana,
+                    motivo: motivo,
+                    applicaATutti: applicaATutti,
+                    codiceCentro: codiceCentro
+                };
+                
+                try {
+                    console.log('Generazione fermi in corso...', data);
+                    
+                    const response = await fetch('@Url.Action("GeneraFermiSettimanali", "FCProva")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Errore nella generazione dei fermi');
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ Fermi generati:', result);
+                    
+                    // Chiudi modal
+                    const modalElement = document.getElementById('generaWeekendModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Ricarica i dati
+                    await loadFermi();
+                    scheduleObj.eventSettings.dataSource = fermi;
+                    scheduleObj.refresh();
+                    
+                    alert(`✅ ${result.totaleFermi || totaleFermi} fermi generati con successo!`);
+                } catch (error) {
+                    console.error('Errore generazione fermi:', error);
+                    alert('Errore nella generazione dei fermi');
+                }
+            }
+            
+            // Event listener per i pulsanti del modal
+            document.getElementById('btnSaveFermo').addEventListener('click', saveFermo);
+            document.getElementById('btnDeleteFermo').addEventListener('click', deleteFermo);
+            
+            // Event listener per il pulsante Nuovo Fermo
+            document.getElementById('btnNuovoFermo').addEventListener('click', openCreateModal);
+            
+            // Event listener per il pulsante Genera Fermi Settimanali
+            document.getElementById('btnGeneraFermiSettimanali').addEventListener('click', openGeneraWeekendModal);
+            document.getElementById('btnGeneraFermi').addEventListener('click', generaFermiSettimanali);
+            
+            // Avvia caricamento
+            loadCentriLavoro();
+        });
+    </script>
+}
+

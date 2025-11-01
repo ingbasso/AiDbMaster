@@ -688,7 +688,7 @@
                                 isSelected: true,
                                 timeScale: {
                                     enable: true,
-                                    interval: 120,
+                                    interval: 120,  
                                     slotCount: 1
                                 }
                             },
@@ -699,7 +699,7 @@
                                 interval: 2,
                                 timeScale: {
                                     enable: true,
-                                    interval: 120,  // 8 ore per vista 2 settimane
+                                    interval: 120,  // 2 ore per vista 2 settimane
                                     slotCount: 1
                                 }
                             },
@@ -750,7 +750,7 @@
                         }],
                         timeScale: {
                             enable: true,
-                            interval: 480,
+                            interval: 120,
                             slotCount: 1
                         },
                         workHours: {
@@ -925,6 +925,8 @@
                     // DEBUG: mostra struttura primo fermo
                     console.log('📋 Primo fermo ricevuto dal server:', fermiFetch[0]);
                     console.log('   Chiavi disponibili:', Object.keys(fermiFetch[0]));
+                    console.log('   ⏰ StartTime:', fermiFetch[0].startTime);
+                    console.log('   ⏰ EndTime:', fermiFetch[0].endTime);
                     
                     // usa camelCase per leggere codiceCentro
                     const centriConFermi = [...new Set(fermiFetch.map(f => f.codiceCentro))].filter(Boolean);

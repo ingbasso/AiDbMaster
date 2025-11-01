@@ -1,0 +1,11 @@
+{
+  "supplemental": {
+    "numberingSystems": {
+      "latn": {
+        "_digits": "0123456789",
+        "_type": "numeric"
+      }
+    }
+  }
+}
+
