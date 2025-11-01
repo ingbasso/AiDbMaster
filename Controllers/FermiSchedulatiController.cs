@@ -5,12 +5,12 @@ using AiDbMaster.Models;
 
 namespace AiDbMaster.Controllers
 {
-    public class FCProvaController : Controller
+    public class FermiSchedulatiController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<FCProvaController> _logger;
+        private readonly ILogger<FermiSchedulatiController> _logger;
 
-        public FCProvaController(ApplicationDbContext context, ILogger<FCProvaController> logger)
+        public FermiSchedulatiController(ApplicationDbContext context, ILogger<FermiSchedulatiController> logger)
         {
             _context = context;
             _logger = logger;

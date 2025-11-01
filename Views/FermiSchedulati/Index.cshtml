@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "FC Prova - Scheduler Test";
+    ViewData["Title"] = "Fermi Schedulati";
     ViewBag.UseFluidContainer = true;
 }
 
@@ -15,8 +15,8 @@
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center">
             <div>
-                <h2><i class="bi bi-calendar-check"></i> FC Prova - Test Scheduler</h2>
-                <p class="text-muted mb-0">Scheduler Timeline con multi-risorsa - Dati da CalendarioFermiCentriLavoro</p>
+                <h2><i class="bi bi-calendar-check"></i> Fermi Schedulati</h2>
+                <p class="text-muted mb-0">Gestione completa dei fermi dei centri di lavoro</p>
             </div>
             <div>
                 <button type="button" class="btn btn-success me-2" id="btnGeneraFermiSettimanali">
@@ -316,7 +316,7 @@
             async function loadCentriLavoro() {
                 try {
                     console.log('Caricamento centri di lavoro...');
-                    const response = await fetch('@Url.Action("GetCentriLavoro", "FCProva")');
+                    const response = await fetch('@Url.Action("GetCentriLavoro", "FermiSchedulati")');
                     centriLavoro = await response.json();
                     console.log('✅ Caricati centri:', centriLavoro);
                     
@@ -335,7 +335,7 @@
             async function loadFermi() {
                 try {
                     console.log('Caricamento fermi...');
-                    const response = await fetch('@Url.Action("GetFermi", "FCProva")');
+                    const response = await fetch('@Url.Action("GetFermi", "FermiSchedulati")');
                     fermi = await response.json();
                     console.log('✅ Caricati fermi:', fermi.length);
                     console.log('Primo fermo:', fermi[0]);
@@ -641,8 +641,8 @@
                     console.log(isEdit ? 'Aggiornamento fermo:' : 'Creazione nuovo fermo:', data);
                     
                     const url = isEdit 
-                        ? '@Url.Action("UpdateFermo", "FCProva")' 
-                        : '@Url.Action("CreateFermo", "FCProva")';
+                        ? '@Url.Action("UpdateFermo", "FermiSchedulati")' 
+                        : '@Url.Action("CreateFermo", "FermiSchedulati")';
                     
                     const response = await fetch(url, {
                         method: 'POST',
@@ -688,7 +688,7 @@
                     
                     console.log('Eliminazione fermo:', id);
                     
-                    const response = await fetch('@Url.Action("DeleteFermo", "FCProva")', {
+                    const response = await fetch('@Url.Action("DeleteFermo", "FermiSchedulati")', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -895,7 +895,7 @@
                 try {
                     console.log('Generazione fermi in corso...', data);
                     
-                    const response = await fetch('@Url.Action("GeneraFermiSettimanali", "FCProva")', {
+                    const response = await fetch('@Url.Action("GeneraFermiSettimanali", "FermiSchedulati")', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
