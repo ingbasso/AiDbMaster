@@ -126,7 +126,6 @@ namespace AiDbMaster.Controllers
                 if (hasChanges)
                 {
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation($"✅ Aggiornati DataFinePrevista per {ordini.Count} ordini");
                 }
                 
                 // POI: Mappa gli ordini in eventi per Syncfusion
@@ -143,8 +142,9 @@ namespace AiDbMaster.Controllers
                         // Dati per Syncfusion Schedule
                         Id = o.IdListaOP,
                         Subject = $"Ord. {o.AnnoOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)} ({percentuale}%)",
-                        StartTime = o.DataInizioOP,
-                        EndTime = endTime,
+                        // Specifica Local per evitare conversioni timezone
+                        StartTime = DateTime.SpecifyKind(o.DataInizioOP, DateTimeKind.Local),
+                        EndTime = DateTime.SpecifyKind(endTime, DateTimeKind.Local),
                         RoomId = o.CodiceCentro, // Per associare alla risorsa (centro di lavoro)
                         // Colore basato su IdStato
                         CategoryColor = GetColorByStato(o.IdStato),
@@ -162,9 +162,11 @@ namespace AiDbMaster.Controllers
                     UnitaMisura = o.UnitaMisura,
                     Quantita = o.Quantita,
                     QuantitaProdotta = o.QuantitaProdotta,
-                    DataInizioOP = o.DataInizioOP,
+                    DataInizioOP = DateTime.SpecifyKind(o.DataInizioOP, DateTimeKind.Local),
                     TempoCiclo = o.TempoCiclo,
-                    DataInizioSetup = o.DataInizioSetup,
+                    DataInizioSetup = o.DataInizioSetup.HasValue 
+                        ? DateTime.SpecifyKind(o.DataInizioSetup.Value, DateTimeKind.Local)
+                        : (DateTime?)null,
                     TempoSetup = o.TempoSetup,
                     IdStato = o.IdStato,
                     StatoDescrizione = o.Stato?.DescrizioneStato ?? "",
@@ -173,8 +175,12 @@ namespace AiDbMaster.Controllers
                     CodiceLavorazione = o.CodiceLavorazione,
                     DescrizioneLavorazione = o.Lavorazione?.DescrizioneLavorazione ?? "",
                     Note = o.Note,
-                    DataFineOP = o.DataFineOP,
-                    DataFinePrevista = o.DataFinePrevista,
+                    DataFineOP = o.DataFineOP.HasValue 
+                        ? DateTime.SpecifyKind(o.DataFineOP.Value, DateTimeKind.Local)
+                        : (DateTime?)null,
+                    DataFinePrevista = o.DataFinePrevista.HasValue 
+                        ? DateTime.SpecifyKind(o.DataFinePrevista.Value, DateTimeKind.Local)
+                        : (DateTime?)null,
                     Priorita = o.Priorita,
                     IdOperatore = o.IdOperatore,
                     CodiceOperatore = o.Operatore?.CodiceOperatore ?? "",
@@ -186,14 +192,6 @@ namespace AiDbMaster.Controllers
                     };
                 }).ToList();
 
-                _logger.LogInformation($"✅ Restituiti {eventi.Count} ordini di produzione per il calendario");
-                
-                // Log dei primi 3 eventi per debug
-                if (eventi.Count > 0)
-                {
-                    _logger.LogInformation($"Primi eventi: {string.Join(", ", eventi.Take(3).Select(e => $"{e.Subject} [{e.StartTime:yyyy-MM-dd HH:mm} - {e.EndTime:yyyy-MM-dd HH:mm}]"))}");
-                }
-                
                 return Json(eventi);
             }
             catch (Exception ex)
@@ -220,7 +218,6 @@ namespace AiDbMaster.Controllers
                     })
                     .ToListAsync();
 
-                _logger.LogInformation($"✅ Caricati {stati.Count} stati OP");
 
                 return Ok(stati);
             }
@@ -243,22 +240,25 @@ namespace AiDbMaster.Controllers
                 var start = startDate ?? DateTime.Today.AddMonths(-1);
                 var end = endDate ?? DateTime.Today.AddMonths(1);
 
-                _logger.LogInformation($"📅 Caricamento fermi centri dal {start:yyyy-MM-dd} al {end:yyyy-MM-dd}");
 
-                var fermi = await _context.CalendarioFermiCentriLavoro
+                var fermiDb = await _context.CalendarioFermiCentriLavoro
                     .Where(f => f.DataInizioFermo <= end && (f.DataFineFermo == null || f.DataFineFermo >= start))
                     .OrderBy(f => f.DataInizioFermo)
-                    .Select(f => new
-                    {
-                        Id = f.Id,
-                        CodiceCentro = f.CodiceCentro,
-                        DataInizio = f.DataInizioFermo,
-                        DataFine = f.DataFineFermo,
-                        Descrizione = f.Motivo
-                    })
                     .ToListAsync();
 
-                _logger.LogInformation($"✅ Caricati {fermi.Count} fermi");
+                // Mappa i fermi specificando il Kind delle date per evitare problemi di timezone
+                var fermi = fermiDb.Select(f => new
+                {
+                    Id = f.Id,
+                    CodiceCentro = f.CodiceCentro,
+                    // Specifica Local per evitare conversioni timezone indesiderate
+                    DataInizio = DateTime.SpecifyKind(f.DataInizioFermo, DateTimeKind.Local),
+                    DataFine = f.DataFineFermo.HasValue 
+                        ? DateTime.SpecifyKind(f.DataFineFermo.Value, DateTimeKind.Local)
+                        : (DateTime?)null,
+                    Descrizione = f.Motivo
+                }).ToList();
+
 
                 return Ok(fermi);
             }
@@ -277,15 +277,11 @@ namespace AiDbMaster.Controllers
         {
             try
             {
-                _logger.LogInformation($"📥 Richiesta resize ricevuta - ID: {request.Id}, StartTime: {request.StartTime:yyyy-MM-dd HH:mm:ss}, EndTime: {request.EndTime:yyyy-MM-dd HH:mm:ss}");
-                
                 var ordine = await _context.ListaOP.FindAsync(request.Id);
                 if (ordine == null)
                 {
                     return NotFound(new { success = false, message = "Ordine non trovato" });
                 }
-                
-                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}, DataInizioOP DB: {ordine.DataInizioOP:yyyy-MM-dd HH:mm:ss}");
 
                 // ===== VALIDAZIONE 1: Campo Modificato =====
                 if (ordine.Modificato == 7)
@@ -320,22 +316,13 @@ namespace AiDbMaster.Controllers
                     
                     var differenzaSecondi = Math.Abs((startTimeUtc - dataInizioOPUtc).TotalSeconds);
                     
-                    _logger.LogInformation($"🔍 CONTROLLO IdStato=2:");
-                    _logger.LogInformation($"   DataInizioOP DB:  {ordine.DataInizioOP:yyyy-MM-dd HH:mm:ss} (Kind: {ordine.DataInizioOP.Kind}) → UTC: {dataInizioOPUtc:yyyy-MM-dd HH:mm:ss}");
-                    _logger.LogInformation($"   StartTime Request: {request.StartTime:yyyy-MM-dd HH:mm:ss} (Kind: {request.StartTime.Kind}) → UTC: {startTimeUtc:yyyy-MM-dd HH:mm:ss}");
-                    _logger.LogInformation($"   Differenza: {differenzaSecondi:F3} secondi");
-                    
                     if (differenzaSecondi > 2)
                     {
-                        _logger.LogWarning($"❌ BLOCCATO - Differenza {differenzaSecondi:F3}s > 2s");
+                        _logger.LogWarning($"Tentativo modifica DataInizioOP con IdStato=2 bloccato (differenza: {differenzaSecondi:F1}s)");
                         return BadRequest(new { 
                             success = false, 
                             message = "❌ Ordine OP in Produzione, non posso alterare Data Inizio OP" 
                         });
-                    }
-                    else
-                    {
-                        _logger.LogInformation($"✅ OK - Differenza {differenzaSecondi:F3}s <= 2s");
                     }
                 }
 
@@ -364,29 +351,31 @@ namespace AiDbMaster.Controllers
                     dataFineModificata = true; // Se DataFinePrevista è null, consideriamo sempre modificata
                 }
 
+                // Salva valori originali per confronto
+                var dataInizioOriginale = ordine.DataInizioOP;
+                var dataFineOriginale = ordine.DataFinePrevista;
+                var quantitaOriginale = ordine.Quantita;
+
                 if (dataInizioModificata && ordine.IdStato == 1)
                 {
                     // IdStato = 1: Modifica DataInizio
                     ordine.DataInizioOP = request.StartTime;
-                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Modificata DataInizioOP a {request.StartTime:yyyy-MM-dd HH:mm}");
                 }
 
                 if (dataFineModificata && (ordine.IdStato == 1 || ordine.IdStato == 2))
                 {
                     // IdStato = 1 o 2: Modifica DataFine
                     ordine.DataFinePrevista = request.EndTime;
-                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Modificata DataFinePrevista a {request.EndTime:yyyy-MM-dd HH:mm}");
                 }
 
-                // Ricalcola Quantità
+                // Ricalcola Quantità (sottraendo il TempoSetup dalla durata totale)
                 if (ordine.TempoCiclo > 0 && ordine.DataFinePrevista.HasValue)
                 {
-                    var durataSecondi = (decimal)(ordine.DataFinePrevista.Value - ordine.DataInizioOP).TotalSeconds;
-                    var vecchiaQuantita = ordine.Quantita;
-                    ordine.Quantita = Math.Round(durataSecondi / (decimal)ordine.TempoCiclo, 3);
+                    var durataTotaleSecondi = (decimal)(ordine.DataFinePrevista.Value - ordine.DataInizioOP).TotalSeconds;
+                    var tempoSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60); // Converti minuti in secondi
+                    var durataLavorazioneSecondi = durataTotaleSecondi - tempoSetupSecondi;
                     
-                    _logger.LogInformation($"Ordine {ordine.IdListaOP}: Quantità aggiornata da {vecchiaQuantita} a {ordine.Quantita} " +
-                                         $"(Durata: {durataSecondi}s, TempoCiclo: {ordine.TempoCiclo}s)");
+                    ordine.Quantita = Math.Round(durataLavorazioneSecondi / (decimal)ordine.TempoCiclo, 3);
                 }
                 else
                 {
@@ -398,14 +387,15 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} aggiornato tramite resize");
 
                 return Ok(new { 
                     success = true, 
                     message = "✅ Ordine aggiornato con successo",
                     nuovaQuantita = ordine.Quantita,
-                    dataInizioOP = ordine.DataInizioOP,
-                    dataFinePrevista = ordine.DataFinePrevista
+                    dataInizioOP = DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local),
+                    dataFinePrevista = ordine.DataFinePrevista.HasValue 
+                        ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local)
+                        : (DateTime?)null
                 });
             }
             catch (Exception ex)
@@ -431,7 +421,6 @@ namespace AiDbMaster.Controllers
                     return NotFound(new { success = false, message = "Ordine non trovato" });
                 }
                 
-                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}, CodiceCentro: {ordine.CodiceCentro}");
 
                 // ===== VALIDAZIONE 1: Solo IdStato = 1 può fare drag&drop =====
                 if (ordine.IdStato != 1)
@@ -469,15 +458,13 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} spostato tramite drag&drop:");
-                _logger.LogInformation($"   DataInizioOP: {vecchiaDataInizio:yyyy-MM-dd HH:mm} → {ordine.DataInizioOP:yyyy-MM-dd HH:mm}");
-                _logger.LogInformation($"   DataFinePrevista: {vecchiaDataFine:yyyy-MM-dd HH:mm} → {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
-
                 return Ok(new { 
                     success = true, 
                     message = "✅ Ordine spostato con successo",
-                    dataInizioOP = ordine.DataInizioOP,
-                    dataFinePrevista = ordine.DataFinePrevista
+                    dataInizioOP = DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local),
+                    dataFinePrevista = ordine.DataFinePrevista.HasValue 
+                        ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local)
+                        : (DateTime?)null
                 });
             }
             catch (Exception ex)
@@ -503,7 +490,6 @@ namespace AiDbMaster.Controllers
                     return NotFound(new { success = false, message = "Ordine non trovato" });
                 }
                 
-                _logger.LogInformation($"📋 Ordine DB - ID: {ordine.IdListaOP}, IdStato: {ordine.IdStato}");
 
                 // ===== VALIDAZIONE 1: Solo IdStato = 1 o 2 possono essere modificati manualmente =====
                 if (ordine.IdStato != 1 && ordine.IdStato != 2)
@@ -589,14 +575,15 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"✅ Ordine {ordine.IdListaOP} aggiornato manualmente");
 
                 return Ok(new { 
                     success = true, 
                     message = "✅ Ordine aggiornato con successo",
-                    dataInizioOP = ordine.DataInizioOP,
+                    dataInizioOP = DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local),
                     quantita = ordine.Quantita,
-                    dataFinePrevista = ordine.DataFinePrevista
+                    dataFinePrevista = ordine.DataFinePrevista.HasValue 
+                        ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local)
+                        : (DateTime?)null
                 });
             }
             catch (Exception ex)

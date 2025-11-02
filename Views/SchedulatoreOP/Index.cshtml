@@ -436,36 +436,89 @@
 
 <!-- Template per header settimana -->
 <script id="weekHeaderTemplate" type="text/x-template">
-    <div class="week-header-content">
-        <span class="week-label">Week ${getWeekNumber(data.date)}</span>
-    </div>
-</script>
-
-<!-- Template per header giorno -->
-<script id="dayHeaderTemplate" type="text/x-template">
-    <div class="day-header-content">
-        <span class="day-compact">${data.date.getDate()} ${getDayNameShort(data.date)}</span>
-    </div>
-</script>
-
-<!-- Template per header ora -->
-<script id="hourHeaderTemplate" type="text/x-template">
-    <div class="hour-header-content">
-        <span class="hour-label">${getDayNameShort(data.date)}.${formatHour(data.date)}</span>
-    </div>
+    <div>Settimana ${getWeekNumber(data.date)}</div>
 </script>
 
 @section Scripts {
     <script>
+        // Funzione per caricare i file CLDR italiani (come da documentazione Syncfusion)
+        function loadCultureFiles(name) {
+            var files = ['ca-gregorian.json', 'numberingSystems.json', 'numbers.json', 'timeZoneNames.json'];
+            var loader = ej.base.loadCldr;
+            var loadCulture = function (prop) {
+                var val, ajax;
+                if (files[prop] === 'numberingSystems.json') {
+                    ajax = new ej.base.Ajax('/cldr-data/supplemental/' + files[prop], 'GET', false);
+                } else {
+                    ajax = new ej.base.Ajax('/cldr-data/main/' + name + '/' + files[prop], 'GET', false);
+                }
+                ajax.onSuccess = function (value) {
+                    val = value;
+                };
+                ajax.send();
+                loader(JSON.parse(val));
+            };
+            for (var prop = 0; prop < files.length; prop++) {
+                loadCulture(prop);
+            }
+        }
+    </script>
+    <script>
         // Verifica e registra la licenza Syncfusion
         if (typeof ej !== 'undefined' && ej.base) {
-            ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
         }
         
         let scheduleObj;
         let centriLavoro = [];
         let fermiCentriLavoro = [];
         let statiOP = [];
+        
+        // Funzione helper per parsare date ISO8601 come ora locale (senza conversioni timezone)
+        function parseLocalDate(dateString) {
+            if (!dateString) return null;
+            
+            // Rimuovi il timezone se presente (es: "+01:00", "+00:00", "Z")
+            const cleanDate = dateString.replace(/([+-]\d{2}:\d{2}|Z)$/, '');
+            
+            // Parsa come componenti separati (con millisecondi opzionali)
+            const parts = cleanDate.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?/);
+            if (!parts) {
+                console.error('⚠️ parseLocalDate - Formato data non valido:', dateString);
+                return new Date(dateString); // Fallback
+            }
+            
+            // Crea date con componenti espliciti (interpreta come ora locale)
+            const year = parseInt(parts[1]);
+            const month = parseInt(parts[2]) - 1; // JavaScript: 0-based
+            const day = parseInt(parts[3]);
+            const hours = parseInt(parts[4]);
+            const minutes = parseInt(parts[5]);
+            const seconds = parseInt(parts[6]);
+            const milliseconds = parts[7] ? parseInt(parts[7].padEnd(3, '0').substring(0, 3)) : 0;
+            
+            return new Date(year, month, day, hours, minutes, seconds, milliseconds);
+        }
+        
+        // Helper: Converte un oggetto Date locale in formato ISO8601 con offset timezone
+        function toLocalISOString(date) {
+            if (!date || !(date instanceof Date)) return null;
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            // Calcola offset timezone (es: +01:00 o -05:00)
+            const offset = -date.getTimezoneOffset(); // in minuti
+            const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+            const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0');
+            const offsetSign = offset >= 0 ? '+' : '-';
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
+        }
         
         // Funzioni helper per template
         function getWeekNumber(date) {
@@ -488,12 +541,63 @@
 
         // Inizializzazione al caricamento della pagina
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('DOM caricato - SchedulatoreOP');
-            
             // Forza la registrazione della licenza
             if (typeof ej !== 'undefined' && ej.base) {
                 ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
-                console.log('Licenza Syncfusion registrata');
+                
+                // Carica i file CLDR italiani
+                try {
+                    loadCultureFiles('it');
+                } catch (error) {
+                    console.error('❌ Errore caricamento CLDR:', error);
+                }
+                
+                // Carica localizzazione italiana completa
+                if (ej.base.L10n) {
+                    ej.base.L10n.load({
+                        'it': {
+                            'schedule': {
+                                'day': 'Giorno',
+                                'week': 'Settimana',
+                                'workWeek': 'Settimana lavorativa',
+                                'month': 'Mese',
+                                'today': 'Oggi',
+                                'noEvents': 'Nessun evento',
+                                'allDay': 'Tutto il giorno',
+                                'start': 'Inizio',
+                                'end': 'Fine',
+                                'more': 'più',
+                                'close': 'Chiudi',
+                                'cancel': 'Annulla',
+                                'delete': 'Elimina',
+                                'save': 'Salva',
+                                'previous': 'Precedente',
+                                'next': 'Successivo',
+                                'timelineDay': 'Timeline Giorno',
+                                'timelineWeek': 'Timeline Settimana',
+                                'timelineMonth': 'Timeline Mese'
+                            },
+                            'calendar': {
+                                'today': 'Oggi',
+                                'weekHeader': 'Sett'
+                            },
+                            'datepicker': {
+                                'placeholder': 'Seleziona una data',
+                                'today': 'Oggi'
+                            },
+                            'daterangepicker': {
+                                'placeholder': 'Seleziona un intervallo',
+                                'startLabel': 'Data Inizio',
+                                'endLabel': 'Data Fine',
+                                'applyText': 'Applica',
+                                'cancelText': 'Annulla',
+                                'selectedDays': 'Giorni Selezionati',
+                                'days': 'giorni',
+                                'customRange': 'Intervallo personalizzato'
+                            }
+                        }
+                    });
+                }
             }
             
             // Carica prima i centri di lavoro, stati e fermi
@@ -517,7 +621,6 @@
             if (filtroCentro) {
                 filtroCentro.addEventListener('change', function(e) {
                     const centroId = e.target.value;
-                    console.log('📍 Filtro centro cambiato:', centroId);
                     filtraPerCentro(centroId);
                 });
             }
@@ -526,7 +629,6 @@
         // Carica stati OP
         async function loadStatiOP() {
             try {
-                console.log('📋 Caricamento stati OP...');
                 const response = await fetch('@Url.Action("GetStatiOP", "SchedulatoreOP")');
                 
                 if (!response.ok) {
@@ -534,14 +636,11 @@
                 }
                 
                 const statiJson = await response.json();
-                console.log('📋 Stati ricevuti dal server:', statiJson);
                 
                 statiOP = statiJson.map(s => ({
                     id: s.id,
                     descrizione: s.descrizione
                 }));
-                
-                console.log(`✅ Caricati ${statiOP.length} stati OP`);
             } catch (error) {
                 console.error('Errore caricamento stati:', error);
                 statiOP = [];
@@ -577,13 +676,11 @@
             });
             
             legendaContainer.innerHTML = html;
-            console.log('✅ Legenda generata dinamicamente con ${statiOP.length} stati');
         }
 
         // Carica centri di lavoro
         async function loadCentriLavoro() {
             try {
-                console.log('Caricamento centri di lavoro...');
                 const response = await fetch('@Url.Action("GetCentriLavoro", "SchedulatoreOP")');
                 
                 if (!response.ok) {
@@ -591,7 +688,6 @@
                 }
                 
                 const dataJson = await response.json();
-                console.log('📋 Centri ricevuti dal server:', dataJson);
                 
                 // Mappa da camelCase a PascalCase (anche se qui di solito funziona)
                 centriLavoro = dataJson.map(c => ({
@@ -599,8 +695,6 @@
                     name: c.name,
                     capacity: c.capacity
                 }));
-                
-                console.log(`✅ Caricati ${centriLavoro.length} centri di lavoro:`, centriLavoro.map(c => c.name).join(', '));
                 
                 // Popola il dropdown del filtro
                 popolaFiltroCentri();
@@ -627,7 +721,6 @@
                 select.appendChild(option);
             });
             
-            console.log(`✅ Dropdown filtro popolato con ${centriLavoro.length} centri`);
         }
 
         // Filtra il calendario per centro di lavoro
@@ -637,7 +730,6 @@
                 return;
             }
             
-            console.log(`🔍 Filtraggio per centro: ${centroId}`);
             
             let resourceDataSource;
             
@@ -665,13 +757,11 @@
             scheduleObj.resources[0].dataSource = resourceDataSource;
             scheduleObj.refreshEvents();
             
-            console.log(`✅ Filtro applicato. Visualizzati ${resourceDataSource.length} centri`);
         }
 
         // Carica fermi centri di lavoro
         async function loadFermiCentriLavoro() {
             try {
-                console.log('📅 Caricamento fermi centri di lavoro...');
                 const response = await fetch('@Url.Action("GetFermiCentriLavoro", "SchedulatoreOP")');
                 
                 if (!response.ok) {
@@ -679,17 +769,14 @@
                 }
                 
                 const fermiJson = await response.json();
-                console.log('📋 Fermi ricevuti dal server:', fermiJson);
                 
-                // Salva i fermi
+                // Salva i fermi con parsing esplicito come ora locale
                 fermiCentriLavoro = fermiJson.map(f => ({
                     codiceCentro: f.codiceCentro,
-                    dataInizio: new Date(f.dataInizio),
-                    dataFine: new Date(f.dataFine),
+                    dataInizio: parseLocalDate(f.dataInizio),
+                    dataFine: parseLocalDate(f.dataFine),
                     descrizione: f.descrizione
                 }));
-                
-                console.log(`✅ Caricati ${fermiCentriLavoro.length} fermi`);
             } catch (error) {
                 console.error('Errore caricamento fermi:', error);
                 fermiCentriLavoro = [];
@@ -699,8 +786,6 @@
         // Crea lo scheduler
         function createScheduler() {
             try {
-                console.log('Creazione scheduler...');
-                
                 if (typeof ej === 'undefined' || !ej.schedule || !ej.schedule.Schedule) {
                     console.error('ej.schedule.Schedule non disponibile');
                     showAlert('Errore: Libreria Syncfusion non caricata', 'danger');
@@ -721,17 +806,18 @@
                     Id: centro.id,
                     Name: centro.name
                 }));
-
-                console.log('Resources configurate:', resourceDataSource);
-                console.log(`📊 ${resourceDataSource.length} centri configurati come risorse`);
                 
                 // Crea istanza Schedule con visualizzazione Timeline 2 Settimane
                 scheduleObj = new ej.schedule.Schedule({
                     width: '100%',
                     height: '100%',
+                    locale: 'it',  // Imposta la cultura italiana
                     currentView: 'TimelineWeek',
                     selectedDate: new Date(),
+                    timeFormat: 'HH',  // Solo ore in formato 24h
                     showQuickInfo: false,
+                    quickInfoOnSelectionEnd: false,  // Disabilita popup su selezione
+                    editorTemplate: null,  // Disabilita editor nativo
                     allowDragAndDrop: true,
                     allowResizing: true,
                     readonly: false,
@@ -807,26 +893,13 @@
                         start: '00:00',
                         end: '23:59'
                     },
-                    startHour: '00:00',
-                    endHour: '23:59',
-                    timeFormat: 'HH:mm',
-                    dateFormat: 'dd/MM/yyyy',
-                    firstDayOfWeek: 1,
-                    showWeekNumber: true,
-                    rowAutoHeight: true,
+                    rowAutoHeight: true,  // Espande automaticamente le righe per mostrare tutti gli eventi
+                    showWeekNumber: true,  // Mostra il numero della settimana
+                    firstDayOfWeek: 1,  // Inizia da lunedì
                     headerRows: [
-                        { 
-                            option: 'Week',
-                            template: '#weekHeaderTemplate'
-                        },
-                        { 
-                            option: 'Date',
-                            template: '#dayHeaderTemplate'
-                        },
-                        { 
-                            option: 'Hour',
-                            template: '#hourHeaderTemplate'
-                        }
+                        { option: 'Week', template: '#weekHeaderTemplate' },
+                        { option: 'Date' },
+                        { option: 'Hour' }
                     ],
                     eventClick: onEventClick,
                     eventDoubleClick: onEventClick, // Doppio click = stesso comportamento
@@ -841,7 +914,6 @@
                 
                 // Appendi al DOM
                 scheduleObj.appendTo('#schedule');
-                console.log('✅ Scheduler creato con successo');
                 
                 // Carica ordini di produzione
                 loadOrdini();
@@ -854,24 +926,20 @@
 
         // Carica fermi centri di lavoro (Block Events nativi Syncfusion)
         async function loadFermi() {
-            console.log('🚫 Caricamento fermi centri di lavoro...');
             try {
                 const response = await fetch('@Url.Action("GetFermiCentriLavoro", "SchedulatoreOP")');
                 const fermiJson = await response.json();
                 
-                console.log(`✅ Ricevuti ${fermiJson.length} fermi dal server`);
-                
-                // Mappa fermi come Block Events nativi di Syncfusion
+                // Mappa fermi come Block Events nativi di Syncfusion (con parsing ora locale)
                 const blockEvents = fermiJson.map(f => ({
                     Id: 'FERMO_' + f.codiceCentro + '_' + f.id, // ID univoco
                     Subject: f.descrizione || 'Fermo',
-                    StartTime: new Date(f.dataInizio),
-                    EndTime: new Date(f.dataFine),
+                    StartTime: parseLocalDate(f.dataInizio),
+                    EndTime: parseLocalDate(f.dataFine),
                     IsBlock: true, // Proprietà nativa Syncfusion per Block Events
                     ResourceID: f.codiceCentro // Associa al centro di lavoro
                 }));
                 
-                console.log(`✅ Mappati ${blockEvents.length} block events`);
                 return blockEvents;
             } catch (error) {
                 console.error('❌ Errore caricamento fermi:', error);
@@ -881,21 +949,17 @@
 
         // Carica ordini di produzione
         async function loadOrdini() {
-            console.log('📅 Caricamento ordini di produzione...');
             try {
                 const response = await fetch('@Url.Action("GetOrdiniProduzione", "SchedulatoreOP")');
                 const ordiniJson = await response.json();
                 
-                console.log(`✅ Ricevuti ${ordiniJson.length} ordini dal server`);
-                console.log('📋 Primo ordine ricevuto:', ordiniJson[0]);
-                
                 // IMPORTANTE: ASP.NET Core serializza in camelCase, mappiamo a PascalCase per Syncfusion
                 const ordini = ordiniJson.map(o => ({
-                    // Campi Syncfusion (PascalCase)
+                    // Campi Syncfusion (PascalCase) - Date parsate come ora locale
                     Id: o.id,
                     Subject: o.subject,
-                    StartTime: new Date(o.startTime),
-                    EndTime: new Date(o.endTime),
+                    StartTime: parseLocalDate(o.startTime),
+                    EndTime: parseLocalDate(o.endTime),
                     RoomId: o.roomId,
                     CategoryColor: o.categoryColor,
                     IsAllDay: o.isAllDay,
@@ -912,9 +976,9 @@
                     UnitaMisura: o.unitaMisura,
                     Quantita: o.quantita,
                     QuantitaProdotta: o.quantitaProdotta,
-                    DataInizioOP: o.dataInizioOP,
+                    DataInizioOP: parseLocalDate(o.dataInizioOP),
                     TempoCiclo: o.tempoCiclo,
-                    DataInizioSetup: o.dataInizioSetup,
+                    DataInizioSetup: parseLocalDate(o.dataInizioSetup),
                     TempoSetup: o.tempoSetup,
                     IdStato: o.idStato,
                     StatoDescrizione: o.statoDescrizione,
@@ -925,8 +989,8 @@
                     CodiceOperatore: o.codiceOperatore,
                     NomeOperatore: o.nomeOperatore,
                     Note: o.note,
-                    DataFineOP: o.dataFineOP,
-                    DataFinePrevista: o.dataFinePrevista,
+                    DataFineOP: parseLocalDate(o.dataFineOP),
+                    DataFinePrevista: parseLocalDate(o.dataFinePrevista),
                     Priorita: o.priorita,
                     IdOperatore: o.idOperatore,
                     CostoOrario: o.costoOrario,
@@ -935,14 +999,10 @@
                     PercentualeCompletamento: o.percentualeCompletamento
                 }));
                 
-                console.log(`✅ Mappati ${ordini.length} ordini per Syncfusion`);
-                console.log('📋 Primo ordine mappato:', ordini[0]);
-                
                 if (scheduleObj) {
                     // Aggiorna data source dello scheduler
                     scheduleObj.eventSettings.dataSource = ordini;
                     scheduleObj.refreshEvents();
-                    console.log(`✅ Scheduler aggiornato con ${ordini.length} ordini`);
                 } else {
                     console.error('❌ scheduleObj non disponibile!');
                 }
@@ -966,11 +1026,23 @@
             args.element.style.setProperty('opacity', '0.75', 'important');
         }
 
-        // Renderizzazione celle - colora celle in fermo (evento nativo Syncfusion)
+        // Renderizzazione celle - colora celle in fermo E personalizza header date in italiano
         function onRenderCell(args) {
-            // Solo per celle di tipo work cells (non header)
+            // Personalizza gli header delle date in italiano
+            if (args.elementType === 'dateHeader') {
+                const giorni = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+                const mesi = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+                const data = new Date(args.date);
+                const giorno = giorni[data.getDay()];
+                const mese = mesi[data.getMonth()];
+                const giornoNum = data.getDate();
+                
+                // Modifica il contenuto della cella
+                args.element.innerHTML = `<span>${giorno} ${giornoNum} ${mese}</span>`;
+            }
+            
+            // Solo per celle di tipo work cells (non header) - colora fermi
             if (args.elementType === 'workCells') {
-                const cellDate = new Date(args.date);
                 const groupIndex = args.groupIndex;
                 
                 // Ottieni il centro di lavoro per questa riga (risorsa)
@@ -980,14 +1052,27 @@
                         const codiceCentro = resource.Id;
                         
                         // Controlla se la data cade in un periodo di fermo per questo centro
+                        let matchedFermo = null;
                         const isFermo = fermiCentriLavoro.some(fermo => {
-                            return fermo.codiceCentro === codiceCentro &&
-                                   cellDate >= fermo.dataInizio &&
-                                   cellDate <= fermo.dataFine;
+                            if (fermo.codiceCentro !== codiceCentro) return false;
+                            
+                            // Confronto semplice con timestamp
+                            // IMPORTANTE: uso < invece di <= perché ogni cella rappresenta un INTERVALLO
+                            // La cella "06:00" rappresenta l'ora 06:00-07:00, quindi se il fermo finisce alle 06:00
+                            // quella cella NON deve essere grigia (il fermo è terminato PRIMA dell'intervallo)
+                            const cellTimestamp = args.date.getTime();
+                            const fermoInizioTimestamp = fermo.dataInizio.getTime();
+                            const fermoFineTimestamp = fermo.dataFine.getTime();
+                            
+                            const match = cellTimestamp >= fermoInizioTimestamp && cellTimestamp < fermoFineTimestamp;
+                            if (match) {
+                                matchedFermo = fermo;
+                            }
+                            return match;
                         });
                         
                         if (isFermo) {
-                            // Colora la cella con grigio più scuro (funzionalità nativa)
+                            // Colora la cella con grigio più scuro per indicare fermo
                             args.element.style.backgroundColor = 'rgba(52, 58, 64, 0.35)';
                         }
                     }
@@ -1011,7 +1096,6 @@
             // - 'EventContainer' = contenitore evento
             
             args.cancel = true; // Blocca qualsiasi popup nativo
-            console.log('🚫 Popup nativo Syncfusion bloccato:', args.type);
         }
 
         // Variabili globali per tracciare il resize e drag
@@ -1024,20 +1108,11 @@
             const evento = args.data;
             originalStartTime = new Date(evento.StartTime);
             originalEndTime = new Date(evento.EndTime);
-            console.log('🔄 RESIZE START - Valori originali salvati:', {
-                startTime: originalStartTime.toLocaleString('it-IT'),
-                endTime: originalEndTime.toLocaleString('it-IT')
-            });
         }
 
         // Resize evento terminato
         async function onResizeStop(args) {
             const evento = args.data;
-            
-            console.log('🔄 RESIZE rilevato:');
-            console.log('  Ordine:', evento.Subject, '(ID:', evento.Id, ')');
-            console.log('  Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
-            console.log('  Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
             
             // ===== VALIDAZIONI CLIENT-SIDE =====
             
@@ -1089,16 +1164,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: evento.Id,
-                        startTime: evento.StartTime,
-                        endTime: evento.EndTime
+                        startTime: toLocalISOString(evento.StartTime),
+                        endTime: toLocalISOString(evento.EndTime)
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    console.log('✅ Ordine salvato:', result);
-                    
                     // Aggiorna i campi dell'evento con i valori dal server
                     evento.Quantita = result.nuovaQuantita;
                     evento.DataInizioOP = result.dataInizioOP;
@@ -1114,8 +1187,6 @@
                     
                     // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
                     scheduleObj.saveEvent(evento);
-                    
-                    showAlert(`✅ ${result.message} - Nuova Quantità: ${result.nuovaQuantita.toFixed(3)}`, 'success');
                 } else {
                     // Errore dal server
                     showAlert(result.message, 'danger');
@@ -1140,23 +1211,11 @@
             originalStartTime = new Date(evento.StartTime);
             originalEndTime = new Date(evento.EndTime);
             originalRoomId = evento.RoomId;
-            
-            console.log('🔄 DRAG START - Valori originali salvati:', {
-                startTime: originalStartTime.toLocaleString('it-IT'),
-                endTime: originalEndTime.toLocaleString('it-IT'),
-                roomId: originalRoomId
-            });
         }
 
         // Drag evento terminato
         async function onDragStop(args) {
             const evento = args.data;
-            
-            console.log('🔄 DRAG rilevato:');
-            console.log('  Ordine:', evento.Subject, '(ID:', evento.Id, ')');
-            console.log('  Nuova Data Inizio:', new Date(evento.StartTime).toLocaleString('it-IT'));
-            console.log('  Nuova Data Fine:', new Date(evento.EndTime).toLocaleString('it-IT'));
-            console.log('  Centro:', evento.RoomId);
             
             // ===== VALIDAZIONI CLIENT-SIDE =====
             
@@ -1184,8 +1243,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: evento.Id,
-                        startTime: evento.StartTime,
-                        endTime: evento.EndTime,
+                        startTime: toLocalISOString(evento.StartTime),
+                        endTime: toLocalISOString(evento.EndTime),
                         roomId: evento.RoomId
                     })
                 });
@@ -1193,8 +1252,6 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    console.log('✅ Ordine spostato e salvato:', result);
-                    
                     // Aggiorna i campi dell'evento con i valori dal server
                     evento.DataInizioOP = result.dataInizioOP;
                     evento.DataFinePrevista = result.dataFinePrevista;
@@ -1202,8 +1259,6 @@
                     
                     // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
                     scheduleObj.saveEvent(evento);
-                    
-                    showAlert(`✅ ${result.message}`, 'success');
                 } else {
                     // Errore dal server
                     showAlert(result.message, 'danger');
@@ -1241,8 +1296,12 @@
             const canEditQuantita = (ordine.IdStato === 1 || ordine.IdStato === 2) && ordine.Modificato !== 7;
             
             // Formatta data per input datetime-local
-            const formatDateForInput = (dateString) => {
-                const date = new Date(dateString);
+            const formatDateForInput = (dateInput) => {
+                // Se è già un Date object, usalo direttamente; altrimenti parsa come locale
+                const date = dateInput instanceof Date ? dateInput : parseLocalDate(dateInput);
+                
+                if (!date || isNaN(date.getTime())) return '';
+                
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
                 const day = String(date.getDate()).padStart(2, '0');
@@ -1418,17 +1477,6 @@
                 displayDataFinePrevista.textContent = formatDateTime(dataFinePrevista);
             }
             
-            console.log('🔄 Ricalcolo Data Fine Prevista:', {
-                dataInizioOP: dataInizioOP.toLocaleString('it-IT'),
-                quantita: quantita,
-                tempoCiclo: tempoCiclo,
-                tempoSetup: tempoSetup,
-                durataLavorazioneSecondi: durataLavorazioneSecondi,
-                tempoSetupSecondi: tempoSetupSecondi,
-                durataTotaleSecondi: durataTotaleSecondi,
-                dataFinePrevista: dataFinePrevista.toLocaleString('it-IT')
-            });
-            
             // Controlla sovrapposizione con fermi centro lavoro
             controllaFermiCentroLavoro();
         }
@@ -1461,13 +1509,6 @@
                 // Due range si sovrappongono se: startA < endB AND endA > startB
                 if (dataInizioOP < fermo.dataFine && dataFinePrevista > fermo.dataInizio) {
                     hasSovrapposizione = true;
-                    console.log('⚠️ Sovrapposizione rilevata con fermo:', {
-                        fermoInizio: fermo.dataInizio.toLocaleString('it-IT'),
-                        fermoFine: fermo.dataFine.toLocaleString('it-IT'),
-                        ordineInizio: dataInizioOP.toLocaleString('it-IT'),
-                        ordineFine: dataFinePrevista.toLocaleString('it-IT'),
-                        descrizione: fermo.descrizione
-                    });
                     break;
                 }
             }
@@ -1517,12 +1558,6 @@
             btnSave.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Salvataggio...';
             
             try {
-                console.log('💾 Invio dati modifica:', {
-                    id: currentOrdine.Id,
-                    dataInizioOP: dataInizioOP.toISOString(),
-                    quantita: quantita
-                });
-                
                 const response = await fetch('@Url.Action("UpdateOrdineManuale", "SchedulatoreOP")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1536,15 +1571,11 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    console.log('✅ Ordine salvato con successo:', result);
-                    
                     // Aggiorna i dati dell'ordine corrente
                     currentOrdine.DataInizioOP = result.dataInizioOP;
                     currentOrdine.Quantita = result.quantita;
                     currentOrdine.DataFinePrevista = result.dataFinePrevista;
                     currentOrdine.Modificato = 1;
-                    
-                    showAlert(result.message, 'success');
                     
                     // Chiudi popup
                     closePopup();
@@ -1608,9 +1639,14 @@
         }
 
         // Helper: formatta data e ora
-        function formatDateTime(dateString) {
-            if (!dateString) return '-';
-            const date = new Date(dateString);
+        function formatDateTime(dateInput) {
+            if (!dateInput) return '-';
+            
+            // Se è già un Date object, usalo direttamente
+            const date = dateInput instanceof Date ? dateInput : parseLocalDate(dateInput);
+            
+            if (!date || isNaN(date.getTime())) return '-';
+            
             return date.toLocaleString('it-IT', {
                 day: '2-digit',
                 month: '2-digit',
