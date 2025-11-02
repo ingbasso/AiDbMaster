@@ -104,17 +104,27 @@ namespace AiDbMaster.Controllers
                     _logger.LogWarning($"Nessun ordine nel range. Prime 5 date in DB: {string.Join(", ", dateOrdini.Select(d => d.ToString("yyyy-MM-dd")))}");
                 }
 
-                // PRIMA: Aggiorna DataFinePrevista nel database per tutti gli ordini
+                // Carica TUTTI i fermi per calcolare gli EndTime estesi
+                var tuttiFermi = await _context.CalendarioFermiCentriLavoro.ToListAsync();
+
+                // PRIMA: Aggiorna DataFinePrevista nel database SOLO per ordini non modificati manualmente
                 bool hasChanges = false;
                 foreach (var ordine in ordini)
                 {
-                    // Calcola EndTime
+                    // Se l'ordine è stato modificato (Modificato = 1 o 7), NON ricalcolare DataFinePrevista
+                    // perché contiene già la data corretta con i fermi estesi
+                    if (ordine.Modificato == 1 || ordine.Modificato == 7)
+                    {
+                        continue; // Salta questo ordine, mantieni DataFinePrevista salvata
+                    }
+                    
+                    // Solo per ordini NON modificati (Modificato = 0): calcola EndTime standard
                     var durataSecondi = (double)(ordine.Quantita * (decimal)ordine.TempoCiclo);
                     var endTimeCalcolato = durataSecondi > 0 
                         ? ordine.DataInizioOP.AddSeconds(durataSecondi)
                         : ordine.DataInizioOP.AddHours(1);
                     
-                    // Aggiorna SEMPRE DataFinePrevista con l'EndTime calcolato
+                    // Aggiorna DataFinePrevista solo se diversa
                     if (ordine.DataFinePrevista != endTimeCalcolato)
                     {
                         ordine.DataFinePrevista = endTimeCalcolato;
@@ -131,8 +141,18 @@ namespace AiDbMaster.Controllers
                 // POI: Mappa gli ordini in eventi per Syncfusion
                 var eventi = ordini.Select(o =>
                 {
-                    // Usa DataFinePrevista (che ora contiene l'EndTime calcolato)
-                    var endTime = o.DataFinePrevista ?? o.DataInizioOP.AddHours(1);
+                    // Calcola EndTime SEMPRE dalla Quantità, poi applica la logica sequenziale con fermi
+                    
+                    // 1. Calcola durata lavoro da Quantità × TempoCiclo + TempoSetup
+                    var durataLavoroSecondi = (decimal)(o.Quantita * (decimal)o.TempoCiclo);
+                    var tempoSetupSecondi = (decimal)((o.TempoSetup ?? 0) * 60); // Converti minuti in secondi
+                    var durataTotaleSecondi = durataLavoroSecondi + tempoSetupSecondi;
+                    
+                    // 2. Applica la logica sequenziale che SALTA i fermi
+                    var fermiCentro = tuttiFermi.Where(f => f.CodiceCentro == o.CodiceCentro).OrderBy(f => f.DataInizioFermo).ToList();
+                    var endTime = durataTotaleSecondi > 0
+                        ? CalcolaEndTimeConFermi(o.DataInizioOP, durataTotaleSecondi, fermiCentro)
+                        : o.DataInizioOP.AddHours(1);
                     
                     // Calcola percentuale completamento
                     var percentuale = o.Quantita > 0 ? Math.Round((o.QuantitaProdotta / o.Quantita) * 100, 1) : 0;
@@ -326,6 +346,28 @@ namespace AiDbMaster.Controllers
                     }
                 }
 
+                // ===== VALIDAZIONE 4: DataInizioOP non può cadere in un fermo =====
+                var fermiCentro = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .ToListAsync();
+
+                var fermoInConflitto = fermiCentro.FirstOrDefault(fermo =>
+                {
+                    var dataInizio = fermo.DataInizioFermo;
+                    var dataFine = fermo.DataFineFermo ?? DateTime.MaxValue;
+                    return request.StartTime >= dataInizio && request.StartTime < dataFine;
+                });
+
+                if (fermoInConflitto != null)
+                {
+                    _logger.LogWarning($"Tentativo di impostare DataInizioOP durante fermo (IdFermo={fermoInConflitto.Id})");
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = $"❌ Impossibile iniziare ordine durante un fermo del centro lavoro (Fermo: {fermoInConflitto.Motivo})"
+                    });
+                }
+
                 // ===== CALCOLO E AGGIORNAMENTO =====
                 
                 // Normalizza date a UTC per confronto corretto (con tolleranza di 2 secondi)
@@ -356,6 +398,32 @@ namespace AiDbMaster.Controllers
                 var dataFineOriginale = ordine.DataFinePrevista;
                 var quantitaOriginale = ordine.Quantita;
 
+                // ===== CALCOLO QUANTITÀ E DATA FINE CON FERMI =====
+                
+                // 1. Calcola la durata VISIVA ATTUALE (con fermi estesi)
+                var durataLavoroAttualeSecondi = (decimal)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                var tempoSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60);
+                var durataTotaleAttualeSecondi = durataLavoroAttualeSecondi + tempoSetupSecondi;
+                var endTimeVisualeAttuale = durataTotaleAttualeSecondi > 0
+                    ? CalcolaEndTimeConFermi(ordine.DataInizioOP, durataTotaleAttualeSecondi, fermiCentro)
+                    : ordine.DataInizioOP.AddHours(1);
+                
+                var durataVisualeAttualeSecondi = (decimal)(endTimeVisualeAttuale - ordine.DataInizioOP).TotalSeconds;
+                
+                // 2. Calcola la durata VISIVA RICHIESTA dal resize
+                var durataVisualeRichiestaSecondi = (decimal)(request.EndTime - request.StartTime).TotalSeconds;
+                
+                // 3. Calcola il DELTA (aumento o diminuzione)
+                var deltaDurataSecondi = durataVisualeRichiestaSecondi - durataVisualeAttualeSecondi;
+                
+                // 4. Applica il delta alla durata di LAVORO (non visiva)
+                var durataLavoroRichiestaSecondi = durataLavoroAttualeSecondi + deltaDurataSecondi;
+                
+                // 5. Calcola DataFinePrevista usando la logica sequenziale che SALTA i fermi
+                var endTimeCalcolato = CalcolaEndTimeConFermi(request.StartTime, durataLavoroRichiestaSecondi, fermiCentro);
+                
+                // ===== AGGIORNA DATE ORDINE =====
+                
                 if (dataInizioModificata && ordine.IdStato == 1)
                 {
                     // IdStato = 1: Modifica DataInizio
@@ -365,21 +433,20 @@ namespace AiDbMaster.Controllers
                 if (dataFineModificata && (ordine.IdStato == 1 || ordine.IdStato == 2))
                 {
                     // IdStato = 1 o 2: Modifica DataFine
-                    ordine.DataFinePrevista = request.EndTime;
+                    // USA la data finale calcolata iterativamente (che ha già i fermi estesi)
+                    ordine.DataFinePrevista = endTimeCalcolato;
                 }
 
-                // Ricalcola Quantità (sottraendo il TempoSetup dalla durata totale)
-                if (ordine.TempoCiclo > 0 && ordine.DataFinePrevista.HasValue)
+                // ===== RICALCOLA QUANTITÀ =====
+                // La quantità si basa sulla durata di LAVORO richiesta (già calcolata con il delta)
+                
+                if (ordine.TempoCiclo > 0 && durataLavoroRichiestaSecondi > 0)
                 {
-                    var durataTotaleSecondi = (decimal)(ordine.DataFinePrevista.Value - ordine.DataInizioOP).TotalSeconds;
-                    var tempoSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60); // Converti minuti in secondi
-                    var durataLavorazioneSecondi = durataTotaleSecondi - tempoSetupSecondi;
-                    
-                    ordine.Quantita = Math.Round(durataLavorazioneSecondi / (decimal)ordine.TempoCiclo, 3);
+                    ordine.Quantita = Math.Round(durataLavoroRichiestaSecondi / (decimal)ordine.TempoCiclo, 3);
                 }
                 else
                 {
-                    _logger.LogWarning($"Ordine {ordine.IdListaOP}: Impossibile ricalcolare Quantità (TempoCiclo={ordine.TempoCiclo}, DataFinePrevista={ordine.DataFinePrevista})");
+                    _logger.LogWarning($"Ordine {ordine.IdListaOP}: Impossibile ricalcolare Quantità (TempoCiclo={ordine.TempoCiclo}, durataLavoroRichiesta={durataLavoroRichiestaSecondi})");
                 }
 
                 // Imposta Modificato = 1
@@ -387,6 +454,13 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Calcola EndTime visivo con fermi per Syncfusion
+                var durataLavoroSecondiVisivo = (decimal)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                var tempoSetupSecondiVisivo = (decimal)((ordine.TempoSetup ?? 0) * 60);
+                var durataTotaleSecondiVisivo = durataLavoroSecondiVisivo + tempoSetupSecondiVisivo;
+                var endTimeVisivo = durataTotaleSecondiVisivo > 0
+                    ? CalcolaEndTimeConFermi(ordine.DataInizioOP, durataTotaleSecondiVisivo, fermiCentro)
+                    : ordine.DataInizioOP.AddHours(1);
 
                 return Ok(new { 
                     success = true, 
@@ -395,7 +469,8 @@ namespace AiDbMaster.Controllers
                     dataInizioOP = DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local),
                     dataFinePrevista = ordine.DataFinePrevista.HasValue 
                         ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local)
-                        : (DateTime?)null
+                        : (DateTime?)null,
+                    endTimeVisivo = DateTime.SpecifyKind(endTimeVisivo, DateTimeKind.Local)
                 });
             }
             catch (Exception ex)
@@ -606,6 +681,68 @@ namespace AiDbMaster.Controllers
                 4 => "#32CD32", // Verde
                 _ => "#808080"  // Grigio (default)
             };
+        }
+
+        /// <summary>
+        /// Calcola l'EndTime di un ordine SALTANDO i fermi
+        /// LOGICA SEQUENZIALE: Parto da startTime, aggiungo durataLavoroSecondi SALTANDO tutti i fermi
+        /// </summary>
+        private static DateTime CalcolaEndTimeConFermi(DateTime startTime, decimal durataLavoroSecondi, List<CalendarioFermiCentriLavoro> fermiCentro)
+        {
+            var currentTime = startTime;
+            var secondiRimasti = durataLavoroSecondi;
+            
+            // Ordina i fermi per data inizio
+            var fermiOrdinati = fermiCentro.OrderBy(f => f.DataInizioFermo).ToList();
+            
+            int iterazioni = 0;
+            const int maxIterazioni = 100;
+            
+            foreach (var fermo in fermiOrdinati)
+            {
+                if (iterazioni++ > maxIterazioni || secondiRimasti <= 0)
+                {
+                    break;
+                }
+                
+                var fermoInizio = fermo.DataInizioFermo;
+                var fermoFine = fermo.DataFineFermo ?? currentTime.AddYears(1);
+                
+                // Calcola dove arriverebbe senza questo fermo
+                var endTimeSenzaFermo = currentTime.AddSeconds((double)secondiRimasti);
+                
+                // Verifica se questo fermo interseca il percorso [currentTime, endTimeSenzaFermo]
+                if (fermoInizio < endTimeSenzaFermo && fermoFine > currentTime)
+                {
+                    // C'è intersezione
+                    
+                    // Calcola tempo di lavoro PRIMA del fermo
+                    if (fermoInizio > currentTime)
+                    {
+                        var tempoPreFermo = (decimal)(fermoInizio - currentTime).TotalSeconds;
+                        if (tempoPreFermo <= secondiRimasti)
+                        {
+                            // Lavoro fino al fermo
+                            currentTime = fermoInizio;
+                            secondiRimasti -= tempoPreFermo;
+                        }
+                        else
+                        {
+                            // Il lavoro finisce prima del fermo
+                            return currentTime.AddSeconds((double)secondiRimasti);
+                        }
+                    }
+                    
+                    // Se siamo nel fermo e abbiamo ancora secondi da lavorare, SALTO il fermo
+                    if (secondiRimasti > 0 && currentTime >= fermoInizio && currentTime < fermoFine)
+                    {
+                        currentTime = fermoFine; // Salto alla fine del fermo
+                    }
+                }
+            }
+            
+            // Aggiungi i secondi rimanenti
+            return currentTime.AddSeconds((double)secondiRimasti);
         }
     }
 

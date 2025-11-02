@@ -439,6 +439,17 @@
     <div>Settimana ${getWeekNumber(data.date)}</div>
 </script>
 
+<script id="eventTemplate" type="text/x-template">
+    <div class="template-wrap" style="padding: 5px; height: 100%; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+        <div style="font-weight: bold; font-size: 12px; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${Subject}
+        </div>
+        <div style="font-size: 11px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${formatEventTime(StartTime, EndTime)}
+        </div>
+    </div>
+</script>
+
 @section Scripts {
     <script>
         // Funzione per caricare i file CLDR italiani (come da documentazione Syncfusion)
@@ -529,6 +540,24 @@
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
             return weekNo;
         }
+        
+        // Formatta l'ora di inizio e fine con giorno abbreviato (globale per template)
+        window.formatEventTime = function(startTime, endTime) {
+            const giorni = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            
+            const giornoStart = giorni[start.getDay()];
+            const oreStart = String(start.getHours()).padStart(2, '0');
+            const minutiStart = String(start.getMinutes()).padStart(2, '0');
+            
+            const giornoEnd = giorni[end.getDay()];
+            const oreEnd = String(end.getHours()).padStart(2, '0');
+            const minutiEnd = String(end.getMinutes()).padStart(2, '0');
+            
+            return `${giornoStart}.${oreStart}:${minutiStart} - ${giornoEnd}.${oreEnd}:${minutiEnd}`;
+        };
 
         function getDayNameShort(date) {
             const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
@@ -869,7 +898,8 @@
                             subject: { name: 'Subject' },
                             startTime: { name: 'StartTime' },
                             endTime: { name: 'EndTime' }
-                        }
+                        },
+                        template: '#eventTemplate'
                     },
                     group: {
                         resources: ['Rooms']
@@ -1156,6 +1186,32 @@
                 }
             }
             
+            // 4. DataInizioOP NON può cadere in un periodo di fermo
+            const dataInizioOP = new Date(evento.StartTime);
+            const codiceCentro = evento.RoomId;
+            
+            // Trova fermi per questo centro
+            const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro === codiceCentro);
+            
+            // Verifica se DataInizioOP cade dentro un fermo
+            const fermoInConflitto = fermiCentro.find(fermo => {
+                return dataInizioOP >= fermo.dataInizio && dataInizioOP < fermo.dataFine;
+            });
+            
+            if (fermoInConflitto) {
+                showAlert(
+                    `❌ Impossibile iniziare ordine durante un fermo del centro lavoro<br>` +
+                    `Fermo: ${fermoInConflitto.dataInizio.toLocaleString('it-IT')} - ${fermoInConflitto.dataFine.toLocaleString('it-IT')}<br>` +
+                    `${fermoInConflitto.descrizione || ''}`,
+                    'danger'
+                );
+                args.cancel = true;
+                originalStartTime = null;
+                originalEndTime = null;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
             // ===== CHIAMATA API PER SALVARE =====
             
             try {
@@ -1174,9 +1230,13 @@
                 if (result.success) {
                     // Aggiorna i campi dell'evento con i valori dal server
                     evento.Quantita = result.nuovaQuantita;
-                    evento.DataInizioOP = result.dataInizioOP;
-                    evento.DataFinePrevista = result.dataFinePrevista;
+                    evento.DataInizioOP = parseLocalDate(result.dataInizioOP);
+                    evento.DataFinePrevista = result.dataFinePrevista ? parseLocalDate(result.dataFinePrevista) : null;
                     evento.Modificato = 1;
+                    
+                    // IMPORTANTE: Aggiorna StartTime e EndTime con i valori calcolati dal backend (con fermi)
+                    evento.StartTime = parseLocalDate(result.dataInizioOP);
+                    evento.EndTime = parseLocalDate(result.endTimeVisivo);
                     
                     // Aggiorna il subject con la nuova quantità e percentuale
                     const annoOrdine = evento.AnnoOrdine;
