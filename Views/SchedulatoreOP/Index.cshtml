@@ -115,6 +115,9 @@
     #ordinePopup {
         display: none;
         position: fixed;
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
         background: white;
         border: 2px solid #3498db;
         border-radius: 8px;
@@ -122,7 +125,7 @@
         z-index: 100000;
         min-width: 1100px;
         max-width: 1400px;
-        max-height: 70vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
     
@@ -362,9 +365,7 @@
     }
     
     .alert-fermo-centro.visible {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        display: block;
     }
     
     @@keyframes slideDown {
@@ -562,6 +563,56 @@
         function getDayNameShort(date) {
             const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
             return days[date.getDay()];
+        }
+        
+        // Calcola EndTime saltando i fermi (equivalente JavaScript di CalcolaEndTimeConFermi)
+        function calcolaEndTimeConFermiJS(startTime, durataLavoroSecondi, fermiCentro) {
+            let currentTime = new Date(startTime);
+            let secondiRimasti = durataLavoroSecondi;
+            
+            // Ordina i fermi per data inizio
+            const fermiOrdinati = [...fermiCentro].sort((a, b) => a.dataInizio - b.dataInizio);
+            
+            let iterazioni = 0;
+            const maxIterazioni = 100;
+            
+            for (const fermo of fermiOrdinati) {
+                if (iterazioni++ > maxIterazioni || secondiRimasti <= 0) {
+                    break;
+                }
+                
+                const fermoInizio = fermo.dataInizio;
+                const fermoFine = fermo.dataFine || new Date(currentTime.getTime() + (365 * 24 * 60 * 60 * 1000));
+                
+                // Calcola dove arriverebbe senza questo fermo
+                const endTimeSenzaFermo = new Date(currentTime.getTime() + (secondiRimasti * 1000));
+                
+                // Verifica se questo fermo interseca il percorso
+                if (fermoInizio < endTimeSenzaFermo && fermoFine > currentTime) {
+                    // C'è intersezione
+                    
+                    // Calcola tempo di lavoro PRIMA del fermo
+                    if (fermoInizio > currentTime) {
+                        const tempoPreFermo = (fermoInizio - currentTime) / 1000; // in secondi
+                        if (tempoPreFermo <= secondiRimasti) {
+                            // Lavoro fino al fermo
+                            currentTime = new Date(fermoInizio);
+                            secondiRimasti -= tempoPreFermo;
+                        } else {
+                            // Il lavoro finisce prima del fermo
+                            return new Date(currentTime.getTime() + (secondiRimasti * 1000));
+                        }
+                    }
+                    
+                    // Se siamo nel fermo e abbiamo ancora secondi da lavorare, SALTO il fermo
+                    if (secondiRimasti > 0 && currentTime >= fermoInizio && currentTime < fermoFine) {
+                        currentTime = new Date(fermoFine); // Salto alla fine del fermo
+                    }
+                }
+            }
+            
+            // Aggiungi i secondi rimanenti
+            return new Date(currentTime.getTime() + (secondiRimasti * 1000));
         }
 
         function formatHour(date) {
@@ -1495,11 +1546,11 @@
                 footer.style.display = 'none';
             }
             
-            // Mostra popup al centro dello schermo
+            // Mostra popup (posizione resettata a quella del CSS)
             popup.style.display = 'block';
             popup.style.left = '50%';
-            popup.style.top = '50%';
-            popup.style.transform = 'translate(-50%, -50%)';
+            popup.style.top = '10%';
+            popup.style.transform = 'translateX(-50%)';
             
             // Controlla se c'è sovrapposizione con fermi (controllo iniziale)
             if (isModificabile) {
@@ -1528,8 +1579,12 @@
             const tempoSetupSecondi = tempoSetup * 60; // Converti minuti in secondi
             const durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
             
-            // Calcola DataFinePrevista
-            const dataFinePrevista = new Date(dataInizioOP.getTime() + (durataTotaleSecondi * 1000));
+            // Filtra i fermi per questo centro lavoro
+            const codiceCentro = currentOrdine.CodiceCentro;
+            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro === codiceCentro);
+            
+            // Calcola DataFinePrevista con logica che salta i fermi
+            const dataFinePrevista = calcolaEndTimeConFermiJS(dataInizioOP, durataTotaleSecondi, fermiDelCentro);
             
             // Aggiorna il display
             const displayDataFinePrevista = document.getElementById('displayDataFinePrevista');
@@ -1558,25 +1613,57 @@
             const durataLavorazioneSecondi = quantita * tempoCiclo;
             const tempoSetupSecondi = tempoSetup * 60;
             const durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
-            const dataFinePrevista = new Date(dataInizioOP.getTime() + (durataTotaleSecondi * 1000));
             
             // Filtra fermi per il centro di lavoro corrente
             const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro === currentOrdine.CodiceCentro);
             
-            // Controlla sovrapposizione
-            let hasSovrapposizione = false;
+            // Usa la funzione con fermi per calcolare la DataFinePrevista corretta
+            const dataFinePrevista = calcolaEndTimeConFermiJS(dataInizioOP, durataTotaleSecondi, fermiCentro);
+            
+            // Raccogli tutti i fermi sovrapposti
+            const fermiSovrapposti = [];
             for (const fermo of fermiCentro) {
                 // Due range si sovrappongono se: startA < endB AND endA > startB
                 if (dataInizioOP < fermo.dataFine && dataFinePrevista > fermo.dataInizio) {
-                    hasSovrapposizione = true;
-                    break;
+                    fermiSovrapposti.push(fermo);
                 }
             }
             
-            // Mostra/nascondi alert
+            // Mostra/nascondi alert con lista fermi
             const alertFermo = document.getElementById('alertFermoCentro');
             if (alertFermo) {
-                if (hasSovrapposizione) {
+                if (fermiSovrapposti.length > 0) {
+                    // Plurale corretto
+                    const numeroFermi = fermiSovrapposti.length;
+                    const testoFermi = numeroFermi === 1 ? 'fermo' : 'fermi';
+                    
+                    // Genera HTML lista fermi
+                    let listaFermiHTML = '<ul style="margin: 3px 0; padding-left: 20px; line-height: 1.4;">';
+                    fermiSovrapposti.forEach(fermo => {
+                        const inizioStr = fermo.dataInizio.toLocaleString('it-IT', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        const fineStr = fermo.dataFine.toLocaleString('it-IT', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        listaFermiHTML += `<li style="margin: 1px 0;"><strong>${inizioStr} - ${fineStr}</strong> - <span style="font-size: 0.9em;">${fermo.descrizione || 'Fermo centro lavoro'}</span></li>`;
+                    });
+                    listaFermiHTML += '</ul>';
+                    
+                    alertFermo.innerHTML = `
+                        <strong>⚠️ Attenzione:</strong> L'ordine attraversa ${numeroFermi} ${testoFermi} del centro lavoro.<br><br>
+                        ${listaFermiHTML}
+                        <br>
+                        <small style="font-style: italic;">La data di fine sarà estesa automaticamente per compensare i fermi.</small>
+                    `;
                     alertFermo.classList.add('visible');
                 } else {
                     alertFermo.classList.remove('visible');
@@ -1623,7 +1710,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: currentOrdine.Id,
-                        dataInizioOP: dataInizioOP.toISOString(),
+                        dataInizioOP: toLocalISOString(dataInizioOP),
                         quantita: quantita
                     })
                 });

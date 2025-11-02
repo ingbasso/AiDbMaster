@@ -632,13 +632,20 @@ namespace AiDbMaster.Controllers
                 ordine.Quantita = request.Quantita;
                 _logger.LogInformation($"Ordine {ordine.IdListaOP}: Quantità modificata da {vecchiaQuantita} a {ordine.Quantita}");
                 
-                // Calcola DataFinePrevista
-                // Formula: DataFinePrevista = DataInizioOP + (Quantità × TempoCiclo secondi) + (TempoSetup minuti × 60)
-                var durataLavorazioneSecondi = (double)(ordine.Quantita * (decimal)ordine.TempoCiclo);
-                var tempoSetupSecondi = (ordine.TempoSetup ?? 0) * 60; // Converti minuti in secondi
+                // ===== CALCOLO DATA FINE CON FERMI =====
+                
+                // 1. Carica fermi del centro lavoro
+                var fermiCentro = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .ToListAsync();
+                
+                // 2. Calcola durata lavoro: Quantità × TempoCiclo + TempoSetup
+                var durataLavorazioneSecondi = (decimal)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                var tempoSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60); // Converti minuti in secondi
                 var durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
                 
-                ordine.DataFinePrevista = ordine.DataInizioOP.AddSeconds(durataTotaleSecondi);
+                // 3. Usa CalcolaEndTimeConFermi per saltare i fermi
+                ordine.DataFinePrevista = CalcolaEndTimeConFermi(ordine.DataInizioOP, durataTotaleSecondi, fermiCentro);
                 
                 _logger.LogInformation($"Ordine {ordine.IdListaOP}: DataFinePrevista calcolata = {ordine.DataFinePrevista:yyyy-MM-dd HH:mm}");
                 _logger.LogInformation($"  - Durata lavorazione: {durataLavorazioneSecondi}s (Quantità {ordine.Quantita} × TempoCiclo {ordine.TempoCiclo}s)");
