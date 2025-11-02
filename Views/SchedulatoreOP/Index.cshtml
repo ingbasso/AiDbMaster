@@ -1346,6 +1346,20 @@
                 return;
             }
             
+            // 3. Verifica che la nuova data di inizio NON cada dentro un fermo
+            const nuovaDataInizio = new Date(evento.StartTime);
+            const codiceCentro = evento.CodiceCentro;
+            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro === codiceCentro);
+            
+            for (const fermo of fermiDelCentro) {
+                if (nuovaDataInizio >= fermo.dataInizio && nuovaDataInizio < fermo.dataFine) {
+                    showAlert('❌ Impossibile spostare: la data di inizio cade in un periodo di fermo del centro lavoro.', 'danger');
+                    args.cancel = true;
+                    loadOrdini(); // Ricarica per ripristinare
+                    return;
+                }
+            }
+            
             // ===== CHIAMATA API PER SALVARE =====
             
             try {
@@ -1354,9 +1368,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: evento.Id,
-                        startTime: toLocalISOString(evento.StartTime),
-                        endTime: toLocalISOString(evento.EndTime),
-                        roomId: evento.RoomId
+                        startTime: toLocalISOString(evento.StartTime)
                     })
                 });
                 
@@ -1364,9 +1376,21 @@
                 
                 if (result.success) {
                     // Aggiorna i campi dell'evento con i valori dal server
-                    evento.DataInizioOP = result.dataInizioOP;
-                    evento.DataFinePrevista = result.dataFinePrevista;
+                    evento.DataInizioOP = parseLocalDate(result.dataInizioOP);
+                    evento.DataFinePrevista = result.dataFinePrevista ? parseLocalDate(result.dataFinePrevista) : null;
                     evento.Modificato = 1;
+                    
+                    // IMPORTANTE: Aggiorna StartTime e EndTime con i valori calcolati dal backend (con fermi)
+                    evento.StartTime = parseLocalDate(result.dataInizioOP);
+                    evento.EndTime = parseLocalDate(result.endTimeVisivo);
+                    
+                    // Aggiorna il subject (quantità invariata, ma ricalcola percentuale)
+                    const annoOrdine = evento.AnnoOrdine;
+                    const numeroOrdine = evento.NumeroOrdine;
+                    const quantita = evento.Quantita;
+                    const quantitaProdotta = evento.QuantitaProdotta || 0;
+                    const percentuale = quantita > 0 ? ((quantitaProdotta / quantita) * 100).toFixed(1) : 0;
+                    evento.Subject = `Ord. ${annoOrdine}-${numeroOrdine} Qta: ${Math.floor(quantita)} (${percentuale}%)`;
                     
                     // Aggiorna l'evento nello scheduler (senza ricaricare tutto)
                     scheduleObj.saveEvent(evento);

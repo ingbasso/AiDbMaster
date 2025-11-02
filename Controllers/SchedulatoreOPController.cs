@@ -488,7 +488,7 @@ namespace AiDbMaster.Controllers
         {
             try
             {
-                _logger.LogInformation($"📥 Richiesta drag&drop ricevuta - ID: {request.Id}, StartTime: {request.StartTime:yyyy-MM-dd HH:mm:ss}, EndTime: {request.EndTime:yyyy-MM-dd HH:mm:ss}, RoomId: {request.RoomId}");
+                _logger.LogInformation($"📥 Richiesta drag&drop ricevuta - ID: {request.Id}, StartTime: {request.StartTime:yyyy-MM-dd HH:mm:ss}");
                 
                 var ordine = await _context.ListaOP.FindAsync(request.Id);
                 if (ordine == null)
@@ -496,7 +496,6 @@ namespace AiDbMaster.Controllers
                     return NotFound(new { success = false, message = "Ordine non trovato" });
                 }
                 
-
                 // ===== VALIDAZIONE 1: Solo IdStato = 1 può fare drag&drop =====
                 if (ordine.IdStato != 1)
                 {
@@ -507,31 +506,62 @@ namespace AiDbMaster.Controllers
                     });
                 }
 
-                // ===== VALIDAZIONE 2: Non si può cambiare centro di lavoro =====
-                if (request.RoomId != ordine.CodiceCentro)
+                // ===== VALIDAZIONE 2: Modificato NON può essere 7 (bloccato) =====
+                if (ordine.Modificato == 7)
                 {
-                    _logger.LogWarning($"Tentativo di cambiare centro di lavoro per ordine {ordine.IdListaOP}: {ordine.CodiceCentro} → {request.RoomId}");
+                    _logger.LogWarning($"Tentativo di drag&drop ordine bloccato {ordine.IdListaOP}");
                     return BadRequest(new { 
                         success = false, 
-                        message = "❌ Impossibile cambiare Centro di Lavoro. Puoi solo spostare nel tempo." 
+                        message = "❌ Impossibile spostare: l'ordine è bloccato (Modificato = 7)" 
                     });
                 }
 
+                // ===== CARICA FERMI DEL CENTRO LAVORO =====
+                var fermiCentro = await _context.CalendarioFermiCentriLavoro
+                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .ToListAsync();
+
+                // ===== VALIDAZIONE 3: La nuova data di inizio NON deve cadere dentro un fermo =====
+                foreach (var fermo in fermiCentro)
+                {
+                    if (request.StartTime >= fermo.DataInizioFermo && request.StartTime < (fermo.DataFineFermo ?? DateTime.MaxValue))
+                    {
+                        _logger.LogWarning($"Tentativo di spostare ordine {ordine.IdListaOP} con data inizio dentro fermo: {fermo.DataInizioFermo:yyyy-MM-dd HH:mm} - {fermo.DataFineFermo:yyyy-MM-dd HH:mm}");
+                        return BadRequest(new { 
+                            success = false, 
+                            message = "❌ Impossibile spostare: la data di inizio cade in un periodo di fermo del centro lavoro." 
+                        });
+                    }
+                }
+
+                // ===== CALCOLO NUOVA DATA FINE CON FERMI =====
+                
+                // 1. Mantieni la quantità INVARIATA (è solo uno spostamento)
+                var quantitaInvariata = ordine.Quantita;
+                
+                // 2. Calcola durata lavoro: Quantità × TempoCiclo + TempoSetup
+                var durataLavorazioneSecondi = (decimal)(quantitaInvariata * (decimal)ordine.TempoCiclo);
+                var tempoSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60);
+                var durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
+                
+                // 3. Calcola nuova DataFinePrevista usando CalcolaEndTimeConFermi (che salta i fermi)
+                var nuovaDataFinePrevista = CalcolaEndTimeConFermi(request.StartTime, durataTotaleSecondi, fermiCentro);
+                
+                _logger.LogInformation($"Drag&Drop Ordine {ordine.IdListaOP}: " +
+                    $"DataInizio {ordine.DataInizioOP:yyyy-MM-dd HH:mm} → {request.StartTime:yyyy-MM-dd HH:mm}, " +
+                    $"DataFine {ordine.DataFinePrevista:yyyy-MM-dd HH:mm} → {nuovaDataFinePrevista:yyyy-MM-dd HH:mm}, " +
+                    $"Quantità invariata: {quantitaInvariata}");
+
                 // ===== AGGIORNAMENTO =====
                 
-                var vecchiaDataInizio = ordine.DataInizioOP;
-                var vecchiaDataFine = ordine.DataFinePrevista;
-                
-                // Aggiorna DataInizioOP
                 ordine.DataInizioOP = request.StartTime;
-                
-                // Aggiorna DataFinePrevista
-                ordine.DataFinePrevista = request.EndTime;
-                
-                // Imposta Modificato = 1
+                ordine.DataFinePrevista = nuovaDataFinePrevista;
                 ordine.Modificato = 1;
 
                 await _context.SaveChangesAsync();
+
+                // Calcola EndTime visivo con fermi per Syncfusion (stesso valore di DataFinePrevista)
+                var endTimeVisivo = nuovaDataFinePrevista;
 
                 return Ok(new { 
                     success = true, 
@@ -539,7 +569,8 @@ namespace AiDbMaster.Controllers
                     dataInizioOP = DateTime.SpecifyKind(ordine.DataInizioOP, DateTimeKind.Local),
                     dataFinePrevista = ordine.DataFinePrevista.HasValue 
                         ? DateTime.SpecifyKind(ordine.DataFinePrevista.Value, DateTimeKind.Local)
-                        : (DateTime?)null
+                        : (DateTime?)null,
+                    endTimeVisivo = DateTime.SpecifyKind(endTimeVisivo, DateTimeKind.Local)
                 });
             }
             catch (Exception ex)
