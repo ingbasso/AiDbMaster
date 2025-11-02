@@ -1,0 +1,262 @@
+/* ========================================
+   POPUP DETTAGLI - Stile Riutilizzabile
+   Grafica elegante per popup trascinabili
+   ======================================== */
+
+/* Container principale popup */
+.popup-dettagli {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    z-index: 100000;
+    min-width: 1100px;
+    max-width: 1400px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.popup-dettagli.dragging {
+    cursor: move !important;
+}
+
+/* Header popup con gradiente blu */
+.popup-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 15px;
+    border-radius: 6px 6px 0 0;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-header h5 {
+    margin: 0;
+    font-weight: bold;
+}
+
+/* Pulsante chiusura (X) */
+.popup-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.popup-close:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Body popup */
+.popup-body {
+    padding: 20px;
+}
+
+/* Griglia informazioni a 5 colonne */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.info-item.span-2 {
+    grid-column: span 2;
+}
+
+.info-item.span-3 {
+    grid-column: span 3;
+}
+
+/* Label campo */
+.info-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* Valore campo */
+.info-value {
+    font-size: 0.95rem;
+    color: #2c3e50;
+    font-weight: 500;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #3498db;
+}
+
+.info-value.highlight {
+    background: #e3f2fd;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.info-value.calculated {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+    font-weight: 600;
+}
+
+/* Badge stato */
+.stato-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+/* Input modificabili */
+.info-input {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    border: 2px solid #3498db;
+    border-radius: 4px;
+    background: #ffffff;
+    transition: all 0.2s;
+}
+
+.info-input:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.info-input:disabled {
+    background: #e9ecef;
+    border-color: #ced4da;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Footer popup */
+.popup-footer {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Pulsante Salva con gradiente verde */
+.btn-save-changes {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-save-changes:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+}
+
+.btn-save-changes:active {
+    transform: translateY(0);
+}
+
+.btn-save-changes:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Alert box generico */
+.alert-fermo-centro {
+    display: none;
+    padding: 12px 16px;
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 6px;
+    color: #856404;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 15px;
+    animation: slideDown 0.3s ease;
+}
+
+.alert-fermo-centro.visible {
+    display: block;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Legenda container */
+.legenda-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 6px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.legenda-title {
+    font-weight: 600;
+    color: #495057;
+    margin-right: 6px;
+    font-size: 0.8rem;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+}
+
+.legenda-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.legenda-label {
+    color: #495057;
+    font-weight: 500;
+}
+

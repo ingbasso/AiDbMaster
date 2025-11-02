@@ -1,0 +1,222 @@
+<!--
+========================================
+TEMPLATE POPUP DETTAGLI - DOCUMENTAZIONE
+========================================
+
+FILE CSS: popup-dettagli.css
+Grafica elegante per popup trascinabili con header blu, griglia responsive e animazioni
+
+CARATTERISTICHE:
+- Popup trascinabile
+- Header blu con gradiente
+- Griglia responsive a 5 colonne
+- Input modificabili con validazione visiva
+- Pulsanti con hover/active states
+- Alert box con animazioni
+- Z-index alto (100000) per stare sopra a tutto
+
+COME USARE:
+1. Includi il file CSS nel tuo layout o nella pagina:
+   <link rel="stylesheet" href="~/css/popup-dettagli.css" />
+
+2. Copia la struttura HTML qui sotto
+3. Adatta l'id del popup (es: popup-dettagli --> myCustomPopup)
+4. Implementa le funzioni JavaScript (showPopup, closePopup, makeDraggable)
+-->
+
+<!-- ==================== STRUTTURA HTML POPUP ==================== -->
+
+<!-- Popup Container -->
+<div id="myPopup" class="popup-dettagli">
+    
+    <!-- Header con titolo e pulsante chiusura -->
+    <div class="popup-header" id="myPopupHeader">
+        <h5>
+            <i class="bi bi-clipboard-data me-2"></i>
+            Titolo Popup
+        </h5>
+        <button class="popup-close" onclick="closeMyPopup()">&times;</button>
+    </div>
+    
+    <!-- Body con contenuto -->
+    <div class="popup-body" id="myPopupBody">
+        
+        <!-- Griglia informazioni a 5 colonne -->
+        <div class="info-grid">
+            
+            <!-- Campo normale (1 colonna) -->
+            <div class="info-item">
+                <div class="info-label">Campo 1</div>
+                <div class="info-value">Valore campo</div>
+            </div>
+            
+            <!-- Campo span 2 colonne -->
+            <div class="info-item span-2">
+                <div class="info-label">Campo Largo</div>
+                <div class="info-value highlight">Valore importante</div>
+            </div>
+            
+            <!-- Campo input modificabile -->
+            <div class="info-item">
+                <div class="info-label">Campo Modificabile</div>
+                <input type="text" class="info-input" value="Editabile" />
+            </div>
+            
+            <!-- Campo calcolato (verde) -->
+            <div class="info-item">
+                <div class="info-label">Valore Calcolato</div>
+                <div class="info-value calculated" id="calcolato">123.45</div>
+            </div>
+            
+            <!-- Campo full-width -->
+            <div class="info-item full-width">
+                <div class="info-label">Note</div>
+                <div class="info-value">Testo lungo che occupa tutta la larghezza</div>
+            </div>
+            
+        </div>
+        
+        <!-- Alert box (opzionale) -->
+        <div class="alert-fermo-centro" id="myAlert">
+            <strong>⚠️ Attenzione:</strong> Messaggio di avviso
+        </div>
+        
+    </div>
+    
+    <!-- Footer con pulsanti (opzionale) -->
+    <div class="popup-footer" id="myPopupFooter">
+        <button type="button" class="btn-save-changes" onclick="saveChanges()">
+            <i class="bi bi-check-circle me-2"></i>
+            Salva Modifiche
+        </button>
+    </div>
+    
+</div>
+
+<!-- ==================== JAVASCRIPT NECESSARIO ==================== -->
+
+<script>
+    // Mostra popup
+    function showMyPopup(data) {
+        const popup = document.getElementById('myPopup');
+        const body = document.getElementById('myPopupBody');
+        
+        // Popola il body con i dati (esempio)
+        // body.innerHTML = ...
+        
+        // Mostra popup centrato
+        popup.style.display = 'block';
+        popup.style.left = '50%';
+        popup.style.top = '10%';
+        popup.style.transform = 'translateX(-50%)';
+    }
+    
+    // Chiudi popup
+    function closeMyPopup() {
+        document.getElementById('myPopup').style.display = 'none';
+    }
+    
+    // Rendi popup trascinabile (chiamare dopo DOMContentLoaded)
+    function makeDraggable(element, header) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        
+        header.onmousedown = dragMouseDown;
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+            element.classList.add('dragging');
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            element.style.top = (element.offsetTop - pos2) + 'px';
+            element.style.left = (element.offsetLeft - pos1) + 'px';
+            element.style.transform = 'none';
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+            element.classList.remove('dragging');
+        }
+    }
+    
+    // Inizializza al caricamento pagina
+    document.addEventListener('DOMContentLoaded', function() {
+        makeDraggable(
+            document.getElementById('myPopup'), 
+            document.getElementById('myPopupHeader')
+        );
+    });
+</script>
+
+<!-- ==================== ESEMPI DI PERSONALIZZAZIONE ==================== -->
+
+<!--
+1. CAMBIO COLORE HEADER
+   Modifica il gradiente nel file CSS o inline:
+   <div class="popup-header" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+
+2. BADGE COLORATI
+   <div class="stato-badge" style="background-color: #4caf50;">Attivo</div>
+
+3. GRIGLIA PERSONALIZZATA
+   Cambia il numero di colonne:
+   <div class="info-grid" style="grid-template-columns: repeat(3, 1fr);">
+
+4. ALERT COLORATI
+   <div class="alert-fermo-centro" style="background: #d4edda; border-color: #28a745; color: #155724;">
+       Messaggio di successo
+   </div>
+
+5. DIMENSIONI POPUP
+   <div class="popup-dettagli" style="min-width: 800px; max-width: 1200px;">
+-->
+
+<!-- ==================== CLASSI UTILITY ==================== -->
+
+<!--
+CLASSI CONTENITORE:
+- .popup-dettagli          → Container principale
+- .popup-header           → Header blu trascinabile
+- .popup-body             → Corpo popup
+- .popup-footer           → Footer con pulsanti
+
+CLASSI LAYOUT:
+- .info-grid              → Griglia a 5 colonne
+- .info-item              → Singolo campo (1 colonna)
+- .info-item.span-2       → Campo largo (2 colonne)
+- .info-item.span-3       → Campo largo (3 colonne)
+- .info-item.full-width   → Campo piena larghezza
+
+CLASSI CONTENUTO:
+- .info-label             → Label campo (grigio, uppercase, piccolo)
+- .info-value             → Valore campo normale
+- .info-value.highlight   → Valore evidenziato (blu)
+- .info-value.calculated  → Valore calcolato (verde)
+- .info-input             → Input modificabile (bordo blu)
+
+CLASSI PULSANTI:
+- .btn-save-changes       → Pulsante salva (verde con gradiente)
+- .popup-close            → Pulsante chiudi (X)
+
+CLASSI ALERT:
+- .alert-fermo-centro     → Alert box giallo
+- .alert-fermo-centro.visible → Mostra alert con animazione
+
+CLASSI LEGENDA:
+- .legenda-container      → Container legenda
+- .legenda-item           → Singolo item legenda
+- .legenda-color          → Quadratino colorato
+-->
+
