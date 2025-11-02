@@ -3,6 +3,8 @@
     ViewBag.UseFluidContainer = true;
 }
 
+<link rel="stylesheet" href="~/css/popup-dettagli.css" />
+
 <style>
     #schedule {
         height: calc(100vh - 200px);
@@ -36,79 +38,81 @@
     </div>
 </div>
 
-<!-- Modal Modifica Fermo -->
-<div class="modal fade" id="fermoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white" id="fermoModalHeader" style="cursor: move;">
-                <h5 class="modal-title" id="fermoModalTitle">Modifica Fermo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- Popup Dettagli Fermo -->
+<div id="fermoPopup" class="popup-dettagli">
+    <div class="popup-header" id="fermoPopupHeader">
+        <h5 id="fermoPopupTitle">
+            <i class="bi bi-calendar-x me-2"></i>
+            Modifica Fermo
+        </h5>
+        <button class="popup-close" onclick="closeFermoPopup()">&times;</button>
+    </div>
+    <div class="popup-body">
+        <form id="fermoForm">
+            <input type="hidden" id="fermoId" />
+            
+            <div class="info-grid">
+                <!-- Centro di Lavoro -->
+                <div class="info-item span-2">
+                    <div class="info-label">Centro di Lavoro *</div>
+                    <select id="editCodiceCentro" class="info-input" required style="cursor: pointer;">
+                        <option value="">-- Seleziona Centro --</option>
+                    </select>
+                </div>
+                
+                <!-- Tipo Fermo -->
+                <div class="info-item span-2">
+                    <div class="info-label">Tipo Fermo *</div>
+                    <select id="editTipoFermo" class="info-input" required style="cursor: pointer;">
+                        <option value="1">Fermo Notturno</option>
+                        <option value="2">Weekend</option>
+                        <option value="3">Manutenzione</option>
+                        <option value="4">Festivo</option>
+                    </select>
+                </div>
+                
+                <!-- Fermo Pianificato -->
+                <div class="info-item">
+                    <div class="info-label">Pianificato</div>
+                    <div style="padding: 8px;">
+                        <input class="form-check-input" type="checkbox" id="editIsPianificato" style="cursor: pointer; width: 20px; height: 20px;" />
+                        <label class="form-check-label ms-2" for="editIsPianificato" style="cursor: pointer; font-weight: 600;">
+                            Sì
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Data Inizio -->
+                <div class="info-item span-2">
+                    <div class="info-label">Data Inizio *</div>
+                    <input type="datetime-local" id="editDataInizio" class="info-input" required />
+                </div>
+                
+                <!-- Data Fine -->
+                <div class="info-item span-2">
+                    <div class="info-label">Data Fine *</div>
+                    <input type="datetime-local" id="editDataFine" class="info-input" required />
+                </div>
+                
+                <!-- Motivo -->
+                <div class="info-item full-width">
+                    <div class="info-label">Motivo</div>
+                    <input type="text" id="editMotivo" class="info-input" maxlength="200" placeholder="Fermo Programmato" />
+                    <small class="text-muted ms-2">Facoltativo - Descrizione del fermo</small>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="fermoForm">
-                    <input type="hidden" id="fermoId" />
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="editCodiceCentro" class="form-label">Centro di Lavoro *</label>
-                            <select id="editCodiceCentro" class="form-select" required>
-                                <option value="">-- Seleziona Centro --</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="editTipoFermo" class="form-label">Tipo Fermo *</label>
-                            <select id="editTipoFermo" class="form-select" required>
-                                <option value="1">Fermo Notturno</option>
-                                <option value="2">Weekend</option>
-                                <option value="3">Manutenzione</option>
-                                <option value="4">Festivo</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="editDataInizio" class="form-label">Data Inizio *</label>
-                            <input type="datetime-local" id="editDataInizio" class="form-control" required />
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="editDataFine" class="form-label">Data Fine *</label>
-                            <input type="datetime-local" id="editDataFine" class="form-control" required />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="editMotivo" class="form-label">Motivo</label>
-                            <input type="text" id="editMotivo" class="form-control" maxlength="200" value="Fermo Programmato" />
-                            <small class="text-muted">Facoltativo - Descrizione del fermo</small>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="editIsPianificato" />
-                                <label class="form-check-label" for="editIsPianificato">
-                                    <strong>Fermo Pianificato</strong>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="btnDeleteFermo">
-                    <i class="bi bi-trash"></i> Elimina
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                <button type="button" class="btn btn-primary" id="btnSaveFermo">
-                    <i class="bi bi-save"></i> Salva
-                </button>
-            </div>
-        </div>
+        </form>
+    </div>
+    <div class="popup-footer">
+        <button type="button" class="btn btn-danger" id="btnDeleteFermo" style="margin-right: auto;">
+            <i class="bi bi-trash"></i> Elimina
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeFermoPopup()">
+            <i class="bi bi-x-circle me-1"></i> Annulla
+        </button>
+        <button type="button" class="btn-save-changes" id="btnSaveFermo">
+            <i class="bi bi-check-circle me-2"></i> Salva
+        </button>
     </div>
 </div>
 
@@ -187,14 +191,12 @@
 
 @section Styles {
     <style>
-        /* Posiziona i modal più in basso per evitare che siano coperti dall'header */
-        #fermoModal .modal-dialog,
+        /* Posiziona il modal più in basso per evitare che sia coperto dall'header */
         #generaWeekendModal .modal-dialog {
             margin-top: 80px;
         }
         
-        /* Assicura che i modal siano sopra tutto */
-        #fermoModal,
+        /* Assicura che il modal sia sopra tutto */
         #generaWeekendModal {
             z-index: 10000 !important;
         }
@@ -489,7 +491,7 @@
             
             // Apri modal creazione nuovo fermo
             function openCreateModal() {
-                console.log('Apertura modal creazione fermo');
+                console.log('Apertura popup creazione fermo');
                 
                 // Popola il dropdown dei centri di lavoro
                 const selectCentro = document.getElementById('editCodiceCentro');
@@ -502,7 +504,7 @@
                 });
                 
                 // Reset del form
-                document.getElementById('fermoModalTitle').textContent = 'Nuovo Fermo';
+                document.getElementById('fermoPopupTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Nuovo Fermo';
                 document.getElementById('fermoForm').reset();
                 document.getElementById('fermoId').value = '';
                 document.getElementById('btnDeleteFermo').style.display = 'none';
@@ -510,29 +512,12 @@
                 // Ripristina il valore di default per Motivo
                 document.getElementById('editMotivo').value = 'Fermo Programmato';
                 
-                // Rimuovi TUTTI i backdrop esistenti prima di aprire
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
-                
-                // Apri il modal
-                const modalElement = document.getElementById('fermoModal');
-                
-                // Distruggi istanza esistente se presente
-                let modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.dispose();
-                }
-                
-                // Crea nuova istanza SENZA backdrop
-                modal = new bootstrap.Modal(modalElement, {
-                    backdrop: false,  // Nessun backdrop per evitare blocchi
-                    keyboard: true,
-                    focus: true
-                });
-                
-                modal.show();
-                
-                // Rendi il modal trascinabile
-                setTimeout(() => makeModalDraggable('fermoModal', 'fermoModalHeader'), 100);
+                // Mostra popup
+                const popup = document.getElementById('fermoPopup');
+                popup.style.display = 'block';
+                popup.style.left = '50%';
+                popup.style.top = '10%';
+                popup.style.transform = 'translateX(-50%)';
             }
             
             // Funzione per mostrare i dettagli del fermo (modifica)
@@ -550,7 +535,7 @@
                 });
                 
                 // Popola i campi del form
-                document.getElementById('fermoModalTitle').textContent = 'Modifica Fermo';
+                document.getElementById('fermoPopupTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Modifica Fermo';
                 document.getElementById('fermoId').value = evento.id;
                 document.getElementById('editCodiceCentro').value = evento.codiceCentro;
                 document.getElementById('editTipoFermo').value = evento.tipoFermo;
@@ -560,29 +545,12 @@
                 document.getElementById('editIsPianificato').checked = evento.isPianificato;
                 document.getElementById('btnDeleteFermo').style.display = 'block';
                 
-                // Rimuovi TUTTI i backdrop esistenti prima di aprire
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
-                
-                // Apri il modal
-                const modalElement = document.getElementById('fermoModal');
-                
-                // Distruggi istanza esistente se presente
-                let modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.dispose();
-                }
-                
-                // Crea nuova istanza SENZA backdrop
-                modal = new bootstrap.Modal(modalElement, {
-                    backdrop: false,  // Nessun backdrop per evitare blocchi
-                    keyboard: true,
-                    focus: true
-                });
-                
-                modal.show();
-                
-                // Rendi il modal trascinabile
-                setTimeout(() => makeModalDraggable('fermoModal', 'fermoModalHeader'), 100);
+                // Mostra popup
+                const popup = document.getElementById('fermoPopup');
+                popup.style.display = 'block';
+                popup.style.left = '50%';
+                popup.style.top = '10%';
+                popup.style.transform = 'translateX(-50%)';
             }
             
             // Funzione per formattare data/ora per datetime-local input
@@ -659,12 +627,8 @@
                     const result = await response.json();
                     console.log('✅ Fermo salvato:', result);
                     
-                    // Chiudi modal
-                    const modalElement = document.getElementById('fermoModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
+                    // Chiudi popup
+                    closeFermoPopup();
                     
                     // Ricarica i dati
                     await loadFermi();
@@ -703,12 +667,8 @@
                     const result = await response.json();
                     console.log('✅ Fermo eliminato:', result);
                     
-                    // Chiudi modal
-                    const modalElement = document.getElementById('fermoModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
+                    // Chiudi popup
+                    closeFermoPopup();
                     
                     // Ricarica i dati
                     await loadFermi();
@@ -719,6 +679,49 @@
                 } catch (error) {
                     console.error('Errore eliminazione fermo:', error);
                     alert('Errore nell\'eliminazione del fermo');
+                }
+            }
+            
+            // Funzione per chiudere il popup fermo (globale per onclick)
+            window.closeFermoPopup = function() {
+                document.getElementById('fermoPopup').style.display = 'none';
+            };
+            
+            // Funzione per rendere il popup trascinabile
+            function makeFermoPopupDraggable() {
+                const popup = document.getElementById('fermoPopup');
+                const header = document.getElementById('fermoPopupHeader');
+                
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                header.onmousedown = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                    popup.classList.add('dragging');
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    popup.style.top = (popup.offsetTop - pos2) + 'px';
+                    popup.style.left = (popup.offsetLeft - pos1) + 'px';
+                    popup.style.transform = 'none';
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                    popup.classList.remove('dragging');
                 }
             }
             
@@ -937,6 +940,9 @@
             // Event listener per il pulsante Genera Fermi Settimanali
             document.getElementById('btnGeneraFermiSettimanali').addEventListener('click', openGeneraWeekendModal);
             document.getElementById('btnGeneraFermi').addEventListener('click', generaFermiSettimanali);
+            
+            // Rendi il popup fermo trascinabile
+            makeFermoPopupDraggable();
             
             // Avvia caricamento
             loadCentriLavoro();
