@@ -39,43 +39,6 @@
                     
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- Documenti -->
-                        <li class="sidebar-item">
-                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#documentiSubmenu" aria-expanded="false">
-                                <i class="bi bi-files"></i>
-                                <span>Documenti</span>
-                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
-                            </a>
-                            <div class="collapse" id="documentiSubmenu">
-                                <ul class="sidebar-submenu">
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Document" asp-action="Index">
-                                            <i class="bi bi-files"></i>
-                                            <span>Tutti i documenti</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Document" asp-action="Create">
-                                            <i class="bi bi-file-earmark-plus"></i>
-                                            <span>Carica nuovo documento</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Document" asp-action="Index" asp-route-filter="my">
-                                            <i class="bi bi-person-lines-fill"></i>
-                                            <span>I miei documenti</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link" asp-controller="Statistics" asp-action="Index">
-                                            <i class="bi bi-bar-chart-fill"></i>
-                                            <span>Statistiche documenti</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        
                         <!-- Tabelle -->
                         <li class="sidebar-item">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
