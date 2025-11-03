@@ -218,12 +218,6 @@
                                 </a>
                                 <div class="collapse" id="adminSubmenu">
                                     <ul class="sidebar-submenu">
-                                        <li class="sidebar-item">
-                                            <a class="sidebar-link" asp-controller="Category" asp-action="Index">
-                                                <i class="bi bi-tags"></i>
-                                                <span>Gestione categorie</span>
-                                            </a>
-                                        </li>
                                         @if (User.IsInRole("Admin"))
                                         {
                                             <li class="sidebar-item">
