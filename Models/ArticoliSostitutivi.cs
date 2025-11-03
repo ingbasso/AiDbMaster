@@ -5,110 +5,63 @@ namespace AiDbMaster.Models
 {
     /// <summary>
     /// Modello per la tabella ArticoliSostitutivi
-    /// Rappresenta le relazioni di sostituzione tra articoli nel sistema
+    /// Rappresenta la relazione bidirezionale tra articoli che possono sostituirsi a vicenda
     /// </summary>
     [Table("ArticoliSostitutivi")]
     public class ArticoliSostitutivi
     {
         /// <summary>
-        /// Codice dell'articolo principale
+        /// Codice articolo principale
         /// </summary>
-        [Key]
-        [Required(ErrorMessage = "Il codice articolo è obbligatorio")]
-        [StringLength(50, ErrorMessage = "Il codice articolo non può superare i 50 caratteri")]
-        [Display(Name = "Codice Articolo")]
+        [Required]
+        [StringLength(50)]
         [Column("CodiceArticolo")]
         public string CodiceArticolo { get; set; } = string.Empty;
 
         /// <summary>
-        /// Codice dell'articolo sostitutivo
+        /// Codice articolo sostitutivo
         /// </summary>
-        [Key]
-        [Required(ErrorMessage = "Il codice articolo sostitutivo è obbligatorio")]
-        [StringLength(50, ErrorMessage = "Il codice articolo sostitutivo non può superare i 50 caratteri")]
-        [Display(Name = "Codice Articolo Sostitutivo")]
+        [Required]
+        [StringLength(50)]
         [Column("CodiceArticoloSostitutivo")]
         public string CodiceArticoloSostitutivo { get; set; } = string.Empty;
 
         /// <summary>
-        /// Note sulla sostituzione dell'articolo
+        /// Note sulla relazione di sostituzione
         /// </summary>
-        [Display(Name = "Note")]
         [Column("Note")]
         public string? Note { get; set; }
 
         /// <summary>
-        /// Descrizione completa della relazione di sostituzione
+        /// Data ultimo aggiornamento della relazione
         /// </summary>
-        [NotMapped]
-        public string DescrizioneCompleta
-        {
-            get
-            {
-                var descrizione = $"{CodiceArticolo} → {CodiceArticoloSostitutivo}";
-                
-                if (!string.IsNullOrEmpty(Note))
-                {
-                    descrizione += $" ({Note})";
-                }
-                
-                return descrizione;
-            }
-        }
+        [Column("UltimoAggiornamento")]
+        public DateTime? UltimoAggiornamento { get; set; }
+
+        // Proprietà calcolate per compatibilità con il vecchio controller
 
         /// <summary>
-        /// Tipo di relazione per la visualizzazione
+        /// Descrizione completa della relazione (proprietà calcolata)
         /// </summary>
         [NotMapped]
-        public string TipoRelazione
-        {
-            get
-            {
-                return "Sostituzione";
-            }
-        }
+        public string DescrizioneCompleta => $"{CodiceArticolo} → {CodiceArticoloSostitutivo}";
 
         /// <summary>
-        /// Indica se la sostituzione ha note aggiuntive
+        /// Tipo di relazione (proprietà calcolata, sempre "Sostitutivo")
         /// </summary>
         [NotMapped]
-        public bool HasNote
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(Note);
-            }
-        }
+        public string TipoRelazione => "Sostitutivo";
+
+        /// <summary>
+        /// Indica se ha note (proprietà calcolata)
+        /// </summary>
+        [NotMapped]
+        public bool HasNote => !string.IsNullOrWhiteSpace(Note);
 
         /// <summary>
         /// Chiave composta per identificare univocamente la relazione
         /// </summary>
         [NotMapped]
-        public string ChiaveComposta
-        {
-            get
-            {
-                return $"{CodiceArticolo}|{CodiceArticoloSostitutivo}";
-            }
-        }
-
-        /// <summary>
-        /// Rappresentazione testuale della relazione per ricerche
-        /// </summary>
-        [NotMapped]
-        public string TestoRicerca
-        {
-            get
-            {
-                var testo = $"{CodiceArticolo} {CodiceArticoloSostitutivo}";
-                
-                if (!string.IsNullOrEmpty(Note))
-                {
-                    testo += $" {Note}";
-                }
-                
-                return testo.ToLower();
-            }
-        }
+        public string ChiaveComposta => $"{CodiceArticolo}|{CodiceArticoloSostitutivo}";
     }
 }
