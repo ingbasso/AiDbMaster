@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AiDbMaster.Data;
 using AiDbMaster.ViewModels;
+using AiDbMaster.Helpers;
 
 namespace AiDbMaster.Controllers
 {
@@ -408,31 +409,319 @@ namespace AiDbMaster.Controllers
         // ========== CONSEGNE PROGRAMMATE ==========
 
         /// <summary>
-        /// GET: Mostra il form per le consegne programmate (da implementare)
+        /// GET: Mostra il form per le consegne programmate
         /// </summary>
         [HttpGet]
         public IActionResult ConsegneProgrammate()
         {
+            ViewBag.UseFluidContainer = true; // Usa larghezza completa
+            
+            var oggi = DateTime.Today;
+            var primoGiornoMese = new DateTime(oggi.Year, oggi.Month, 1);
+            var ultimoGiornoMese = new DateTime(oggi.Year, oggi.Month, DateTime.DaysInMonth(oggi.Year, oggi.Month));
+            
             var model = new ConsegneProgrammateViewModel
             {
-                DataInizio = DateTime.Today,
-                DataFine = DateTime.Today.AddDays(30)
+                DataConsegnaDa = primoGiornoMese,
+                DataConsegnaA = ultimoGiornoMese,
+                OrdinamentoPer = "DataConsegna" // Default
             };
             return View(model);
         }
 
         /// <summary>
-        /// POST: Esegue la ricerca consegne programmate (da implementare)
+        /// POST: Esegue la ricerca consegne programmate
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ConsegneProgrammate(ConsegneProgrammateViewModel model)
+        public async Task<IActionResult> ConsegneProgrammate(ConsegneProgrammateViewModel model)
         {
-            // TODO: Implementare la logica per le consegne programmate
-            ViewBag.Message = "Funzionalità in fase di implementazione.";
-            ViewBag.MessageType = "info";
-            
-            return View(model);
+            ViewBag.UseFluidContainer = true; // Usa larghezza completa
+
+            try
+            {
+                // Query base: Ordini clienti (TipoOrdine = 'R')
+                var query = from testata in _context.OrdiniTestate
+                            join cliente in _context.AnagraficaClienti
+                                on testata.CodiceCliente equals cliente.CodiceCliente
+                            join agente in _context.TabellaAgenti
+                                on cliente.CodiceAgente equals agente.CodiceAgente into agenteGroup
+                            from agente in agenteGroup.DefaultIfEmpty()
+                            where testata.TipoOrdine == "R"
+                            select new
+                            {
+                                Testata = testata,
+                                Cliente = cliente,
+                                Agente = agente
+                            };
+
+                // Filtro per cliente
+                if (model.CodiceCliente.HasValue)
+                {
+                    query = query.Where(x => x.Testata.CodiceCliente == model.CodiceCliente.Value);
+                }
+
+                // Filtro per agente
+                if (model.CodiceAgente.HasValue)
+                {
+                    query = query.Where(x => x.Cliente.CodiceAgente == model.CodiceAgente.Value);
+                }
+
+                // Filtro per provincia
+                if (!string.IsNullOrWhiteSpace(model.Provincia))
+                {
+                    query = query.Where(x => x.Cliente.Provincia == model.Provincia);
+                }
+
+                // Filtro per comune (città)
+                if (!string.IsNullOrWhiteSpace(model.Comune))
+                {
+                    query = query.Where(x => x.Cliente.Citta != null && x.Cliente.Citta.Contains(model.Comune));
+                }
+
+                var testate = await query.ToListAsync();
+
+                // Adesso recupero le righe per ogni testata con filtro data consegna
+                var ordiniViewModel = new List<OrdineConsegnaViewModel>();
+
+                foreach (var item in testate)
+                {
+                    // Recupera le righe dell'ordine con filtro data consegna
+                    var righeQuery = _context.OrdiniRighe
+                        .Where(r => r.TipoOrdine == item.Testata.TipoOrdine)
+                        .Where(r => r.AnnoOrdine == item.Testata.AnnoOrdine)
+                        .Where(r => r.SerieOrdine == item.Testata.SerieOrdine)
+                        .Where(r => r.NumeroOrdine == item.Testata.NumeroOrdine);
+
+                    // Filtro data consegna DA
+                    if (model.DataConsegnaDa.HasValue)
+                    {
+                        righeQuery = righeQuery.Where(r => r.DataConsegna >= model.DataConsegnaDa.Value);
+                    }
+
+                    // Filtro data consegna A
+                    if (model.DataConsegnaA.HasValue)
+                    {
+                        righeQuery = righeQuery.Where(r => r.DataConsegna <= model.DataConsegnaA.Value);
+                    }
+
+                    var righe = await righeQuery.ToListAsync();
+
+                    // Se l'ordine non ha righe che soddisfano i filtri data, salta
+                    if (!righe.Any())
+                        continue;
+
+                    // Ricava regione dalla provincia
+                    var regione = RegioniHelper.GetRegione(item.Cliente.Provincia);
+
+                    // Filtro per regione (se specificato)
+                    if (!string.IsNullOrWhiteSpace(model.Regione) && 
+                        !string.Equals(regione, model.Regione, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    // Crea il ViewModel per l'ordine
+                    var ordineViewModel = new OrdineConsegnaViewModel
+                    {
+                        // Dati testata
+                        Id = item.Testata.Id,
+                        CodiceCliente = item.Testata.CodiceCliente,
+                        TipoOrdine = item.Testata.TipoOrdine,
+                        AnnoOrdine = item.Testata.AnnoOrdine,
+                        SerieOrdine = item.Testata.SerieOrdine,
+                        NumeroOrdine = item.Testata.NumeroOrdine,
+                        DataOrdine = item.Testata.DataOrdine,
+                        RiferimentoOrdine = item.Testata.RiferimentoOrdine,
+                        DataConsegnaTestata = item.Testata.DataConsegna,
+                        CodiceAgente = item.Testata.CodiceAgente,
+                        NoteTestata = item.Testata.NoteTestata,
+
+                        // Dati cliente
+                        RagioneSociale = item.Cliente.RagioneSociale,
+                        DescrizioneUlteriore = item.Cliente.DescrizioneUlteriore,
+                        Indirizzo = item.Cliente.Indirizzo,
+                        Cap = item.Cliente.Cap,
+                        Citta = item.Cliente.Citta,
+                        Provincia = item.Cliente.Provincia,
+                        Regione = regione,
+                        CodiceFiscale = item.Cliente.CodiceFiscale,
+                        PartitaIva = item.Cliente.PartitaIva,
+                        Telefono = item.Cliente.Telefono,
+
+                        // Dati agente
+                        NomeAgente = item.Agente?.DescrizioneAgente,
+
+                        // Righe ordine
+                        Righe = righe.Select(r => new RigaOrdineConsegnaViewModel
+                        {
+                            Id = r.Id,
+                            TipoOrdine = r.TipoOrdine,
+                            AnnoOrdine = r.AnnoOrdine,
+                            SerieOrdine = r.SerieOrdine,
+                            NumeroOrdine = r.NumeroOrdine,
+                            RigaOrdine = r.RigaOrdine,
+                            CodiceMagazzino = r.CodiceMagazzino,
+                            CodiceArticolo = r.CodiceArticolo,
+                            DescrizioneArticolo = r.DescrizioneArticolo,
+                            DataConsegna = r.DataConsegna,
+                            UnitaMisura = r.UnitaMisura,
+                            Quantita = r.Quantita,
+                            UnitaMisuraColli = r.UnitaMisuraColli,
+                            NumeroColli = r.NumeroColli,
+                            ColliEvasi = r.ColliEvasi,
+                            QuantitaEvasa = r.QuantitaEvasa,
+                            Prezzo = r.Prezzo,
+                            PercentualeInclusione = r.PercentualeInclusione,
+                            NoteRiga = r.NoteRiga,
+                            ValoreRiga = r.ValoreRiga
+                        }).ToList()
+                    };
+
+                    ordiniViewModel.Add(ordineViewModel);
+                }
+
+                // Ordinamento
+                ordiniViewModel = model.OrdinamentoPer switch
+                {
+                    "Cliente" => ordiniViewModel.OrderBy(o => o.RagioneSociale).ThenBy(o => o.Righe.Min(r => r.DataConsegna)).ToList(),
+                    "Ordine" => ordiniViewModel.OrderBy(o => o.AnnoOrdine).ThenBy(o => o.NumeroOrdine).ToList(),
+                    _ => ordiniViewModel.OrderBy(o => o.Righe.Min(r => r.DataConsegna)).ThenBy(o => o.RagioneSociale).ToList() // DataConsegna
+                };
+
+                model.Ordini = ordiniViewModel;
+
+                // Informazioni aggiuntive per i filtri selezionati
+                if (model.CodiceCliente.HasValue)
+                {
+                    var cliente = await _context.AnagraficaClienti
+                        .FirstOrDefaultAsync(c => c.CodiceCliente == model.CodiceCliente.Value);
+                    model.RagioneSocialeCliente = cliente?.RagioneSociale;
+                }
+
+                if (model.CodiceAgente.HasValue)
+                {
+                    var agente = await _context.TabellaAgenti
+                        .FirstOrDefaultAsync(a => a.CodiceAgente == model.CodiceAgente.Value);
+                    model.NomeAgente = agente?.DescrizioneAgente;
+                }
+
+                _logger.LogInformation("Ricerca consegne programmate completata. Trovati {Count} ordini con {RigheCount} righe totali.",
+                    model.Ordini.Count, model.Ordini.Sum(o => o.NumeroRighe));
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante la ricerca delle consegne programmate");
+                ModelState.AddModelError("", "Si è verificato un errore durante la ricerca. Riprova più tardi.");
+                return View(model);
+            }
+        }
+
+        /// <summary>
+        /// API: Ricerca clienti per autocomplete (Select2)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> SearchClienti(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+            {
+                return Json(new { results = new List<object>() });
+            }
+
+            var clienti = await _context.AnagraficaClienti
+                .Where(c => c.CodiceCliente.ToString().Contains(term) || 
+                           (c.RagioneSociale != null && c.RagioneSociale.Contains(term)))
+                .OrderBy(c => c.RagioneSociale)
+                .Take(20)
+                .Select(c => new
+                {
+                    id = c.CodiceCliente,
+                    text = $"{c.CodiceCliente} - {c.RagioneSociale}"
+                })
+                .ToListAsync();
+
+            return Json(new { results = clienti });
+        }
+
+        /// <summary>
+        /// API: Ottieni tutte le regioni italiane
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetRegioni()
+        {
+            var regioni = RegioniHelper.GetTutteLeRegioni();
+            return Json(regioni);
+        }
+
+        /// <summary>
+        /// API: Ottieni tutte le province distinte dai clienti
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetProvince(string? regione)
+        {
+            IQueryable<string> query = _context.AnagraficaClienti
+                .Where(c => c.Provincia != null)
+                .Select(c => c.Provincia!);
+
+            // Se è specificata una regione, filtra solo le province di quella regione
+            if (!string.IsNullOrWhiteSpace(regione))
+            {
+                var provinceRegione = RegioniHelper.GetProvincePerRegione(regione);
+                query = query.Where(p => provinceRegione.Contains(p));
+            }
+
+            var province = await query
+                .Distinct()
+                .OrderBy(p => p)
+                .ToListAsync();
+
+            return Json(province);
+        }
+
+        /// <summary>
+        /// API: Ottieni tutti i comuni (città) distinti dai clienti
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetComuni(string? provincia)
+        {
+            IQueryable<string> query = _context.AnagraficaClienti
+                .Where(c => c.Citta != null)
+                .Select(c => c.Citta!);
+
+            if (!string.IsNullOrWhiteSpace(provincia))
+            {
+                query = _context.AnagraficaClienti
+                    .Where(c => c.Provincia == provincia && c.Citta != null)
+                    .Select(c => c.Citta!);
+            }
+
+            var comuni = await query
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+
+            return Json(comuni);
+        }
+
+        /// <summary>
+        /// API: Ottieni tutti gli agenti attivi
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAgenti()
+        {
+            var agenti = await _context.TabellaAgenti
+                .Where(a => a.Attivo)
+                .OrderBy(a => a.DescrizioneAgente)
+                .Select(a => new
+                {
+                    codice = a.CodiceAgente,
+                    descrizione = a.DescrizioneAgente ?? $"Agente {a.CodiceAgente}"
+                })
+                .ToListAsync();
+
+            return Json(agenti);
         }
     }
 }

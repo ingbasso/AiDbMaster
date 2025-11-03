@@ -101,38 +101,6 @@ namespace AiDbMaster.ViewModels
     }
 
     /// <summary>
-    /// ViewModel per la pagina Consegne Programmate (da implementare)
-    /// </summary>
-    public class ConsegneProgrammateViewModel
-    {
-        [Display(Name = "Codice Articolo")]
-        public string? CodiceArticolo { get; set; }
-        
-        [Display(Name = "Data Inizio")]
-        [DataType(DataType.Date)]
-        public DateTime? DataInizio { get; set; }
-        
-        [Display(Name = "Data Fine")]
-        [DataType(DataType.Date)]
-        public DateTime? DataFine { get; set; }
-        
-        // Lista risultati (da implementare)
-        public List<ConsegnaProgrammataRigaViewModel>? Risultati { get; set; }
-    }
-
-    /// <summary>
-    /// ViewModel per ogni riga di consegna programmata (da implementare)
-    /// </summary>
-    public class ConsegnaProgrammataRigaViewModel
-    {
-        public string CodiceArticolo { get; set; } = string.Empty;
-        public DateTime DataConsegnaPrevista { get; set; }
-        public decimal Quantita { get; set; }
-        public string Fornitore { get; set; } = string.Empty;
-        public string Note { get; set; } = string.Empty;
-    }
-
-    /// <summary>
     /// ViewModel per il dettaglio delle produzioni programmate
     /// Utilizzato per mostrare il popup con il dettaglio delle produzioni disponibili
     /// </summary>
@@ -209,6 +177,151 @@ namespace AiDbMaster.ViewModels
         public DateTime DataRiferimento { get; set; }
         public List<OrdineClienteDettaglioViewModel> Ordini { get; set; } = new List<OrdineClienteDettaglioViewModel>();
         public decimal TotaleImpegnatoFuturo { get; set; }
+    }
+
+    // =====================================================
+    // ViewModels per Consegne Programmate
+    // =====================================================
+
+    /// <summary>
+    /// ViewModel per la pagina Consegne Programmate (filtri e risultati)
+    /// </summary>
+    public class ConsegneProgrammateViewModel
+    {
+        // Filtri Input
+        [Display(Name = "Da Data Consegna")]
+        [DataType(DataType.Date)]
+        public DateTime? DataConsegnaDa { get; set; }
+
+        [Display(Name = "A Data Consegna")]
+        [DataType(DataType.Date)]
+        public DateTime? DataConsegnaA { get; set; }
+
+        [Display(Name = "Cliente")]
+        public int? CodiceCliente { get; set; }
+
+        [Display(Name = "Regione")]
+        public string? Regione { get; set; }
+
+        [Display(Name = "Provincia")]
+        public string? Provincia { get; set; }
+
+        [Display(Name = "Comune")]
+        public string? Comune { get; set; }
+
+        [Display(Name = "Agente")]
+        public short? CodiceAgente { get; set; }
+
+        [Display(Name = "Ordina Per")]
+        public string OrdinamentoPer { get; set; } = "DataConsegna"; // DataConsegna, Cliente, Ordine
+
+        // Output - Lista risultati (ordini con righe)
+        public List<OrdineConsegnaViewModel> Ordini { get; set; } = new List<OrdineConsegnaViewModel>();
+
+        // Informazioni aggiuntive per filtri selezionati
+        public string? RagioneSocialeCliente { get; set; }
+        public string? NomeAgente { get; set; }
+    }
+
+    /// <summary>
+    /// ViewModel per un singolo ordine con le sue righe (testata + dettaglio)
+    /// </summary>
+    public class OrdineConsegnaViewModel
+    {
+        // Campi Testata Ordine
+        public int Id { get; set; }
+        public int CodiceCliente { get; set; }
+        public string TipoOrdine { get; set; } = string.Empty;
+        public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
+        public int NumeroOrdine { get; set; }
+        public DateTime DataOrdine { get; set; }
+        public string? RiferimentoOrdine { get; set; }
+        public DateTime? DataConsegnaTestata { get; set; }
+        public short CodiceAgente { get; set; }
+        public string? NoteTestata { get; set; }
+
+        // Campi Cliente (da AnagraficaClienti)
+        public string RagioneSociale { get; set; } = string.Empty;
+        public string? DescrizioneUlteriore { get; set; }
+        public string? Indirizzo { get; set; }
+        public string? Cap { get; set; }
+        public string? Citta { get; set; }
+        public string? Provincia { get; set; }
+        public string? Regione { get; set; }
+        public string? CodiceFiscale { get; set; }
+        public string? PartitaIva { get; set; }
+        public string? Telefono { get; set; }
+
+        // Campi Agente (da TabellaAgenti)
+        public string? NomeAgente { get; set; }
+        public string? TelefonoAgente { get; set; }
+
+        // Righe dell'ordine
+        public List<RigaOrdineConsegnaViewModel> Righe { get; set; } = new List<RigaOrdineConsegnaViewModel>();
+
+        // Proprietà calcolate
+        public string NumeroOrdineCompleto => $"{TipoOrdine}{AnnoOrdine}/{SerieOrdine}/{NumeroOrdine:D6}";
+        public string IndirizzoCompletoCliente => FormattaIndirizzo(Indirizzo, Cap, Citta, Provincia);
+        public int NumeroRighe => Righe.Count;
+        public decimal TotaleOrdine => Righe.Sum(r => r.ValoreRiga);
+        public decimal TotaleQuantita => Righe.Sum(r => r.Quantita);
+        public decimal TotaleQuantitaDaEvadere => Righe.Sum(r => r.QuantitaRimanente);
+
+        private static string FormattaIndirizzo(string? indirizzo, string? cap, string? citta, string? provincia)
+        {
+            var parti = new List<string>();
+            if (!string.IsNullOrEmpty(indirizzo)) parti.Add(indirizzo);
+            if (!string.IsNullOrEmpty(cap)) parti.Add(cap);
+            if (!string.IsNullOrEmpty(citta)) parti.Add(citta);
+            if (!string.IsNullOrEmpty(provincia)) parti.Add($"({provincia})");
+            return string.Join(", ", parti);
+        }
+    }
+
+    /// <summary>
+    /// ViewModel per una singola riga dell'ordine
+    /// </summary>
+    public class RigaOrdineConsegnaViewModel
+    {
+        // Campi Riga Ordine
+        public int Id { get; set; }
+        public string TipoOrdine { get; set; } = string.Empty;
+        public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
+        public int NumeroOrdine { get; set; }
+        public int RigaOrdine { get; set; }
+        public short CodiceMagazzino { get; set; }
+        public string CodiceArticolo { get; set; } = string.Empty;
+        public string? DescrizioneArticolo { get; set; }
+        public DateTime DataConsegna { get; set; }
+        public string? UnitaMisura { get; set; }
+        public decimal Quantita { get; set; }
+        public string? UnitaMisuraColli { get; set; }
+        public decimal NumeroColli { get; set; }
+        public decimal ColliEvasi { get; set; }
+        public decimal QuantitaEvasa { get; set; }
+        public decimal Prezzo { get; set; }
+        public int PercentualeInclusione { get; set; }
+        public string? NoteRiga { get; set; }
+        public decimal ValoreRiga { get; set; }
+
+        // Proprietà calcolate
+        public decimal QuantitaRimanente => Quantita - QuantitaEvasa;
+        public decimal ColliRimanenti => NumeroColli - ColliEvasi;
+        public string DescrizioneArticoloCompleta => !string.IsNullOrEmpty(DescrizioneArticolo) 
+            ? $"{CodiceArticolo} - {DescrizioneArticolo}" 
+            : CodiceArticolo;
+        public string StatoEvasione => QuantitaEvasa <= 0 ? "Da Evadere" 
+            : QuantitaEvasa < Quantita ? "Parzialmente Evasa" 
+            : "Completamente Evasa";
+        public string StatoEvasioneCssClass => StatoEvasione switch
+        {
+            "Da Evadere" => "badge bg-danger",
+            "Parzialmente Evasa" => "badge bg-warning text-dark",
+            "Completamente Evasa" => "badge bg-success",
+            _ => "badge bg-secondary"
+        };
     }
 }
 
