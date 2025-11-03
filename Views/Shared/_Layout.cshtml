@@ -45,12 +45,6 @@
                                 <span>Grafici</span>
                             </a>
                         </li>
-                        <li class="sidebar-item">
-                            <a class="sidebar-link" asp-controller="GestioneOrdini" asp-action="Index">
-                                <i class="bi bi-clipboard-data"></i>
-                                <span>Gestione Ordini</span>
-                            </a>
-                        </li>
                     }
                     
                     @if (User.Identity?.IsAuthenticated == true)
@@ -244,6 +238,17 @@
                                 </ul>
                             </div>
                         </li>
+                        
+                        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                        {
+                            <!-- Interrogazioni AI -->
+                            <li class="sidebar-item">
+                                <a class="sidebar-link" asp-controller="GestioneOrdini" asp-action="Index">
+                                    <i class="bi bi-robot"></i>
+                                    <span>Interrogazioni AI</span>
+                                </a>
+                            </li>
+                        }
                         
                         @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                         {
