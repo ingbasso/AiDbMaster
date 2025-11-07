@@ -1,0 +1,462 @@
+@{
+    ViewData["Title"] = "Converti Agenti in Utenti";
+}
+
+<link rel="stylesheet" href="~/css/popup-dettagli.css" />
+
+<style>
+    /* Margini per la pagina */
+    .main-content {
+        padding: 0 !important;
+    }
+</style>
+
+@Html.AntiForgeryToken()
+
+<div class="container-fluid px-4 py-3" style="padding-bottom: 150px !important;">
+    <div class="card shadow-sm">
+        <!-- Header -->
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-person-plus-fill me-2"></i>
+                Converti Agenti in Utenti
+            </h5>
+        </div>
+        
+        <!-- Body -->
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                Seleziona gli agenti dalla lista e convertili in utenti con ruolo "Agenti". 
+                Gli agenti già convertiti sono contrassegnati con un badge verde.
+            </p>
+            
+            <!-- Filtri -->
+            <div class="d-flex gap-4 mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filtroNonConvertiti" checked>
+                    <label class="form-check-label" for="filtroNonConvertiti">
+                        Mostra solo non convertiti
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filtroSoloAttivi" checked>
+                    <label class="form-check-label" for="filtroSoloAttivi">
+                        Mostra solo attivi
+                    </label>
+                </div>
+            </div>
+
+            <!-- Griglia Syncfusion -->
+            <div id="gridAgenti" style="min-height: 400px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Conversione -->
+<div id="popupConversione" class="popup-dettagli" style="display:none;">
+    <div class="popup-header" id="popupHeader">
+        <h5>
+            <i class="bi bi-person-plus me-2"></i>
+            Converti Agente in Utente
+        </h5>
+        <button class="popup-close" onclick="chiudiPopupConversione()">×</button>
+    </div>
+    <div class="popup-body">
+        <form id="formConversione">
+            <input type="hidden" id="codiceAgenteConvert" />
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Stai per creare un account utente per l'agente: <strong id="nomeAgenteConvert"></strong>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="firstNameConvert" class="form-label">Nome *</label>
+                    <input type="text" class="form-control" id="firstNameConvert" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="lastNameConvert" class="form-label">Cognome *</label>
+                    <input type="text" class="form-control" id="lastNameConvert" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="emailConvert" class="form-label">Email *</label>
+                <input type="email" class="form-control" id="emailConvert" required>
+                <div class="form-text">Verrà usata come username per il login</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="passwordConvert" class="form-label">Password *</label>
+                <input type="password" class="form-control" id="passwordConvert" required>
+                <div class="form-text">
+                    Minimo 8 caratteri, con maiuscole, minuscole, numeri e caratteri speciali
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="passwordConfirm" class="form-label">Conferma Password *</label>
+                <input type="password" class="form-control" id="passwordConfirm" required>
+            </div>
+
+            <div class="alert alert-warning">
+                <i class="bi bi-shield-check me-2"></i>
+                L'utente verrà creato con ruolo <strong>"Agenti"</strong>
+            </div>
+        </form>
+    </div>
+    <div class="popup-footer">
+        <button type="button" class="btn btn-secondary" onclick="chiudiPopupConversione()">
+            <i class="bi bi-x-circle me-2"></i>
+            Annulla
+        </button>
+        <button type="button" class="btn btn-success" onclick="confermaConversione()">
+            <i class="bi bi-check-circle me-2"></i>
+            Crea Utente
+        </button>
+    </div>
+</div>
+
+<!-- Popup Risultato -->
+<div id="popupRisultato" class="popup-dettagli" style="display:none;">
+    <div class="popup-header" id="popupHeaderRisultato">
+        <h5>
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
+            Utente Creato con Successo
+        </h5>
+        <button class="popup-close" onclick="chiudiPopupRisultato()">×</button>
+    </div>
+    <div class="popup-body">
+        <div class="alert alert-success">
+            <h6><i class="bi bi-check-circle me-2"></i>Conversione completata!</h6>
+            <p class="mb-0">L'agente è stato convertito in utente. Le credenziali create sono:</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email / Username:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="emailCreato" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copiaEmail()">
+                            <i class="bi bi-clipboard"></i> Copia
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Password:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="passwordCreato" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copiaPassword()">
+                            <i class="bi bi-clipboard"></i> Copia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning mt-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Importante:</strong> Comunica queste credenziali all'agente in modo sicuro. 
+            Questa è l'unica volta che la password sarà visibile.
+        </div>
+    </div>
+    <div class="popup-footer">
+        <button type="button" class="btn btn-primary" onclick="chiudiPopupRisultato()">
+            <i class="bi bi-check-circle me-2"></i>
+            Chiudi
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/popup-dettagli.js"></script>
+    <script>
+        // Verifica e registra la licenza Syncfusion
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+        }
+
+        let gridInstance;
+        let agentiData = [];
+        let popupConversione, popupRisultato;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Forza la registrazione della licenza
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.License = "Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=";
+            }
+
+            // Inizializza i popup
+            popupConversione = new PopupDettagli('popupConversione', 'popupHeader');
+            popupRisultato = new PopupDettagli('popupRisultato', 'popupHeaderRisultato');
+
+            // Carica i dati e inizializza la griglia
+            caricaAgenti();
+
+            // Event listener per i filtri
+            document.getElementById('filtroNonConvertiti').addEventListener('change', applicaFiltri);
+            document.getElementById('filtroSoloAttivi').addEventListener('change', applicaFiltri);
+        });
+
+        function caricaAgenti() {
+            fetch('/AgentiToUser/GetAgenti')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Errore HTTP: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    agentiData = data || [];
+                    
+                    if (agentiData.length === 0) {
+                        alert('Attenzione: Non ci sono agenti nella tabella TabellaAgenti.\n\nPer testare questa funzionalità, devi prima inserire degli agenti nel database.');
+                    }
+                    
+                    // Se la griglia esiste già, aggiorna solo i dati
+                    if (gridInstance) {
+                        aggiornaGriglia();
+                    } else {
+                        inizializzaGriglia(agentiData);
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore nel caricamento degli agenti:', error);
+                    alert('Errore nel caricamento degli agenti: ' + error.message + '\n\nVerifica la console del browser per maggiori dettagli.');
+                });
+        }
+
+        function inizializzaGriglia(data) {
+            // Applica i filtri iniziali
+            let dataFiltrata = applicaFiltriDati(data);
+
+            gridInstance = new ej.grids.Grid({
+                dataSource: dataFiltrata,
+                allowPaging: true,
+                allowSorting: true,
+                allowFiltering: true,
+                height: '100%',
+                pageSettings: { pageSize: 12, pageSizes: [12, 24, 50, 100] },
+                filterSettings: { type: 'Excel' },
+                emptyRecordTemplate: '<div style="text-align:center;padding:20px;"><i class="bi bi-inbox" style="font-size:48px;color:#ccc;"></i><p class="mt-3">Nessun agente trovato.<br/>Verifica che ci siano dati nella tabella TabellaAgenti.</p></div>',
+                columns: [
+                    { 
+                        field: 'codiceAgente', 
+                        headerText: 'Codice', 
+                        width: 100, 
+                        textAlign: 'Center',
+                        template: '<div class="badge bg-secondary">${codiceAgente}</div>'
+                    },
+                    { 
+                        field: 'descrizioneAgente', 
+                        headerText: 'Nome Agente', 
+                        width: 200 
+                    },
+                    { 
+                        field: 'cittaAgente', 
+                        headerText: 'Città', 
+                        width: 150 
+                    },
+                    { 
+                        field: 'provinciaAgente', 
+                        headerText: 'Prov.', 
+                        width: 80,
+                        textAlign: 'Center'
+                    },
+                    { 
+                        field: 'indirizzoCompleto', 
+                        headerText: 'Indirizzo', 
+                        width: 250 
+                    },
+                    { 
+                        field: 'statoAgente', 
+                        headerText: 'Stato Agente', 
+                        width: 120,
+                        textAlign: 'Center',
+                        template: '<div class="badge ${statoAgenteCssClass}">${statoAgente}</div>'
+                    },
+                    { 
+                        field: 'isConverted', 
+                        headerText: 'Stato Conversione', 
+                        width: 150,
+                        textAlign: 'Center',
+                        template: '<div class="badge ${isConvertedCssClass}">${isConvertedText}</div>'
+                    },
+                    {
+                        headerText: 'Azioni',
+                        width: 150,
+                        textAlign: 'Center',
+                        template: '<button class="btn btn-sm ${buttonCssClass}" onclick="apriPopupConversioneSafe(${codiceAgente})" ${buttonDisabled}><i class="bi bi-person-plus me-1"></i>${buttonText}</button>'
+                    }
+                ]
+            });
+
+            gridInstance.appendTo('#gridAgenti');
+        }
+
+        function aggiornaGriglia() {
+            if (gridInstance) {
+                let dataFiltrata = applicaFiltriDati(agentiData);
+                gridInstance.dataSource = dataFiltrata;
+            }
+        }
+
+        function applicaFiltri() {
+            aggiornaGriglia();
+        }
+
+        function applicaFiltriDati(data) {
+            let filtroNonConvertiti = document.getElementById('filtroNonConvertiti').checked;
+            let filtroSoloAttivi = document.getElementById('filtroSoloAttivi').checked;
+
+            return data.filter(agente => {
+                if (filtroNonConvertiti && agente.isConverted) {
+                    return false;
+                }
+                if (filtroSoloAttivi && !agente.attivo) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function apriPopupConversioneSafe(codiceAgente) {
+            // Trova l'agente nei dati usando il codice agente
+            const agente = agentiData.find(a => a.codiceAgente === codiceAgente);
+            
+            if (!agente) {
+                alert('Agente non trovato');
+                return;
+            }
+
+            if (agente.isConverted) {
+                alert('Questo agente è già stato convertito in utente');
+                return;
+            }
+
+            // Usa descrizioneAgente dall'oggetto trovato (sicuro)
+            const descrizioneAgente = agente.descrizioneAgente || '';
+
+            // Pre-compila i campi
+            document.getElementById('codiceAgenteConvert').value = codiceAgente;
+            document.getElementById('nomeAgenteConvert').textContent = `${codiceAgente} - ${descrizioneAgente || 'N/A'}`;
+            
+            // Pre-compila nome e cognome se DescrizioneAgente contiene spazi
+            if (descrizioneAgente && descrizioneAgente.includes(' ')) {
+                const parti = descrizioneAgente.split(' ');
+                document.getElementById('firstNameConvert').value = parti[0];
+                document.getElementById('lastNameConvert').value = parti.slice(1).join(' ');
+            } else {
+                document.getElementById('firstNameConvert').value = descrizioneAgente || 'Agente';
+                document.getElementById('lastNameConvert').value = codiceAgente.toString();
+            }
+
+            // Suggerisci un'email
+            document.getElementById('emailConvert').value = `agente${codiceAgente}@@esempio.com`;
+            document.getElementById('passwordConvert').value = '';
+            document.getElementById('passwordConfirm').value = '';
+
+            popupConversione.show();
+        }
+
+        function chiudiPopupConversione() {
+            popupConversione.hide();
+        }
+
+        function confermaConversione() {
+            const codiceAgente = parseInt(document.getElementById('codiceAgenteConvert').value);
+            const email = document.getElementById('emailConvert').value.trim();
+            const password = document.getElementById('passwordConvert').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const firstName = document.getElementById('firstNameConvert').value.trim();
+            const lastName = document.getElementById('lastNameConvert').value.trim();
+
+            // Validazioni
+            if (!email || !password || !firstName || !lastName) {
+                alert('Tutti i campi sono obbligatori');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                alert('Le password non coincidono');
+                return;
+            }
+
+            if (password.length < 8) {
+                alert('La password deve essere di almeno 8 caratteri');
+                return;
+            }
+
+            // Disabilita il pulsante durante l'invio
+            const btnConferma = event.target;
+            btnConferma.disabled = true;
+            btnConferma.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creazione in corso...';
+
+            // Ottieni il token antiforgery
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            // Invia la richiesta
+            fetch('/AgentiToUser/ConvertToUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    codiceAgente: codiceAgente,
+                    email: email,
+                    password: password,
+                    firstName: firstName,
+                    lastName: lastName
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Chiudi il popup di conversione
+                chiudiPopupConversione();
+
+                // Mostra il popup con il risultato
+                document.getElementById('emailCreato').value = email;
+                document.getElementById('passwordCreato').value = password;
+                popupRisultato.show();
+
+                // Ricarica i dati della griglia
+                caricaAgenti();
+            })
+            .catch(error => {
+                console.error('Errore durante la conversione:', error);
+                alert(error.error || 'Errore durante la conversione dell\'agente');
+                
+                // Riabilita il pulsante
+                btnConferma.disabled = false;
+                btnConferma.innerHTML = '<i class="bi bi-check-circle me-2"></i>Crea Utente';
+            });
+        }
+
+        function chiudiPopupRisultato() {
+            popupRisultato.hide();
+        }
+
+        function copiaEmail() {
+            const email = document.getElementById('emailCreato').value;
+            navigator.clipboard.writeText(email).then(() => {
+                alert('Email copiata negli appunti!');
+            });
+        }
+
+        function copiaPassword() {
+            const password = document.getElementById('passwordCreato').value;
+            navigator.clipboard.writeText(password).then(() => {
+                alert('Password copiata negli appunti!');
+            });
+        }
+    </script>
+}
+

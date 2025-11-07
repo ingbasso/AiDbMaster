@@ -4,6 +4,18 @@
     ViewData["Title"] = "Accedi";
 }
 
+<style>
+    body {
+        background: linear-gradient(135deg, #34495e, #2c3e50) !important;
+        min-height: 100vh;
+    }
+    
+    .main-wrapper,
+    .main-content {
+        background: linear-gradient(135deg, #34495e, #2c3e50) !important;
+    }
+</style>
+
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -47,12 +59,6 @@
                         </button>
                     </div>
                 </form>
-                
-                <hr class="my-4" />
-                
-                <div class="text-center">
-                    <p class="text-dark">Non hai un account? <a asp-action="Register" class="text-primary fw-bold">Registrati</a></p>
-                </div>
             </div>
         </div>
     </div>

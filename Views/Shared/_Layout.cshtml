@@ -1,3 +1,24 @@
+@inject IResourcePermissionService PermissionService
+@using AiDbMaster.Helpers
+@{
+    // Carica i permessi dell'utente una sola volta per ottimizzare le performance
+    var userPermissions = User.Identity?.IsAuthenticated == true 
+        ? PermissionHelper.GetUserPermissions(User, PermissionService) 
+        : new Dictionary<string, ResourcePermissions>();
+    
+    // Helper function per controllare se l'utente può visualizzare una risorsa
+    bool CanViewResource(string resourceName)
+    {
+        // Admin può vedere tutto
+        if (User.IsInRole("Admin")) return true;
+        
+        // Non autenticato non può vedere nulla (eccetto Home)
+        if (User.Identity?.IsAuthenticated != true) return resourceName == "Home";
+        
+        // Controlla nei permessi
+        return userPermissions.TryGetValue(resourceName, out var perm) && perm.CanView;
+    }
+}
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -40,7 +61,7 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <!-- Tabelle -->
-                        <li class="sidebar-item">
+                        <li class="sidebar-item" permission-required="Tabelle:View">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
                                 <i class="bi bi-table"></i>
                                 <span>Tabelle</span>
@@ -48,25 +69,25 @@
                             </a>
                             <div class="collapse" id="tabelleSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="AnagraficaArticoli:View">
                                         <a class="sidebar-link" asp-controller="AnagraficaArticoli" asp-action="Index">
                                             <i class="bi bi-table"></i>
                                             <span>Anagrafica Articoli</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="AnagraficaClienti:View">
                                         <a class="sidebar-link" asp-controller="AnagraficaClienti" asp-action="Index">
                                             <i class="bi bi-people"></i>
                                             <span>Anagrafica Clienti</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="AnagraficaFornitori:View">
                                         <a class="sidebar-link" asp-controller="AnagraficaFornitori" asp-action="Index">
                                             <i class="bi bi-truck"></i>
                                             <span>Anagrafica Fornitori</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ArticoliSostitutivi:View">
                                         <a class="sidebar-link" asp-controller="ArticoliSostitutivi" asp-action="Index">
                                             <i class="bi bi-arrow-left-right"></i>
                                             <span>Articoli Sostitutivi</span>
@@ -210,7 +231,7 @@
                         @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                         {
                             <!-- Amministrazione -->
-                            <li class="sidebar-item">
+                            <li class="sidebar-item" permission-required="Amministrazione:View">
                                 <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#adminSubmenu" aria-expanded="false">
                                     <i class="bi bi-gear"></i>
                                     <span>Amministrazione</span>
@@ -220,16 +241,28 @@
                                     <ul class="sidebar-submenu">
                                         @if (User.IsInRole("Admin"))
                                         {
-                                            <li class="sidebar-item">
+                                            <li class="sidebar-item" permission-required="UserManagement:View">
                                                 <a class="sidebar-link" asp-controller="UserManagement" asp-action="Index">
                                                     <i class="bi bi-people"></i>
                                                     <span>Gestione utenti</span>
                                                 </a>
                                             </li>
-                                            <li class="sidebar-item">
+                                            <li class="sidebar-item" permission-required="RoleManagement:View">
                                                 <a class="sidebar-link" asp-controller="RoleManagement" asp-action="Index">
                                                     <i class="bi bi-shield-lock"></i>
                                                     <span>Gestione ruoli</span>
+                                                </a>
+                                            </li>
+                                            <li class="sidebar-item" permission-required="PermissionManagement:View">
+                                                <a class="sidebar-link" asp-controller="PermissionManagement" asp-action="Index">
+                                                    <i class="bi bi-shield-lock-fill"></i>
+                                                    <span>Gestione Permessi</span>
+                                                </a>
+                                            </li>
+                                            <li class="sidebar-item" permission-required="AgentiToUser:View">
+                                                <a class="sidebar-link" asp-controller="AgentiToUser" asp-action="Index">
+                                                    <i class="bi bi-person-plus-fill"></i>
+                                                    <span>Converti Agenti in Utenti</span>
                                                 </a>
                                             </li>
                                             <li class="sidebar-item">

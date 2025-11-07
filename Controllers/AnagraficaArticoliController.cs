@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Attributes;
 
 namespace AiDbMaster.Controllers
 {
@@ -11,6 +12,12 @@ namespace AiDbMaster.Controllers
     /// Fornisce funzionalità di visualizzazione degli articoli
     /// </summary>
     [Authorize]
+    [RegisterResource("AnagraficaArticoli", "Anagrafica Articoli", 
+        Description = "Gestione articoli di magazzino", 
+        MenuIcon = "bi-table", 
+        MenuOrder = 1, 
+        ParentResourceId = 2)] // Parent: Tabelle
+    [RequirePermission("AnagraficaArticoli", "View")]
     public class AnagraficaArticoliController : Controller
     {
         private readonly ApplicationDbContext _context;

@@ -32,6 +32,11 @@ namespace AiDbMaster.Data
         public DbSet<Lavorazioni> Lavorazioni { get; set; }
         public DbSet<CalendarioFermiCentriLavoro> CalendarioFermiCentriLavoro { get; set; }
         public DbSet<TempiAsciugatura> TempiAsciugatura { get; set; }
+        
+        // Tabelle Sistema Permessi
+        public DbSet<Resource> Resources { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<UserDataFilter> UserDataFilters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -321,6 +326,51 @@ namespace AiDbMaster.Data
                 new StatoOP { IdStato = 3, CodiceStato = "CH", DescrizioneStato = "Chiuso", Attivo = true, Ordine = 4 },
                 new StatoOP { IdStato = 4, CodiceStato = "SO", DescrizioneStato = "Sospeso", Attivo = true, Ordine = 3 }
             );
+
+            // ===== CONFIGURAZIONI SISTEMA PERMESSI =====
+
+            // Configurazione Resource (auto-referenza per gerarchia)
+            builder.Entity<Resource>()
+                .HasOne(r => r.Parent)
+                .WithMany(r => r.Children)
+                .HasForeignKey(r => r.ParentResourceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Indice univoco sul nome risorsa
+            builder.Entity<Resource>()
+                .HasIndex(r => r.Name)
+                .IsUnique()
+                .HasDatabaseName("IX_Resources_Name");
+
+            // Configurazione Permission
+            builder.Entity<Permission>()
+                .HasOne(p => p.Role)
+                .WithMany()
+                .HasForeignKey(p => p.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Permission>()
+                .HasOne(p => p.Resource)
+                .WithMany(r => r.Permissions)
+                .HasForeignKey(p => p.ResourceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Indice univoco: un ruolo può avere un solo permesso per risorsa
+            builder.Entity<Permission>()
+                .HasIndex(p => new { p.RoleId, p.ResourceId })
+                .IsUnique()
+                .HasDatabaseName("IX_Permissions_RoleId_ResourceId");
+
+            // Configurazione UserDataFilter
+            builder.Entity<UserDataFilter>()
+                .HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<UserDataFilter>()
+                .HasIndex(f => new { f.UserId, f.ResourceName })
+                .HasDatabaseName("IX_UserDataFilters_UserId_ResourceName");
 
             // Seed data per Lavorazioni
             // Nota: I dati di seed vengono ora gestiti tramite la migrazione per preservare i dati esistenti

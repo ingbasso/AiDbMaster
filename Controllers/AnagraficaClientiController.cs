@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Attributes;
+using AiDbMaster.Services;
 
 namespace AiDbMaster.Controllers
 {
@@ -11,17 +13,26 @@ namespace AiDbMaster.Controllers
     /// Fornisce funzionalità di visualizzazione dei clienti
     /// </summary>
     [Authorize]
+    [RegisterResource("AnagraficaClienti", "Anagrafica Clienti", 
+        Description = "Gestione clienti", 
+        MenuIcon = "bi-people", 
+        MenuOrder = 2, 
+        ParentResourceId = 2)] // Parent: Tabelle
+    [RequirePermission("AnagraficaClienti", "View")]
     public class AnagraficaClientiController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AnagraficaClientiController> _logger;
+        private readonly IDataFilterService _dataFilterService;
 
         public AnagraficaClientiController(
             ApplicationDbContext context,
-            ILogger<AnagraficaClientiController> logger)
+            ILogger<AnagraficaClientiController> logger,
+            IDataFilterService dataFilterService)
         {
             _context = context;
             _logger = logger;
+            _dataFilterService = dataFilterService;
         }
 
         /// <summary>
@@ -49,6 +60,9 @@ namespace AiDbMaster.Controllers
 
                 // Query base con inclusione dell'agente
                 var query = _context.AnagraficaClienti.Include(c => c.Agente).AsQueryable();
+
+                // Applica filtro dati basato su ruolo utente (Agenti vedono solo propri clienti)
+                query = await _dataFilterService.ApplyUserFilterAsync(query, User, "AnagraficaClienti");
 
                 // Filtro per ricerca testuale
                 if (!string.IsNullOrEmpty(search))
@@ -182,7 +196,13 @@ namespace AiDbMaster.Controllers
         {
             try
             {
-                var clienti = await _context.AnagraficaClienti
+                // Query base
+                var query = _context.AnagraficaClienti.AsQueryable();
+
+                // Applica filtro dati basato su ruolo utente
+                query = await _dataFilterService.ApplyUserFilterAsync(query, User, "AnagraficaClienti");
+
+                var clienti = await query
                     .OrderBy(c => c.CodiceCliente)
                     .Select(c => new
                     {

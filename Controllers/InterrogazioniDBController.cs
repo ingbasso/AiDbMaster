@@ -145,7 +145,7 @@ namespace AiDbMaster.Controllers
                     {
                         op.Quantita,
                         op.DataFinePrevista,
-                        Mese = op.DataFinePrevista.Value.Month
+                        Mese = op.DataFinePrevista!.Value.Month
                     })
                     .ToListAsync();
 
@@ -259,7 +259,7 @@ namespace AiDbMaster.Controllers
                         op.NumeroOrdine,
                         op.Quantita,
                         op.DataFinePrevista,
-                        Mese = op.DataFinePrevista.Value.Month
+                        Mese = op.DataFinePrevista!.Value.Month
                     })
                     .OrderBy(op => op.DataFinePrevista)
                     .ToListAsync();

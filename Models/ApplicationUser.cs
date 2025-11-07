@@ -8,5 +8,10 @@ namespace AiDbMaster.Models
         public string? LastName { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsActive { get; set; } = true;
+        
+        /// <summary>
+        /// Codice agente collegato (se l'utente è un agente)
+        /// </summary>
+        public short? CodiceAgente { get; set; }
     }
 } 

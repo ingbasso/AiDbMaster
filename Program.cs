@@ -19,6 +19,7 @@ if (!string.IsNullOrEmpty(syncfusionLicenseKey))
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor(); // Per accesso HttpContext nei Tag Helper
 
 // Configurazione della connessione al database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? 
@@ -45,11 +46,18 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 // Registrazione dei servizi personalizzati
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<CategoryService>();
-builder.Services.AddScoped<PermissionService>();
+builder.Services.AddScoped<PermissionService>(); // Permessi documenti (esistente)
 builder.Services.AddScoped<LavorazioniService>();
 builder.Services.AddScoped<CentriLavoroService>();
 builder.Services.AddScoped<OperatoriService>();
 builder.Services.AddScoped<StatiOPService>();
+
+// Registrazione servizi sistema permessi risorse
+builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();
+builder.Services.AddScoped<IDataFilterService, DataFilterService>();
+
+// Aggiungi Memory Cache per i permessi
+builder.Services.AddMemoryCache();
 
 // Registrazione del servizio HttpClient per Mistral AI
 builder.Services.AddHttpClient<MistralAIService>();
@@ -152,6 +160,12 @@ using (var scope = app.Services.CreateScope())
         
         // Seed dei ruoli e dell'utente amministratore
         await DbSeeder.SeedRolesAndAdminAsync(services);
+        
+        // Seed delle risorse e permessi del sistema
+        await PermissionSeeder.SeedPermissionsAsync(services);
+        
+        // Auto-registrazione risorse dai controller con [RegisterResource]
+        await ResourceAutoRegistration.RegisterAllResourcesAsync(services);
     }
     catch (Exception ex)
     {

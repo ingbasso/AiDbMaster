@@ -4,6 +4,7 @@ using AiDbMaster.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AiDbMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251107101628_AddCodiceAgenteToApplicationUser")]
+    partial class AddCodiceAgenteToApplicationUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -964,55 +967,6 @@ namespace AiDbMaster.Migrations
                     b.ToTable("OrdiniTestate");
                 });
 
-            modelBuilder.Entity("AiDbMaster.Models.Permission", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("CanCreate")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("CanDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("CanEdit")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("CanView")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ResourceId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId");
-
-                    b.HasIndex("RoleId", "ResourceId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Permissions_RoleId_ResourceId");
-
-                    b.ToTable("Permissions");
-                });
-
             modelBuilder.Entity("AiDbMaster.Models.ProgressiviArticoli", b =>
                 {
                     b.Property<int>("Id")
@@ -1047,65 +1001,6 @@ namespace AiDbMaster.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ProgressiviArticoli");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.Resource", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsConfigured")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsMenuGroup")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MenuIcon")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("MenuOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int?>("ParentResourceId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Resources_Name");
-
-                    b.HasIndex("ParentResourceId");
-
-                    b.ToTable("Resources");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.StatoOP", b =>
@@ -1266,46 +1161,6 @@ namespace AiDbMaster.Migrations
                     b.HasKey("IdMese");
 
                     b.ToTable("TempiAsciugatura");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.UserDataFilter", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FilterType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("FilterValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ResourceName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "ResourceName")
-                        .HasDatabaseName("IX_UserDataFilters_UserId_ResourceName");
-
-                    b.ToTable("UserDataFilters");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1595,46 +1450,6 @@ namespace AiDbMaster.Migrations
                     b.Navigation("Cliente");
                 });
 
-            modelBuilder.Entity("AiDbMaster.Models.Permission", b =>
-                {
-                    b.HasOne("AiDbMaster.Models.Resource", "Resource")
-                        .WithMany("Permissions")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
-
-                    b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.Resource", b =>
-                {
-                    b.HasOne("AiDbMaster.Models.Resource", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentResourceId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.UserDataFilter", b =>
-                {
-                    b.HasOne("AiDbMaster.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1709,13 +1524,6 @@ namespace AiDbMaster.Migrations
             modelBuilder.Entity("AiDbMaster.Models.OrdiniTestate", b =>
                 {
                     b.Navigation("Righe");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.Resource", b =>
-                {
-                    b.Navigation("Children");
-
-                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.StatoOP", b =>

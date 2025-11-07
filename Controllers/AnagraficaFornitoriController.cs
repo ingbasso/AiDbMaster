@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Attributes;
 
 namespace AiDbMaster.Controllers
 {
@@ -11,6 +12,12 @@ namespace AiDbMaster.Controllers
     /// Fornisce funzionalità di visualizzazione dei fornitori
     /// </summary>
     [Authorize]
+    [RegisterResource("AnagraficaFornitori", "Anagrafica Fornitori", 
+        Description = "Gestione fornitori", 
+        MenuIcon = "bi-truck", 
+        MenuOrder = 3, 
+        ParentResourceId = 2)] // Parent: Tabelle
+    [RequirePermission("AnagraficaFornitori", "View")]
     public class AnagraficaFornitoriController : Controller
     {
         private readonly ApplicationDbContext _context;

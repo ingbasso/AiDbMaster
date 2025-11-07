@@ -12,7 +12,7 @@ namespace AiDbMaster.Data
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             // Crea i ruoli se non esistono
-            string[] roleNames = { UserRoles.Admin, UserRoles.Manager, UserRoles.Employee, UserRoles.User };
+            string[] roleNames = { UserRoles.Admin, UserRoles.Manager, UserRoles.Employee, UserRoles.User, UserRoles.Agenti };
             foreach (var roleName in roleNames)
             {
                 var roleExists = await roleManager.RoleExistsAsync(roleName);

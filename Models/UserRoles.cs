@@ -6,5 +6,6 @@ namespace AiDbMaster.Models
         public const string Manager = "Manager";
         public const string Employee = "Employee";
         public const string User = "User";
+        public const string Agenti = "Agenti";
     }
 } 
