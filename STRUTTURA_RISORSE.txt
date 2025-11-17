@@ -1,0 +1,234 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    🔐 STRUTTURA COMPLETA RISORSE - AiDbMaster                 ║
+║                           (33 Risorse Totali)                                 ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📋 LEGENDA:
+  📁 = Gruppo Menu (IsMenuGroup = true, solo View)
+  📄 = Pagina Singola (IsMenuGroup = false, tutti i permessi CRUD)
+  🔒 = Solo Admin/Manager
+  👥 = Accessibile anche ad Agenti (con permessi limitati)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🏠 ROOT LEVEL (5 elementi)
+├─ 📄 [1] Home 👥
+├─ 📁 [2] Tabelle
+├─ 📁 [16] Produzione
+├─ 📁 [21] Interrogazioni DB
+└─ 📁 [27] Amministrazione 🔒
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 TABELLE (ID: 2) - 13 pagine figlie
+│
+├─ 📄 [3] Anagrafica Articoli
+│   Controller: AnagraficaArticoliController
+│   Icon: bi-table
+│   Attribute: [RegisterResource] ✅
+│
+├─ 📄 [4] Anagrafica Clienti 👥
+│   Controller: AnagraficaClientiController
+│   Icon: bi-people
+│   Attribute: [RegisterResource] ✅
+│   Permessi Agenti: View + Edit
+│
+├─ 📄 [5] Anagrafica Fornitori
+│   Controller: AnagraficaFornitoriController
+│   Icon: bi-truck
+│   Attribute: [RegisterResource] ✅
+│
+├─ 📄 [6] Articoli Sostitutivi
+│   Controller: ArticoliSostitutiviController
+│   Icon: bi-arrow-left-right
+│
+├─ 📄 [7] Progressivi Articoli
+│   Controller: ProgressiviArticoliController
+│   Icon: bi-boxes
+│
+├─ 📄 [8] Agenti
+│   Controller: TabellaAgentiController
+│   Icon: bi-person-workspace
+│
+├─ 📄 [9] Magazzini
+│   Controller: TabellaMagazziniController
+│   Icon: bi-building
+│
+├─ 📄 [10] Lavorazioni
+│   Controller: LavorazioniController
+│   Icon: bi-gear-wide
+│
+├─ 📄 [11] Centri di Lavoro
+│   Controller: CentriLavoroController
+│   Icon: bi-building-gear
+│
+├─ 📄 [12] Operatori
+│   Controller: OperatoriController
+│   Icon: bi-people
+│   ⚠️ SPOSTATO da Produzione a Tabelle
+│
+├─ 📄 [13] Stati OP
+│   Controller: StatiOPController
+│   Icon: bi-flag
+│   ✨ NUOVA RISORSA
+│
+├─ 📄 [14] Gestione Ordini CF 👥
+│   Controller: OrdiniTestateController
+│   Icon: bi-clipboard-check
+│   Permessi Agenti: View + Edit
+│   ⚠️ SPOSTATO da gruppo Ordini (eliminato) a Tabelle
+│
+└─ 📄 [15] Tempi di Asciugatura
+    Controller: TempiAsciugaturaController
+    Icon: bi-calendar-day
+    ✨ NUOVA RISORSA
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 PRODUZIONE (ID: 16) - 4 pagine figlie
+│
+├─ 📄 [17] Dashboard
+│   Controller: ListaOPController (Action: Dashboard)
+│   Icon: bi-graph-up
+│   ✨ NUOVA RISORSA (ListaOPDashboard)
+│
+├─ 📄 [18] Schedulatore OP
+│   Controller: SchedulatoreOPController
+│   Icon: bi-calendar2-check
+│
+├─ 📄 [19] Ordini di Produzione
+│   Controller: ListaOPController (Action: Index)
+│   Icon: bi-list-ul
+│
+└─ 📄 [20] Fermi Schedulati
+    Controller: FermiSchedulatiController
+    Icon: bi-calendar-check
+    ⚠️ RINOMINATO da CalendarioFermi
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 INTERROGAZIONI DB (ID: 21) - 5 pagine figlie  ✨ NUOVO GRUPPO
+│
+├─ 📄 [22] Disponibilità
+│   Controller: InterrogazioniDBController (Action: Disponibilita)
+│   Icon: bi-boxes
+│   ✨ NUOVA RISORSA
+│
+├─ 📄 [23] Consegne Programmate 👥
+│   Controller: InterrogazioniDBController (Action: ConsegneProgrammate)
+│   Icon: bi-calendar-event
+│   ✨ NUOVA RISORSA
+│   Permessi Agenti: View only
+│
+├─ 📄 [24] Dashboard Consegne 👥
+│   Controller: DashboardConsegneController
+│   Icon: bi-graph-up
+│   ✨ NUOVA RISORSA
+│   Permessi Agenti: View only
+│
+├─ 📄 [25] Grafici 🔒
+│   Controller: GraficiController
+│   Icon: bi-graph-up
+│   ✨ NUOVA RISORSA
+│   Visibile solo Admin/Manager nel menu
+│
+└─ 📄 [26] Interrogazioni AI 🔒
+    Controller: InterrogazioniAIController
+    Icon: bi-robot
+    ✨ NUOVA RISORSA
+    Visibile solo Admin/Manager nel menu
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 AMMINISTRAZIONE (ID: 27) - 6 pagine figlie 🔒
+│
+├─ 📄 [28] Gestione Utenti
+│   Controller: UserManagementController
+│   Icon: bi-people
+│   Solo Admin nel menu
+│
+├─ 📄 [29] Gestione Ruoli
+│   Controller: RoleManagementController
+│   Icon: bi-shield-lock
+│   Solo Admin nel menu
+│
+├─ 📄 [30] Gestione Permessi
+│   Controller: PermissionManagementController
+│   Icon: bi-shield-lock-fill
+│   Solo Admin nel menu
+│
+├─ 📄 [31] Converti Agenti in Utenti
+│   Controller: AgentiToUserController
+│   Icon: bi-person-plus-fill
+│   Solo Admin nel menu
+│
+├─ 📄 [32] Impostazioni AI
+│   Controller: AISettingsController
+│   Icon: bi-robot
+│   Solo Admin nel menu
+│
+└─ 📄 [33] Test Syncfusion
+    Controller: SyncfusionTestController
+    Icon: bi-grid-3x3-gap
+    ✨ NUOVA RISORSA
+    Solo Admin nel menu
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 STATISTICHE FINALI
+
+┌─────────────────────────────────────────┬──────────┬──────────┐
+│ Tipo                                    │ Vecchio  │ Nuovo    │
+├─────────────────────────────────────────┼──────────┼──────────┤
+│ Totale Risorse                          │ 25       │ 33       │
+│ Gruppi Menu                             │ 4        │ 5        │
+│ Pagine Singole                          │ 21       │ 28       │
+│ Risorse Accessibili ad Agenti           │ 3        │ 5        │
+│ Risorse con [RegisterResource]          │ 3        │ 3        │
+└─────────────────────────────────────────┴──────────┴──────────┘
+
+🎯 MODIFICHE PRINCIPALI:
+  ✨ +8 nuove risorse aggiunte
+  ❌ Gruppo "Ordini" eliminato (non esisteva nel menu)
+  🔄 2 risorse spostate (Operatori, OrdiniTestate)
+  🏷️  1 risorsa rinominata (CalendarioFermi → FermiSchedulati)
+  📋 1 nuovo gruppo creato (Interrogazioni DB)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 NOTE TECNICHE:
+
+1. PARENT RESOURCE IDs:
+   - Risorse root: ParentResourceId = null
+   - Risorse sotto Tabelle: ParentResourceId = 2
+   - Risorse sotto Produzione: ParentResourceId = 16
+   - Risorse sotto Interrogazioni DB: ParentResourceId = 21
+   - Risorse sotto Amministrazione: ParentResourceId = 27
+
+2. MENU ORDER:
+   - Ordine all'interno di ogni gruppo segue MenuOrder (1, 2, 3...)
+   - Gruppi root seguono MenuOrder globale (1-5)
+
+3. IS CONFIGURED:
+   - Tutte le risorse nel seed hanno IsConfigured = true
+   - L'Admin avrà accesso immediato a tutto
+   - Altri ruoli devono essere configurati manualmente
+
+4. SICUREZZA:
+   - Admin ha sempre TUTTI i permessi (View, Create, Edit, Delete)
+   - Agenti hanno solo permessi limitati su 5 risorse
+   - Menu si adatta dinamicamente ai permessi utente
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ STATO: PRONTO PER IL RESET!
+
+Per applicare questa struttura al database:
+1. Login come Admin
+2. Amministrazione → Gestione Permessi
+3. Clicca "Reset e Re-seed" (pulsante giallo)
+4. Conferma 2 volte
+5. Attendi completamento
+
+═══════════════════════════════════════════════════════════════════════════════
+

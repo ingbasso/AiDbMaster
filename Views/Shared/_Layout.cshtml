@@ -209,6 +209,12 @@
                                             <span>Consegne Programmate</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="DashboardConsegne" asp-action="Index">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Dashboard Consegne</span>
+                                        </a>
+                                    </li>
                                     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                                     {
                                         <li class="sidebar-item">
@@ -218,7 +224,7 @@
                                             </a>
                                         </li>
                                         <li class="sidebar-item">
-                                            <a class="sidebar-link" asp-controller="GestioneOrdini" asp-action="Index">
+                                            <a class="sidebar-link" asp-controller="InterrogazioniAI" asp-action="Index">
                                                 <i class="bi bi-robot"></i>
                                                 <span>Interrogazioni AI</span>
                                             </a>

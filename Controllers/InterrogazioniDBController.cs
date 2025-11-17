@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using AiDbMaster.Data;
 using AiDbMaster.ViewModels;
 using AiDbMaster.Helpers;
+using AiDbMaster.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace AiDbMaster.Controllers
 {
@@ -12,13 +14,25 @@ namespace AiDbMaster.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<InterrogazioniDBController> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public InterrogazioniDBController(
             ApplicationDbContext context,
-            ILogger<InterrogazioniDBController> logger)
+            ILogger<InterrogazioniDBController> logger,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
+        }
+
+        /// <summary>
+        /// Helper: Ottiene il CodiceAgente dell'utente corrente (se è un agente)
+        /// </summary>
+        private async Task<short?> GetCodiceAgenteUtenteCorrente()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            return currentUser?.CodiceAgente;
         }
 
         /// <summary>
@@ -412,19 +426,30 @@ namespace AiDbMaster.Controllers
         /// GET: Mostra il form per le consegne programmate
         /// </summary>
         [HttpGet]
-        public IActionResult ConsegneProgrammate()
+        public async Task<IActionResult> ConsegneProgrammate()
         {
-            ViewBag.UseFluidContainer = true; // Usa larghezza completa
+            ViewBag.UseFluidContainer = true;
+            
+            var codiceAgente = await GetCodiceAgenteUtenteCorrente();
+            ViewBag.IsAgente = codiceAgente.HasValue;
+            if (codiceAgente.HasValue)
+            {
+                ViewBag.CodiceAgenteUtente = codiceAgente.Value;
+                
+                // Recupera il nome dell'agente
+                var agente = await _context.TabellaAgenti
+                    .FirstOrDefaultAsync(a => a.CodiceAgente == codiceAgente.Value);
+                ViewBag.NomeAgenteUtente = agente?.DescrizioneAgente ?? $"Agente {codiceAgente.Value}";
+                
+                _logger.LogInformation("Utente agente (Codice: {CodiceAgente}). Filtro automatico applicato.", codiceAgente.Value);
+            }
             
             var oggi = DateTime.Today;
-            var primoGiornoMese = new DateTime(oggi.Year, oggi.Month, 1);
-            var ultimoGiornoMese = new DateTime(oggi.Year, oggi.Month, DateTime.DaysInMonth(oggi.Year, oggi.Month));
-            
             var model = new ConsegneProgrammateViewModel
             {
-                DataConsegnaDa = primoGiornoMese,
-                DataConsegnaA = ultimoGiornoMese,
-                OrdinamentoPer = "DataConsegna" // Default
+                DataConsegnaDa = new DateTime(oggi.Year, oggi.Month, 1),
+                DataConsegnaA = new DateTime(oggi.Year, oggi.Month, DateTime.DaysInMonth(oggi.Year, oggi.Month)),
+                OrdinamentoPer = "DataConsegna"
             };
             return View(model);
         }
@@ -436,7 +461,23 @@ namespace AiDbMaster.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConsegneProgrammate(ConsegneProgrammateViewModel model)
         {
-            ViewBag.UseFluidContainer = true; // Usa larghezza completa
+            ViewBag.UseFluidContainer = true;
+
+            // Applica filtro agente se necessario
+            var codiceAgente = await GetCodiceAgenteUtenteCorrente();
+            ViewBag.IsAgente = codiceAgente.HasValue;
+            if (codiceAgente.HasValue)
+            {
+                model.CodiceAgente = codiceAgente.Value; // Forza filtro
+                ViewBag.CodiceAgenteUtente = codiceAgente.Value;
+                
+                // Recupera il nome dell'agente
+                var agente = await _context.TabellaAgenti
+                    .FirstOrDefaultAsync(a => a.CodiceAgente == codiceAgente.Value);
+                ViewBag.NomeAgenteUtente = agente?.DescrizioneAgente ?? $"Agente {codiceAgente.Value}";
+                
+                _logger.LogInformation("Utente agente (Codice: {CodiceAgente}). Filtro applicato nella ricerca.", codiceAgente.Value);
+            }
 
             try
             {
@@ -461,7 +502,7 @@ namespace AiDbMaster.Controllers
                     query = query.Where(x => x.Testata.CodiceCliente == model.CodiceCliente.Value);
                 }
 
-                // Filtro per agente
+                // Filtro per agente (FORZATO se l'utente è un agente)
                 if (model.CodiceAgente.HasValue)
                 {
                     query = query.Where(x => x.Cliente.CodiceAgente == model.CodiceAgente.Value);
@@ -621,25 +662,30 @@ namespace AiDbMaster.Controllers
 
         /// <summary>
         /// API: Ricerca clienti per autocomplete (Select2)
+        /// Se l'utente è un agente, restituisce solo i clienti del suo CodiceAgente
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> SearchClienti(string term)
         {
             if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
-            {
                 return Json(new { results = new List<object>() });
+
+            var query = _context.AnagraficaClienti
+                .Where(c => c.CodiceCliente.ToString().Contains(term) || 
+                           (c.RagioneSociale != null && c.RagioneSociale.Contains(term)));
+
+            // Applica filtro agente se necessario
+            var codiceAgente = await GetCodiceAgenteUtenteCorrente();
+            if (codiceAgente.HasValue)
+            {
+                query = query.Where(c => c.CodiceAgente == codiceAgente.Value);
+                _logger.LogInformation("SearchClienti: Filtro agente {CodiceAgente} applicato", codiceAgente.Value);
             }
 
-            var clienti = await _context.AnagraficaClienti
-                .Where(c => c.CodiceCliente.ToString().Contains(term) || 
-                           (c.RagioneSociale != null && c.RagioneSociale.Contains(term)))
+            var clienti = await query
                 .OrderBy(c => c.RagioneSociale)
                 .Take(20)
-                .Select(c => new
-                {
-                    id = c.CodiceCliente,
-                    text = $"{c.CodiceCliente} - {c.RagioneSociale}"
-                })
+                .Select(c => new { id = c.CodiceCliente, text = $"{c.CodiceCliente} - {c.RagioneSociale}" })
                 .ToListAsync();
 
             return Json(new { results = clienti });

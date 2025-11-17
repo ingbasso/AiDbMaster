@@ -60,8 +60,8 @@ builder.Services.AddScoped<IDataFilterService, DataFilterService>();
 builder.Services.AddMemoryCache();
 
 // Registrazione del servizio HttpClient per Mistral AI
-builder.Services.AddHttpClient<MistralAIService>();
-builder.Services.AddScoped<MistralAIService>();
+builder.Services.AddHttpClient<IMistralAIService, MistralAIService>();
+builder.Services.AddScoped<IMistralAIService, MistralAIService>();
 
 // Registra il servizio di monitoraggio delle cartelle come singleton
 // in modo che possa essere iniettato sia come IHostedService che come servizio normale

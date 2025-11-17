@@ -1,0 +1,415 @@
+@model AiDbMaster.ViewModels.DashboardConsegneViewModel
+
+@{
+    ViewData["Title"] = "Dashboard Consegne";
+    ViewBag.UseFluidContainer = true;
+}
+
+@section Styles {
+    <style>
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .kpi-card.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .kpi-card.success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+
+        .kpi-card.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        }
+
+        .kpi-card.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .kpi-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+        }
+
+        .dashboard-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+            border-left: 4px solid #667eea;
+            padding-left: 0.75rem;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .table-dashboard {
+            font-size: 0.9rem;
+        }
+
+        .table-dashboard thead {
+            background-color: #f8f9fa;
+        }
+
+        .badge-rank {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.6rem;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Dashboard Consegne</h2>
+        <a asp-controller="InterrogazioniDB" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Torna al Menu
+        </a>
+    </div>
+
+    <!-- FILTRI -->
+    <div class="filter-section">
+        <form asp-action="Index" method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-calendar3 me-1"></i>Data Da</label>
+                <input type="date" name="dataDa" class="form-control" value="@Model.DataDa?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-calendar3 me-1"></i>Data A</label>
+                <input type="date" name="dataA" class="form-control" value="@Model.DataA?.ToString("yyyy-MM-dd")" />
+            </div>
+            @if (Model.CodiceAgente.HasValue)
+            {
+                <div class="col-md-4">
+                    <label class="form-label fw-bold"><i class="bi bi-person-badge me-1"></i>Agente</label>
+                    <input type="text" class="form-control" value="@Model.NomeAgente" disabled />
+                </div>
+            }
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i>Aggiorna
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <i class="bi bi-file-earmark-text kpi-icon"></i>
+                <div class="kpi-label">Ordini Totali</div>
+                <div class="kpi-value">@Model.NumeroOrdiniTotali.ToString("N0")</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card info">
+                <i class="bi bi-currency-euro kpi-icon"></i>
+                <div class="kpi-label">Fatturato Totale</div>
+                <div class="kpi-value">€ @Model.FatturatoTotale.ToString("N0")</div>
+                <small>Media: € @Model.ValoreMedioConsegna.ToString("N2")</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card @(Model.NumeroConsegneInRitardo > 0 ? "danger" : "success")">
+                <i class="bi bi-exclamation-triangle kpi-icon"></i>
+                <div class="kpi-label">Consegne in Ritardo</div>
+                <div class="kpi-value">@Model.NumeroConsegneInRitardo</div>
+                <small>Valore: € @Model.ValoreConsegneInRitardo.ToString("N0")</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card success">
+                <i class="bi bi-check-circle kpi-icon"></i>
+                <div class="kpi-label">% Evasione</div>
+                <div class="kpi-value">@Model.PercentualeEvasione.ToString("N1")%</div>
+                <div class="progress" style="height: 8px; background-color: rgba(255,255,255,0.3);">
+                    <div class="progress-bar bg-white" style="width: @Model.PercentualeEvasione%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAFICO CONSEGNE PER MESE -->
+    <div class="dashboard-section">
+        <h5 class="section-title"><i class="bi bi-bar-chart me-2"></i>Consegnato vs Da Consegnare per Mese</h5>
+        <div class="chart-container">
+            <canvas id="chartConsegnePerMese"></canvas>
+        </div>
+    </div>
+
+    <!-- CLASSIFICHE -->
+    <div class="row g-3">
+        @if (Model.TopAgenti.Any())
+        {
+            <div class="col-md-6">
+                <div class="dashboard-section">
+                    <h5 class="section-title"><i class="bi bi-trophy me-2"></i>Top 10 Agenti per Fatturato</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dashboard table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">Pos</th>
+                                    <th>Agente</th>
+                                    <th class="text-end">Ordini</th>
+                                    <th class="text-end">Fatturato</th>
+                                    <th class="text-end">% Evas.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.TopAgenti.Count; i++)
+                                {
+                                    var agente = Model.TopAgenti[i];
+                                    var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
+                                    <tr>
+                                        <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
+                                        <td><strong>@agente.NomeAgente</strong></td>
+                                        <td class="text-end">@agente.NumeroOrdini</td>
+                                        <td class="text-end"><strong>€ @agente.Fatturato.ToString("N0")</strong></td>
+                                        <td class="text-end">@agente.PercentualeEvasione.ToString("N1")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="col-md-6">
+            <div class="dashboard-section">
+                <h5 class="section-title"><i class="bi bi-geo-alt me-2"></i>Top 10 Province per Fatturato</h5>
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Pos</th>
+                                <th>Provincia</th>
+                                <th>Regione</th>
+                                <th class="text-end">Ordini</th>
+                                <th class="text-end">Fatturato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.TopProvince.Count; i++)
+                            {
+                                var provincia = Model.TopProvince[i];
+                                var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
+                                <tr>
+                                    <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
+                                    <td><strong>@provincia.Provincia</strong></td>
+                                    <td><small>@provincia.Regione</small></td>
+                                    <td class="text-end">@provincia.NumeroOrdini</td>
+                                    <td class="text-end"><strong>€ @provincia.Fatturato.ToString("N0")</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP CLIENTI -->
+    @if (Model.TopClienti.Any())
+    {
+        <div class="dashboard-section">
+            <h5 class="section-title"><i class="bi bi-people me-2"></i>Top 10 Clienti per Fatturato</h5>
+            <div class="table-responsive">
+                <table class="table table-dashboard table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Pos</th>
+                            <th>Codice</th>
+                            <th>Ragione Sociale</th>
+                            <th>Provincia</th>
+                            <th class="text-end">Ordini</th>
+                            <th class="text-end">Fatturato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.TopClienti.Count; i++)
+                        {
+                            var cliente = Model.TopClienti[i];
+                            var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
+                            <tr>
+                                <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
+                                <td>@cliente.CodiceCliente</td>
+                                <td><strong>@cliente.RagioneSociale</strong></td>
+                                <td>@cliente.Provincia</td>
+                                <td class="text-end">@cliente.NumeroOrdini</td>
+                                <td class="text-end"><strong>€ @cliente.Fatturato.ToString("N0")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- CONSEGNE IN RITARDO -->
+    @if (Model.ConsegneInRitardo.Any())
+    {
+        <div class="dashboard-section" style="border: 2px solid #dc3545;">
+            <h5 class="section-title" style="border-left-color: #dc3545;"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Consegne in Ritardo (Prime 20)</h5>
+            <div class="table-responsive">
+                <table class="table table-dashboard table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ordine</th>
+                            <th>Data Consegna</th>
+                            <th>Giorni Ritardo</th>
+                            <th>Cliente</th>
+                            @if (!Model.CodiceAgente.HasValue)
+                            {
+                                <th>Agente</th>
+                            }
+                            <th class="text-end">Valore Rimanente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var riga in Model.ConsegneInRitardo)
+                        {
+                            <tr class="table-danger">
+                                <td><strong>@riga.NumeroOrdineCompleto</strong></td>
+                                <td>@riga.DataConsegna.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-clock me-1"></i>@riga.GiorniRitardo gg
+                                    </span>
+                                </td>
+                                <td>@riga.CodiceCliente - @riga.RagioneSociale</td>
+                                @if (!Model.CodiceAgente.HasValue)
+                                {
+                                    <td>@riga.NomeAgente</td>
+                                }
+                                <td class="text-end"><strong>€ @riga.ValoreRimanente.ToString("N2")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="@(Model.CodiceAgente.HasValue ? 4 : 5)" class="text-end">TOTALE:</td>
+                            <td class="text-end text-danger">€ @Model.ValoreConsegneInRitardo.ToString("N2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dati per il grafico
+            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.MeseNome)));
+            var consegnato = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.Consegnato)));
+            var daConsegnare = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.DaConsegnare)));
+
+            // Grafico Consegne per Mese
+            var ctx = document.getElementById('chartConsegnePerMese').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Consegnato',
+                            data: consegnato,
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Da Consegnare',
+                            data: daConsegnare,
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '€ ' + context.parsed.y.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€ ' + value.toLocaleString('it-IT');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+

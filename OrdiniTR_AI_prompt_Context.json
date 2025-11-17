@@ -1,87 +1,181 @@
 {
   "database_name": "GestioneOrdiniClienti",
+  "description": "Database per la gestione di ordini clienti, consegne programmate e anagrafiche",
   "tables": [
     {
       "table_name": "AnagraficaClienti",
       "description": "Contiene le informazioni anagrafiche dei clienti.",
       "columns": [
-	    { "name": "ID", "type": "int", "description": "Id univoco record" },
-        { "name": "CodiceCliente", "type": "int", "description": "Identificativo univoco del cliente" },
+        { "name": "Id", "type": "int", "description": "Id univoco record", "primary_key": true },
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo univoco del cliente", "indexed": true },
         { "name": "RagioneSociale", "type": "varchar(50)", "description": "Nome o ragione sociale del cliente" },
-		{ "name": "DescrizioneUlteriore", "type": "varchar(50)", "description": "Ulteriore descrizione del cliente" },
-		{ "name": "Indirizzo", "type": "varchar(70)", "description": "Indirizzo del cliente" },
-		{ "name": "CAP", "type": "varchar(10)", "description": "Cap del cliente" },
+        { "name": "DescrizioneUlteriore", "type": "varchar(50)", "description": "Ulteriore descrizione del cliente" },
+        { "name": "Indirizzo", "type": "varchar(70)", "description": "Indirizzo del cliente" },
+        { "name": "CAP", "type": "varchar(10)", "description": "CAP del cliente" },
         { "name": "Citta", "type": "varchar(50)", "description": "Città del cliente" },
-        { "name": "Provincia", "type": "varchar(2)", "description": "Sigla della provincia del cliente" },
-		{ "name": "CodiceFiscale", "type": "varchar(16)", "description": "Codice Fiscale del cliente" },
-		{ "name": "PartitaIva", "type": "varchar(11)", "description": "Partita Iva del cliente" },
-		{ "name": "Telefono", "type": "varchar(18)", "description": "Telefono del cliente" },
-		{ "name": "CodiceAgente", "type": "smallint", "description": "Codice Agente del cliente" }
+        { "name": "Provincia", "type": "varchar(2)", "description": "Sigla della provincia del cliente (es: MI, RM, TO)" },
+        { "name": "CodiceFiscale", "type": "varchar(16)", "description": "Codice Fiscale del cliente" },
+        { "name": "PartitaIva", "type": "varchar(11)", "description": "Partita IVA del cliente" },
+        { "name": "Telefono", "type": "varchar(18)", "description": "Numero di telefono del cliente" },
+        { "name": "CodiceAgente", "type": "smallint", "description": "Codice agente di vendita assegnato al cliente", "foreign_key": "TabellaAgenti.CodiceAgente" }
       ],
-      "primary_key": ["Id"]
+      "primary_key": ["Id"],
+      "indexes": ["CodiceCliente", "CodiceAgente", "Provincia"]
+    },
+    {
+      "table_name": "TabellaAgenti",
+      "description": "Contiene l'anagrafica degli agenti di vendita.",
+      "columns": [
+        { "name": "CodiceAgente", "type": "smallint", "description": "Codice identificativo univoco dell'agente", "primary_key": true },
+        { "name": "DescrizioneAgente", "type": "varchar(100)", "description": "Nome e cognome o descrizione dell'agente" },
+        { "name": "Attivo", "type": "bit", "description": "Indica se l'agente è attivo (1) o disattivato (0)" }
+      ],
+      "primary_key": ["CodiceAgente"],
+      "notes": "Usare per recuperare il nome dell'agente tramite JOIN con AnagraficaClienti o OrdiniTestate"
     },
     {
       "table_name": "OrdiniTestate",
-      "description": "Contiene l’intestazione degli ordini effettuati dai clienti.",
+      "description": "Contiene l'intestazione degli ordini effettuati dai clienti.",
       "columns": [
-	    { "name": "ID", "type": "int", "description": "Id univoco Record" },
-        { "name": "CodiceCliente", "type": "int", "description": "Identificativo del cliente che ha effettuato l’ordine" },
-		{ "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente, 'O' = Ordine Fornitore" },
-		{ "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'Ordine" },
-		{ "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell’Ordine" },
-        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero identificativo dell’ordine" },
-		{ "name": "DataOrdine", "type": "datetime", "description": "Data in cui l’ordine è stato effettuato" },
-		{ "name": "RiferimentoOrdine", "type": "varchar(50)", "description": "Riferimenti ulteriori dell’ordine" },
-		{ "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’ordine" },
-		{ "name": "CodiceAgente", "type": "smallint", "description": "Identificativo dell’agente di vendita associato all’ordine" },
-        { "name": "NoteTestata", "type": "varchar(max)", "description": "Note dell’ordine" }
+        { "name": "Id", "type": "int", "description": "Id univoco record", "primary_key": true },
+        { "name": "CodiceCliente", "type": "int", "description": "Identificativo del cliente che ha effettuato l'ordine", "foreign_key": "AnagraficaClienti.CodiceCliente" },
+        { "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente (ricevuto), 'O' = Ordine Fornitore" },
+        { "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'ordine (es: 2024)" },
+        { "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell'ordine (es: '001', 'VEN')" },
+        { "name": "NumeroOrdine", "type": "int", "description": "Numero progressivo identificativo dell'ordine" },
+        { "name": "DataOrdine", "type": "datetime", "description": "Data in cui l'ordine è stato effettuato dal cliente" },
+        { "name": "RiferimentoOrdine", "type": "varchar(50)", "description": "Riferimento esterno o note identificative dell'ordine" },
+        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell'ordine (può essere diversa per ogni riga)" },
+        { "name": "CodiceAgente", "type": "smallint", "description": "Codice agente di vendita associato all'ordine", "foreign_key": "TabellaAgenti.CodiceAgente" },
+        { "name": "NoteTestata", "type": "varchar(max)", "description": "Note generali sull'ordine" }
       ],
-      "primary_key": ["ID"],
-      "foreign_keys": [
-        {
-          "column": "CodiceCliente",
-          "references": {
-            "table": "AnagraficaClienti",
-            "column": "CodiceCliente"
-          }
-        }
-      ]
+      "primary_key": ["Id"],
+      "composite_key": ["TipoOrdine", "AnnoOrdine", "SerieOrdine", "NumeroOrdine"],
+      "indexes": ["CodiceCliente", "TipoOrdine", "DataOrdine", "DataConsegna"],
+      "notes": "Per gli ordini clienti filtrare sempre con TipoOrdine = 'R'"
     },
     {
       "table_name": "OrdiniRighe",
-      "description": "Contiene le singole righe (dettagli) degli ordini cliente.",
+      "description": "Contiene le singole righe (dettagli) degli ordini cliente con articoli, quantità e date di consegna.",
       "columns": [
-        { "name": "Id", "type": "int", "description": "Identificativo univoco Record" },
-		{ "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente, 'O' = Ordine Fornitore" },
-		{ "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'Ordine" },
-		{ "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell’ordine" },
-        { "name": "NumeroOrdine", "type": "varchar(30)", "description": "Numero dell’ordine associato alla riga" },
-        { "name": "RigaOrdine", "type": "int", "description": "Numero progressivo della riga nell’ordine" },
-		{ "name": "CodiceMagazzino", "type": "smallint", "description": "Codice Magazzino" },
-        { "name": "CodiceArticolo", "type": "varchar(50)", "description": "Codice identificativo dell’articolo ordinato" },
-		{ "name": "DescrizioneArticolo", "type": "nvarchar(50)", "description": "Descrizione dell’articolo" },
-        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna dell’articolo" },
-        { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell’articolo" },
-		{ "name": "Quantita", "type": "decimal(10,3)", "description": "Quantità ordinata" },
-        { "name": "UnitaMisuraColli", "type": "varchar(3)", "description": "Unità di misura colli" },
-		{ "name": "NumeroColli", "type": "decimal(27,9)", "description": "Numero di colli ordinati" },	
-		{ "name": "ColliEvasi", "type": "decimal(27,9)", "description": "Numero di colli evasi" },
-		{ "name": "QuantitaEvasa", "type": "decimal(27,9)", "description": "Quantità evasa" },
-		{ "name": "Prezzo", "type": "decimal(24,6)", "description": "Prezzo unitario dell’articolo" },
-		{ "name": "NoteRiga", "type": "varchar(max)", "description": " " },
-        { "name": "ValoreRiga", "type": "money", "description": "Valore totale della riga ordine" },
-		{ "name": "PercentualeInclusione", "type": "int", "description": "PercentualeInclusione" }
+        { "name": "Id", "type": "int", "description": "Identificativo univoco record", "primary_key": true },
+        { "name": "TipoOrdine", "type": "varchar(1)", "description": "'R' = Ordine Cliente, 'O' = Ordine Fornitore" },
+        { "name": "AnnoOrdine", "type": "smallint", "description": "Anno dell'ordine" },
+        { "name": "SerieOrdine", "type": "varchar(3)", "description": "Serie dell'ordine" },
+        { "name": "NumeroOrdine", "type": "int", "description": "Numero dell'ordine associato alla riga" },
+        { "name": "RigaOrdine", "type": "int", "description": "Numero progressivo della riga nell'ordine" },
+        { "name": "CodiceMagazzino", "type": "smallint", "description": "Codice del magazzino di prelievo" },
+        { "name": "CodiceArticolo", "type": "varchar(50)", "description": "Codice identificativo dell'articolo ordinato", "foreign_key": "AnagraficaArticoli.CodiceArticolo" },
+        { "name": "DescrizioneArticolo", "type": "nvarchar(50)", "description": "Descrizione dell'articolo" },
+        { "name": "DataConsegna", "type": "datetime", "description": "Data prevista per la consegna specifica di questa riga" },
+        { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell'articolo (es: PZ, KG, MT)" },
+        { "name": "Quantita", "type": "decimal(10,3)", "description": "Quantità totale ordinata" },
+        { "name": "UnitaMisuraColli", "type": "varchar(3)", "description": "Unità di misura per i colli" },
+        { "name": "NumeroColli", "type": "decimal(27,9)", "description": "Numero di colli ordinati" },
+        { "name": "ColliEvasi", "type": "decimal(27,9)", "description": "Numero di colli già consegnati" },
+        { "name": "QuantitaEvasa", "type": "decimal(27,9)", "description": "Quantità già consegnata/evasa" },
+        { "name": "Prezzo", "type": "decimal(24,6)", "description": "Prezzo unitario dell'articolo" },
+        { "name": "NoteRiga", "type": "varchar(max)", "description": "Note specifiche sulla riga ordine" },
+        { "name": "ValoreRiga", "type": "money", "description": "Valore totale della riga (Quantita * Prezzo)" },
+        { "name": "PercentualeInclusione", "type": "int", "description": "Percentuale di inclusione riga nell'ordine" }
       ],
       "primary_key": ["Id"],
-      "foreign_keys": [
-        {
-          "column": "NumeroOrdine",
-          "references": {
-            "table": "TestataOrdiniClienti",
-            "column": "NumeroOrdine"
-          }
-        }
-      ]
+      "composite_key": ["TipoOrdine", "AnnoOrdine", "SerieOrdine", "NumeroOrdine", "RigaOrdine"],
+      "indexes": ["CodiceArticolo", "DataConsegna", "TipoOrdine"],
+      "notes": "JOIN con OrdiniTestate tramite (TipoOrdine, AnnoOrdine, SerieOrdine, NumeroOrdine)"
+    },
+    {
+      "table_name": "AnagraficaArticoli",
+      "description": "Contiene l'anagrafica completa degli articoli venduti.",
+      "columns": [
+        { "name": "CodiceArticolo", "type": "varchar(50)", "description": "Codice identificativo univoco dell'articolo", "primary_key": true },
+        { "name": "Descrizione", "type": "nvarchar(100)", "description": "Descrizione completa dell'articolo" },
+        { "name": "UnitaMisura", "type": "varchar(3)", "description": "Unità di misura dell'articolo (PZ, KG, MT, ecc.)" },
+        { "name": "CodiceFamiglia", "type": "varchar(20)", "description": "Codice della famiglia merceologica di appartenenza" },
+        { "name": "DescrizioneFamiglia", "type": "varchar(100)", "description": "Descrizione della famiglia merceologica" }
+      ],
+      "primary_key": ["CodiceArticolo"],
+      "indexes": ["CodiceFamiglia"],
+      "notes": "Opzionale: usare per query avanzate su famiglie o descrizioni articoli"
     }
+  ],
+  "business_rules": {
+    "ordini_clienti": {
+      "identificazione": "Gli ordini clienti hanno TipoOrdine = 'R' (Ricevuti)",
+      "numero_ordine_completo": "Il formato completo è: AnnoOrdine/NumeroOrdine (es: 2024/0123)",
+      "quantita_rimanente": "Quantità da evadere = Quantita - QuantitaEvasa",
+      "consegna_completata": "Una riga è completamente evasa quando Quantita = QuantitaEvasa",
+      "ordine_completato": "Un ordine è completato quando TUTTE le righe sono evase"
+    },
+    "consegne_in_ritardo": {
+      "definizione": "Una consegna è in ritardo se DataConsegna < DATA_ODIERNA e (Quantita - QuantitaEvasa) > 0",
+      "calcolo_giorni_ritardo": "Giorni di ritardo = DATA_ODIERNA - DataConsegna",
+      "valore_ritardo": "Valore in ritardo = (ValoreRiga / Quantita) * (Quantita - QuantitaEvasa)"
+    },
+    "calcoli_fatturato": {
+      "fatturato_totale": "Somma di tutti i ValoreRiga delle righe ordine",
+      "fatturato_consegnato": "Somma di (ValoreRiga / Quantita) * QuantitaEvasa per tutte le righe",
+      "fatturato_da_consegnare": "Fatturato totale - Fatturato consegnato",
+      "percentuale_evasione": "(Fatturato consegnato / Fatturato totale) * 100"
+    },
+    "filtri_comuni": {
+      "periodo_consegna": "Filtrare su OrdiniRighe.DataConsegna per periodo specifico",
+      "cliente_specifico": "JOIN con AnagraficaClienti e filtrare su CodiceCliente",
+      "agente_specifico": "JOIN con TabellaAgenti e filtrare su CodiceAgente",
+      "provincia_regione": "Filtrare su AnagraficaClienti.Provincia (es: 'MI', 'RM', 'TO')"
+    }
+  },
+  "join_patterns": {
+    "ordini_completi_con_cliente": {
+      "description": "Per ottenere ordini con informazioni cliente e agente",
+      "sql_pattern": "FROM OrdiniTestate t JOIN OrdiniRighe r ON (t.TipoOrdine = r.TipoOrdine AND t.AnnoOrdine = r.AnnoOrdine AND t.SerieOrdine = r.SerieOrdine AND t.NumeroOrdine = r.NumeroOrdine) JOIN AnagraficaClienti c ON t.CodiceCliente = c.CodiceCliente LEFT JOIN TabellaAgenti a ON c.CodiceAgente = a.CodiceAgente WHERE t.TipoOrdine = 'R'"
+    },
+    "consegne_per_agente": {
+      "description": "Consegne filtrate per agente specifico",
+      "sql_pattern": "FROM OrdiniRighe r JOIN OrdiniTestate t ON (...) JOIN AnagraficaClienti c ON t.CodiceCliente = c.CodiceCliente WHERE c.CodiceAgente = @codiceAgente"
+    },
+    "top_clienti_fatturato": {
+      "description": "Classifica clienti per fatturato",
+      "sql_pattern": "SELECT c.CodiceCliente, c.RagioneSociale, SUM(r.ValoreRiga) AS Fatturato FROM ... GROUP BY c.CodiceCliente, c.RagioneSociale ORDER BY Fatturato DESC"
+    }
+  },
+  "query_examples": {
+    "consegne_in_ritardo": {
+      "domanda": "Quante consegne sono in ritardo?",
+      "query": "SELECT COUNT(*) FROM OrdiniRighe WHERE TipoOrdine = 'R' AND DataConsegna < GETDATE() AND (Quantita - QuantitaEvasa) > 0"
+    },
+    "ordini_cliente_periodo": {
+      "domanda": "Ordini del cliente X nel mese di ottobre 2024",
+      "query": "SELECT t.*, r.* FROM OrdiniTestate t JOIN OrdiniRighe r ON (...) WHERE t.CodiceCliente = X AND t.TipoOrdine = 'R' AND r.DataConsegna BETWEEN '2024-10-01' AND '2024-10-31'"
+    },
+    "top_agenti_fatturato": {
+      "domanda": "Top 10 agenti per fatturato",
+      "query": "SELECT a.CodiceAgente, a.DescrizioneAgente, SUM(r.ValoreRiga) AS Fatturato FROM OrdiniRighe r JOIN OrdiniTestate t ON (...) JOIN AnagraficaClienti c ON t.CodiceCliente = c.CodiceCliente JOIN TabellaAgenti a ON c.CodiceAgente = a.CodiceAgente WHERE t.TipoOrdine = 'R' GROUP BY a.CodiceAgente, a.DescrizioneAgente ORDER BY Fatturato DESC TOP 10"
+    },
+    "consegne_per_provincia": {
+      "domanda": "Numero di ordini per provincia",
+      "query": "SELECT c.Provincia, COUNT(DISTINCT t.NumeroOrdine) AS NumeroOrdini FROM OrdiniTestate t JOIN AnagraficaClienti c ON t.CodiceCliente = c.CodiceCliente WHERE t.TipoOrdine = 'R' GROUP BY c.Provincia ORDER BY NumeroOrdini DESC"
+    }
+  },
+  "geographic_mapping": {
+    "note": "Le province italiane (2 lettere) possono essere mappate alle regioni. Usare la classe RegioniHelper.GetRegione(provincia) lato codice.",
+    "examples": [
+      { "provincia": "MI", "regione": "Lombardia" },
+      { "provincia": "RM", "regione": "Lazio" },
+      { "provincia": "TO", "regione": "Piemonte" },
+      { "provincia": "NA", "regione": "Campania" },
+      { "provincia": "FI", "regione": "Toscana" },
+      { "provincia": "BO", "regione": "Emilia-Romagna" }
+    ],
+    "recommendation": "Per query geografiche per regione, raggruppare prima per provincia e poi mappare lato codice."
+  },
+  "important_notes": [
+    "Usare sempre TipoOrdine = 'R' per filtrare gli ordini clienti (non fornitori)",
+    "La chiave composita per JOIN tra Testate e Righe è: (TipoOrdine, AnnoOrdine, SerieOrdine, NumeroOrdine)",
+    "DataConsegna è presente sia in OrdiniTestate che in OrdiniRighe: usare SEMPRE quella in OrdiniRighe per precisione",
+    "QuantitaEvasa può essere minore, uguale o maggiore di Quantita",
+    "Per calcolare l'importo rimanente: (ValoreRiga / Quantita) * (Quantita - QuantitaEvasa)",
+    "TabellaAgenti.Attivo = 1 indica agenti attivi, 0 indica agenti disattivati",
+    "LEFT JOIN su TabellaAgenti permette di gestire ordini senza agente assegnato"
   ]
 }

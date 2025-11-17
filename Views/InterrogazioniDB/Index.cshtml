@@ -40,30 +40,56 @@
             <!-- Card Consegne Programmate -->
             <div class="col-md-6 mb-4">
                 <div class="card h-100 shadow-sm">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header bg-success text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-calendar-event me-2"></i>Consegne Programmate
                         </h5>
                     </div>
                     <div class="card-body">
                         <p class="card-text">
-                            Visualizza le consegne programmate per gli articoli ordinati, con date previste 
-                            e dettagli sui fornitori.
+                            Visualizza e gestisci tutte le consegne programmate per i clienti, con filtri avanzati 
+                            per cliente, agente, provincia e regione.
                         </p>
                         <ul class="list-unstyled">
-                            <li><i class="bi bi-clock text-warning me-2"></i>Date di consegna previste</li>
-                            <li><i class="bi bi-clock text-warning me-2"></i>Quantità ordinate</li>
-                            <li><i class="bi bi-clock text-warning me-2"></i>Fornitori</li>
-                            <li><i class="bi bi-clock text-warning me-2"></i>Note e dettagli</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Filtro per periodo e cliente</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Ricerca geografica (regione/provincia)</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Evidenziazione consegne in ritardo</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Dettaglio ordini e righe</li>
                         </ul>
-                        <div class="alert alert-info mb-0">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <small>Funzionalità in fase di implementazione</small>
-                        </div>
                     </div>
                     <div class="card-footer bg-light">
-                        <a asp-action="ConsegneProgrammate" class="btn btn-info text-white disabled">
-                            <i class="bi bi-arrow-right-circle me-2"></i>Vai alle Consegne (Prossimamente)
+                        <a asp-action="ConsegneProgrammate" class="btn btn-success text-white">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Vai alle Consegne
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Card Dashboard Consegne -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-graph-up me-2"></i>Dashboard Consegne
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Dashboard completa con KPI, grafici e analisi sulle consegne. 
+                            Visualizza trend, classifiche agenti e province, consegne in ritardo.
+                        </p>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-graph-up text-primary me-2"></i>KPI e statistiche in tempo reale</li>
+                            <li><i class="bi bi-graph-up text-primary me-2"></i>Grafici consegnato vs da consegnare</li>
+                            <li><i class="bi bi-graph-up text-primary me-2"></i>Top 10 Agenti e Province</li>
+                            <li><i class="bi bi-graph-up text-primary me-2"></i>Monitoraggio ritardi</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <a asp-controller="DashboardConsegne" asp-action="Index" class="btn btn-primary text-white">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Vai alla Dashboard
                         </a>
                     </div>
                 </div>

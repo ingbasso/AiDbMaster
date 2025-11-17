@@ -149,10 +149,16 @@
                 <i class="bi bi-shield-lock-fill me-2"></i>
                 Gestione Permessi (Profilazione)
             </h4>
-            <button class="btn btn-light btn-sm" onclick="sincronizzaRisorse()" id="btnSyncResources">
-                <i class="bi bi-arrow-repeat me-1"></i>
-                Sincronizza Risorse
-            </button>
+            <div>
+                <button class="btn btn-success btn-sm me-2" onclick="aggiungiNuoveRisorse()" id="btnAddNewResources" title="Aggiunge solo le nuove risorse dai controller con [RegisterResource]">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Aggiungi Nuove Risorse
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="resetRisorse()" id="btnResetResources" title="Elimina tutto e ricrea da zero (33 risorse base)">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Reset e Re-seed
+                </button>
+            </div>
         </div>
     </div>
 
@@ -514,18 +520,94 @@
         }
 
         /**
-         * Sincronizza risorse scansionando i controller
+         * Aggiunge nuove risorse scansionando i controller con [RegisterResource]
+         * Approccio INCREMENTALE - aggiunge solo le risorse mancanti
          */
-        async function sincronizzaRisorse() {
-            const btn = document.getElementById('btnSyncResources');
+        async function aggiungiNuoveRisorse() {
+            const btn = document.getElementById('btnAddNewResources');
             const originalHtml = btn.innerHTML;
             
             try {
                 // Disabilita pulsante e mostra spinner
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sincronizzazione...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Ricerca in corso...';
 
-                const response = await fetch('/PermissionManagement/SyncResources', {
+                const response = await fetch('/PermissionManagement/AddNewResources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Errore sconosciuto');
+                }
+
+                // Costruisci messaggio dettagliato
+                let message = result.message;
+                
+                if (result.addedCount > 0 && result.addedResources && result.addedResources.length > 0) {
+                    message += '\n\nRisorse aggiunte:\n';
+                    result.addedResources.forEach(r => {
+                        message += '  ✅ ' + r + '\n';
+                    });
+                }
+
+                // Mostra messaggio di successo
+                alert(message);
+
+                // Se ci sono nuove risorse, ricarica la pagina per aggiornarla
+                if (result.addedCount > 0) {
+                    location.reload();
+                }
+
+            } catch (error) {
+                console.error('Errore aggiunta risorse:', error);
+                alert('❌ Errore durante l\'aggiunta delle risorse: ' + error.message);
+            } finally {
+                // Ripristina pulsante
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        /**
+         * Reset completo e re-seed delle risorse
+         * ATTENZIONE: Operazione distruttiva!
+         */
+        async function resetRisorse() {
+            // Doppia conferma per sicurezza
+            const conferma1 = confirm(
+                '⚠️ ATTENZIONE! ⚠️\n\n' +
+                'Questa operazione ELIMINERÀ:\n' +
+                '- Tutte le risorse esistenti\n' +
+                '- Tutti i permessi configurati\n\n' +
+                'E ricreerà tutto dal seeder aggiornato.\n\n' +
+                'Vuoi continuare?'
+            );
+
+            if (!conferma1) return;
+
+            const conferma2 = confirm(
+                '🔴 ULTIMA CONFERMA 🔴\n\n' +
+                'Sei SICURO di voler procedere?\n' +
+                'Questa azione NON può essere annullata!\n\n' +
+                'Clicca OK per confermare il RESET COMPLETO.'
+            );
+
+            if (!conferma2) return;
+
+            const btn = document.getElementById('btnResetResources');
+            const originalHtml = btn.innerHTML;
+            
+            try {
+                // Disabilita pulsante e mostra spinner
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Reset in corso...';
+
+                const response = await fetch('/PermissionManagement/ResetAndReseedResources', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -539,17 +621,15 @@
                 }
 
                 // Mostra messaggio di successo
-                alert('✅ ' + result.message);
+                alert('✅ ' + result.message + '\n\nLa pagina verrà ricaricata.');
 
-                // Se ci sono nuove risorse, ricarica la pagina per aggiornarla
-                if (result.registeredCount > 0) {
-                    location.reload();
-                }
+                // Ricarica la pagina
+                location.reload();
 
             } catch (error) {
-                console.error('Errore sincronizzazione:', error);
-                alert('❌ Errore durante la sincronizzazione: ' + error.message);
-            } finally {
+                console.error('Errore reset:', error);
+                alert('❌ Errore durante il reset: ' + error.message);
+                
                 // Ripristina pulsante
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

@@ -12,9 +12,6 @@
             <p class="text-muted">Visualizza tutti i dettagli dell'ordine di produzione</p>
         </div>
         <div class="col-md-4 text-end">
-            <a asp-action="Edit" asp-route-id="@Model.IdListaOP" class="btn btn-primary me-2">
-                <i class="bi bi-pencil"></i> Modifica
-            </a>
             <a asp-action="Index" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Torna alla Lista
             </a>
@@ -239,89 +236,10 @@
                 </div>
             </div>
 
-            <!-- Azioni rapide -->
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="bi bi-lightning"></i> Azioni Rapide</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        @if (Model.Stato?.CodiceStato == "EM")
-                        {
-                            <button class="btn btn-primary" onclick="cambiaStato(@Model.IdListaOP, 2)">
-                                <i class="bi bi-play"></i> Inizia Produzione
-                            </button>
-                        }
-                        
-                        @if (Model.Stato?.CodiceStato == "PR")
-                        {
-                            <button class="btn btn-warning" onclick="cambiaStato(@Model.IdListaOP, 4)">
-                                <i class="bi bi-pause"></i> Sospendi
-                            </button>
-                            <button class="btn btn-success" onclick="cambiaStato(@Model.IdListaOP, 3)">
-                                <i class="bi bi-check"></i> Completa
-                            </button>
-                        }
-                        
-                        @if (Model.Stato?.CodiceStato == "SO")
-                        {
-                            <button class="btn btn-primary" onclick="cambiaStato(@Model.IdListaOP, 2)">
-                                <i class="bi bi-play"></i> Riprendi
-                            </button>
-                        }
-                        
-                        <a asp-action="Edit" asp-route-id="@Model.IdListaOP" class="btn btn-outline-primary">
-                            <i class="bi bi-pencil"></i> Modifica Dettagli
-                        </a>
-                        
-                        <button class="btn btn-outline-info" onclick="window.print()">
-                            <i class="bi bi-printer"></i> Stampa Scheda
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // Funzione per cambiare stato
-        function cambiaStato(ordineId, nuovoStato) {
-            const stati = { 1: 'Emesso', 2: 'In Produzione', 3: 'Completato', 4: 'Sospeso' };
-            const messaggio = `Sei sicuro di voler cambiare lo stato a "${stati[nuovoStato]}"?`;
-            
-            if (confirm(messaggio)) {
-                $.post('@Url.Action("UpdateStato")', {
-                    id: ordineId,
-                    nuovoStato: nuovoStato
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        showAlert('success', response.message);
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showAlert('danger', response.message);
-                    }
-                })
-                .fail(function() {
-                    showAlert('danger', 'Errore durante l\'aggiornamento dello stato');
-                });
-            }
-        }
-
-        // Funzione per mostrare alert
-        function showAlert(type, message) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            $('.container').prepend(alertHtml);
-        }
-    </script>
-}
 
 @section Styles {
     <style>

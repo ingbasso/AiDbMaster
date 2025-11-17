@@ -71,23 +71,24 @@
         .filter-section {
             background-color: #f8f9fa;
             border-radius: 0.5rem;
-            padding: 1rem;
+            padding: 0.75rem;
             margin-bottom: 1rem;
         }
 
         .filter-section label {
-            font-size: 0.85rem;
-            margin-bottom: 0.25rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.15rem;
         }
 
         .filter-section .form-control,
         .filter-section .form-select {
-            padding: 0.4rem 0.6rem;
-            font-size: 0.875rem;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.8rem;
+            height: calc(1.8rem + 2px);
         }
 
         .filter-section small {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .result-card {
@@ -128,6 +129,33 @@
             color: #212529;
             font-weight: 500;
         }
+
+        /* Evidenziazione consegne in ritardo */
+        .ordine-in-ritardo {
+            border-left: 5px solid #dc3545;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .ordine-in-ritardo .accordion-header-custom {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .riga-in-ritardo {
+            background-color: #ffe6e6 !important;
+            border-left: 3px solid #dc3545;
+        }
+
+        .badge-ritardo {
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 }
 
@@ -144,27 +172,26 @@
         <form asp-action="ConsegneProgrammate" method="post" id="formFiltri">
             @Html.AntiForgeryToken()
 
+            <!-- RIGA 1: Date, Cliente, Regione, Provincia -->
             <div class="row g-2">
                 <!-- Data Consegna Da -->
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label asp-for="DataConsegnaDa" class="form-label fw-bold">
                         <i class="bi bi-calendar3 me-1"></i>@Html.DisplayNameFor(model => model.DataConsegnaDa)
                     </label>
                     <input asp-for="DataConsegnaDa" type="date" class="form-control" />
-                    <span asp-validation-for="DataConsegnaDa" class="text-danger"></span>
                 </div>
 
                 <!-- Data Consegna A -->
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label asp-for="DataConsegnaA" class="form-label fw-bold">
                         <i class="bi bi-calendar3 me-1"></i>@Html.DisplayNameFor(model => model.DataConsegnaA)
                     </label>
                     <input asp-for="DataConsegnaA" type="date" class="form-control" />
-                    <span asp-validation-for="DataConsegnaA" class="text-danger"></span>
                 </div>
 
                 <!-- Cliente (Select2) -->
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label asp-for="CodiceCliente" class="form-label fw-bold">
                         <i class="bi bi-person-circle me-1"></i>@Html.DisplayNameFor(model => model.CodiceCliente)
                     </label>
@@ -175,55 +202,69 @@
                             <option value="@Model.CodiceCliente" selected>@Model.CodiceCliente @(!string.IsNullOrEmpty(Model.RagioneSocialeCliente) ? " - " + Model.RagioneSocialeCliente : "")</option>
                         }
                     </select>
-                    <small class="text-muted">Cerca per codice o ragione sociale (minimo 2 caratteri)</small>
+                    <small class="text-muted">Cerca per codice o ragione sociale (min. 2 caratteri)</small>
                 </div>
-            </div>
 
-            <div class="row g-2 mt-1">
                 <!-- Regione -->
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label asp-for="Regione" class="form-label fw-bold">
                         <i class="bi bi-map me-1"></i>@Html.DisplayNameFor(model => model.Regione)
                     </label>
                     <select asp-for="Regione" class="form-select" id="regione">
-                        <option value="">-- Tutte le regioni --</option>
+                        <option value="">-- Tutte --</option>
                     </select>
                 </div>
 
                 <!-- Provincia -->
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label asp-for="Provincia" class="form-label fw-bold">
                         <i class="bi bi-geo-alt me-1"></i>@Html.DisplayNameFor(model => model.Provincia)
                     </label>
                     <select asp-for="Provincia" class="form-select" id="provincia">
-                        <option value="">-- Tutte le province --</option>
-                    </select>
-                </div>
-
-                <!-- Comune -->
-                <div class="col-md-3">
-                    <label asp-for="Comune" class="form-label fw-bold">
-                        <i class="bi bi-building me-1"></i>@Html.DisplayNameFor(model => model.Comune)
-                    </label>
-                    <select asp-for="Comune" class="form-select" id="comune">
-                        <option value="">-- Tutti i comuni --</option>
-                    </select>
-                </div>
-
-                <!-- Agente -->
-                <div class="col-md-3">
-                    <label asp-for="CodiceAgente" class="form-label fw-bold">
-                        <i class="bi bi-person-badge me-1"></i>@Html.DisplayNameFor(model => model.CodiceAgente)
-                    </label>
-                    <select asp-for="CodiceAgente" class="form-select" id="agente">
-                        <option value="">-- Tutti gli agenti --</option>
+                        <option value="">-- Tutte --</option>
                     </select>
                 </div>
             </div>
 
-            <div class="row g-2 mt-1">
+            <!-- RIGA 2: Comune, Agente, Ordinamento, Pulsanti -->
+            <div class="row g-2" style="margin-top: 0.5rem;">
+                <!-- Comune -->
+                <div class="col-md-2">
+                    <label asp-for="Comune" class="form-label fw-bold">
+                        <i class="bi bi-building me-1"></i>@Html.DisplayNameFor(model => model.Comune)
+                    </label>
+                    <select asp-for="Comune" class="form-select" id="comune">
+                        <option value="">-- Tutti --</option>
+                    </select>
+                </div>
+
+                <!-- Agente -->
+                @if (ViewBag.IsAgente == true)
+                {
+                    <!-- L'utente è un agente: mostra il nome dell'agente -->
+                    <div class="col-md-2">
+                        <label asp-for="CodiceAgente" class="form-label fw-bold">
+                            <i class="bi bi-person-badge me-1"></i>Agente
+                        </label>
+                        <input type="text" class="form-control" value="@ViewBag.NomeAgenteUtente" disabled />
+                        <input type="hidden" asp-for="CodiceAgente" value="@ViewBag.CodiceAgenteUtente" />
+                    </div>
+                }
+                else
+                {
+                    <!-- Admin o Manager: mostra il dropdown completo -->
+                    <div class="col-md-2">
+                        <label asp-for="CodiceAgente" class="form-label fw-bold">
+                            <i class="bi bi-person-badge me-1"></i>@Html.DisplayNameFor(model => model.CodiceAgente)
+                        </label>
+                        <select asp-for="CodiceAgente" class="form-select" id="agente">
+                            <option value="">-- Tutti --</option>
+                        </select>
+                    </div>
+                }
+
                 <!-- Ordinamento -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label asp-for="OrdinamentoPer" class="form-label fw-bold">
                         <i class="bi bi-sort-down me-1"></i>@Html.DisplayNameFor(model => model.OrdinamentoPer)
                     </label>
@@ -234,7 +275,8 @@
                     </select>
                 </div>
 
-                <div class="col-md-8 d-flex align-items-end">
+                <!-- Pulsanti -->
+                <div class="col-md-5 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="bi bi-search me-2"></i>Cerca Consegne
                     </button>
@@ -250,14 +292,18 @@
     @if (Model.Ordini != null && Model.Ordini.Any())
     {
         <!-- ACCORDION ORDINI -->
-        <div class="accordion" id="accordionOrdini">
+        <div class="accordion" id="accordionOrdini" style="margin-bottom: 3rem;">
             @for (int i = 0; i < Model.Ordini.Count; i++)
             {
                 var ordine = Model.Ordini[i];
                 var accordionId = $"ordine{i}";
                 var collapseId = $"collapse{i}";
+                
+                // Verifica se l'ordine ha righe in ritardo
+                var oggi = DateTime.Today;
+                var hasRitardo = ordine.Righe.Any(r => r.DataConsegna < oggi && r.QuantitaRimanente > 0);
 
-                <div class="card result-card mb-3">
+                <div class="card result-card mb-3 @(hasRitardo ? "ordine-in-ritardo" : "")">
                     <!-- Header Ordine (Cliccabile) -->
                     <div class="accordion-header-custom collapsed" 
                          type="button" 
@@ -292,6 +338,12 @@
                                 </div>
                             </div>
                             <div class="text-end ms-3">
+                                @if (hasRitardo)
+                                {
+                                    <span class="badge badge-ritardo badge-custom me-2">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>IN RITARDO
+                                    </span>
+                                }
                                 <span class="badge bg-light text-dark badge-custom me-2">
                                     <i class="bi bi-list-ol me-1"></i>@ordine.NumeroRighe righe
                                 </span>
@@ -324,17 +376,24 @@
                                     <tbody>
                                         @foreach (var riga in ordine.Righe.OrderBy(r => r.RigaOrdine))
                                         {
-                                            <tr>
+                                            var rigaInRitardo = riga.DataConsegna < oggi && riga.QuantitaRimanente > 0;
+                                            <tr class="@(rigaInRitardo ? "riga-in-ritardo" : "")">
                                                 <td><strong>@riga.RigaOrdine</strong></td>
                                                 <td><code>@riga.CodiceArticolo</code></td>
                                                 <td>@(riga.DescrizioneArticolo ?? "-")</td>
                                                 <td class="text-center">
-                                                    <span class="badge bg-info">@riga.DataConsegna.ToString("dd/MM/yyyy")</span>
+                                                    <span class="badge @(rigaInRitardo ? "bg-danger" : "bg-info")">
+                                                        @if (rigaInRitardo)
+                                                        {
+                                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                        }
+                                                        @riga.DataConsegna.ToString("dd/MM/yyyy")
+                                                    </span>
                                                 </td>
                                                 <td class="text-end">@riga.Quantita.ToString("N2") @riga.UnitaMisura</td>
                                                 <td class="text-end">@riga.QuantitaEvasa.ToString("N2")</td>
                                                 <td class="text-end"><strong>@riga.QuantitaRimanente.ToString("N2")</strong></td>
-                                                <td class="text-end">€ @riga.Prezzo.ToString("N4")</td>
+                                                <td class="text-end">€ @riga.Prezzo.ToString("N2")</td>
                                                 <td class="text-end"><strong>€ @riga.ValoreRiga.ToString("N2")</strong></td>
                                                 <td class="text-center">
                                                     <span class="badge @riga.StatoEvasioneCssClass">@riga.StatoEvasione</span>
@@ -367,7 +426,7 @@
             }
         </div>
     }
-    else if (Model.Ordini != null)
+    else if (Model.Ordini != null && !Model.Ordini.Any())
     {
         <div class="alert alert-warning">
             <i class="bi bi-exclamation-triangle me-2"></i>
@@ -412,7 +471,12 @@
             caricaRegioni();
             caricaProvince();
             caricaComuni();
-            caricaAgenti();
+            
+            // Carica agenti solo se l'utente NON è un agente
+            @if (ViewBag.IsAgente != true)
+            {
+                <text>caricaAgenti();</text>
+            }
 
             // ===== FUNZIONE: Carica Regioni =====
             function caricaRegioni() {

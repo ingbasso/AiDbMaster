@@ -13,11 +13,8 @@
             <p class="text-muted">Gestisci tutti gli ordini di produzione dell'azienda</p>
         </div>
         <div class="col-md-4 text-end">
-            <a asp-action="Dashboard" class="btn btn-info me-2">
+            <a asp-action="Dashboard" class="btn btn-info">
                 <i class="bi bi-graph-up"></i> Dashboard
-            </a>
-            <a asp-action="Create" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Nuovo Ordine
             </a>
         </div>
     </div>
@@ -35,7 +32,7 @@
         <div class="collapse show" id="filtriCollapse">
             <div class="card-body">
                 <form method="get" class="row g-3">
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label">Stato</label>
                         <select name="filtroStato" class="form-select">
                             <option value="">Tutti gli stati</option>
@@ -50,22 +47,7 @@
                             }
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Operatore</label>
-                        <select name="filtroOperatore" class="form-select">
-                            <option value="">Tutti gli operatori</option>
-                            @if (ViewBag.Operatori != null)
-                            {
-                                @foreach (var operatore in ViewBag.Operatori)
-                                {
-                                    <option value="@operatore.IdOperatore" selected="@(ViewBag.FiltroOperatore == operatore.IdOperatore.ToString())">
-                                        @operatore.NomeCompleto
-                                    </option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label">Centro Lavoro</label>
                         <select name="filtroCentro" class="form-select">
                             <option value="">Tutti i centri</option>
@@ -73,46 +55,27 @@
                             {
                                 @foreach (var centro in ViewBag.CentriLavoro)
                                 {
-                                    <option value="@centro.IdCentroLavoro" selected="@(ViewBag.FiltroCentro == centro.IdCentroLavoro.ToString())">
+                                    <option value="@centro.CodiceCentro" selected="@(ViewBag.FiltroCentro == centro.CodiceCentro)">
                                         @centro.DescrizioneCentro
                                     </option>
                                 }
                             }
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Lavorazione</label>
-                        <select name="filtroLavorazione" class="form-select">
-                            <option value="">Tutte le lavorazioni</option>
-                            @if (ViewBag.Lavorazioni != null)
-                            {
-                                @foreach (var lavorazione in ViewBag.Lavorazioni)
-                                {
-                                    <option value="@lavorazione.IdLavorazione" selected="@(ViewBag.FiltroLavorazione == lavorazione.IdLavorazione.ToString())">
-                                        @(!string.IsNullOrEmpty(lavorazione.CodiceLavorazione) ? $"{lavorazione.CodiceLavorazione} - " : "")@lavorazione.DescrizioneLavorazione
-                                    </option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Priorità</label>
-                        <select name="filtroPriorita" class="form-select">
-                            <option value="">Tutte le priorità</option>
-                            @if (ViewBag.Priorita != null)
-                            {
-                                @foreach (var priorita in ViewBag.Priorita)
-                                {
-                                    <option value="@priorita.Value" selected="@(ViewBag.FiltroPriorita == priorita.Value)">
-                                        @priorita.Text
-                                    </option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <label class="form-label">Articolo</label>
-                        <input type="text" name="filtroArticolo" class="form-control" placeholder="Codice o descrizione" value="@ViewBag.FiltroArticolo">
+                        <select name="filtroArticolo" id="filtroArticolo" class="form-select">
+                            <option value="">Tutti gli articoli</option>
+                            @if (ViewBag.Articoli != null)
+                            {
+                                @foreach (var articolo in ViewBag.Articoli)
+                                {
+                                    <option value="@articolo.CodiceArticolo" selected="@(ViewBag.FiltroArticolo == articolo.CodiceArticolo)">
+                                        @articolo.CodiceArticolo - @articolo.DescrizioneArticolo
+                                    </option>
+                                }
+                            }
+                        </select>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
@@ -154,11 +117,9 @@
                                 <th>Articolo</th>
                                 <th>Quantità</th>
                                 <th>Stato</th>
-                                <th>Priorità</th>
                                 <th>Centro Lavoro</th>
-                                <th>Lavorazione</th>
-                                <th>Operatore</th>
                                 <th>Data Inizio</th>
+                                <th>Data Fine Prevista</th>
                                 <th>Progresso</th>
                                 <th>Azioni</th>
                             </tr>
@@ -179,7 +140,7 @@
                                         <br><small>@ordine.DescrizioneArticolo</small>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">@ordine.QuantitaProdotta.ToString("N0") / @ordine.Quantita.ToString("N0")</span>
+                                        <strong>@ordine.Quantita.ToString("N0")</strong>
                                         <br><small>@ordine.UnitaMisura</small>
                                     </td>
                                     <td>
@@ -195,37 +156,21 @@
                                         }
                                         <span class="badge @badgeClass">@ordine.Stato?.DescrizioneStato</span>
                                     </td>
-                                    <td>
-                                        @{
-                                            var prioritaBadge = ordine.Priorita switch
-                                            {
-                                                5 => "bg-danger",
-                                                4 => "bg-warning",
-                                                3 => "bg-info",
-                                                _ => "bg-secondary"
-                                            };
-                                        }
-                                        <span class="badge @prioritaBadge">@ordine.PrioritaDescrizione</span>
-                                    </td>
                                     <td>@ordine.CentroLavoro?.DescrizioneCentro</td>
-                                    <td>
-                                        @if (ordine.Lavorazione != null)
-                                        {
-                                            @if (ordine.Lavorazione.CodiceLavorazione > 0)
-                                            {
-                                                <span class="badge bg-info me-1">@ordine.Lavorazione.CodiceLavorazione</span>
-                                            }
-                                            <span>@ordine.Lavorazione.DescrizioneLavorazione</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Non assegnata</span>
-                                        }
-                                    </td>
-                                    <td>@ordine.Operatore?.NomeCompleto</td>
                                     <td>
                                         @ordine.DataInizioOP.ToString("dd/MM/yyyy")
                                         <br><small class="text-muted">@ordine.DataInizioOP.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @if (ordine.DataFinePrevista.HasValue)
+                                        {
+                                            @ordine.DataFinePrevista.Value.ToString("dd/MM/yyyy")
+                                            <br><small class="text-muted">@ordine.DataFinePrevista.Value.ToString("HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
                                     </td>
                                     <td>
                                         <div class="progress" style="height: 20px;">
@@ -235,17 +180,9 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="btn-group" role="group">
-                                            <a asp-action="Details" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-info" title="Dettagli">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a asp-action="Edit" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-primary" title="Modifica">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a asp-action="Delete" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-danger" title="Elimina">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        </div>
+                                        <a asp-action="Details" asp-route-id="@ordine.IdListaOP" class="btn btn-sm btn-outline-info" title="Dettagli">
+                                            <i class="bi bi-eye"></i> Dettagli
+                                        </a>
                                     </td>
                                 </tr>
                             }
@@ -259,9 +196,6 @@
                     <i class="bi bi-inbox display-1 text-muted"></i>
                     <h4 class="text-muted">Nessun ordine trovato</h4>
                     <p class="text-muted">Non ci sono ordini di produzione che corrispondono ai filtri selezionati.</p>
-                    <a asp-action="Create" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Crea il primo ordine
-                    </a>
                 </div>
             }
         </div>
@@ -269,10 +203,40 @@
 </div>
 
 @section Scripts {
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <script>
-        // Auto-submit del form filtri quando cambiano i select
-        $('select[name^="filtro"]').change(function() {
-            $(this).closest('form').submit();
+        $(document).ready(function() {
+            // Inizializza Select2 sul dropdown articoli
+            $('#filtroArticolo').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Seleziona un articolo',
+                allowClear: true,
+                language: {
+                    noResults: function() {
+                        return "Nessun articolo trovato";
+                    },
+                    searching: function() {
+                        return "Ricerca in corso...";
+                    }
+                }
+            });
+
+            // Auto-submit del form filtri quando cambiano i select (escluso articoli)
+            $('select[name^="filtro"]:not(#filtroArticolo)').change(function() {
+                $(this).closest('form').submit();
+            });
+            
+            // Submit manuale per articoli (dopo la selezione)
+            $('#filtroArticolo').on('select2:select select2:clear', function() {
+                $(this).closest('form').submit();
+            });
         });
     </script>
 }

@@ -23,7 +23,7 @@ namespace AiDbMaster.Controllers
         /// <summary>
         /// Visualizza la lista degli ordini di produzione con filtri
         /// </summary>
-        public async Task<IActionResult> Index(string? filtroStato, string? filtroOperatore, string? filtroCentro, string? filtroLavorazione, string? filtroArticolo, int? filtroPriorita)
+        public async Task<IActionResult> Index(string? filtroStato, string? filtroCentro, string? filtroArticolo)
         {
             ViewBag.Title = "Gestione Ordini di Produzione";
             
@@ -45,41 +45,16 @@ namespace AiDbMaster.Controllers
                 ViewBag.FiltroStato = filtroStato;
             }
 
-            if (!string.IsNullOrEmpty(filtroOperatore))
-            {
-                if (int.TryParse(filtroOperatore, out int operatoreId))
-                {
-                    query = query.Where(l => l.IdOperatore == operatoreId);
-                    ViewBag.FiltroOperatore = filtroOperatore;
-                }
-            }
-
             if (!string.IsNullOrEmpty(filtroCentro))
             {
                 query = query.Where(l => l.CodiceCentro == filtroCentro);
                 ViewBag.FiltroCentro = filtroCentro;
             }
 
-            if (!string.IsNullOrEmpty(filtroLavorazione))
-            {
-                if (short.TryParse(filtroLavorazione, out short lavorazioneId))
-                {
-                    query = query.Where(l => l.CodiceLavorazione == lavorazioneId);
-                    ViewBag.FiltroLavorazione = filtroLavorazione;
-                }
-            }
-
             if (!string.IsNullOrEmpty(filtroArticolo))
             {
-                query = query.Where(l => l.CodiceArticolo.Contains(filtroArticolo) || 
-                                       l.DescrizioneArticolo.Contains(filtroArticolo));
+                query = query.Where(l => l.CodiceArticolo == filtroArticolo);
                 ViewBag.FiltroArticolo = filtroArticolo;
-            }
-
-            if (filtroPriorita.HasValue)
-            {
-                query = query.Where(l => l.Priorita == filtroPriorita);
-                ViewBag.FiltroPriorita = filtroPriorita;
             }
 
             // Ordina per data inizio (più recenti prima)
@@ -374,33 +349,18 @@ namespace AiDbMaster.Controllers
                 .Select(s => new { s.CodiceStato, s.DescrizioneStato })
                 .ToListAsync();
 
-            ViewBag.Operatori = await _context.Operatori
-                .Where(o => o.Attivo)
-                .OrderBy(o => o.Nome)
-                .ThenBy(o => o.Cognome)
-                .Select(o => new { o.IdOperatore, NomeCompleto = o.Nome + " " + o.Cognome })
-                .ToListAsync();
-
             ViewBag.CentriLavoro = await _context.CentriLavoro
                 .Where(c => c.Attivo)
                 .OrderBy(c => c.DescrizioneCentro)
                 .Select(c => new { c.CodiceCentro, c.DescrizioneCentro })
                 .ToListAsync();
 
-            ViewBag.Lavorazioni = await _context.Lavorazioni
-                .Where(l => l.Attivo)
-                .OrderBy(l => l.DescrizioneLavorazione)
-                .Select(l => new { l.CodiceLavorazione, l.DescrizioneLavorazione })
+            // Articoli distinti dalla tabella ListaOP
+            ViewBag.Articoli = await _context.ListaOP
+                .Select(l => new { l.CodiceArticolo, l.DescrizioneArticolo })
+                .Distinct()
+                .OrderBy(a => a.CodiceArticolo)
                 .ToListAsync();
-
-            ViewBag.Priorita = new[]
-            {
-                new { Value = 1, Text = "Bassa" },
-                new { Value = 2, Text = "Normale" },
-                new { Value = 3, Text = "Media" },
-                new { Value = 4, Text = "Alta" },
-                new { Value = 5, Text = "Urgente" }
-            };
         }
 
         /// <summary>

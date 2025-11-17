@@ -33,12 +33,12 @@ namespace AiDbMaster.Data
 
                 var resources = new List<Resource>
                 {
-                    // 1. Dashboard
+                    // 1. Home / Dashboard
                     new Resource 
                     { 
-                        Name = "Dashboard", 
-                        DisplayName = "Dashboard", 
-                        Description = "Dashboard principale del sistema",
+                        Name = "Home", 
+                        DisplayName = "Home", 
+                        Description = "Pagina principale del sistema",
                         MenuIcon = "bi-house-door", 
                         MenuOrder = 1, 
                         ParentResourceId = null, 
@@ -58,195 +58,30 @@ namespace AiDbMaster.Data
                         IsMenuGroup = true,
                         IsConfigured = true
                     },
-                    new Resource 
-                    { 
-                        Name = "AnagraficaArticoli", 
-                        DisplayName = "Anagrafica Articoli", 
-                        Description = "Gestione articoli di magazzino",
-                        MenuIcon = "bi-table", 
-                        MenuOrder = 1, 
-                        ParentResourceId = 2, // Parent: Tabelle
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "AnagraficaClienti", 
-                        DisplayName = "Anagrafica Clienti", 
-                        Description = "Gestione clienti",
-                        MenuIcon = "bi-people", 
-                        MenuOrder = 2, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "AnagraficaFornitori", 
-                        DisplayName = "Anagrafica Fornitori", 
-                        Description = "Gestione fornitori",
-                        MenuIcon = "bi-truck", 
-                        MenuOrder = 3, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "ArticoliSostitutivi", 
-                        DisplayName = "Articoli Sostitutivi", 
-                        Description = "Gestione sostituzioni articoli",
-                        MenuIcon = "bi-arrow-left-right", 
-                        MenuOrder = 4, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "ProgressiviArticoli", 
-                        DisplayName = "Progressivi Articoli", 
-                        Description = "Gestione giacenze e progressivi",
-                        MenuIcon = "bi-boxes", 
-                        MenuOrder = 5, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "TabellaAgenti", 
-                        DisplayName = "Agenti", 
-                        Description = "Gestione agenti di vendita",
-                        MenuIcon = "bi-person-workspace", 
-                        MenuOrder = 6, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "TabellaMagazzini", 
-                        DisplayName = "Magazzini", 
-                        Description = "Gestione magazzini",
-                        MenuIcon = "bi-building", 
-                        MenuOrder = 7, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "Lavorazioni", 
-                        DisplayName = "Lavorazioni", 
-                        Description = "Gestione lavorazioni di produzione",
-                        MenuIcon = "bi-gear-wide", 
-                        MenuOrder = 8, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "CentriLavoro", 
-                        DisplayName = "Centri Lavoro", 
-                        Description = "Gestione centri di lavoro",
-                        MenuIcon = "bi-building-gear", 
-                        MenuOrder = 9, 
-                        ParentResourceId = 2,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
 
-                    // 3. GRUPPO ORDINI
-                    new Resource 
-                    { 
-                        Name = "Ordini", 
-                        DisplayName = "Ordini", 
-                        Description = "Gruppo gestione ordini",
-                        MenuIcon = "bi-card-list", 
-                        MenuOrder = 3, 
-                        ParentResourceId = null, 
-                        IsMenuGroup = true,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "OrdiniTestate", 
-                        DisplayName = "Ordini Clienti", 
-                        Description = "Gestione ordini clienti",
-                        MenuIcon = "bi-card-list", 
-                        MenuOrder = 1, 
-                        ParentResourceId = 12,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "OrdiniRighe", 
-                        DisplayName = "Righe Ordine", 
-                        Description = "Dettaglio righe ordini",
-                        MenuIcon = "bi-list-ul", 
-                        MenuOrder = 2, 
-                        ParentResourceId = 12,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-
-                    // 4. GRUPPO PRODUZIONE
+                    // 3. GRUPPO PRODUZIONE
                     new Resource 
                     { 
                         Name = "Produzione", 
                         DisplayName = "Produzione", 
                         Description = "Gruppo pianificazione produzione",
                         MenuIcon = "bi-gear-wide-connected", 
-                        MenuOrder = 4, 
+                        MenuOrder = 3, 
                         ParentResourceId = null, 
                         IsMenuGroup = true,
                         IsConfigured = true
                     },
+
+                    // 4. GRUPPO INTERROGAZIONI DB
                     new Resource 
                     { 
-                        Name = "SchedulatoreOP", 
-                        DisplayName = "Schedulatore", 
-                        Description = "Schedulazione ordini di produzione",
-                        MenuIcon = "bi-calendar3", 
-                        MenuOrder = 1, 
-                        ParentResourceId = 15,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "ListaOP", 
-                        DisplayName = "Lista Ordini Produzione", 
-                        Description = "Gestione ordini di produzione",
-                        MenuIcon = "bi-list-check", 
-                        MenuOrder = 2, 
-                        ParentResourceId = 15,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "Operatori", 
-                        DisplayName = "Operatori", 
-                        Description = "Gestione operatori produzione",
-                        MenuIcon = "bi-person-badge", 
-                        MenuOrder = 3, 
-                        ParentResourceId = 15,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "CalendarioFermi", 
-                        DisplayName = "Calendario Fermi", 
-                        Description = "Gestione fermi centri lavoro",
-                        MenuIcon = "bi-calendar-x", 
+                        Name = "InterrogazioniDB", 
+                        DisplayName = "Interrogazioni DB", 
+                        Description = "Interrogazioni e analisi database",
+                        MenuIcon = "bi-search", 
                         MenuOrder = 4, 
-                        ParentResourceId = 15,
-                        IsMenuGroup = false,
+                        ParentResourceId = null, 
+                        IsMenuGroup = true,
                         IsConfigured = true
                     },
 
@@ -261,79 +96,84 @@ namespace AiDbMaster.Data
                         ParentResourceId = null, 
                         IsMenuGroup = true,
                         IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "UserManagement", 
-                        DisplayName = "Gestione Utenti", 
-                        Description = "Amministrazione utenti",
-                        MenuIcon = "bi-people", 
-                        MenuOrder = 1, 
-                        ParentResourceId = 20,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "RoleManagement", 
-                        DisplayName = "Gestione Ruoli", 
-                        Description = "Amministrazione ruoli",
-                        MenuIcon = "bi-shield-lock", 
-                        MenuOrder = 2, 
-                        ParentResourceId = 20,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "PermissionManagement", 
-                        DisplayName = "Gestione Permessi", 
-                        Description = "Configurazione permessi sistema",
-                        MenuIcon = "bi-key", 
-                        MenuOrder = 3, 
-                        ParentResourceId = 20,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "AgentiToUser", 
-                        DisplayName = "Converti Agenti in Utenti", 
-                        Description = "Conversione agenti in utenti sistema",
-                        MenuIcon = "bi-person-plus-fill", 
-                        MenuOrder = 4, 
-                        ParentResourceId = 20,
-                        IsMenuGroup = false,
-                        IsConfigured = true
-                    },
-                    new Resource 
-                    { 
-                        Name = "AISettings", 
-                        DisplayName = "Impostazioni AI", 
-                        Description = "Configurazione sistema AI",
-                        MenuIcon = "bi-robot", 
-                        MenuOrder = 5, 
-                        ParentResourceId = 20,
-                        IsMenuGroup = false,
-                        IsConfigured = true
                     }
                 };
 
-                // Salva risorse
+                // ===== FASE 1: Salva prima i gruppi ROOT =====
                 await context.Resources.AddRangeAsync(resources);
                 await context.SaveChangesAsync();
+                logger.LogInformation($"✅ Fase 1: {resources.Count} risorse root salvate");
 
-                logger.LogInformation($"Seed completato: {resources.Count} risorse create.");
+                // Recupera gli ID reali generati dal database
+                var homeRes = await context.Resources.FirstAsync(r => r.Name == "Home");
+                var tabelleRes = await context.Resources.FirstAsync(r => r.Name == "Tabelle");
+                var produzioneRes = await context.Resources.FirstAsync(r => r.Name == "Produzione");
+                var interrogazioniDBRes = await context.Resources.FirstAsync(r => r.Name == "InterrogazioniDB");
+                var amministrazioneRes = await context.Resources.FirstAsync(r => r.Name == "Amministrazione");
+
+                logger.LogInformation($"   → Home ID: {homeRes.Id}");
+                logger.LogInformation($"   → Tabelle ID: {tabelleRes.Id}");
+                logger.LogInformation($"   → Produzione ID: {produzioneRes.Id}");
+                logger.LogInformation($"   → InterrogazioniDB ID: {interrogazioniDBRes.Id}");
+                logger.LogInformation($"   → Amministrazione ID: {amministrazioneRes.Id}");
+
+                // ===== FASE 2: Crea risorse FIGLIE usando gli ID reali =====
+                var childResources = new List<Resource>
+                {
+                    // ==== TABELLE (13 pagine) ====
+                    new Resource { Name = "AnagraficaArticoli", DisplayName = "Anagrafica Articoli", Description = "Gestione articoli di magazzino", MenuIcon = "bi-table", MenuOrder = 1, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "AnagraficaClienti", DisplayName = "Anagrafica Clienti", Description = "Gestione clienti", MenuIcon = "bi-people", MenuOrder = 2, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "AnagraficaFornitori", DisplayName = "Anagrafica Fornitori", Description = "Gestione fornitori", MenuIcon = "bi-truck", MenuOrder = 3, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ArticoliSostitutivi", DisplayName = "Articoli Sostitutivi", Description = "Gestione sostituzioni articoli", MenuIcon = "bi-arrow-left-right", MenuOrder = 4, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ProgressiviArticoli", DisplayName = "Progressivi Articoli", Description = "Gestione giacenze e progressivi", MenuIcon = "bi-boxes", MenuOrder = 5, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "TabellaAgenti", DisplayName = "Agenti", Description = "Gestione agenti di vendita", MenuIcon = "bi-person-workspace", MenuOrder = 6, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "TabellaMagazzini", DisplayName = "Magazzini", Description = "Gestione magazzini", MenuIcon = "bi-building", MenuOrder = 7, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "Lavorazioni", DisplayName = "Lavorazioni", Description = "Gestione lavorazioni di produzione", MenuIcon = "bi-gear-wide", MenuOrder = 8, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "CentriLavoro", DisplayName = "Centri di Lavoro", Description = "Gestione centri di lavoro", MenuIcon = "bi-building-gear", MenuOrder = 9, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "Operatori", DisplayName = "Operatori", Description = "Gestione operatori produzione", MenuIcon = "bi-people", MenuOrder = 10, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "StatiOP", DisplayName = "Stati OP", Description = "Gestione stati ordini di produzione", MenuIcon = "bi-flag", MenuOrder = 11, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "OrdiniTestate", DisplayName = "Gestione Ordini CF", Description = "Gestione ordini clienti", MenuIcon = "bi-clipboard-check", MenuOrder = 12, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "TempiAsciugatura", DisplayName = "Tempi di Asciugatura", Description = "Gestione tempi di asciugatura", MenuIcon = "bi-calendar-day", MenuOrder = 13, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+
+                    // ==== PRODUZIONE (4 pagine) ====
+                    new Resource { Name = "ListaOPDashboard", DisplayName = "Dashboard", Description = "Dashboard produzione", MenuIcon = "bi-graph-up", MenuOrder = 1, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "SchedulatoreOP", DisplayName = "Schedulatore OP", Description = "Schedulazione ordini di produzione", MenuIcon = "bi-calendar2-check", MenuOrder = 2, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ListaOP", DisplayName = "Ordini di Produzione", Description = "Gestione ordini di produzione", MenuIcon = "bi-list-ul", MenuOrder = 3, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "FermiSchedulati", DisplayName = "Fermi Schedulati", Description = "Gestione fermi centri lavoro", MenuIcon = "bi-calendar-check", MenuOrder = 4, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+
+                    // ==== INTERROGAZIONI DB (5 pagine) ====
+                    new Resource { Name = "Disponibilita", DisplayName = "Disponibilità", Description = "Verifica disponibilità articoli", MenuIcon = "bi-boxes", MenuOrder = 1, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ConsegneProgrammate", DisplayName = "Consegne Programmate", Description = "Gestione consegne programmate", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "DashboardConsegne", DisplayName = "Dashboard Consegne", Description = "Dashboard analisi consegne", MenuIcon = "bi-graph-up", MenuOrder = 3, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "Grafici", DisplayName = "Grafici", Description = "Grafici e statistiche avanzate", MenuIcon = "bi-graph-up", MenuOrder = 4, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "InterrogazioniAI", DisplayName = "Interrogazioni AI", Description = "Interrogazioni con intelligenza artificiale", MenuIcon = "bi-robot", MenuOrder = 5, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+
+                    // ==== AMMINISTRAZIONE (6 pagine) ====
+                    new Resource { Name = "UserManagement", DisplayName = "Gestione Utenti", Description = "Amministrazione utenti", MenuIcon = "bi-people", MenuOrder = 1, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "RoleManagement", DisplayName = "Gestione Ruoli", Description = "Amministrazione ruoli", MenuIcon = "bi-shield-lock", MenuOrder = 2, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "PermissionManagement", DisplayName = "Gestione Permessi", Description = "Configurazione permessi sistema", MenuIcon = "bi-shield-lock-fill", MenuOrder = 3, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "AgentiToUser", DisplayName = "Converti Agenti in Utenti", Description = "Conversione agenti in utenti sistema", MenuIcon = "bi-person-plus-fill", MenuOrder = 4, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "AISettings", DisplayName = "Impostazioni AI", Description = "Configurazione sistema AI", MenuIcon = "bi-robot", MenuOrder = 5, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "SyncfusionTest", DisplayName = "Test Syncfusion", Description = "Test componenti Syncfusion", MenuIcon = "bi-grid-3x3-gap", MenuOrder = 6, ParentResourceId = amministrazioneRes.Id, IsMenuGroup = false, IsConfigured = true }
+                };
+
+                await context.Resources.AddRangeAsync(childResources);
+                await context.SaveChangesAsync();
+                logger.LogInformation($"✅ Fase 2: {childResources.Count} risorse figlie salvate");
+
+                var totalResources = resources.Count + childResources.Count;
+                logger.LogInformation($"✅ Seed completato: {totalResources} risorse create in totale.");
 
                 // ===== PERMESSI DEFAULT PER ADMIN (può tutto) =====
                 
                 var adminRole = await roleManager.FindByNameAsync(UserRoles.Admin);
                 if (adminRole != null)
                 {
+                    var allResources = await context.Resources.Where(r => !r.IsMenuGroup).ToListAsync();
                     var adminPermissions = new List<Permission>();
                     
                     // Admin ha permessi completi su tutte le risorse NON gruppo
-                    foreach (var resource in resources.Where(r => !r.IsMenuGroup))
+                    foreach (var resource in allResources)
                     {
                         adminPermissions.Add(new Permission
                         {
@@ -349,24 +189,24 @@ namespace AiDbMaster.Data
                     await context.Permissions.AddRangeAsync(adminPermissions);
                     await context.SaveChangesAsync();
                     
-                    logger.LogInformation($"Permessi Admin: {adminPermissions.Count} permessi creati.");
+                    logger.LogInformation($"✅ Permessi Admin: {adminPermissions.Count} permessi creati.");
                 }
 
-                // ===== PERMESSI DEFAULT PER AGENTI (solo clienti e ordini, view+edit) =====
+                // ===== PERMESSI DEFAULT PER AGENTI (solo clienti, ordini, consegne - view+edit) =====
                 
                 var agentiRole = await roleManager.FindByNameAsync(UserRoles.Agenti);
                 if (agentiRole != null)
                 {
                     var agentiPermissions = new List<Permission>();
                     
-                    // Agenti: Dashboard (view)
-                    var dashboardRes = resources.FirstOrDefault(r => r.Name == "Dashboard");
-                    if (dashboardRes != null)
+                    // Agenti: Home (view)
+                    var homeResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "Home");
+                    if (homeResource != null)
                     {
                         agentiPermissions.Add(new Permission
                         {
                             RoleId = agentiRole.Id,
-                            ResourceId = dashboardRes.Id,
+                            ResourceId = homeResource.Id,
                             CanView = true,
                             CanCreate = false,
                             CanEdit = false,
@@ -375,13 +215,13 @@ namespace AiDbMaster.Data
                     }
 
                     // Agenti: Clienti (view + edit)
-                    var clientiRes = resources.FirstOrDefault(r => r.Name == "AnagraficaClienti");
-                    if (clientiRes != null)
+                    var clientiResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "AnagraficaClienti");
+                    if (clientiResource != null)
                     {
                         agentiPermissions.Add(new Permission
                         {
                             RoleId = agentiRole.Id,
-                            ResourceId = clientiRes.Id,
+                            ResourceId = clientiResource.Id,
                             CanView = true,
                             CanCreate = false,
                             CanEdit = true,
@@ -390,13 +230,13 @@ namespace AiDbMaster.Data
                     }
 
                     // Agenti: Ordini (view + edit)
-                    var ordiniRes = resources.FirstOrDefault(r => r.Name == "OrdiniTestate");
-                    if (ordiniRes != null)
+                    var ordiniResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "OrdiniTestate");
+                    if (ordiniResource != null)
                     {
                         agentiPermissions.Add(new Permission
                         {
                             RoleId = agentiRole.Id,
-                            ResourceId = ordiniRes.Id,
+                            ResourceId = ordiniResource.Id,
                             CanView = true,
                             CanCreate = false,
                             CanEdit = true,
@@ -404,20 +244,49 @@ namespace AiDbMaster.Data
                         });
                     }
 
+                    // Agenti: Consegne Programmate (view)
+                    var consegneResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "ConsegneProgrammate");
+                    if (consegneResource != null)
+                    {
+                        agentiPermissions.Add(new Permission
+                        {
+                            RoleId = agentiRole.Id,
+                            ResourceId = consegneResource.Id,
+                            CanView = true,
+                            CanCreate = false,
+                            CanEdit = false,
+                            CanDelete = false
+                        });
+                    }
+
+                    // Agenti: Dashboard Consegne (view)
+                    var dashboardConsegneResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "DashboardConsegne");
+                    if (dashboardConsegneResource != null)
+                    {
+                        agentiPermissions.Add(new Permission
+                        {
+                            RoleId = agentiRole.Id,
+                            ResourceId = dashboardConsegneResource.Id,
+                            CanView = true,
+                            CanCreate = false,
+                            CanEdit = false,
+                            CanDelete = false
+                        });
+                    }
+
                     await context.Permissions.AddRangeAsync(agentiPermissions);
                     await context.SaveChangesAsync();
                     
-                    logger.LogInformation($"Permessi Agenti: {agentiPermissions.Count} permessi creati.");
+                    logger.LogInformation($"✅ Permessi Agenti: {agentiPermissions.Count} permessi creati.");
                 }
 
-                logger.LogInformation("Seed permessi completato con successo!");
+                logger.LogInformation("✅ Seed permessi completato con successo!");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Errore durante il seed dei permessi");
+                logger.LogError(ex, "❌ Errore durante il seed dei permessi");
                 throw;
             }
         }
     }
 }
-

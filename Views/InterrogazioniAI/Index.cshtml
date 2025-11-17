@@ -1,0 +1,421 @@
+@{
+    ViewData["Title"] = "Interrogazioni AI";
+    ViewBag.UseFluidContainer = true;
+}
+
+@section Styles {
+    <style>
+        .ai-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .chat-icon {
+            font-size: 3rem;
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .input-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .question-input {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .question-input:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-ask {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-ask:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-ask:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .suggested-questions {
+            margin-top: 1rem;
+        }
+
+        .suggested-question-btn {
+            font-size: 0.85rem;
+            margin: 0.25rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid #667eea;
+            background: white;
+            color: #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .suggested-question-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.5s ease;
+        }
+
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question-display {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .sql-query-box {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+
+        .sql-keyword {
+            color: #c678dd;
+            font-weight: bold;
+        }
+
+        .results-table {
+            font-size: 0.9rem;
+        }
+
+        .results-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .results-table th {
+            padding: 0.75rem;
+            font-weight: 600;
+        }
+
+        .results-table td {
+            padding: 0.6rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-box {
+            background: #ffe6e6;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #721c24;
+        }
+
+        .stats-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+    </style>
+}
+
+<div class="ai-container">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-robot chat-icon me-3"></i>
+                    Interrogazioni AI - Mistral
+                </h2>
+                <p class="mb-0 mt-2 opacity-75">
+                    Fai domande in linguaggio naturale sulle consegne e sugli ordini. L'AI genererà la query SQL e mostrerà i risultati.
+                </p>
+            </div>
+            <a asp-controller="InterrogazioniDB" asp-action="Index" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Torna al Menu
+            </a>
+        </div>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+        <div class="row align-items-end">
+            <div class="col-md-9">
+                <label for="questionInput" class="form-label fw-bold">
+                    <i class="bi bi-question-circle me-2"></i>La tua domanda
+                </label>
+                <textarea 
+                    class="form-control question-input" 
+                    id="questionInput" 
+                    rows="3" 
+                    placeholder="Es: Quante consegne sono in ritardo? oppure Top 5 agenti per fatturato..."></textarea>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary btn-ask w-100" id="askBtn" onclick="askQuestion()">
+                    <i class="bi bi-send-fill me-2"></i>Chiedi all'AI
+                </button>
+            </div>
+        </div>
+
+        <!-- Domande Suggerite -->
+        <div class="suggested-questions">
+            <small class="text-muted"><i class="bi bi-lightbulb me-1"></i>Domande suggerite:</small><br>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Quante consegne sono in ritardo?</button>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Top 10 agenti per fatturato</button>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Ordini del cliente 1000 nel mese di novembre</button>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Consegne in Lombardia questo mese</button>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Valore totale ordini in ritardo</button>
+            <button class="btn btn-sm suggested-question-btn" onclick="fillQuestion(this)">Top 5 province per numero ordini</button>
+        </div>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center text-white">
+            <div class="loading-spinner"></div>
+            <h4 class="mt-3">L'AI sta elaborando la tua domanda...</h4>
+            <p>Generazione query SQL in corso</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function fillQuestion(button) {
+            document.getElementById('questionInput').value = button.textContent.trim();
+            document.getElementById('questionInput').focus();
+        }
+
+        async function askQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            
+            if (!question) {
+                alert('Per favore, inserisci una domanda');
+                return;
+            }
+
+            // Disabilita pulsante e mostra loading
+            const askBtn = document.getElementById('askBtn');
+            askBtn.disabled = true;
+            document.getElementById('loadingOverlay').classList.add('active');
+
+            try {
+                const response = await fetch('@Url.Action("AskQuestion", "InterrogazioniAI")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    displayError(result.error || 'Errore sconosciuto');
+                }
+            } catch (error) {
+                displayError('Errore di connessione: ' + error.message);
+            } finally {
+                askBtn.disabled = false;
+                document.getElementById('loadingOverlay').classList.remove('active');
+            }
+        }
+
+        function displayResults(result) {
+            const container = document.getElementById('resultsContainer');
+            
+            // Crea card risultato
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            let html = `
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5><i class="bi bi-chat-left-text text-primary me-2"></i>Domanda</h5>
+                    <span class="stats-badge"><i class="bi bi-list-check me-1"></i>${result.rowCount} righe</span>
+                </div>
+                <div class="question-display">
+                    <strong>${escapeHtml(result.question)}</strong>
+                </div>
+                
+                <div class="accordion mb-3" id="sqlAccordion${Date.now()}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sqlCollapse${Date.now()}">
+                                <i class="bi bi-code-square me-2"></i>Query SQL Generata
+                            </button>
+                        </h2>
+                        <div id="sqlCollapse${Date.now()}" class="accordion-collapse collapse">
+                            <div class="accordion-body p-0">
+                                <div class="sql-query-box">${highlightSQL(result.sqlQuery)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (result.data && result.data.length > 0) {
+                html += '<h6><i class="bi bi-table me-2"></i>Risultati</h6>';
+                html += '<div class="table-responsive">';
+                html += '<table class="table table-striped table-hover results-table">';
+                
+                // Header
+                html += '<thead><tr>';
+                for (const key in result.data[0]) {
+                    html += `<th>${escapeHtml(key)}</th>`;
+                }
+                html += '</tr></thead>';
+                
+                // Body
+                html += '<tbody>';
+                result.data.forEach(row => {
+                    html += '<tr>';
+                    for (const key in row) {
+                        const value = row[key] !== null && row[key] !== undefined ? row[key] : '-';
+                        html += `<td>${escapeHtml(String(value))}</td>`;
+                    }
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                
+                html += '</table></div>';
+            } else {
+                html += '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nessun risultato trovato</div>';
+            }
+
+            card.innerHTML = html;
+            container.insertBefore(card, container.firstChild);
+            
+            // Scroll to results
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function displayError(errorMessage) {
+            const container = document.getElementById('resultsContainer');
+            
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+                <div class="error-box">
+                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Errore</h5>
+                    <p class="mb-0">${escapeHtml(errorMessage)}</p>
+                </div>
+            `;
+            
+            container.insertBefore(card, container.firstChild);
+        }
+
+        function highlightSQL(sql) {
+            const keywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 
+                             'ON', 'GROUP', 'BY', 'ORDER', 'TOP', 'AS', 'AND', 'OR', 'IN', 'LIKE', 
+                             'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'DISTINCT', 'GETDATE'];
+            
+            let highlighted = escapeHtml(sql);
+            keywords.forEach(keyword => {
+                const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                highlighted = highlighted.replace(regex, `<span class="sql-keyword">${keyword.toUpperCase()}</span>`);
+            });
+            
+            return highlighted;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enter per inviare
+        document.getElementById('questionInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                askQuestion();
+            }
+        });
+    </script>
+}

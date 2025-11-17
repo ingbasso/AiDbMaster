@@ -13,11 +13,6 @@ namespace AiDbMaster.Controllers
     /// Fornisce funzionalità di visualizzazione dei clienti
     /// </summary>
     [Authorize]
-    [RegisterResource("AnagraficaClienti", "Anagrafica Clienti", 
-        Description = "Gestione clienti", 
-        MenuIcon = "bi-people", 
-        MenuOrder = 2, 
-        ParentResourceId = 2)] // Parent: Tabelle
     [RequirePermission("AnagraficaClienti", "View")]
     public class AnagraficaClientiController : Controller
     {
