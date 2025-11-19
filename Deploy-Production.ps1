@@ -15,7 +15,8 @@ param(
     [string]$AppDirectory = "C:\inetpub\wwwroot\AiDbMaster",
     [string]$BackupDirectory = "C:\Backup\AiDbMaster",
     [string]$AppPoolName = "AiDbMaster",
-    [switch]$SkipBackup
+    [switch]$SkipBackup,
+    [switch]$ForceUpdateWebConfig  # Se specificato, aggiorna web.config con quello del package
 )
 
 # Colori per output
@@ -404,7 +405,11 @@ try {
         }
         
         # Ripristina web.config esistente se c'era (preserva configurazione funzionante)
-        if (Test-Path $tempWebConfigBackup) {
+        # A meno che non sia specificato -ForceUpdateWebConfig
+        if ($ForceUpdateWebConfig) {
+            Write-WarningMsg "Parametro -ForceUpdateWebConfig specificato: web.config verrà aggiornato con quello del package"
+            # Non ripristinare il backup, usa quello nuovo dal package
+        } elseif (Test-Path $tempWebConfigBackup) {
             Copy-Item $tempWebConfigBackup $existingWebConfig -Force
             Write-Success "web.config esistente ripristinato (preservata configurazione funzionante)"
         }

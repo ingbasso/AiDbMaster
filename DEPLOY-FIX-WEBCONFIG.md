@@ -44,9 +44,19 @@ if (Test-Path $tempWebConfigBackup) {
 - Semplice e funzionante
 
 ### **Deploy Successivi (web.config esiste):**
-- ✅ **Preserva sempre** il `web.config` esistente
+- ✅ **Preserva sempre** il `web.config` esistente (default)
 - ✅ Non sovrascrive mai la configurazione funzionante
 - ✅ Aggiorna solo i file .dll, .json, .css, .js, ecc.
+
+### **Deploy con Aggiornamento web.config (quando necessario):**
+Se hai fatto modifiche **essenziali** al web.config in sviluppo che devono essere applicate in produzione:
+
+```powershell
+.\Deploy-Production.ps1 -ZipPath ".\AiDbMasterDeploy-Final-Clean.zip" -ForceUpdateWebConfig
+```
+
+⚠️ **ATTENZIONE**: Usa `-ForceUpdateWebConfig` **solo quando strettamente necessario**! 
+Il web.config è configurazione IIS specifica del server.
 
 ---
 
@@ -82,6 +92,38 @@ Se necessario, puoi copiarlo manualmente sul server:
 ```powershell
 Copy-Item "C:\AiDbMaster\web.config.template" "C:\inetpub\wwwroot\AiDbMaster\web.config"
 ```
+
+---
+
+## 📖 QUANDO MODIFICARE web.config
+
+### **✅ CASI COMUNI (no modifica web.config necessaria):**
+
+| Modifica in Sviluppo | Cosa Fare | Note |
+|----------------------|-----------|------|
+| Nuovo Controller/View/Model | Deploy normale | Compilato nel .dll |
+| Modifica logica C# | Deploy normale | Compilato nel .dll |
+| Nuova connection string | Modifica `appsettings.Production.json` | Script lo gestisce |
+| Nuova API key | Modifica `appsettings.Production.json` | Script lo gestisce |
+| Cambio livello logging | Modifica `appsettings.Production.json` | Script lo gestisce |
+| Nuova libreria NuGet | Deploy normale | Inclusa nel package |
+
+### **⚠️ CASI RARI (potrebbe servire modifica web.config):**
+
+| Scenario | Soluzione Consigliata |
+|----------|----------------------|
+| Nuova environment variable ASP.NET Core | **Opzione A**: Aggiungi manualmente in produzione<br>**Opzione B**: Deploy con `-ForceUpdateWebConfig` |
+| Cambio hosting model (InProcess ↔ OutOfProcess) | Modifica manualmente in produzione (test prima!) |
+| Nuovi security headers | Valuta se necessario in prod, poi aggiungi manualmente |
+| HTTPS redirect rules | Configurazione specifica del server, **non** deployare |
+| Custom error pages | Configurazione specifica del server, **non** deployare |
+
+### **🎯 REGOLA GENERALE:**
+
+- **web.config = Configurazione IIS** (specifica del server)
+- **appsettings.json = Configurazione Applicazione** (deployata normalmente)
+
+**Il 99% delle modifiche va in `appsettings.json`, non in `web.config`!**
 
 ---
 
