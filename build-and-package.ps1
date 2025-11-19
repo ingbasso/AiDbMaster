@@ -243,6 +243,8 @@ $migrationsCheck
 
     # 7. CREAZIONE ZIP
     Write-Log "Creazione pacchetto ZIP..."
+    
+    # Crea ZIP temporaneo con timestamp
     $zipPath = "$deployFolder.zip"
     
     # Rimuovi ZIP esistente se presente
@@ -255,7 +257,26 @@ $migrationsCheck
     
     if (Test-Path $zipPath) {
         $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
-        Write-Log "Pacchetto ZIP creato: $zipPath ($zipSize MB)" "SUCCESS"
+        Write-Log "Pacchetto ZIP temporaneo creato: $zipPath ($zipSize MB)" "SUCCESS"
+        
+        # Copia con nome fisso nella root del progetto
+        $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+        if ([string]::IsNullOrEmpty($scriptRoot)) {
+            $scriptRoot = Get-Location
+        }
+        $finalZipPath = Join-Path $scriptRoot "AiDbMasterDeploy-Final-Clean.zip"
+        
+        # Rimuovi file finale esistente
+        if (Test-Path $finalZipPath) {
+            Remove-Item $finalZipPath -Force
+        }
+        
+        # Copia con nome fisso
+        Copy-Item $zipPath $finalZipPath -Force
+        Write-Log "Pacchetto finale creato: $finalZipPath" "SUCCESS"
+        
+        # Aggiorna variabile per il riepilogo
+        $zipPath = $finalZipPath
     } else {
         Write-Log "Errore nella creazione del ZIP" "ERROR"
         throw "Creazione ZIP fallita"
@@ -275,11 +296,23 @@ $migrationsCheck
     
     Write-Log "=== BUILD E PACKAGING COMPLETATO CON SUCCESSO ===" "SUCCESS"
     
-    # Apri la cartella di output
-    if (Test-Path $OutputPath) {
-        Write-Log "Apertura cartella output..."
-        Start-Process explorer.exe -ArgumentList $OutputPath
+    # 9. PULIZIA FILE TEMPORANEI
+    Write-Log "Pulizia file temporanei..."
+    
+    # Rimuovi la cartella temporanea estratta
+    if (Test-Path $deployFolder) {
+        Remove-Item $deployFolder -Recurse -Force
+        Write-Log "Cartella temporanea rimossa: $deployFolder" "SUCCESS"
     }
+    
+    # Rimuovi il ZIP temporaneo (quello con timestamp in Deploy\)
+    $tempZipPath = "$deployFolder.zip"
+    if (Test-Path $tempZipPath) {
+        Remove-Item $tempZipPath -Force
+        Write-Log "ZIP temporaneo rimosso: $tempZipPath" "SUCCESS"
+    }
+    
+    Write-Log "Pulizia completata! File finale: $zipPath" "SUCCESS"
 
 } catch {
     Write-Log "ERRORE DURANTE IL PROCESSO: $($_.Exception.Message)" "ERROR"
