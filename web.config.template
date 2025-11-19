@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <!--
+    AIDBMASTER - web.config SEMPLICE per IIS
+    Questo è il template di default usato per il primo deploy.
+    Dopo il primo deploy, questo file NON verrà più sovrascritto.
+  -->
+  <location path="." inheritInChildApplications="false">
+    <system.webServer>
+      <!-- Handler per ASP.NET Core -->
+      <handlers>
+        <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
+      </handlers>
+      
+      <!-- Configurazione ASP.NET Core Module -->
+      <aspNetCore processPath="dotnet" 
+                  arguments=".\AiDbMaster.dll" 
+                  stdoutLogEnabled="true" 
+                  stdoutLogFile=".\Logs\stdout" 
+                  hostingModel="inprocess">
+        <environmentVariables>
+          <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
+        </environmentVariables>
+      </aspNetCore>
+      
+      <!-- Headers sicurezza base -->
+      <httpProtocol>
+        <customHeaders>
+          <add name="X-Content-Type-Options" value="nosniff" />
+          <add name="X-Frame-Options" value="SAMEORIGIN" />
+        </customHeaders>
+      </httpProtocol>
+    </system.webServer>
+  </location>
+</configuration>
+
