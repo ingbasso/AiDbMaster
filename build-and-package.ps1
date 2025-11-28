@@ -51,6 +51,14 @@ if (-not (Test-Command "dotnet")) {
     exit 1
 }
 
+# Pulizia cartella Deploy (rimuove vecchie build per evitare loop annidati)
+if (Test-Path $OutputPath) {
+    Write-Log "Pulizia vecchie build in $OutputPath..."
+    Get-ChildItem -Path $OutputPath -Directory | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $OutputPath -File -Filter "*.zip" | Remove-Item -Force -ErrorAction SilentlyContinue
+    Write-Log "Cartella Deploy pulita" "SUCCESS"
+}
+
 # Crea cartella output
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $deployFolder = Join-Path $OutputPath "AiDbMaster-Deploy-$timestamp"

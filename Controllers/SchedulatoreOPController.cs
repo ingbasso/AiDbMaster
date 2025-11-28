@@ -63,45 +63,46 @@ namespace AiDbMaster.Controllers
 
         /// <summary>
         /// API: Ottiene gli ordini di produzione per il calendario
+        /// CARICA TUTTI GLI ORDINI CON STATO != 4 (esclusi i Chiusi)
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetOrdiniProduzione(
-            DateTime? dataInizio = null,
-            DateTime? dataFine = null)
+        public async Task<IActionResult> GetOrdiniProduzione()
         {
             try
             {
-                // Range default: 2 mesi (1 mese prima e 1 mese dopo oggi)
-                var start = dataInizio ?? DateTime.Today.AddMonths(-1);
-                var end = dataFine ?? DateTime.Today.AddMonths(1);
-
-                _logger.LogInformation($"Caricamento ordini produzione: {start:yyyy-MM-dd} - {end:yyyy-MM-dd}");
+                _logger.LogInformation("Caricamento TUTTI gli ordini con IdStato != 4 (esclusi Chiusi)");
 
                 // Prima conta TUTTI gli ordini
                 var totaleOrdini = await _context.ListaOP.CountAsync();
                 _logger.LogInformation($"Totale ordini in ListaOP: {totaleOrdini}");
 
-                // Poi filtra per date
+                // Carica TUTTI gli ordini con IdStato != 4 (escludi solo i Chiusi)
                 var ordini = await _context.ListaOP
                     .Include(o => o.Stato)
                     .Include(o => o.CentroLavoro)
                     .Include(o => o.Lavorazione)
                     .Include(o => o.Operatore)
-                    .Where(o => o.DataInizioOP >= start && o.DataInizioOP <= end)
+                    .Where(o => o.IdStato != 4)  // Escludi solo ordini Chiusi
+                    .OrderBy(o => o.DataInizioOP) // Ordina per data
                     .ToListAsync();
                 
-                _logger.LogInformation($"Ordini nel range {start:yyyy-MM-dd} - {end:yyyy-MM-dd}: {ordini.Count}");
+                _logger.LogInformation($"Ordini caricati (IdStato != 4): {ordini.Count}");
                 
                 if (ordini.Count == 0)
                 {
-                    // Log delle date effettive degli ordini per debug
-                    var dateOrdini = await _context.ListaOP
-                        .OrderBy(o => o.DataInizioOP)
-                        .Select(o => o.DataInizioOP)
-                        .Take(5)
-                        .ToListAsync();
+                    _logger.LogWarning("⚠️ Nessun ordine trovato con IdStato != 4");
+                }
+                else
+                {
+                    // Log statistiche
+                    var dataMin = ordini.Min(o => o.DataInizioOP);
+                    var dataMax = ordini.Max(o => o.DataInizioOP);
+                    var ordiniPerStato = ordini.GroupBy(o => o.IdStato)
+                        .Select(g => new { IdStato = g.Key, Count = g.Count() })
+                        .ToList();
                     
-                    _logger.LogWarning($"Nessun ordine nel range. Prime 5 date in DB: {string.Join(", ", dateOrdini.Select(d => d.ToString("yyyy-MM-dd")))}");
+                    _logger.LogInformation($"Range date ordini: {dataMin:yyyy-MM-dd} → {dataMax:yyyy-MM-dd}");
+                    _logger.LogInformation($"Distribuzione stati: {string.Join(", ", ordiniPerStato.Select(s => $"Stato {s.IdStato}: {s.Count}"))}");
                 }
 
                 // Carica TUTTI i fermi per calcolare gli EndTime estesi
@@ -249,22 +250,21 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
-        /// API: Ottiene i fermi dei centri di lavoro per colorare il calendario
+        /// API: Ottiene TUTTI i fermi dei centri di lavoro per colorare il calendario
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetFermiCentriLavoro(DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<IActionResult> GetFermiCentriLavoro()
         {
             try
             {
-                // Range default: 1 mese prima/dopo oggi se non specificato
-                var start = startDate ?? DateTime.Today.AddMonths(-1);
-                var end = endDate ?? DateTime.Today.AddMonths(1);
+                _logger.LogInformation("Caricamento TUTTI i fermi centri di lavoro");
 
-
+                // Carica TUTTI i fermi, senza filtro date
                 var fermiDb = await _context.CalendarioFermiCentriLavoro
-                    .Where(f => f.DataInizioFermo <= end && (f.DataFineFermo == null || f.DataFineFermo >= start))
                     .OrderBy(f => f.DataInizioFermo)
                     .ToListAsync();
+                
+                _logger.LogInformation($"Fermi caricati: {fermiDb.Count}");
 
                 // Mappa i fermi specificando il Kind delle date per evitare problemi di timezone
                 var fermi = fermiDb.Select(f => new

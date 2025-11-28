@@ -411,6 +411,12 @@
                         <option value="all" selected>Tutti i Centri di Lavoro</option>
                     </select>
                 </div>
+                <div class="col-auto ms-3">
+                    <span class="badge bg-info fs-6">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Visualizzati TUTTI gli ordini (esclusi Chiusi)
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -990,7 +996,8 @@
                     dragStart: onDragStart,
                     dragStop: onDragStop,
                     renderCell: onRenderCell,
-                    popupOpen: onPopupOpen // Blocca popup nativi
+                    popupOpen: onPopupOpen, // Blocca popup nativi
+                    navigating: onNavigating // Ricarica ordini quando si naviga nel calendario
                 });
                 
                 // Appendi al DOM
@@ -1028,9 +1035,23 @@
             }
         }
 
-        // Carica ordini di produzione
+        // Handler navigazione calendario - non serve più ricaricare, abbiamo già tutti gli ordini
+        async function onNavigating(args) {
+            // L'evento args.currentDate contiene la data corrente del calendario
+            console.log('📅 Navigating calendar:', {
+                action: args.action,
+                currentDate: args.currentDate,
+                previousDate: args.previousDate
+            });
+            
+            // Non serve ricaricare: abbiamo già tutti gli ordini con IdStato != 4 in memoria
+        }
+        
+        // Carica ordini di produzione (TUTTI con IdStato != 4)
         async function loadOrdini() {
             try {
+                console.log('🔄 Caricamento TUTTI gli ordini con IdStato != 4 (esclusi Chiusi)...');
+                
                 const response = await fetch('@Url.Action("GetOrdiniProduzione", "SchedulatoreOP")');
                 const ordiniJson = await response.json();
                 

@@ -1,0 +1,12 @@
+🚀 COME USARE GLI SCRIPT:
+STEP 1: Sul tuo PC di sviluppo
+cd C:\AiDbMaster
+.\Build-and-Package.ps1
+Questo crea il file: AiDbMasterDeploy-Final-Clean.zip
+STEP 2: Sul server SVRGEST
+Copia il file ZIP sul server (es: C:\Deploy\AiDbMaster\)
+Copia anche il file Deploy-Production.ps1
+Esegui:
+cd C:\Deploy\AiDbMaster
+.\Deploy-Production.ps1 -ZipPath ".\AiDbMasterDeploy-Final-Clean.zip"
+Lo script farà tutto in automatico! ✨
