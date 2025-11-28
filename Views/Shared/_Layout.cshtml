@@ -1,24 +1,5 @@
 @inject IResourcePermissionService PermissionService
 @using AiDbMaster.Helpers
-@{
-    // Carica i permessi dell'utente una sola volta per ottimizzare le performance
-    var userPermissions = User.Identity?.IsAuthenticated == true 
-        ? PermissionHelper.GetUserPermissions(User, PermissionService) 
-        : new Dictionary<string, ResourcePermissions>();
-    
-    // Helper function per controllare se l'utente può visualizzare una risorsa
-    bool CanViewResource(string resourceName)
-    {
-        // Admin può vedere tutto
-        if (User.IsInRole("Admin")) return true;
-        
-        // Non autenticato non può vedere nulla (eccetto Home)
-        if (User.Identity?.IsAuthenticated != true) return resourceName == "Home";
-        
-        // Controlla nei permessi
-        return userPermissions.TryGetValue(resourceName, out var perm) && perm.CanView;
-    }
-}
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -61,7 +42,7 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <!-- Tabelle -->
-                        <li class="sidebar-item" permission-required="Tabelle:View">
+                        <li class="sidebar-item">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
                                 <i class="bi bi-table"></i>
                                 <span>Tabelle</span>
@@ -237,7 +218,7 @@
                         @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                         {
                             <!-- Amministrazione -->
-                            <li class="sidebar-item" permission-required="Amministrazione:View">
+                            <li class="sidebar-item">
                                 <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#adminSubmenu" aria-expanded="false">
                                     <i class="bi bi-gear"></i>
                                     <span>Amministrazione</span>

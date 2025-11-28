@@ -101,6 +101,11 @@ namespace AiDbMaster.Models
         public float TempoCiclo { get; set; }
 
         /// <summary>
+        /// Tempo ciclo tavola in secondi (nullable)
+        /// </summary>
+        public float? TempoCicloTavola { get; set; }
+
+        /// <summary>
         /// Data inizio setup/attrezzaggio
         /// </summary>
         public DateTime? DataInizioSetup { get; set; }

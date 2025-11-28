@@ -196,14 +196,21 @@
                             <span asp-validation-for="DataFinePrevista" class="text-danger"></span>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     <label asp-for="TempoCiclo" class="form-label">Tempo Ciclo (sec) *</label>
                                     <input asp-for="TempoCiclo" class="form-control" type="number" min="1" />
                                     <span asp-validation-for="TempoCiclo" class="text-danger"></span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label asp-for="TempoCicloTavola" class="form-label">Tempo Ciclo Tavola (sec)</label>
+                                    <input asp-for="TempoCicloTavola" class="form-control" type="number" min="0" step="0.01" />
+                                    <span asp-validation-for="TempoCicloTavola" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     <label asp-for="TempoSetup" class="form-label">Tempo Setup (min)</label>
                                     <input asp-for="TempoSetup" class="form-control" type="number" min="0" />

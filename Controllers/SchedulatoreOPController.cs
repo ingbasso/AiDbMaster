@@ -107,39 +107,57 @@ namespace AiDbMaster.Controllers
 
                 // Carica TUTTI i fermi per calcolare gli EndTime estesi
                 var tuttiFermi = await _context.CalendarioFermiCentriLavoro.ToListAsync();
-
-                // PRIMA: Aggiorna DataFinePrevista nel database SOLO per ordini non modificati manualmente
+                
+                // ===== RICALCOLO DataFinePrevista per ordini non modificati =====
+                _logger.LogInformation("🔄 Ricalcolo DataFinePrevista per ordini con Modificato = 0...");
+                
+                // Conta ordini da ricalcolare
+                var ordiniDaRicalcolare = ordini.Where(o => o.Modificato == 0).ToList();
+                _logger.LogInformation($"Ordini con Modificato = 0: {ordiniDaRicalcolare.Count}");
+                
                 bool hasChanges = false;
-                foreach (var ordine in ordini)
+                int contatoreAggiornati = 0;
+                
+                foreach (var ordine in ordiniDaRicalcolare)
                 {
-                    // Se l'ordine è stato modificato (Modificato = 1 o 7), NON ricalcolare DataFinePrevista
-                    // perché contiene già la data corretta con i fermi estesi
-                    if (ordine.Modificato == 1 || ordine.Modificato == 7)
-                    {
-                        continue; // Salta questo ordine, mantieni DataFinePrevista salvata
-                    }
+                    // Calcola durata TOTALE (lavoro + setup) in secondi
+                    var durataLavoroSecondi = (decimal)(ordine.Quantita * (decimal)ordine.TempoCiclo);
+                    var durataSetupSecondi = (decimal)((ordine.TempoSetup ?? 0) * 60); // Converti minuti in secondi
+                    var durataTotaleSecondi = durataLavoroSecondi + durataSetupSecondi;
                     
-                    // Solo per ordini NON modificati (Modificato = 0): calcola EndTime standard
-                    var durataSecondi = (double)(ordine.Quantita * (decimal)ordine.TempoCiclo);
-                    var endTimeCalcolato = durataSecondi > 0 
-                        ? ordine.DataInizioOP.AddSeconds(durataSecondi)
-                        : ordine.DataInizioOP.AddHours(1);
+                    // Filtra fermi per questo centro lavoro
+                    var fermiCentro = tuttiFermi
+                        .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                        .OrderBy(f => f.DataInizioFermo)
+                        .ToList();
                     
-                    // Aggiorna DataFinePrevista solo se diversa
-                    if (ordine.DataFinePrevista != endTimeCalcolato)
+                    // Calcola DataFinePrevista SALTANDO i fermi
+                    var nuovaDataFinePrevista = durataTotaleSecondi > 0
+                        ? CalcolaEndTimeConFermi(ordine.DataInizioOP, durataTotaleSecondi, fermiCentro)
+                        : ordine.DataInizioOP.AddHours(1); // Fallback se durata = 0
+                    
+                    // Aggiorna solo se diversa (per evitare UPDATE inutili)
+                    if (!ordine.DataFinePrevista.HasValue || 
+                        Math.Abs((ordine.DataFinePrevista.Value - nuovaDataFinePrevista).TotalSeconds) > 1)
                     {
-                        ordine.DataFinePrevista = endTimeCalcolato;
+                        ordine.DataFinePrevista = nuovaDataFinePrevista;
                         hasChanges = true;
+                        contatoreAggiornati++;
                     }
                 }
                 
-                // Salva tutte le modifiche in un colpo solo
+                // Salva tutte le modifiche nel database
                 if (hasChanges)
                 {
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation($"✅ DataFinePrevista aggiornata per {contatoreAggiornati} ordini");
                 }
-                
-                // POI: Mappa gli ordini in eventi per Syncfusion
+                else
+                {
+                    _logger.LogInformation("ℹ️ Nessun ordine da aggiornare (DataFinePrevista già corretta)");
+                }
+
+                // Mappa gli ordini in eventi per Syncfusion
                 var eventi = ordini.Select(o =>
                 {
                     // Calcola EndTime SEMPRE dalla Quantità, poi applica la logica sequenziale con fermi
@@ -185,6 +203,7 @@ namespace AiDbMaster.Controllers
                     QuantitaProdotta = o.QuantitaProdotta,
                     DataInizioOP = DateTime.SpecifyKind(o.DataInizioOP, DateTimeKind.Local),
                     TempoCiclo = o.TempoCiclo,
+                    TempoCicloTavola = o.TempoCicloTavola,
                     DataInizioSetup = o.DataInizioSetup.HasValue 
                         ? DateTime.SpecifyKind(o.DataInizioSetup.Value, DateTimeKind.Local)
                         : (DateTime?)null,

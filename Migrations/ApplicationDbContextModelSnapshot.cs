@@ -679,6 +679,9 @@ namespace AiDbMaster.Migrations
                     b.Property<float>("TempoCiclo")
                         .HasColumnType("real");
 
+                    b.Property<float?>("TempoCicloTavola")
+                        .HasColumnType("real");
+
                     b.Property<float?>("TempoEffettivo")
                         .HasColumnType("real");
 

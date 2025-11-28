@@ -411,12 +411,6 @@
                         <option value="all" selected>Tutti i Centri di Lavoro</option>
                     </select>
                 </div>
-                <div class="col-auto ms-3">
-                    <span class="badge bg-info fs-6">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Visualizzati TUTTI gli ordini (esclusi Chiusi)
-                    </span>
-                </div>
             </div>
         </div>
 
@@ -1541,6 +1535,11 @@
                     <div class="info-item">
                         <div class="info-label">Tempo Ciclo</div>
                         <div class="info-value">${ordine.TempoCiclo} sec</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Tempo Ciclo Tavola</div>
+                        <div class="info-value">${ordine.TempoCicloTavola ? ordine.TempoCicloTavola + ' sec' : '-'}</div>
                     </div>
                     
                     <div class="info-item">

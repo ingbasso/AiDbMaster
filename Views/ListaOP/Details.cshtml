@@ -210,6 +210,19 @@
                         <dt>Tempo Ciclo:</dt>
                         <dd>@Model.TempoCicloFormattato <small class="text-muted">(per pezzo)</small></dd>
                         
+                        <dt>Tempo Ciclo Tavola:</dt>
+                        <dd>
+                            @if (Model.TempoCicloTavola.HasValue)
+                            {
+                                @TimeSpan.FromSeconds(Model.TempoCicloTavola.Value).ToString(@"hh\:mm\:ss") 
+                                <small class="text-muted">(per pezzo)</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Non specificato</span>
+                            }
+                        </dd>
+                        
                         @if (Model.TempoSetup.HasValue)
                         {
                             <dt>Tempo Setup:</dt>
