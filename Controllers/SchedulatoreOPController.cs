@@ -322,13 +322,13 @@ namespace AiDbMaster.Controllers
                     return NotFound(new { success = false, message = "Ordine non trovato" });
                 }
 
-                // ===== VALIDAZIONE 1: Campo Modificato =====
-                if (ordine.Modificato == 7)
+                // ===== VALIDAZIONE 1: Campo Modificato (solo 0 o 1 consentiti) =====
+                if (ordine.Modificato != 0 && ordine.Modificato != 1)
                 {
-                    _logger.LogWarning($"Tentativo di resize ordine {ordine.IdListaOP} con Modificato=7 (bloccato)");
+                    _logger.LogWarning($"Tentativo di resize ordine {ordine.IdListaOP} con Modificato={ordine.Modificato} (non consentito)");
                     return BadRequest(new { 
                         success = false, 
-                        message = "❌ Impossibile modificare: l'ordine è BLOCCATO (Modificato=7)" 
+                        message = "❌ Modifica non permessa per concorrenza con Business Cube. Riprova." 
                     });
                 }
 
@@ -525,13 +525,13 @@ namespace AiDbMaster.Controllers
                     });
                 }
 
-                // ===== VALIDAZIONE 2: Modificato NON può essere 7 (bloccato) =====
-                if (ordine.Modificato == 7)
+                // ===== VALIDAZIONE 2: Campo Modificato (solo 0 o 1 consentiti) =====
+                if (ordine.Modificato != 0 && ordine.Modificato != 1)
                 {
-                    _logger.LogWarning($"Tentativo di drag&drop ordine bloccato {ordine.IdListaOP}");
+                    _logger.LogWarning($"Tentativo di drag&drop ordine {ordine.IdListaOP} con Modificato={ordine.Modificato} (non consentito)");
                     return BadRequest(new { 
                         success = false, 
-                        message = "❌ Impossibile spostare: l'ordine è bloccato (Modificato = 7)" 
+                        message = "❌ Modifica non permessa per concorrenza con Business Cube. Riprova." 
                     });
                 }
 
@@ -626,13 +626,13 @@ namespace AiDbMaster.Controllers
                     });
                 }
 
-                // ===== VALIDAZIONE 2: Campo Modificato =====
-                if (ordine.Modificato == 7)
+                // ===== VALIDAZIONE 2: Campo Modificato (solo 0 o 1 consentiti) =====
+                if (ordine.Modificato != 0 && ordine.Modificato != 1)
                 {
-                    _logger.LogWarning($"Tentativo di modifica ordine {ordine.IdListaOP} con Modificato=7 (bloccato)");
+                    _logger.LogWarning($"Tentativo di modifica manuale ordine {ordine.IdListaOP} con Modificato={ordine.Modificato} (non consentito)");
                     return BadRequest(new { 
                         success = false, 
-                        message = "❌ Impossibile modificare: l'ordine è BLOCCATO (Modificato=7)" 
+                        message = "❌ Modifica non permessa per concorrenza con Business Cube. Riprova." 
                     });
                 }
 

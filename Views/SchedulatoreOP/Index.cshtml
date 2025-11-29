@@ -368,6 +368,30 @@
         display: block;
     }
     
+    /* Alert Concorrenza Business Cube */
+    .alert-concorrenza {
+        display: none;
+        padding: 12px 16px;
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+        border-radius: 6px;
+        color: #721c24;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        animation: slideDown 0.3s ease;
+        text-align: center;
+    }
+    
+    .alert-concorrenza.visible {
+        display: block;
+    }
+    
+    .alert-concorrenza i {
+        font-size: 1.1rem;
+        margin-right: 8px;
+    }
+    
     @@keyframes slideDown {
         from {
             opacity: 0;
@@ -1212,9 +1236,9 @@
             
             // ===== VALIDAZIONI CLIENT-SIDE =====
             
-            // 1. Modificato = 7 (bloccato)
-            if (evento.Modificato === 7) {
-                showAlert('❌ Impossibile modificare: ordine BLOCCATO (Modificato=7)', 'danger');
+            // 1. Modificato deve essere 0 o 1 (altrimenti bloccato per concorrenza)
+            if (evento.Modificato !== 0 && evento.Modificato !== 1) {
+                showAlert('❌ Modifica non permessa per concorrenza con Business Cube. Riprova.', 'danger');
                 args.cancel = true;
                 loadOrdini(); // Ricarica per ripristinare
                 return;
@@ -1345,7 +1369,15 @@
             
             // ===== VALIDAZIONI CLIENT-SIDE =====
             
-            // 1. Solo IdStato = 1 può fare drag&drop
+            // 1. Modificato deve essere 0 o 1 (altrimenti bloccato per concorrenza)
+            if (evento.Modificato !== 0 && evento.Modificato !== 1) {
+                showAlert('❌ Modifica non permessa per concorrenza con Business Cube. Riprova.', 'danger');
+                args.cancel = true;
+                loadOrdini(); // Ricarica per ripristinare
+                return;
+            }
+            
+            // 2. Solo IdStato = 1 può fare drag&drop
             if (evento.IdStato !== 1) {
                 showAlert(`❌ Impossibile spostare: solo ordini con Stato 1 (Emesso) possono essere spostati. Stato corrente: ${evento.IdStato}`, 'danger');
                 args.cancel = true;
@@ -1440,10 +1472,10 @@
             // Salva l'ordine corrente
             currentOrdine = ordine;
             
-            // Determina se i campi sono modificabili
-            const isModificabile = (ordine.IdStato === 1 || ordine.IdStato === 2) && ordine.Modificato !== 7;
-            const canEditDataInizio = ordine.IdStato === 1 && ordine.Modificato !== 7;
-            const canEditQuantita = (ordine.IdStato === 1 || ordine.IdStato === 2) && ordine.Modificato !== 7;
+            // Determina se i campi sono modificabili (solo se Modificato = 0 o 1)
+            const isModificabile = (ordine.IdStato === 1 || ordine.IdStato === 2) && (ordine.Modificato === 0 || ordine.Modificato === 1);
+            const canEditDataInizio = ordine.IdStato === 1 && (ordine.Modificato === 0 || ordine.Modificato === 1);
+            const canEditQuantita = (ordine.IdStato === 1 || ordine.IdStato === 2) && (ordine.Modificato === 0 || ordine.Modificato === 1);
             
             // Formatta data per input datetime-local
             const formatDateForInput = (dateInput) => {
@@ -1462,6 +1494,12 @@
             
             // Genera HTML con layout riorganizzato in 4 righe
             body.innerHTML = `
+                <!-- Alert Concorrenza Business Cube -->
+                <div class="alert-concorrenza" id="alertConcorrenza">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Ordine non modificabile per concorrenza con Business Cube. Riprova.</strong>
+                </div>
+                
                 <div class="info-grid">
                     <!-- PRIMA RIGA: Ordine (3 col) + Stato (2 col) -->
                     <div class="info-item span-3">
@@ -1588,6 +1626,16 @@
                 footer.style.display = 'flex';
             } else {
                 footer.style.display = 'none';
+            }
+            
+            // Mostra/nascondi alert concorrenza
+            const alertConcorrenza = document.getElementById('alertConcorrenza');
+            if (alertConcorrenza) {
+                if (ordine.Modificato !== 0 && ordine.Modificato !== 1) {
+                    alertConcorrenza.classList.add('visible');
+                } else {
+                    alertConcorrenza.classList.remove('visible');
+                }
             }
             
             // Mostra popup (posizione resettata a quella del CSS)
@@ -1719,6 +1767,12 @@
         async function saveOrdineModifiche() {
             if (!currentOrdine) {
                 showAlert('❌ Nessun ordine selezionato', 'danger');
+                return;
+            }
+            
+            // Controllo Modificato: solo 0 o 1 consentiti
+            if (currentOrdine.Modificato !== 0 && currentOrdine.Modificato !== 1) {
+                showAlert('❌ Modifica non permessa per concorrenza con Business Cube. Riprova.', 'danger');
                 return;
             }
             
