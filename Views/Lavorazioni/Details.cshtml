@@ -9,9 +9,6 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-eye me-2"></i>Dettagli Lavorazione</h2>
             <div>
-                <a asp-action="Edit" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Modifica
-                </a>
                 <a asp-action="Index" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Torna all'elenco
                 </a>
@@ -19,7 +16,7 @@
         </div>
 
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-12">
                 <!-- Card principale con i dati -->
                 <div class="card">
                     <div class="card-header bg-info text-white">
@@ -104,94 +101,6 @@
                     </div>
                 </div>
 
-                <!-- Card azioni rapide -->
-                <div class="card mt-4">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2 d-md-flex">
-                            <a asp-action="Edit" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-warning">
-                                <i class="bi bi-pencil"></i> Modifica Lavorazione
-                            </a>
-                            <a asp-action="Create" class="btn btn-success">
-                                <i class="bi bi-plus-circle"></i> Nuova Lavorazione
-                            </a>
-                            <a asp-action="Delete" asp-route-id="@Model?.CodiceLavorazione" class="btn btn-outline-danger">
-                                <i class="bi bi-trash"></i> Elimina
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <!-- Card statistiche/informazioni aggiuntive -->
-                <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni Aggiuntive</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <small class="text-muted">ID Univoco</small>
-                            <div class="fw-bold">#@Model?.CodiceLavorazione</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <small class="text-muted">Lunghezza Descrizione</small>
-                            <div class="fw-bold">@(Model?.DescrizioneLavorazione?.Length ?? 0) caratteri</div>
-                        </div>
-
-                        @if (Model?.CodiceLavorazione > 0)
-                        {
-                            <div class="mb-3">
-                                <small class="text-muted">Codice Lavorazione</small>
-                                <div class="fw-bold">@Model.CodiceLavorazione</div>
-                            </div>
-                        }
-
-                        <div class="mb-3">
-                            <small class="text-muted">Giorni dalla creazione</small>
-                            <div class="fw-bold">@((DateTime.Now - Model?.DataCreazione)?.Days ?? 0) giorni</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card navigazione -->
-                <div class="card mt-4">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="bi bi-compass"></i> Navigazione</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a asp-action="Index" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-list"></i> Tutte le Lavorazioni
-                            </a>
-                            <a asp-action="Index" asp-route-attivo="true" class="btn btn-outline-success btn-sm">
-                                <i class="bi bi-check-circle"></i> Solo Attive
-                            </a>
-                            <a asp-action="Index" asp-route-attivo="false" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-pause-circle"></i> Solo Inattive
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card suggerimenti -->
-                <div class="card mt-4">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Suggerimenti</h6>
-                    </div>
-                    <div class="card-body">
-                        <small>
-                            <ul class="mb-0">
-                                <li>Usa il codice per identificazioni rapide</li>
-                                <li>Mantieni descrizioni chiare e specifiche</li>
-                                <li>Disattiva invece di eliminare per mantenere lo storico</li>
-                            </ul>
-                        </small>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

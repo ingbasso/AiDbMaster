@@ -30,49 +30,29 @@ namespace AiDbMaster.Controllers
         /// Visualizza l'elenco di tutti gli articoli
         /// GET: AnagraficaArticoli
         /// </summary>
-        /// <param name="search">Termine di ricerca per filtrare gli articoli</param>
-        /// <param name="categoria">Filtro per categoria</param>
-        /// <param name="attivo">Filtro per stato attivo/inattivo</param>
+        /// <param name="codiceArticolo">Filtro per codice articolo (ricerca esatta)</param>
         /// <param name="sortOrder">Ordinamento dei risultati</param>
         /// <param name="page">Numero di pagina per la paginazione</param>
         /// <param name="pageSize">Numero di elementi per pagina</param>
         /// <returns>Vista con l'elenco degli articoli</returns>
         public async Task<IActionResult> Index(
-            string? search,
-            string? categoria,
-            bool? attivo,
+            string? codiceArticolo,
             string sortOrder = "codice",
             int page = 1,
             int pageSize = 50)
         {
             try
             {
-                _logger.LogInformation("Caricamento anagrafica articoli - Pagina: {Page}, Ricerca: {Search}", page, search);
+                _logger.LogInformation("Caricamento anagrafica articoli - Pagina: {Page}, Articolo: {CodiceArticolo}", page, codiceArticolo);
 
                 // Query base
                 var query = _context.AnagraficaArticoli.AsQueryable();
 
-                // Filtro per ricerca testuale
-                if (!string.IsNullOrEmpty(search))
+                // Filtro per codice articolo (ricerca esatta come Select2)
+                if (!string.IsNullOrEmpty(codiceArticolo))
                 {
-                    query = query.Where(a => 
-                        a.CodiceArticolo.Contains(search) ||
-                        a.Descrizione.Contains(search) ||
-                        (a.CodiceAlternativo != null && a.CodiceAlternativo.Contains(search)) ||
-                        (a.DescrizioneUlteriore != null && a.DescrizioneUlteriore.Contains(search)));
+                    query = query.Where(a => a.CodiceArticolo == codiceArticolo);
                 }
-
-                // Filtro per tipo articolo (uso come categoria)
-                if (!string.IsNullOrEmpty(categoria))
-                {
-                    query = query.Where(a => a.TipoArticolo == categoria);
-                }
-
-                // Nota: La tabella non ha un campo "Attivo", quindi questo filtro è disabilitato
-                // if (attivo.HasValue)
-                // {
-                //     query = query.Where(a => a.Attivo == attivo.Value);
-                // }
 
                 // Ordinamento
                 query = sortOrder.ToLower() switch
@@ -97,23 +77,24 @@ namespace AiDbMaster.Controllers
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Recupera la descrizione dell'articolo selezionato
+                string? descrizioneArticolo = null;
+                if (!string.IsNullOrEmpty(codiceArticolo))
+                {
+                    descrizioneArticolo = await _context.AnagraficaArticoli
+                        .Where(a => a.CodiceArticolo == codiceArticolo)
+                        .Select(a => a.Descrizione)
+                        .FirstOrDefaultAsync();
+                }
+
                 // Preparazione dati per la vista
-                ViewBag.Search = search;
-                ViewBag.Categoria = categoria;
-                ViewBag.Attivo = attivo;
+                ViewBag.CodiceArticolo = codiceArticolo;
+                ViewBag.DescrizioneArticolo = descrizioneArticolo;
                 ViewBag.SortOrder = sortOrder;
                 ViewBag.CurrentPage = page;
                 ViewBag.PageSize = pageSize;
                 ViewBag.TotalItems = totalItems;
                 ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-
-                // Lista dei tipi articolo per il filtro dropdown
-                ViewBag.Categorie = await _context.AnagraficaArticoli
-                    .Where(a => a.TipoArticolo != null && a.TipoArticolo != "")
-                    .Select(a => a.TipoArticolo!)
-                    .Distinct()
-                    .OrderBy(c => c)
-                    .ToListAsync();
 
                 _logger.LogInformation("Caricati {Count} articoli su {Total} totali", articoli.Count, totalItems);
 

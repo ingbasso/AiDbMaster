@@ -130,7 +130,19 @@ namespace AiDbMaster.Controllers
         {
             var oggi = DateTime.Today;
             
+            // Calcola impegnato attuale in tempo reale
+            // Formula: Σ ((Quantita - QuantitaEvasa) × PercentualeInclusione / 100)
+            // per ordini clienti con DataConsegna <= oggi e residuo > 0
+            decimal impegnatoAttuale = await _context.OrdiniRighe
+                .Where(r => r.TipoOrdine == "R")
+                .Where(r => r.CodiceArticolo == codiceArticolo)
+                .Where(r => r.DataConsegna <= oggi)
+                .Where(r => r.Quantita > r.QuantitaEvasa)
+                .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
+            
             // Calcola impegnato futuro (solo se data > oggi)
+            // Formula: Σ ((Quantita - QuantitaEvasa) × PercentualeInclusione / 100)
+            // per ordini clienti con DataConsegna > oggi e DataConsegna <= dataRiferimento
             decimal impegnatoFuturo = 0;
             if (dataRiferimento > oggi)
             {
@@ -140,7 +152,7 @@ namespace AiDbMaster.Controllers
                     .Where(r => r.DataConsegna > oggi)
                     .Where(r => r.DataConsegna <= dataRiferimento)
                     .Where(r => r.Quantita > r.QuantitaEvasa)
-                    .SumAsync(r => (decimal?)(r.Quantita - r.QuantitaEvasa)) ?? 0;
+                    .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
             }
 
             // Carica tempi asciugatura in memoria
@@ -193,6 +205,7 @@ namespace AiDbMaster.Controllers
             var unitaMisura = articolo?.UnitaMisura ?? "";
 
             // Mappa i risultati
+            // Nota: ImpegnatoAttuale viene calcolato in tempo reale (non da ProgressiviArticoli)
             var risultati = progressivi.Select(p => new DisponibilitaRigaViewModel
             {
                 CodiceArticolo = p.CodiceArticolo,
@@ -200,7 +213,7 @@ namespace AiDbMaster.Controllers
                 UnitaMisura = unitaMisura,
                 CodiceMagazzino = p.CodiceMagazzino,
                 Esistenza = p.Esistenza,
-                ImpegnatoAttuale = p.ImpegnatoDataOdierna,
+                ImpegnatoAttuale = impegnatoAttuale,  // Calcolato in tempo reale con PercentualeInclusione
                 ImpegnatoFuturo = impegnatoFuturo,
                 OrdinatoFornitoriDataOdierna = p.OrdinatoFornitoriDataOdierna,
                 ProduzioneDisponibile = produzioneDisponibile
@@ -316,7 +329,7 @@ namespace AiDbMaster.Controllers
                     }
                 }
 
-                // Recupera descrizione articolo
+                // Recupera descrizione e unità di misura articolo
                 var articolo = await _context.AnagraficaArticoli
                     .FirstOrDefaultAsync(a => a.CodiceArticolo == codiceArticolo);
 
@@ -324,6 +337,7 @@ namespace AiDbMaster.Controllers
                 {
                     CodiceArticolo = codiceArticolo,
                     DescrizioneArticolo = articolo?.Descrizione ?? "",
+                    UnitaMisura = articolo?.UnitaMisura ?? "pz",
                     DataRiferimento = dataRif,
                     Produzioni = produzioniDettaglio,
                     TotaleDisponibile = totaleDisponibile,
@@ -366,9 +380,11 @@ namespace AiDbMaster.Controllers
 
                 // Query ordini clienti impegnati (TipoOrdine = 'R')
                 // IMPORTANTE: Usa riga.DataConsegna (non testata.DataConsegna) per essere coerente con il calcolo principale
+                // Usa Distinct per evitare duplicati da OrdiniTestate
                 var ordini = await (from riga in _context.OrdiniRighe
                                    join testata in _context.OrdiniTestate
-                                       on new { riga.AnnoOrdine, riga.NumeroOrdine } equals new { testata.AnnoOrdine, testata.NumeroOrdine }
+                                       on new { riga.AnnoOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
+                                       equals new { testata.AnnoOrdine, testata.NumeroOrdine, testata.TipoOrdine }
                                    join cliente in _context.AnagraficaClienti
                                        on testata.CodiceCliente equals cliente.CodiceCliente into clienteGroup
                                    from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
@@ -385,20 +401,22 @@ namespace AiDbMaster.Controllers
                                        CodiceCliente = testata.CodiceCliente,
                                        RagioneSociale = cliente != null ? cliente.RagioneSociale ?? "" : "N/D",
                                        Quantita = riga.Quantita,
-                                       QuantitaEvasa = riga.QuantitaEvasa
+                                       QuantitaEvasa = riga.QuantitaEvasa,
+                                       PercentualeInclusione = riga.PercentualeInclusione
                                    })
+                                   .Distinct()  // Evita duplicati da OrdiniTestate
                                    .OrderBy(o => o.DataConsegna)
                                    .ThenBy(o => o.AnnoOrdine)
                                    .ThenBy(o => o.NumeroOrdine)
                                    .ToListAsync();
 
-                // Calcola totale impegnato futuro
-                var totaleImpegnatoFuturo = ordini.Sum(o => o.QuantitaDaEvadere);
+                // Calcola totale impegnato futuro usando la PercentualeInclusione
+                var totaleImpegnatoFuturo = ordini.Sum(o => o.ContributoImpegnato);
 
                 _logger.LogInformation("Trovati {NumeroOrdini} ordini clienti per un totale impegnato futuro di {Totale}", 
                     ordini.Count, totaleImpegnatoFuturo);
 
-                // Recupera descrizione articolo
+                // Recupera descrizione e unità di misura articolo
                 var articolo = await _context.AnagraficaArticoli
                     .FirstOrDefaultAsync(a => a.CodiceArticolo == codiceArticolo);
 
@@ -406,6 +424,7 @@ namespace AiDbMaster.Controllers
                 {
                     CodiceArticolo = codiceArticolo,
                     DescrizioneArticolo = articolo?.Descrizione ?? "",
+                    UnitaMisura = articolo?.UnitaMisura ?? "pz",
                     DataRiferimento = dataRif,
                     Ordini = ordini,
                     TotaleImpegnatoFuturo = totaleImpegnatoFuturo
@@ -416,6 +435,84 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore durante il recupero del dettaglio impegnato futuro per {CodiceArticolo}", codiceArticolo);
+                return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
+            }
+        }
+
+        /// <summary>
+        /// Recupera il dettaglio degli ordini clienti che compongono l'impegnato attuale (alla data odierna)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetDettaglioImpegnatoAttuale(string codiceArticolo)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(codiceArticolo))
+                {
+                    return BadRequest(new { error = "Codice articolo obbligatorio" });
+                }
+
+                var oggi = DateTime.Today;
+
+                _logger.LogInformation("Recupero dettaglio impegnato attuale per articolo {CodiceArticolo} alla data {DataOggi}", 
+                    codiceArticolo, oggi);
+
+                // Query ordini clienti impegnati alla data odierna (TipoOrdine = 'R')
+                // Filtra per ordini con DataConsegna <= oggi e quantità da evadere > 0
+                // Usa Distinct per evitare duplicati da OrdiniTestate
+                var ordini = await (from riga in _context.OrdiniRighe
+                                   join testata in _context.OrdiniTestate
+                                       on new { riga.AnnoOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
+                                       equals new { testata.AnnoOrdine, testata.NumeroOrdine, testata.TipoOrdine }
+                                   join cliente in _context.AnagraficaClienti
+                                       on testata.CodiceCliente equals cliente.CodiceCliente into clienteGroup
+                                   from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
+                                   where riga.CodiceArticolo == codiceArticolo
+                                       && riga.TipoOrdine == "R"
+                                       && riga.DataConsegna <= oggi  // ✅ Impegnato attuale: <= oggi
+                                       && (riga.Quantita - riga.QuantitaEvasa) > 0  // Solo quantità da evadere
+                                   select new OrdineClienteDettaglioViewModel
+                                   {
+                                       AnnoOrdine = riga.AnnoOrdine,
+                                       NumeroOrdine = riga.NumeroOrdine,
+                                       DataConsegna = riga.DataConsegna,
+                                       CodiceCliente = testata.CodiceCliente,
+                                       RagioneSociale = cliente != null ? cliente.RagioneSociale ?? "" : "N/D",
+                                       Quantita = riga.Quantita,
+                                       QuantitaEvasa = riga.QuantitaEvasa,
+                                       PercentualeInclusione = riga.PercentualeInclusione
+                                   })
+                                   .Distinct()  // Evita duplicati da OrdiniTestate
+                                   .OrderBy(o => o.DataConsegna)
+                                   .ThenBy(o => o.AnnoOrdine)
+                                   .ThenBy(o => o.NumeroOrdine)
+                                   .ToListAsync();
+
+                // Calcola totale impegnato attuale usando la PercentualeInclusione
+                var totaleImpegnatoAttuale = ordini.Sum(o => o.ContributoImpegnato);
+
+                _logger.LogInformation("Trovati {NumeroOrdini} ordini clienti per un totale impegnato attuale di {Totale}", 
+                    ordini.Count, totaleImpegnatoAttuale);
+
+                // Recupera descrizione e unità di misura articolo
+                var articolo = await _context.AnagraficaArticoli
+                    .FirstOrDefaultAsync(a => a.CodiceArticolo == codiceArticolo);
+
+                var response = new DettaglioImpegnatoAttualeResponse
+                {
+                    CodiceArticolo = codiceArticolo,
+                    DescrizioneArticolo = articolo?.Descrizione ?? "",
+                    UnitaMisura = articolo?.UnitaMisura ?? "pz",
+                    DataRiferimento = oggi,
+                    Ordini = ordini,
+                    TotaleImpegnatoAttuale = totaleImpegnatoAttuale
+                };
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante il recupero del dettaglio impegnato attuale per {CodiceArticolo}", codiceArticolo);
                 return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
             }
         }
@@ -525,6 +622,39 @@ namespace AiDbMaster.Controllers
                 // Adesso recupero le righe per ogni testata con filtro data consegna
                 var ordiniViewModel = new List<OrdineConsegnaViewModel>();
 
+                // Pre-carica le giacenze (Esistenza) per tutti gli articoli dal Magazzino 1
+                var tuttiCodiciArticoli = new HashSet<string>();
+                foreach (var item in testate)
+                {
+                    var codici = await _context.OrdiniRighe
+                        .Where(r => r.TipoOrdine == item.Testata.TipoOrdine &&
+                                   r.AnnoOrdine == item.Testata.AnnoOrdine &&
+                                   r.SerieOrdine == item.Testata.SerieOrdine &&
+                                   r.NumeroOrdine == item.Testata.NumeroOrdine)
+                        .Select(r => r.CodiceArticolo)
+                        .ToListAsync();
+                    foreach (var c in codici) tuttiCodiciArticoli.Add(c);
+                }
+
+                // Dizionario Esistenza (Giacenza Magazzino 1)
+                var esistenzaDict = await _context.ProgressiviArticoli
+                    .Where(p => p.CodiceMagazzino == 1 && tuttiCodiciArticoli.Contains(p.CodiceArticolo))
+                    .ToDictionaryAsync(p => p.CodiceArticolo, p => p.Esistenza);
+
+                // Dizionario Impegnato Attuale (calcolato come in Disponibilita)
+                var oggi = DateTime.Today;
+                var impegnatoDict = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "R" && 
+                               r.DataConsegna <= oggi && 
+                               tuttiCodiciArticoli.Contains(r.CodiceArticolo))
+                    .GroupBy(r => r.CodiceArticolo)
+                    .Select(g => new 
+                    { 
+                        CodiceArticolo = g.Key, 
+                        ImpegnatoAttuale = g.Sum(r => (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)
+                    })
+                    .ToDictionaryAsync(x => x.CodiceArticolo, x => x.ImpegnatoAttuale);
+
                 foreach (var item in testate)
                 {
                     // Recupera le righe dell'ordine con filtro data consegna
@@ -615,7 +745,10 @@ namespace AiDbMaster.Controllers
                             Prezzo = r.Prezzo,
                             PercentualeInclusione = r.PercentualeInclusione,
                             NoteRiga = r.NoteRiga,
-                            ValoreRiga = r.ValoreRiga
+                            ValoreRiga = r.ValoreRiga,
+                            // Disponibilità Magazzino 1
+                            Esistenza = esistenzaDict.ContainsKey(r.CodiceArticolo) ? esistenzaDict[r.CodiceArticolo] : 0,
+                            ImpegnatoAttuale = impegnatoDict.ContainsKey(r.CodiceArticolo) ? impegnatoDict[r.CodiceArticolo] : 0
                         }).ToList()
                     };
 

@@ -448,6 +448,57 @@ namespace AiDbMaster.Migrations
                     b.ToTable("CentriLavoro");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.DestinazioniDiverse", b =>
+                {
+                    b.Property<int>("CodiceConto")
+                        .HasColumnType("int")
+                        .HasColumnName("CodiceConto")
+                        .HasColumnOrder(0);
+
+                    b.Property<int>("CodiceDestinazione")
+                        .HasColumnType("int")
+                        .HasColumnName("CodiceDestinazione")
+                        .HasColumnOrder(1);
+
+                    b.Property<string>("Cap")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Cap");
+
+                    b.Property<short?>("CodiceZona")
+                        .HasColumnType("smallint")
+                        .HasColumnName("CodiceZona");
+
+                    b.Property<string>("DescrizioneDestinazione")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("DescrizioneDestinazione");
+
+                    b.Property<string>("Indirizzo")
+                        .HasMaxLength(70)
+                        .HasColumnType("nvarchar(70)")
+                        .HasColumnName("Indirizzo");
+
+                    b.Property<string>("Localita")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Localita");
+
+                    b.Property<string>("Provincia")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("Provincia");
+
+                    b.Property<string>("Telefono")
+                        .HasMaxLength(18)
+                        .HasColumnType("nvarchar(18)")
+                        .HasColumnName("Telefono");
+
+                    b.HasKey("CodiceConto", "CodiceDestinazione");
+
+                    b.ToTable("DestinazioniDiverse");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Document", b =>
                 {
                     b.Property<int>("Id")
@@ -916,6 +967,10 @@ namespace AiDbMaster.Migrations
                     b.Property<int>("CodiceCliente")
                         .HasColumnType("int")
                         .HasColumnName("CodiceCliente");
+
+                    b.Property<int?>("CodiceDestinazione")
+                        .HasColumnType("int")
+                        .HasColumnName("CodiceDestinazione");
 
                     b.Property<DateTime?>("DataConsegna")
                         .HasColumnType("datetime2")

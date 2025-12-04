@@ -168,20 +168,10 @@ namespace AiDbMaster.Controllers
                     return NotFound();
                 }
 
-                // Cerco altri agenti nella stessa provincia
-                ViewBag.AltriAgentiProvincia = await _context.TabellaAgenti
-                    .Where(a => a.ProvinciaAgente == agente.ProvinciaAgente && 
-                               a.CodiceAgente != agente.CodiceAgente &&
-                               !string.IsNullOrEmpty(a.ProvinciaAgente))
-                    .OrderBy(a => a.CodiceAgente)
-                    .ToListAsync();
-
-                // Cerco altri agenti nella stessa città
-                ViewBag.AltriAgentiCitta = await _context.TabellaAgenti
-                    .Where(a => a.CittaAgente == agente.CittaAgente && 
-                               a.CodiceAgente != agente.CodiceAgente &&
-                               !string.IsNullOrEmpty(a.CittaAgente))
-                    .OrderBy(a => a.CodiceAgente)
+                // Cerco i clienti associati a questo agente
+                ViewBag.ClientiAssociati = await _context.AnagraficaClienti
+                    .Where(c => c.CodiceAgente == agente.CodiceAgente)
+                    .OrderBy(c => c.RagioneSociale)
                     .ToListAsync();
 
                 // Statistiche per la provincia dell'agente
@@ -212,6 +202,61 @@ namespace AiDbMaster.Controllers
                 _logger.LogError(ex, "Errore durante il caricamento dei dettagli dell'agente {CodiceAgente}", id);
                 TempData["ErrorMessage"] = "Si è verificato un errore durante il caricamento dei dettagli dell'agente.";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        /// <summary>
+        /// API per ottenere gli ordini di un cliente specifico
+        /// GET: TabellaAgenti/GetOrdiniCliente?codiceCliente=123
+        /// </summary>
+        /// <param name="codiceCliente">Codice del cliente</param>
+        /// <returns>Lista degli ordini del cliente in formato JSON</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetOrdiniCliente(int codiceCliente)
+        {
+            try
+            {
+                var ordini = await _context.OrdiniTestate
+                    .Where(o => o.CodiceCliente == codiceCliente && o.TipoOrdine == "R")
+                    .OrderByDescending(o => o.DataOrdine)
+                    .Select(o => new
+                    {
+                        o.AnnoOrdine,
+                        o.SerieOrdine,
+                        o.NumeroOrdine,
+                        NumeroOrdineCompleto = $"{o.AnnoOrdine}/{o.SerieOrdine}/{o.NumeroOrdine}",
+                        DataOrdine = o.DataOrdine.ToString("dd/MM/yyyy"),
+                        o.RiferimentoOrdine,
+                        Righe = _context.OrdiniRighe
+                            .Where(r => r.AnnoOrdine == o.AnnoOrdine && 
+                                       r.SerieOrdine == o.SerieOrdine && 
+                                       r.NumeroOrdine == o.NumeroOrdine &&
+                                       r.TipoOrdine == "R")
+                            .OrderBy(r => r.RigaOrdine)
+                            .Select(r => new
+                            {
+                                r.RigaOrdine,
+                                r.CodiceArticolo,
+                                r.DescrizioneArticolo,
+                                DataConsegna = r.DataConsegna.ToString("dd/MM/yyyy"),
+                                r.Quantita,
+                                r.QuantitaEvasa,
+                                QuantitaDaEvadere = r.Quantita - r.QuantitaEvasa,
+                                r.Prezzo,
+                                Valore = (r.Quantita - r.QuantitaEvasa) * r.Prezzo,
+                                r.UnitaMisura
+                            })
+                            .ToList()
+                    })
+                    .Take(50)
+                    .ToListAsync();
+
+                return Json(new { success = true, data = ordini });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante il caricamento degli ordini del cliente {CodiceCliente}", codiceCliente);
+                return Json(new { success = false, error = "Errore durante il caricamento degli ordini" });
             }
         }
 

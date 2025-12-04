@@ -28,69 +28,37 @@ namespace AiDbMaster.Controllers
         /// Visualizza l'elenco di tutti i progressivi articoli
         /// GET: ProgressiviArticoli
         /// </summary>
-        /// <param name="search">Termine di ricerca per filtrare i progressivi</param>
-        /// <param name="codiceArticolo">Filtro per codice articolo</param>
+        /// <param name="codiceArticolo">Filtro per codice articolo (ricerca esatta)</param>
         /// <param name="codiceMagazzino">Filtro per codice magazzino</param>
-        /// <param name="statoGiacenza">Filtro per stato giacenza</param>
-        /// <param name="soloConMovimenti">Mostra solo articoli con movimenti</param>
         /// <param name="sortOrder">Ordinamento dei risultati</param>
         /// <param name="page">Numero di pagina per la paginazione</param>
         /// <param name="pageSize">Numero di elementi per pagina</param>
         /// <returns>Vista con l'elenco dei progressivi articoli</returns>
         public async Task<IActionResult> Index(
-            string? search,
             string? codiceArticolo,
             short? codiceMagazzino,
-            string? statoGiacenza,
-            bool soloConMovimenti = false,
             string sortOrder = "articolo",
             int page = 1,
             int pageSize = 50)
         {
             try
             {
-                _logger.LogInformation("Caricamento progressivi articoli - Pagina: {Page}, Ricerca: {Search}", page, search);
+                _logger.LogInformation("Caricamento progressivi articoli - Pagina: {Page}, Articolo: {CodiceArticolo}, Magazzino: {Magazzino}", 
+                    page, codiceArticolo, codiceMagazzino);
 
                 // Query base
                 var query = _context.ProgressiviArticoli.AsQueryable();
 
-                // Filtro per ricerca testuale
-                if (!string.IsNullOrEmpty(search))
-                {
-                    query = query.Where(p => 
-                        p.CodiceArticolo.Contains(search) ||
-                        p.CodiceMagazzino.ToString().Contains(search));
-                }
-
-                // Filtro per codice articolo
+                // Filtro per codice articolo (ricerca esatta come Select2)
                 if (!string.IsNullOrEmpty(codiceArticolo))
                 {
-                    query = query.Where(p => p.CodiceArticolo.Contains(codiceArticolo));
+                    query = query.Where(p => p.CodiceArticolo == codiceArticolo);
                 }
 
                 // Filtro per codice magazzino
                 if (codiceMagazzino.HasValue)
                 {
                     query = query.Where(p => p.CodiceMagazzino == codiceMagazzino.Value);
-                }
-
-                // Filtro per stato giacenza
-                if (!string.IsNullOrEmpty(statoGiacenza))
-                {
-                    query = statoGiacenza switch
-                    {
-                        "Esaurito" => query.Where(p => p.Esistenza <= 0),
-                        "Non Disponibile" => query.Where(p => p.Esistenza > 0 && p.Esistenza <= 0), // Condizione impossibile, filtra tutto
-                        "Scorta Bassa" => query.Where(p => p.Esistenza > 0 && p.Esistenza < (p.Esistenza * 0.2m)), // Condizione impossibile, filtra tutto
-                        "Disponibile" => query.Where(p => p.Esistenza > 0),
-                        _ => query
-                    };
-                }
-
-                // Filtro solo con movimenti
-                if (soloConMovimenti)
-                {
-                    query = query.Where(p => p.OrdinatoFornitoriDataOdierna > 0);
                 }
 
                 // Ordinamento
@@ -117,52 +85,32 @@ namespace AiDbMaster.Controllers
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Recupera la descrizione dell'articolo selezionato dalla tabella AnagraficaArticoli
+                string? descrizioneArticolo = null;
+                if (!string.IsNullOrEmpty(codiceArticolo))
+                {
+                    descrizioneArticolo = await _context.AnagraficaArticoli
+                        .Where(a => a.CodiceArticolo == codiceArticolo)
+                        .Select(a => a.Descrizione)
+                        .FirstOrDefaultAsync();
+                }
+
                 // Preparazione dei dati per la vista
                 ViewBag.CurrentSort = sortOrder;
-                ViewBag.CurrentSearch = search;
                 ViewBag.CurrentCodiceArticolo = codiceArticolo;
+                ViewBag.CurrentDescrizioneArticolo = descrizioneArticolo;
                 ViewBag.CurrentCodiceMagazzino = codiceMagazzino;
-                ViewBag.CurrentStatoGiacenza = statoGiacenza;
-                ViewBag.CurrentSoloConMovimenti = soloConMovimenti;
                 ViewBag.CurrentPage = page;
                 ViewBag.PageSize = pageSize;
                 ViewBag.TotalCount = totalCount;
                 ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
-                // Dati per i filtri dropdown
-                ViewBag.CodiciArticolo = await _context.ProgressiviArticoli
-                    .Select(p => p.CodiceArticolo)
-                    .Distinct()
-                    .OrderBy(c => c)
-                    .Take(100) // Limito per performance
-                    .ToListAsync();
-
+                // Dati per i filtri dropdown (solo magazzino)
                 ViewBag.CodiciMagazzino = await _context.ProgressiviArticoli
                     .Select(p => p.CodiceMagazzino)
                     .Distinct()
                     .OrderBy(c => c)
                     .ToListAsync();
-
-                ViewBag.StatiGiacenza = new List<string> { "Esaurito", "Non Disponibile", "Scorta Bassa", "Disponibile" };
-
-                // Statistiche aggregate
-                var statistiche = await query.GroupBy(p => 1).Select(g => new
-                {
-                    TotaleEsistenza = g.Sum(p => p.Esistenza),
-                    TotaleOrdinatoFornitori = g.Sum(p => p.OrdinatoFornitoriDataOdierna),
-                    TotaleDisponibile = g.Sum(p => p.Esistenza),
-                    TotaleMagazzini = g.Select(p => p.CodiceMagazzino).Distinct().Count(),
-                    TotaleArticoli = g.Select(p => p.CodiceArticolo).Distinct().Count()
-                }).FirstOrDefaultAsync();
-
-                ViewBag.Statistiche = statistiche ?? new
-                {
-                    TotaleEsistenza = 0m,
-                    TotaleOrdinatoFornitori = 0m,
-                    TotaleDisponibile = 0m,
-                    TotaleMagazzini = 0,
-                    TotaleArticoli = 0
-                };
 
                 _logger.LogInformation("Caricati {Count} progressivi articoli su {Total} totali", progressiviArticoli.Count, totalCount);
 

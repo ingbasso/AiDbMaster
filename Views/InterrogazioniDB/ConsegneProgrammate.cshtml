@@ -371,6 +371,9 @@
                                             <th class="text-end">Prezzo</th>
                                             <th class="text-end">Valore</th>
                                             <th class="text-center">Stato</th>
+                                            <th class="text-end bg-success text-white">Esistenza</th>
+                                            <th class="text-end bg-success text-white">Impegnato</th>
+                                            <th class="text-end bg-success text-white">Disponibile</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -398,11 +401,20 @@
                                                 <td class="text-center">
                                                     <span class="badge @riga.StatoEvasioneCssClass">@riga.StatoEvasione</span>
                                                 </td>
+                                                <td class="text-end" style="background-color: #d4edda;">
+                                                    <span class="@(riga.Esistenza <= 0 ? "text-danger fw-bold" : "")">@riga.Esistenza.ToString("N2")</span>
+                                                </td>
+                                                <td class="text-end" style="background-color: #d4edda;">
+                                                    <span class="@(riga.ImpegnatoAttuale > 0 ? "text-warning fw-bold" : "")">@riga.ImpegnatoAttuale.ToString("N2")</span>
+                                                </td>
+                                                <td class="text-end" style="background-color: #d4edda;">
+                                                    <strong class="@(riga.Disponibile < 0 ? "text-danger" : "text-success")">@riga.Disponibile.ToString("N2")</strong>
+                                                </td>
                                             </tr>
                                             @if (!string.IsNullOrEmpty(riga.NoteRiga))
                                             {
                                                 <tr>
-                                                    <td colspan="10" class="bg-light">
+                                                    <td colspan="13" class="bg-light">
                                                         <small><i class="bi bi-chat-left-text me-1"></i><strong>Note:</strong> @riga.NoteRiga</small>
                                                     </td>
                                                 </tr>
@@ -416,6 +428,7 @@
                                             <td colspan="2" class="text-end">@ordine.TotaleQuantitaDaEvadere.ToString("N2")</td>
                                             <td colspan="2" class="text-end">€ @ordine.TotaleOrdine.ToString("N2")</td>
                                             <td></td>
+                                            <td colspan="3" style="background-color: #d4edda;"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

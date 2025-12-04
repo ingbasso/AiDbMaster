@@ -144,6 +144,7 @@ namespace AiDbMaster.ViewModels
     {
         public string CodiceArticolo { get; set; } = string.Empty;
         public string DescrizioneArticolo { get; set; } = string.Empty;
+        public string UnitaMisura { get; set; } = string.Empty;
         public DateTime DataRiferimento { get; set; }
         public List<ProduzioneDettaglioViewModel> Produzioni { get; set; } = new List<ProduzioneDettaglioViewModel>();
         public decimal TotaleDisponibile { get; set; }
@@ -165,18 +166,42 @@ namespace AiDbMaster.ViewModels
         public decimal Quantita { get; set; }
         public decimal QuantitaEvasa { get; set; }
         public decimal QuantitaDaEvadere => Quantita - QuantitaEvasa;
+        
+        /// <summary>
+        /// Percentuale di inclusione (es. 100 = 100%, 50 = 50%)
+        /// </summary>
+        public int PercentualeInclusione { get; set; }
+        
+        /// <summary>
+        /// Contributo all'impegnato: (QuantitaDaEvadere * PercentualeInclusione / 100)
+        /// </summary>
+        public decimal ContributoImpegnato => QuantitaDaEvadere * PercentualeInclusione / 100m;
     }
 
     /// <summary>
-    /// Response per il dettaglio degli ordini clienti impegnati
+    /// Response per il dettaglio degli ordini clienti impegnati (futuro)
     /// </summary>
     public class DettaglioImpegnatoFuturoResponse
     {
         public string CodiceArticolo { get; set; } = string.Empty;
         public string DescrizioneArticolo { get; set; } = string.Empty;
+        public string UnitaMisura { get; set; } = string.Empty;
         public DateTime DataRiferimento { get; set; }
         public List<OrdineClienteDettaglioViewModel> Ordini { get; set; } = new List<OrdineClienteDettaglioViewModel>();
         public decimal TotaleImpegnatoFuturo { get; set; }
+    }
+
+    /// <summary>
+    /// Response per il dettaglio degli ordini clienti impegnati (attuale/oggi)
+    /// </summary>
+    public class DettaglioImpegnatoAttualeResponse
+    {
+        public string CodiceArticolo { get; set; } = string.Empty;
+        public string DescrizioneArticolo { get; set; } = string.Empty;
+        public string UnitaMisura { get; set; } = string.Empty;
+        public DateTime DataRiferimento { get; set; }
+        public List<OrdineClienteDettaglioViewModel> Ordini { get; set; } = new List<OrdineClienteDettaglioViewModel>();
+        public decimal TotaleImpegnatoAttuale { get; set; }
     }
 
     // =====================================================
@@ -305,6 +330,11 @@ namespace AiDbMaster.ViewModels
         public int PercentualeInclusione { get; set; }
         public string? NoteRiga { get; set; }
         public decimal ValoreRiga { get; set; }
+
+        // Campi Disponibilità Magazzino (Magazzino 1)
+        public decimal Esistenza { get; set; }
+        public decimal ImpegnatoAttuale { get; set; }
+        public decimal Disponibile => Esistenza - ImpegnatoAttuale;
 
         // Proprietà calcolate
         public decimal QuantitaRimanente => Quantita - QuantitaEvasa;

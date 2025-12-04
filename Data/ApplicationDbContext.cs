@@ -17,6 +17,7 @@ namespace AiDbMaster.Data
         public DbSet<AnagraficaArticoli> AnagraficaArticoli { get; set; }
         public DbSet<AnagraficaClienti> AnagraficaClienti { get; set; }
         public DbSet<AnagraficaFornitori> AnagraficaFornitori { get; set; }
+        public DbSet<DestinazioniDiverse> DestinazioniDiverse { get; set; }
         public DbSet<ArticoliSostitutivi> ArticoliSostitutivi { get; set; }
         public DbSet<ProgressiviArticoli> ProgressiviArticoli { get; set; }
         public DbSet<TabellaAgenti> TabellaAgenti { get; set; }
@@ -71,6 +72,10 @@ namespace AiDbMaster.Data
             // Configurazione chiave composta per ArticoliSostitutivi
             builder.Entity<ArticoliSostitutivi>()
                 .HasKey(a => new { a.CodiceArticolo, a.CodiceArticoloSostitutivo });
+
+            // Configurazione chiave composta per DestinazioniDiverse
+            builder.Entity<DestinazioniDiverse>()
+                .HasKey(d => new { d.CodiceConto, d.CodiceDestinazione });
 
             // Configurazione delle relazioni per OrdiniTestate
             builder.Entity<OrdiniTestate>()

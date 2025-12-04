@@ -3,31 +3,23 @@
 @{
     ViewData["Title"] = "Anagrafica Articoli";
     ViewBag.UseFluidContainer = true;
-    var search = ViewBag.Search as string ?? "";
-    var categoria = ViewBag.Categoria as string ?? "";
-    var attivo = ViewBag.Attivo as bool?;
+    var codiceArticolo = ViewBag.CodiceArticolo as string ?? "";
+    var descrizioneArticolo = ViewBag.DescrizioneArticolo as string ?? "";
     var sortOrder = ViewBag.SortOrder as string ?? "codice";
     var currentPage = ViewBag.CurrentPage as int? ?? 1;
     var totalPages = ViewBag.TotalPages as int? ?? 1;
     var totalItems = ViewBag.TotalItems as int? ?? 0;
     var pageSize = ViewBag.PageSize as int? ?? 50;
-    var categorie = ViewBag.Categorie as List<string> ?? new List<string>();
 }
 
+<!-- Include Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <div class="container-fluid">
-
-
     <div class="content-container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="mb-4">
             <h2><i class="bi bi-table me-2 text-primary"></i>Anagrafica Articoli</h2>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
-                    <i class="bi bi-arrow-clockwise"></i> Reset Filtri
-                </button>
-                <button type="button" class="btn btn-success" onclick="exportToExcel()">
-                    <i class="bi bi-file-earmark-excel"></i> Esporta Excel
-                </button>
-            </div>
         </div>
 
         <!-- Filtri -->
@@ -38,28 +30,23 @@
             <div class="card-body">
                 <form method="get" asp-action="Index" id="filterForm">
                     <div class="row g-3">
-                        <div class="col-md-4">
-                            <label for="search" class="form-label">Ricerca Generale</label>
-                            <input type="text" class="form-control" id="search" name="search" value="@search" 
-                                   placeholder="Codice, descrizione, codice a barre...">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="categoria" class="form-label">Tipo Articolo</label>
-                            <select class="form-select" id="categoria" name="categoria">
-                                <option value="">Tutti i tipi</option>
-                                @foreach (var cat in categorie)
+                        <div class="col-md-6">
+                            <label for="codiceArticolo" class="form-label fw-bold">
+                                <i class="bi bi-box-seam me-1"></i>Articolo
+                            </label>
+                            <select class="form-select" id="codiceArticolo" name="codiceArticolo">
+                                <option value="">-- Cerca per codice o descrizione --</option>
+                                @if (!string.IsNullOrEmpty(codiceArticolo))
                                 {
-                                    <option value="@cat" selected="@(categoria == cat)">@cat</option>
+                                    <option value="@codiceArticolo" selected>@codiceArticolo @(!string.IsNullOrEmpty(descrizioneArticolo) ? " - " + descrizioneArticolo : "")</option>
                                 }
                             </select>
+                            <small class="text-muted">Digita almeno 2 caratteri per cercare</small>
                         </div>
                         <div class="col-md-2">
-                            <label for="unitaMisura" class="form-label">Unità Misura</label>
-                            <input type="text" class="form-control" id="unitaMisura" name="unitaMisura" 
-                                   placeholder="es. PZ, KG, MT...">
-                        </div>
-                        <div class="col-md-2">
-                            <label for="pageSize" class="form-label">Elementi per pagina</label>
+                            <label for="pageSize" class="form-label fw-bold">
+                                <i class="bi bi-list-ol me-1"></i>Per pagina
+                            </label>
                             <select class="form-select" id="pageSize" name="pageSize">
                                 <option value="25" selected="@(pageSize == 25)">25</option>
                                 <option value="50" selected="@(pageSize == 50)">50</option>
@@ -67,79 +54,21 @@
                                 <option value="200" selected="@(pageSize == 200)">200</option>
                             </select>
                         </div>
-                        <div class="col-md-1 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i>
-                            </button>
+                        <div class="col-md-auto">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Cerca
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <input type="hidden" name="sortOrder" value="@sortOrder">
                     <input type="hidden" name="page" value="1">
                 </form>
-            </div>
-        </div>
-
-        <!-- Statistiche -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-title">Totale Articoli</h6>
-                                <h3 class="mb-0">@totalItems</h3>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-title">Tipi Articolo</h6>
-                                <h3 class="mb-0">@(Model?.Where(a => !string.IsNullOrEmpty(a.TipoArticolo)).Select(a => a.TipoArticolo).Distinct().Count() ?? 0)</h3>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-diagram-3" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-title">Unità di Misura</h6>
-                                <h3 class="mb-0">@(Model?.Select(a => a.UnitaMisura).Distinct().Count() ?? 0)</h3>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-rulers" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-title">Pagina</h6>
-                                <h3 class="mb-0">@currentPage di @totalPages</h3>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-file-text" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -162,8 +91,7 @@
                                 <tr>
                                     <th>
                                         <a asp-action="Index" 
-                                           asp-route-search="@search"
-                                           asp-route-categoria="@categoria"
+                                           asp-route-codiceArticolo="@codiceArticolo"
                                            asp-route-pageSize="@pageSize"
                                            asp-route-sortOrder="@(sortOrder == "codice" ? "codice_desc" : "codice")"
                                            class="text-white text-decoration-none">
@@ -180,8 +108,7 @@
                                     </th>
                                     <th>
                                         <a asp-action="Index" 
-                                           asp-route-search="@search"
-                                           asp-route-categoria="@categoria"
+                                           asp-route-codiceArticolo="@codiceArticolo"
                                            asp-route-pageSize="@pageSize"
                                            asp-route-sortOrder="@(sortOrder == "descrizione" ? "descrizione_desc" : "descrizione")"
                                            class="text-white text-decoration-none">
@@ -198,8 +125,7 @@
                                     </th>
                                     <th>
                                         <a asp-action="Index" 
-                                           asp-route-search="@search"
-                                           asp-route-categoria="@categoria"
+                                           asp-route-codiceArticolo="@codiceArticolo"
                                            asp-route-pageSize="@pageSize"
                                            asp-route-sortOrder="@(sortOrder == "tipo" ? "tipo_desc" : "tipo")"
                                            class="text-white text-decoration-none">
@@ -216,8 +142,7 @@
                                     </th>
                                     <th>
                                         <a asp-action="Index" 
-                                           asp-route-search="@search"
-                                           asp-route-categoria="@categoria"
+                                           asp-route-codiceArticolo="@codiceArticolo"
                                            asp-route-pageSize="@pageSize"
                                            asp-route-sortOrder="@(sortOrder == "unita" ? "unita_desc" : "unita")"
                                            class="text-white text-decoration-none">
@@ -292,7 +217,6 @@
                                                 }
                                             </div>
                                         </td>
-
                                         <td>
                                             <div class="btn-group">
                                                 <a asp-action="Details" asp-route-id="@item.Id" 
@@ -321,8 +245,7 @@
                                     {
                                         <li class="page-item">
                                             <a class="page-link" asp-action="Index" 
-                                               asp-route-search="@search"
-                                               asp-route-categoria="@categoria"
+                                               asp-route-codiceArticolo="@codiceArticolo"
                                                asp-route-pageSize="@pageSize"
                                                asp-route-sortOrder="@sortOrder"
                                                asp-route-page="1">
@@ -331,8 +254,7 @@
                                         </li>
                                         <li class="page-item">
                                             <a class="page-link" asp-action="Index" 
-                                               asp-route-search="@search"
-                                               asp-route-categoria="@categoria"
+                                               asp-route-codiceArticolo="@codiceArticolo"
                                                asp-route-pageSize="@pageSize"
                                                asp-route-sortOrder="@sortOrder"
                                                asp-route-page="@(currentPage - 1)">
@@ -345,8 +267,7 @@
                                     {
                                         <li class="page-item @(i == currentPage ? "active" : "")">
                                             <a class="page-link" asp-action="Index" 
-                                               asp-route-search="@search"
-                                               asp-route-categoria="@categoria"
+                                               asp-route-codiceArticolo="@codiceArticolo"
                                                asp-route-pageSize="@pageSize"
                                                asp-route-sortOrder="@sortOrder"
                                                asp-route-page="@i">@i</a>
@@ -357,8 +278,7 @@
                                     {
                                         <li class="page-item">
                                             <a class="page-link" asp-action="Index" 
-                                               asp-route-search="@search"
-                                               asp-route-categoria="@categoria"
+                                               asp-route-codiceArticolo="@codiceArticolo"
                                                asp-route-pageSize="@pageSize"
                                                asp-route-sortOrder="@sortOrder"
                                                asp-route-page="@(currentPage + 1)">
@@ -367,8 +287,7 @@
                                         </li>
                                         <li class="page-item">
                                             <a class="page-link" asp-action="Index" 
-                                               asp-route-search="@search"
-                                               asp-route-categoria="@categoria"
+                                               asp-route-codiceArticolo="@codiceArticolo"
                                                asp-route-pageSize="@pageSize"
                                                asp-route-sortOrder="@sortOrder"
                                                asp-route-page="@totalPages">
@@ -386,7 +305,7 @@
                     <div class="p-5 text-center">
                         <i class="bi bi-inbox text-primary" style="font-size: 4rem;"></i>
                         <h4 class="mt-3">Nessun articolo trovato</h4>
-                        @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(categoria) || attivo.HasValue)
+                        @if (!string.IsNullOrEmpty(codiceArticolo))
                         {
                             <p class="text-muted">Prova a modificare i filtri di ricerca per visualizzare più risultati.</p>
                             <button type="button" class="btn btn-outline-primary mt-3" onclick="resetFilters()">
@@ -405,7 +324,64 @@
 </div>
 
 @section Scripts {
+    <!-- Include Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <script>
+        $(document).ready(function() {
+            // Inizializza Select2 con AJAX per la ricerca articoli
+            $('#codiceArticolo').select2({
+                theme: 'bootstrap-5',
+                placeholder: '-- Cerca per codice o descrizione --',
+                allowClear: true,
+                minimumInputLength: 2,
+                width: '100%',
+                ajax: {
+                    url: '@Url.Action("SearchArticoli", "InterrogazioniDB")',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            term: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data
+                        };
+                    },
+                    cache: true
+                },
+                language: {
+                    noResults: function() {
+                        return "Nessun articolo trovato";
+                    },
+                    searching: function() {
+                        return "Ricerca in corso...";
+                    },
+                    inputTooShort: function() {
+                        return "Inserisci almeno 2 caratteri";
+                    }
+                }
+            });
+
+            // Auto-submit quando cambia elementi per pagina
+            $('#pageSize').change(function() {
+                $('#filterForm').submit();
+            });
+
+            // Submit quando si seleziona un articolo da Select2
+            $('#codiceArticolo').on('select2:select', function(e) {
+                $('#filterForm').submit();
+            });
+
+            // Submit quando si pulisce il campo articolo
+            $('#codiceArticolo').on('select2:clear', function(e) {
+                $('#filterForm').submit();
+            });
+        });
+
         // Reset dei filtri
         function resetFilters() {
             window.location.href = '@Url.Action("Index", "AnagraficaArticoli")';
@@ -414,7 +390,6 @@
         // Copia negli appunti
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function() {
-                // Mostra un toast di conferma
                 showToast('Codice copiato negli appunti: ' + text, 'success');
             }).catch(function(err) {
                 console.error('Errore nella copia: ', err);
@@ -438,7 +413,6 @@
             const bsToast = new bootstrap.Toast(toast);
             bsToast.show();
             
-            // Rimuovi il toast dopo che è stato nascosto
             toast.addEventListener('hidden.bs.toast', function() {
                 toast.remove();
             });
@@ -452,51 +426,6 @@
             container.style.zIndex = '1055';
             document.body.appendChild(container);
             return container;
-        }
-
-        // Esportazione Excel (placeholder)
-        function exportToExcel() {
-            showToast('Funzionalità di esportazione Excel da implementare', 'info');
-        }
-
-        // Auto-submit del form quando cambiano i filtri
-        $(document).ready(function() {
-            $('#categoria, #attivo, #pageSize').change(function() {
-                $('#filterForm').submit();
-            });
-
-            // Ricerca in tempo reale con debounce
-            let searchTimeout;
-            $('#search').on('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(function() {
-                    $('#filterForm').submit();
-                }, 500);
-            });
-
-            // Evidenzia i termini di ricerca
-            @if (!string.IsNullOrEmpty(search))
-            {
-                <text>
-                highlightSearchTerms('@Html.Raw(Html.Encode(search))');
-                </text>
-            }
-        });
-
-        // Funzione per evidenziare i termini di ricerca
-        function highlightSearchTerms(searchTerm) {
-            if (!searchTerm) return;
-            
-            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            $('.articolo-row').each(function() {
-                const $row = $(this);
-                $row.find('td').each(function() {
-                    const $cell = $(this);
-                    const html = $cell.html();
-                    const highlightedHtml = html.replace(regex, '<mark class="bg-warning">$1</mark>');
-                    $cell.html(highlightedHtml);
-                });
-            });
         }
     </script>
 }

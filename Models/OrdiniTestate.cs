@@ -93,6 +93,13 @@ namespace AiDbMaster.Models
         public short CodiceAgente { get; set; }
 
         /// <summary>
+        /// Codice destinazione
+        /// </summary>
+        [Display(Name = "Codice Destinazione")]
+        [Column("CodiceDestinazione")]
+        public int? CodiceDestinazione { get; set; }
+
+        /// <summary>
         /// Note della testata ordine
         /// </summary>
         [Display(Name = "Note Testata")]

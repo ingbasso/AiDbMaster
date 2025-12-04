@@ -2,15 +2,12 @@
 
 @{
     ViewData["Title"] = "Dettagli Agente";
-    var altriAgentiProvincia = ViewBag.AltriAgentiProvincia as List<AiDbMaster.Models.TabellaAgenti> ?? new List<AiDbMaster.Models.TabellaAgenti>();
-    var altriAgentiCitta = ViewBag.AltriAgentiCitta as List<AiDbMaster.Models.TabellaAgenti> ?? new List<AiDbMaster.Models.TabellaAgenti>();
+    ViewBag.UseFluidContainer = true;
+    var clientiAssociati = ViewBag.ClientiAssociati as List<AiDbMaster.Models.AnagraficaClienti> ?? new List<AiDbMaster.Models.AnagraficaClienti>();
     var statisticheProvincia = ViewBag.StatisticheProvincia;
 }
 
-<div class="container">
-
-
-    <div class="content-container">
+<div class="content-container" style="width: 95%; margin: 0 auto;">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-person-workspace me-2 text-primary"></i>Dettagli Agente</h2>
             <div>
@@ -157,141 +154,134 @@
                     </div>
                 </div>
 
-                <!-- Altri Agenti nella stessa Città -->
-                @if (altriAgentiCitta.Any())
-                {
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="bi bi-building me-2"></i>Altri Agenti in @Model.CittaAgente</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Codice</th>
-                                            <th>Nome</th>
-                                            <th>Indirizzo</th>
-                                            <th>Stato</th>
-                                            <th>Azioni</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var agente in altriAgentiCitta)
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <span class="badge bg-primary">@agente.CodiceAgente</span>
-                                                </td>
-                                                <td>
-                                                    @if (!string.IsNullOrEmpty(agente.DescrizioneAgente))
-                                                    {
-                                                        <strong>@agente.DescrizioneAgente</strong>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted fst-italic">Nome non specificato</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (!string.IsNullOrEmpty(agente.IndirizzoAgente))
-                                                    {
-                                                        <small>@agente.IndirizzoAgente</small>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    <span class="@agente.StatoAgenteCssClass">@agente.StatoAgente</span>
-                                                </td>
-                                                <td>
-                                                    <a asp-action="Details" asp-route-id="@agente.CodiceAgente" 
-                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <!-- Clienti Associati -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people me-2"></i>Clienti Associati
+                            <span class="badge bg-light text-dark ms-2">@clientiAssociati.Count</span>
+                        </h5>
                     </div>
-                }
-
-                <!-- Altri Agenti nella stessa Provincia -->
-                @if (altriAgentiProvincia.Any())
-                {
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Altri Agenti in Provincia @Model.ProvinciaAgente</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Codice</th>
-                                            <th>Nome</th>
-                                            <th>Città</th>
-                                            <th>Stato</th>
-                                            <th>Azioni</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var agente in altriAgentiProvincia.Take(10))
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <span class="badge bg-primary">@agente.CodiceAgente</span>
-                                                </td>
-                                                <td>
-                                                    @if (!string.IsNullOrEmpty(agente.DescrizioneAgente))
-                                                    {
-                                                        <strong>@agente.DescrizioneAgente</strong>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted fst-italic">Nome non specificato</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (!string.IsNullOrEmpty(agente.CittaAgente))
-                                                    {
-                                                        @agente.CittaAgente
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    <span class="@agente.StatoAgenteCssClass">@agente.StatoAgente</span>
-                                                </td>
-                                                <td>
-                                                    <a asp-action="Details" asp-route-id="@agente.CodiceAgente" 
-                                                       class="btn btn-sm btn-outline-info" title="Visualizza Dettagli">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                            @if (altriAgentiProvincia.Count > 10)
-                            {
-                                <div class="mt-2 text-center">
-                                    <small class="text-muted">
-                                        Visualizzati 10 di @altriAgentiProvincia.Count agenti nella provincia
-                                    </small>
+                    <div class="card-body">
+                        @if (clientiAssociati.Any())
+                        {
+                            <!-- Controlli paginazione -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <label class="me-2">Righe per pagina:</label>
+                                    <select id="pageSizeClienti" class="form-select form-select-sm d-inline-block" style="width: auto;">
+                                        <option value="10">10</option>
+                                        <option value="20" selected>20</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
                                 </div>
-                            }
+                                <div id="paginationInfoClienti" class="text-muted small"></div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="tabellaClienti">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Codice</th>
+                                            <th>Ragione Sociale</th>
+                                            <th>Città</th>
+                                            <th>Provincia</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyClienti">
+                                        @foreach (var cliente in clientiAssociati)
+                                        {
+                                            <tr data-codice="@cliente.CodiceCliente" data-ragione="@cliente.RagioneSociale">
+                                                <td>
+                                                    <span class="badge bg-primary">@cliente.CodiceCliente</span>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(cliente.RagioneSociale))
+                                                    {
+                                                        <strong>@cliente.RagioneSociale</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted fst-italic">Non specificato</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(cliente.Citta))
+                                                    {
+                                                        @cliente.Citta
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(cliente.Provincia))
+                                                    {
+                                                        <span class="badge bg-info">@cliente.Provincia</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                            onclick="mostraOrdiniCliente(@cliente.CodiceCliente, this)" 
+                                                            data-ragione="@(cliente.RagioneSociale ?? "")"
+                                                            title="Visualizza Ordini">
+                                                        <i class="bi bi-cart3"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Controlli paginazione in basso -->
+                            <nav class="mt-3">
+                                <ul class="pagination pagination-sm justify-content-center mb-0" id="paginationClienti">
+                                </ul>
+                            </nav>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Nessun cliente associato a questo agente</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Popup Ordini Cliente (Trascinabile) -->
+                <div class="modal fade" id="popupOrdiniCliente" tabindex="-1" aria-labelledby="popupOrdiniClienteLabel" aria-hidden="true" style="z-index: 9999;">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="z-index: 10000;">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark" style="cursor: move;" id="popupOrdiniHeader">
+                                <h5 class="modal-title" id="popupOrdiniClienteLabel">
+                                    <i class="bi bi-cart3 me-2"></i>Ordini Cliente: <span id="nomeClientePopup"></span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="ordiniClienteContent">
+                                <div class="text-center py-5">
+                                    <div class="spinner-border text-warning" role="status">
+                                        <span class="visually-hidden">Caricamento...</span>
+                                    </div>
+                                    <p class="mt-2">Caricamento ordini...</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <span class="me-auto text-muted" id="totaleOrdiniInfo"></span>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                            </div>
                         </div>
                     </div>
-                }
+                </div>
             </div>
 
             <!-- Informazioni Aggiuntive -->
@@ -518,6 +508,277 @@
             container.style.zIndex = '1055';
             document.body.appendChild(container);
             return container;
+        }
+
+        // ========== PAGINAZIONE CLIENTI ==========
+        let currentPageClienti = 1;
+        let pageSizeClienti = 20;
+        let allRowsClienti = [];
+
+        $(document).ready(function() {
+            // Salva tutte le righe
+            allRowsClienti = $('#tbodyClienti tr').toArray();
+            
+            // Inizializza paginazione
+            updatePaginationClienti();
+            
+            // Evento cambio page size
+            $('#pageSizeClienti').change(function() {
+                pageSizeClienti = parseInt($(this).val());
+                currentPageClienti = 1;
+                updatePaginationClienti();
+            });
+            
+            // Rendi il popup trascinabile
+            makePopupDraggable('popupOrdiniCliente', 'popupOrdiniHeader');
+        });
+
+        function updatePaginationClienti() {
+            const totalRows = allRowsClienti.length;
+            const totalPages = Math.ceil(totalRows / pageSizeClienti);
+            const startIndex = (currentPageClienti - 1) * pageSizeClienti;
+            const endIndex = Math.min(startIndex + pageSizeClienti, totalRows);
+            
+            // Nascondi tutte le righe e mostra solo quelle della pagina corrente
+            $(allRowsClienti).hide();
+            $(allRowsClienti.slice(startIndex, endIndex)).show();
+            
+            // Aggiorna info paginazione
+            $('#paginationInfoClienti').text(`Visualizzati ${startIndex + 1}-${endIndex} di ${totalRows} clienti`);
+            
+            // Genera pulsanti paginazione
+            let paginationHtml = '';
+            
+            // Pulsante precedente
+            paginationHtml += `<li class="page-item ${currentPageClienti === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPageClienti(${currentPageClienti - 1}); return false;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>`;
+            
+            // Numeri pagina
+            const startPage = Math.max(1, currentPageClienti - 2);
+            const endPage = Math.min(totalPages, currentPageClienti + 2);
+            
+            if (startPage > 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="goToPageClienti(1); return false;">1</a></li>`;
+                if (startPage > 2) {
+                    paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `<li class="page-item ${i === currentPageClienti ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPageClienti(${i}); return false;">${i}</a>
+                </li>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="goToPageClienti(${totalPages}); return false;">${totalPages}</a></li>`;
+            }
+            
+            // Pulsante successivo
+            paginationHtml += `<li class="page-item ${currentPageClienti === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPageClienti(${currentPageClienti + 1}); return false;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>`;
+            
+            $('#paginationClienti').html(paginationHtml);
+        }
+
+        function goToPageClienti(page) {
+            const totalPages = Math.ceil(allRowsClienti.length / pageSizeClienti);
+            if (page >= 1 && page <= totalPages) {
+                currentPageClienti = page;
+                updatePaginationClienti();
+            }
+        }
+
+        // ========== POPUP ORDINI CLIENTE ==========
+        function mostraOrdiniCliente(codiceCliente, btn) {
+            console.log('mostraOrdiniCliente chiamata con:', codiceCliente);
+            
+            const ragioneSociale = $(btn).data('ragione') || '';
+            console.log('Ragione sociale:', ragioneSociale);
+            
+            $('#nomeClientePopup').text(codiceCliente + ' - ' + ragioneSociale);
+            $('#ordiniClienteContent').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-2">Caricamento ordini...</p>
+                </div>
+            `);
+            $('#totaleOrdiniInfo').text('');
+            
+            var modalElement = document.getElementById('popupOrdiniCliente');
+            console.log('Modal element:', modalElement);
+            
+            if (!modalElement) {
+                console.error('Modal non trovato!');
+                alert('Errore: Modal non trovato');
+                return;
+            }
+            
+            // Sposta il modal nel body per evitare problemi di z-index/overflow
+            if (modalElement.parentElement !== document.body) {
+                document.body.appendChild(modalElement);
+                console.log('Modal spostato nel body');
+            }
+            
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            console.log('Modal mostrato');
+            
+            // Carica ordini via AJAX
+            $.get('@Url.Action("GetOrdiniCliente", "TabellaAgenti")', { codiceCliente: codiceCliente })
+                .done(function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        let html = '<div class="accordion" id="accordionOrdini">';
+                        let totaleOrdini = 0;
+                        
+                        response.data.forEach((ordine, index) => {
+                            const collapseId = 'collapseOrdine' + index;
+                            const totaleOrdine = ordine.righe.reduce((sum, r) => sum + r.valore, 0);
+                            totaleOrdini += totaleOrdine;
+                            
+                            html += `
+                                <div class="card mb-2">
+                                    <div class="card-header p-0">
+                                        <button class="btn btn-link w-100 text-start text-decoration-none p-3 ${index > 0 ? 'collapsed' : ''}" 
+                                                type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#${collapseId}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong><i class="bi bi-file-earmark-text me-2"></i>Ordine ${ordine.numeroOrdineCompleto}</strong>
+                                                    <span class="ms-3 text-muted">
+                                                        <i class="bi bi-calendar me-1"></i>${ordine.dataOrdine}
+                                                    </span>
+                                                    ${ordine.riferimentoOrdine ? '<span class="ms-2 badge bg-secondary">' + ordine.riferimentoOrdine + '</span>' : ''}
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-info me-2">${ordine.righe.length} righe</span>
+                                                    <span class="badge bg-warning text-dark">€ ${totaleOrdine.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div id="${collapseId}" class="collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#accordionOrdini">
+                                        <div class="card-body p-2">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-striped table-hover mb-0" style="font-size: 0.85rem;">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Riga</th>
+                                                            <th>Articolo</th>
+                                                            <th>Descrizione</th>
+                                                            <th class="text-center">Data Consegna</th>
+                                                            <th class="text-end">Quantità</th>
+                                                            <th class="text-end">Evasa</th>
+                                                            <th class="text-end">Da Evadere</th>
+                                                            <th class="text-end">Prezzo</th>
+                                                            <th class="text-end">Valore</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${ordine.righe.map(r => `
+                                                            <tr>
+                                                                <td><strong>${r.rigaOrdine}</strong></td>
+                                                                <td><code>${r.codiceArticolo}</code></td>
+                                                                <td>${r.descrizioneArticolo || '-'}</td>
+                                                                <td class="text-center"><span class="badge bg-info">${r.dataConsegna}</span></td>
+                                                                <td class="text-end">${r.quantita.toFixed(2)} ${r.unitaMisura || ''}</td>
+                                                                <td class="text-end">${r.quantitaEvasa.toFixed(2)}</td>
+                                                                <td class="text-end"><strong>${r.quantitaDaEvadere.toFixed(2)}</strong></td>
+                                                                <td class="text-end">€ ${r.prezzo.toFixed(2)}</td>
+                                                                <td class="text-end"><strong>€ ${r.valore.toFixed(2)}</strong></td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                        $('#ordiniClienteContent').html(html);
+                        $('#totaleOrdiniInfo').html(`<strong>${response.data.length}</strong> ordini - Totale: <strong>€ ${totaleOrdini.toFixed(2)}</strong>`);
+                    } else {
+                        $('#ordiniClienteContent').html(`
+                            <div class="alert alert-info text-center">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Nessun ordine trovato per questo cliente.
+                            </div>
+                        `);
+                    }
+                })
+                .fail(function() {
+                    $('#ordiniClienteContent').html(`
+                        <div class="alert alert-danger text-center">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Errore durante il caricamento degli ordini.
+                        </div>
+                    `);
+                });
+        }
+
+        // ========== POPUP TRASCINABILE ==========
+        function makePopupDraggable(modalId, headerId) {
+            const modal = document.getElementById(modalId);
+            const header = document.getElementById(headerId);
+            
+            if (!modal || !header) return;
+            
+            let isDragging = false;
+            let currentX, currentY, initialX, initialY;
+            let xOffset = 0, yOffset = 0;
+            
+            header.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+            
+            // Reset posizione quando il modal viene chiuso
+            modal.addEventListener('hidden.bs.modal', function() {
+                const dialog = modal.querySelector('.modal-dialog');
+                dialog.style.transform = '';
+                xOffset = 0;
+                yOffset = 0;
+            });
+            
+            function dragStart(e) {
+                if (e.target.closest('.btn-close')) return;
+                
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                isDragging = true;
+                header.style.cursor = 'grabbing';
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                const dialog = modal.querySelector('.modal-dialog');
+                dialog.style.transform = `translate(${currentX}px, ${currentY}px)`;
+            }
+            
+            function dragEnd() {
+                isDragging = false;
+                header.style.cursor = 'move';
+            }
         }
     </script>
 }

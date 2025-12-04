@@ -9,11 +9,6 @@
     <div class="content-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-building-gear me-2"></i>Gestione Centri di Lavoro</h2>
-            <div>
-                <a asp-action="Create" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Nuovo Centro di Lavoro
-                </a>
-            </div>
         </div>
 
         <!-- Filtri di ricerca -->
@@ -30,30 +25,6 @@
                                    value="@ViewBag.CurrentSearch" placeholder="Cerca per codice, descrizione o note..." />
                         </div>
                         <div class="col-md-2">
-                            <label for="attivo" class="form-label">Stato</label>
-                            <select class="form-select" id="attivo" name="attivo">
-                                <option value="">Tutti</option>
-                                <option value="true" selected="@(ViewBag.CurrentAttivo == true)">Solo Attivi</option>
-                                <option value="false" selected="@(ViewBag.CurrentAttivo == false)">Solo Inattivi</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="hasCapacita" class="form-label">Capacità</label>
-                            <select class="form-select" id="hasCapacita" name="hasCapacita">
-                                <option value="">Tutti</option>
-                                <option value="true" selected="@(ViewBag.CurrentHasCapacita == true)">Con Capacità</option>
-                                <option value="false" selected="@(ViewBag.CurrentHasCapacita == false)">Senza Capacità</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="hasCosto" class="form-label">Costo</label>
-                            <select class="form-select" id="hasCosto" name="hasCosto">
-                                <option value="">Tutti</option>
-                                <option value="true" selected="@(ViewBag.CurrentHasCosto == true)">Con Costo</option>
-                                <option value="false" selected="@(ViewBag.CurrentHasCosto == false)">Senza Costo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
                             <label for="pageSize" class="form-label">Elementi per pagina</label>
                             <select class="form-select" id="pageSize" name="pageSize">
                                 <option value="25" selected="@(ViewBag.PageSize == 25)">25</option>
@@ -61,13 +32,16 @@
                                 <option value="100" selected="@(ViewBag.PageSize == 100)">100</option>
                             </select>
                         </div>
-                        <div class="col-md-1 d-flex align-items-end">
-                            <button type="submit" class="btn btn-outline-primary me-2">
-                                <i class="bi bi-search"></i>
-                            </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
+                        <div class="col-md-auto">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Cerca
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <input type="hidden" name="sortOrder" value="@ViewBag.CurrentSort" />
@@ -283,14 +257,6 @@
                                                    class="btn btn-sm btn-outline-info" title="Dettagli">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a asp-action="Edit" asp-route-id="@item.CodiceCentro" 
-                                                   class="btn btn-sm btn-outline-primary" title="Modifica">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <a asp-action="Delete" asp-route-id="@item.CodiceCentro" 
-                                                   class="btn btn-sm btn-outline-danger" title="Elimina">
-                                                    <i class="bi bi-trash"></i>
-                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -384,18 +350,6 @@
 @section Scripts {
     <script>
         // Auto-submit del form quando cambiano i filtri
-        document.getElementById('attivo').addEventListener('change', function() {
-            this.form.submit();
-        });
-        
-        document.getElementById('hasCapacita').addEventListener('change', function() {
-            this.form.submit();
-        });
-        
-        document.getElementById('hasCosto').addEventListener('change', function() {
-            this.form.submit();
-        });
-        
         document.getElementById('pageSize').addEventListener('change', function() {
             this.form.submit();
         });

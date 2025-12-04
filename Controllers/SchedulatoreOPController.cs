@@ -180,7 +180,7 @@ namespace AiDbMaster.Controllers
                     {
                         // Dati per Syncfusion Schedule
                         Id = o.IdListaOP,
-                        Subject = $"Ord. {o.AnnoOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)} ({percentuale}%)",
+                        Subject = $"Ord. {o.AnnoOrdine}-{o.NumeroOrdine} Qta: {Math.Floor(o.Quantita)} Art:{o.CodiceArticolo} ({percentuale}%)",
                         // Specifica Local per evitare conversioni timezone
                         StartTime = DateTime.SpecifyKind(o.DataInizioOP, DateTimeKind.Local),
                         EndTime = DateTime.SpecifyKind(endTime, DateTimeKind.Local),

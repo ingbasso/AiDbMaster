@@ -466,7 +466,7 @@
 
 <script id="eventTemplate" type="text/x-template">
     <div class="template-wrap" style="padding: 5px; height: 100%; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
-        <div style="font-weight: bold; font-size: 12px; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <div class="event-subject-line" style="font-weight: bold; font-size: 12px; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${Subject}
         </div>
         <div style="font-size: 11px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -1144,6 +1144,17 @@
             
             // Applica 75% trasparenza a TUTTI gli eventi (opacity 0.75)
             args.element.style.setProperty('opacity', '0.75', 'important');
+            
+            // Colora "Art:xxx" in rosso
+            const subjectElement = args.element.querySelector('.event-subject-line');
+            if (subjectElement && subjectElement.textContent) {
+                const originalText = subjectElement.textContent;
+                // Sostituisci "Art:xxx" con versione colorata in rosso
+                const coloredText = originalText.replace(/(Art:\S+)/g, '<span style="color: #ff3333; font-weight: bold;">$1</span>');
+                if (coloredText !== originalText) {
+                    subjectElement.innerHTML = coloredText;
+                }
+            }
         }
 
         // Renderizzazione celle - colora celle in fermo E personalizza header date in italiano
