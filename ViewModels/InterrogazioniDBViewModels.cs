@@ -278,6 +278,14 @@ namespace AiDbMaster.ViewModels
         public string? PartitaIva { get; set; }
         public string? Telefono { get; set; }
 
+        // Flag e dati Destinazione Diversa
+        public bool HasDestinazioneDiversa { get; set; }
+        public string? DescrizioneDestinazione { get; set; }
+        public string? IndirizzoDestinazione { get; set; }
+        public string? CapDestinazione { get; set; }
+        public string? LocalitaDestinazione { get; set; }
+        public string? ProvinciaDestinazione { get; set; }
+
         // Campi Agente (da TabellaAgenti)
         public string? NomeAgente { get; set; }
         public string? TelefonoAgente { get; set; }

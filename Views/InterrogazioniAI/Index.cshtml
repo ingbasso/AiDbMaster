@@ -197,6 +197,200 @@
             border-radius: 20px;
             font-weight: bold;
         }
+
+        /* Stili per i pulsanti */
+        .btn {
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .gap-2 {
+            gap: 0.5rem !important;
+        }
+
+        /* Stili responsivi per i pulsanti */
+        @@media (max-width: 768px) {
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            
+            .d-flex.gap-2 .btn {
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        /* Stili per il popup trascinabile */
+        .floating-window {
+            position: fixed;
+            width: 92%;
+            max-width: 1800px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            transition: all 0.3s ease;
+        }
+
+        .floating-window.minimized {
+            height: 60px;
+            overflow: hidden;
+        }
+
+        .floating-window.maximized {
+            width: 98% !important;
+            height: 98vh !important;
+            top: 1vh !important;
+            left: 1% !important;
+            transform: none !important;
+            max-width: none !important;
+        }
+
+        .window-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+
+        .window-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 70%;
+        }
+
+        .window-title i {
+            flex-shrink: 0;
+        }
+
+        .window-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .window-controls .btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .window-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            background: #f8f9fa;
+        }
+
+        .window-footer {
+            padding: 1rem 1.5rem;
+            border-top: 2px solid #e9ecef;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .popup-results-table {
+            font-size: 0.95rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .popup-results-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .popup-results-table th {
+            padding: 1rem 0.75rem;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .popup-results-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .popup-results-table tbody tr:hover {
+            background-color: #f1f3ff;
+        }
+
+        .popup-results-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sql-accordion {
+            margin-bottom: 1.5rem;
+        }
+
+        .window-body .table-responsive {
+            margin-top: 0;
+        }
+
+        .window-body > .table-responsive:first-child {
+            margin-top: 0;
+        }
+
+        .sql-accordion .accordion-button {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .sql-accordion .accordion-button:not(.collapsed) {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Stile per il pulsante SQL admin */
+        .show-sql-btn {
+            font-weight: 600;
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .show-sql-btn:hover {
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(1.05);
+        }
+
+        .show-sql-btn.btn-success {
+            background: #28a745;
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        /* Stile per le celle con informazioni quantità */
+        .popup-results-table td {
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
     </style>
 }
 
@@ -222,7 +416,7 @@
     <!-- Input Section -->
     <div class="input-section">
         <div class="row align-items-end">
-            <div class="col-md-9">
+            <div class="col-md-12">
                 <label for="questionInput" class="form-label fw-bold">
                     <i class="bi bi-question-circle me-2"></i>La tua domanda
                 </label>
@@ -231,10 +425,25 @@
                     id="questionInput" 
                     rows="3" 
                     placeholder="Es: Quante consegne sono in ritardo? oppure Top 5 agenti per fatturato..."></textarea>
-</div>
-            <div class="col-md-3">
-                <button class="btn btn-primary btn-ask w-100" id="askBtn" onclick="askQuestion()">
-                    <i class="bi bi-send-fill me-2"></i>Chiedi all'AI
+            </div>
+        </div>
+        
+        <!-- Barra dei pulsanti -->
+        <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex gap-2 mb-2 mb-md-0">
+                <button class="btn btn-primary" id="startRecording">
+                    <i class="bi bi-mic-fill"></i> Richiesta Vocale
+                </button>
+                <button class="btn btn-danger" id="stopRecording" style="display: none;">
+                    <i class="bi bi-stop-fill"></i> Fine Richiesta
+                </button>
+                <button class="btn btn-success" id="askBtn" onclick="askQuestion()">
+                    <i class="bi bi-send-fill"></i> Chiedi all'AI
+                </button>
+            </div>
+            <div>
+                <button class="btn btn-warning" id="clearQuery" onclick="clearQuestion()">
+                    <i class="bi bi-trash-fill"></i> Cancella
                 </button>
             </div>
         </div>
@@ -251,9 +460,6 @@
         </div>
     </div>
 
-    <!-- Results Container -->
-    <div id="resultsContainer"></div>
-
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="text-center text-white">
@@ -266,6 +472,136 @@
 
 @section Scripts {
     <script>
+        // Variabile globale per sapere se l'utente è admin
+        const isAdmin = @(User.IsInRole("Admin") ? "true" : "false");
+        
+        // Riferimenti agli elementi dell'interfaccia
+        const questionInput = document.getElementById('questionInput');
+        const startButton = document.getElementById('startRecording');
+        const stopButton = document.getElementById('stopRecording');
+        const askBtn = document.getElementById('askBtn');
+
+        // Inizializzazione del riconoscimento vocale
+        let recognition = null;
+        
+        // Controlla se il browser supporta il riconoscimento vocale
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'it-IT';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                console.log('Riconoscimento vocale avviato');
+                startButton.innerHTML = '<i class="bi bi-mic-fill"></i> Registrazione in corso...';
+                startButton.disabled = true;
+            };
+
+            recognition.onresult = function(event) {
+                console.log('Risultato riconoscimento vocale ricevuto');
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Aggiorna il campo di testo con il transcript finale e interim
+                questionInput.value = finalTranscript + interimTranscript;
+                console.log('Testo riconosciuto:', finalTranscript + interimTranscript);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Errore di riconoscimento vocale:', event.error);
+                let errorMessage = 'Errore del riconoscimento vocale: ';
+                switch(event.error) {
+                    case 'no-speech':
+                        errorMessage += 'Nessun parlato rilevato. Riprova.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage += 'Impossibile accedere al microfono.';
+                        break;
+                    case 'not-allowed':
+                        errorMessage += 'Permesso microfono negato.';
+                        break;
+                    case 'network':
+                        errorMessage += 'Errore di rete.';
+                        break;
+                    default:
+                        errorMessage += event.error;
+                }
+                alert(errorMessage);
+                stopRecording();
+            };
+
+            recognition.onend = function() {
+                console.log('Riconoscimento vocale terminato');
+                stopRecording();
+            };
+        } else {
+            console.error('Il browser non supporta il riconoscimento vocale');
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="bi bi-mic-mute-fill"></i> Non supportato';
+            startButton.title = 'Il tuo browser non supporta il riconoscimento vocale';
+        }
+
+        function startRecording() {
+            if (!recognition) {
+                alert('Il riconoscimento vocale non è supportato dal tuo browser. Prova con Chrome, Firefox o Edge.');
+                return;
+            }
+            
+            try {
+                console.log('Avvio registrazione...');
+                questionInput.value = ''; // Pulisce il campo prima di iniziare
+                recognition.start();
+                startButton.style.display = 'none';
+                stopButton.style.display = 'inline-block';
+            } catch (error) {
+                console.error('Errore nell\'avvio della registrazione:', error);
+                alert('Impossibile avviare la registrazione. Assicurati di aver dato i permessi per il microfono.');
+                resetRecordingButtons();
+            }
+        }
+
+        function stopRecording() {
+            if (!recognition) {
+                return;
+            }
+            
+            try {
+                console.log('Arresto registrazione...');
+                recognition.stop();
+            } catch (error) {
+                console.error('Errore nell\'arresto della registrazione:', error);
+            }
+            resetRecordingButtons();
+        }
+
+        function resetRecordingButtons() {
+            startButton.style.display = 'inline-block';
+            stopButton.style.display = 'none';
+            startButton.innerHTML = '<i class="bi bi-mic-fill"></i> Richiesta Vocale';
+            startButton.disabled = false;
+        }
+
+        function clearQuestion() {
+            questionInput.value = '';
+            // Chiudi tutti i popup aperti
+            const popups = document.querySelectorAll('.floating-window');
+            popups.forEach(popup => popup.remove());
+        }
+
+        // Event Listeners per i pulsanti vocali
+        startButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+
         function fillQuestion(button) {
             document.getElementById('questionInput').value = button.textContent.trim();
             document.getElementById('questionInput').focus();
@@ -308,87 +644,707 @@
             }
         }
 
-        function displayResults(result) {
-            const container = document.getElementById('resultsContainer');
+        // Mappa per tradurre i nomi delle colonne in modo conciso e comprensibile
+        const columnNameMap = {
+            // Ordini - brevi e diretti
+            'AnnoOrdine': 'Anno',
+            'NumeroOrdine': 'Ordine',
+            'RigaOrdine': 'Riga',
+            'TipoOrdine': 'Tipo',
+            'StatoOrdine': 'Stato',
             
-            // Crea card risultato
-            const card = document.createElement('div');
-            card.className = 'result-card';
+            // Clienti e Fornitori - info essenziali
+            'CodiceCliente': 'Cliente',
+            'CodiceFornitore': 'Fornitore',
+            'RagioneSociale': 'Azienda',
+            'CodiceFiscale': 'C.F.',
+            'PartitaIVA': 'P.IVA',
+            'Indirizzo': 'Via',
+            'Citta': 'Città',
+            'CAP': 'CAP',
+            'Provincia': 'Prov.',
+            'Nazione': 'Paese',
+            'Telefono': 'Tel.',
+            'Cellulare': 'Cell.',
+            'Email': 'Email',
+            'CodiceAgente': 'Agente',
+            'NomeAgente': 'Agente',
+            'Agente': 'Agente',
             
-            let html = `
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h5><i class="bi bi-chat-left-text text-primary me-2"></i>Domanda</h5>
-                    <span class="stats-badge"><i class="bi bi-list-check me-1"></i>${result.rowCount} righe</span>
-                </div>
-                <div class="question-display">
-                    <strong>${escapeHtml(result.question)}</strong>
-                </div>
-                
-                <div class="accordion mb-3" id="sqlAccordion${Date.now()}">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sqlCollapse${Date.now()}">
-                                <i class="bi bi-code-square me-2"></i>Query SQL Generata
-                            </button>
-                        </h2>
-                        <div id="sqlCollapse${Date.now()}" class="accordion-collapse collapse">
-                            <div class="accordion-body p-0">
-                                <div class="sql-query-box">${highlightSQL(result.sqlQuery)}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Articoli - info prodotto
+            'CodiceArticolo': 'Articolo',
+            'DescrizioneArticolo': 'Descrizione',
+            'Descrizione': 'Descrizione',
+            'UnitaMisura': 'U.M.',
+            'CategoriaArticolo': 'Categoria',
+            'Categoria': 'Categoria',
+            'Famiglia': 'Famiglia',
+            'Gruppo': 'Gruppo',
+            
+            // Date - formato compatto
+            'DataOrdine': 'Data',
+            'DataConsegna': 'Consegna',
+            'DataInserimento': 'Inserito',
+            'DataModifica': 'Modificato',
+            'DataCreazione': 'Creato',
+            'DataEvaso': 'Evaso',
+            'DataPrevista': 'Prevista',
+            'UltimoAggiornamento': 'Aggiornato',
+            'DataInizio': 'Inizio',
+            'DataFine': 'Fine',
+            
+            // Quantità - sempre con contesto (con unità di misura)
+            'Quantita': 'Qtà Ordine',
+            'QuantitaOrdinata': 'Qtà Ordinata',
+            'QuantitaEvasa': 'Qtà Evasa',
+            'QuantitaRimanente': 'Qtà Rimanente',
+            'QuantitaDaEvadere': 'Qtà da Evadere',
+            'QuantitaProdotta': 'Qtà Prodotta',
+            'QuantitaScaricata': 'Qtà Scaricata',
+            'QtaOrdinata': 'Qtà Ordinata',
+            'QtaEvasa': 'Qtà Evasa',
+            
+            // Prezzi e Importi - TUTTI come "Valore" (con €)
+            'Prezzo': 'Valore',
+            'PrezzoUnitario': 'Valore',
+            'PrezzoListino': 'Valore',
+            'PrezzoVendita': 'Valore',
+            'PrezzoAcquisto': 'Valore',
+            'Importo': 'Valore',
+            'ImportoTotale': 'Valore',
+            'ImportoNetto': 'Valore',
+            'ImportoLordo': 'Valore',
+            'Sconto': 'Sconto',
+            'ScontoPerc': 'Sconto %',
+            'Fatturato': 'Valore',
+            'Valore': 'Valore',
+            'ValoreTotale': 'Valore',
+            'TotaleOrdine': 'Valore',
+            'Costo': 'Costo',
+            'CostoTotale': 'CostoTotale',
+            'Margine': 'Margine',
+            'Ricavo': 'Ricavo',
+            'ValoreRiga': 'Valore',
+            
+            // Conteggi - tolto "Totale" e "Numero"
+            'NumeroConsegne': 'Consegne',
+            'NumeroOrdini': 'Ordini',
+            'NumeroRighe': 'Righe',
+            'TotaleRighe': 'Righe',
+            'TotaleConsegne': 'Consegne',
+            'TotaleOrdini': 'Ordini',
+            'Count': 'N.',
+            'CountOrdini': 'Ordini',
+            'CountClienti': 'Clienti',
+            'ConsegneInRitardo': 'Ritardi',
+            'OrdiniEvasi': 'Evasi',
+            'OrdiniDaEvadere': 'Da Evadere',
+            
+            // Stati e Priorità
+            'Stato': 'Stato',
+            'StatoConsegna': 'Stato',
+            'Priorita': 'Priorità',
+            'Urgente': 'Urgente',
+            'Confermato': 'OK',
+            
+            // Altri campi comuni
+            'Note': 'Note',
+            'Riferimento': 'Rif.',
+            'RiferimentoCliente': 'Rif. Cliente',
+            'CodiceEsterno': 'Cod. Esterno',
+            'Magazzino': 'Magazzino',
+            'CodiceMagazzino': 'Mag.',
+            'Ubicazione': 'Ubicazione',
+            'Lotto': 'Lotto',
+            'Seriale': 'Seriale',
+            'Matricola': 'Matricola',
+            
+            // Temporali
+            'GiornoSettimana': 'Giorno',
+            'Giorno': 'Giorno',
+            'Mese': 'Mese',
+            'Trimestre': 'Trim.',
+            'Semestre': 'Sem.',
+            'Anno': 'Anno',
+            'Settimana': 'Sett.',
+            
+            // Percentuali
+            'Percentuale': '%',
+            'PercentualeSconto': 'Sconto %',
+            'PercentualeCompletamento': 'Compl. %',
+            'PercentualeAvanzamento': 'Avanz. %',
+            
+            // Medie e statistiche
+            'Media': 'Media',
+            'Minimo': 'Min',
+            'Massimo': 'Max',
+            'Somma': 'Somma'
+        };
 
-            if (result.data && result.data.length > 0) {
-                html += '<h6><i class="bi bi-table me-2"></i>Risultati</h6>';
-                html += '<div class="table-responsive">';
-                html += '<table class="table table-striped table-hover results-table">';
-                
-                // Header
-                html += '<thead><tr>';
-                for (const key in result.data[0]) {
-                    html += `<th>${escapeHtml(key)}</th>`;
+        // Campi che rappresentano importi in euro
+        const currencyFields = [
+            'Prezzo', 'PrezzoUnitario', 'PrezzoListino', 'PrezzoVendita', 'PrezzoAcquisto',
+            'Importo', 'ImportoTotale', 'ImportoNetto', 'ImportoLordo',
+            'Fatturato', 'Valore', 'ValoreTotale', 'TotaleOrdine',
+            'Costo', 'CostoTotale', 'Margine', 'Ricavo', 'Sconto'
+        ];
+
+        // Campi che rappresentano quantità
+        const quantityFields = [
+            'Quantita', 'QuantitaOrdinata', 'QuantitaEvasa', 'QuantitaRimanente',
+            'QuantitaDaEvadere', 'QuantitaProdotta', 'QuantitaScaricata',
+            'QtaOrdinata', 'QtaEvasa', 'Qtà'
+        ];
+
+        function translateColumnName(columnName) {
+            return columnNameMap[columnName] || columnName;
+        }
+
+        function isCurrencyField(columnName) {
+            return currencyFields.includes(columnName);
+        }
+
+        function isQuantityField(columnName) {
+            return quantityFields.includes(columnName);
+        }
+
+        // Regole di combinazione delle colonne
+        const columnCombinationRules = [
+            {
+                // CONSEGNE: Quantita + QuantitaEvasa + Calcolo automatico Da Evadere
+                match: (columns) => {
+                    return columns.includes('Quantita') && columns.includes('QuantitaEvasa');
+                },
+                combine: (columns) => {
+                    return {
+                        displayName: 'CONSEGNE',
+                        sourceColumns: ['Quantita', 'QuantitaEvasa'],
+                        combined: true,
+                        special: 'consegne',  // Flag speciale per gestione custom
+                        separator: ' | '
+                    };
                 }
-                html += '</tr></thead>';
+            },
+            {
+                // Ordine: AnnoOrdine + SerieOrdine + NumeroOrdine
+                match: (columns) => {
+                    const hasAnno = columns.includes('AnnoOrdine');
+                    const hasSerie = columns.includes('SerieOrdine');
+                    const hasNumero = columns.includes('NumeroOrdine');
+                    return hasAnno && hasNumero; // Serie è opzionale
+                },
+                combine: (columns) => {
+                    const cols = [];
+                    if (columns.includes('AnnoOrdine')) cols.push('AnnoOrdine');
+                    if (columns.includes('SerieOrdine')) cols.push('SerieOrdine');
+                    if (columns.includes('NumeroOrdine')) cols.push('NumeroOrdine');
+                    return {
+                        displayName: 'Ordine',
+                        sourceColumns: cols,
+                        combined: true,
+                        separator: '/'
+                    };
+                }
+            },
+            {
+                // Cliente: CodiceCliente + RagioneSociale
+                match: (columns) => {
+                    return columns.includes('CodiceCliente') && columns.includes('RagioneSociale');
+                },
+                combine: (columns) => {
+                    return {
+                        displayName: 'Cliente',
+                        sourceColumns: ['CodiceCliente', 'RagioneSociale'],
+                        combined: true,
+                        separator: ' - '
+                    };
+                }
+            },
+            {
+                // Articolo: CodiceArticolo + DescrizioneArticolo
+                match: (columns) => {
+                    return columns.includes('CodiceArticolo') && 
+                           (columns.includes('DescrizioneArticolo') || columns.includes('Descrizione'));
+                },
+                combine: (columns) => {
+                    const descCol = columns.includes('DescrizioneArticolo') ? 'DescrizioneArticolo' : 'Descrizione';
+                    return {
+                        displayName: 'Articolo',
+                        sourceColumns: ['CodiceArticolo', descCol],
+                        combined: true,
+                        separator: ' . '
+                    };
+                }
+            },
+            {
+                // Fornitore: CodiceFornitore + RagioneSociale
+                match: (columns) => {
+                    return columns.includes('CodiceFornitore') && columns.includes('RagioneSociale');
+                },
+                combine: (columns) => {
+                    return {
+                        displayName: 'Fornitore',
+                        sourceColumns: ['CodiceFornitore', 'RagioneSociale'],
+                        combined: true,
+                        separator: ' - '
+                    };
+                }
+            },
+            {
+                // Agente: CodiceAgente + NomeAgente
+                match: (columns) => {
+                    return columns.includes('CodiceAgente') && columns.includes('NomeAgente');
+                },
+                combine: (columns) => {
+                    return {
+                        displayName: 'Agente',
+                        sourceColumns: ['CodiceAgente', 'NomeAgente'],
+                        combined: true,
+                        separator: ' - '
+                    };
+                }
+            },
+            {
+                // Indirizzo completo: Indirizzo + CAP + Citta + Provincia
+                match: (columns) => {
+                    return columns.includes('Indirizzo') && columns.includes('Citta');
+                },
+                combine: (columns) => {
+                    const cols = ['Indirizzo'];
+                    if (columns.includes('CAP')) cols.push('CAP');
+                    if (columns.includes('Citta')) cols.push('Citta');
+                    if (columns.includes('Provincia')) cols.push('Provincia');
+                    return {
+                        displayName: 'Indirizzo',
+                        sourceColumns: cols,
+                        combined: true,
+                        separator: ', '
+                    };
+                }
+            },
+            {
+                // Riga ordine: RigaOrdine da sola (per evitare che venga combinata con NumeroOrdine)
+                // Questa regola viene controllata DOPO la regola dell'ordine completo
+                match: (columns) => {
+                    return columns.includes('RigaOrdine') && 
+                           !columns.includes('NumeroOrdine') && 
+                           !columns.includes('AnnoOrdine');
+                },
+                combine: (columns) => {
+                    return {
+                        displayName: 'Riga',
+                        sourceColumns: ['RigaOrdine'],
+                        combined: false
+                    };
+                }
+            }
+        ];
+
+        function getColumnPriority(col) {
+            // Definisce la priorità di ordinamento delle colonne
+            const displayName = col.displayName.toLowerCase();
+            const sourceCol = col.sourceColumns[0]?.toLowerCase() || '';
+            
+            // Priorità massima: Ordine
+            if (displayName === 'ordine' || 
+                sourceCol.includes('numeroordine') || 
+                sourceCol.includes('annoordine')) {
+                return 1;
+            }
+            
+            // Seconda priorità: Cliente
+            if (displayName === 'cliente' || 
+                sourceCol.includes('codicecliente') || 
+                sourceCol.includes('ragionesociale')) {
+                return 2;
+            }
+            
+            // Terza priorità: Articolo
+            if (displayName === 'articolo' || 
+                sourceCol.includes('codicearticolo') || 
+                sourceCol.includes('descrizionearticolo')) {
+                return 3;
+            }
+            
+            // Priorità CONSEGNE
+            if (col.special === 'consegne') {
+                return 4;
+            }
+            
+            // Resto delle colonne
+            return 100;
+        }
+
+        function processColumns(firstRow) {
+            const columns = Object.keys(firstRow);
+            const processedColumns = [];
+            const usedColumns = new Set();
+
+            // Prima passa: applica le regole di combinazione
+            columnCombinationRules.forEach(rule => {
+                if (rule.match(columns)) {
+                    const combinedCol = rule.combine(columns);
+                    processedColumns.push(combinedCol);
+                    // Marca le colonne come usate
+                    combinedCol.sourceColumns.forEach(col => usedColumns.add(col));
+                }
+            });
+
+            // Seconda passa: aggiungi le colonne non combinate
+            columns.forEach(col => {
+                if (!usedColumns.has(col)) {
+                    processedColumns.push({
+                        displayName: translateColumnName(col),
+                        sourceColumns: [col],
+                        combined: false
+                    });
+                }
+            });
+
+            // Terza passa: ORDINA le colonne con priorità Ordine → Cliente → Articolo → Resto
+            processedColumns.sort((a, b) => {
+                const priorityA = getColumnPriority(a);
+                const priorityB = getColumnPriority(b);
+                return priorityA - priorityB;
+            });
+
+            return processedColumns;
+        }
+
+        function formatValue(value, columnName, row, forceUM = false) {
+            // Formattazione valori
+            if (value === null || value === undefined || value === '') {
+                return '';  // Ritorna stringa vuota invece di '-' per le combinazioni
+            } 
+            
+            // SEMPRE aggiungi € per gli importi (con 2 decimali)
+            if (isCurrencyField(columnName) && typeof value === 'number') {
+                return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } 
+            
+            // SEMPRE aggiungi unità di misura per le quantità
+            if ((isQuantityField(columnName) || forceUM) && typeof value === 'number') {
+                const um = row['UnitaMisura'] || row['U.M.'] || 'pz';
+                return `${value.toLocaleString('it-IT')} ${um}`;
+            } 
+            
+            // Controlla se il campo contiene "Importo", "Prezzo", "Costo", "Valore", "Fatturato" nel nome (con 2 decimali)
+            if (typeof value === 'number' && 
+                (columnName.toLowerCase().includes('importo') ||
+                 columnName.toLowerCase().includes('prezzo') ||
+                 columnName.toLowerCase().includes('costo') ||
+                 columnName.toLowerCase().includes('valore') ||
+                 columnName.toLowerCase().includes('fatturato') ||
+                 columnName.toLowerCase().includes('ricavo') ||
+                 columnName.toLowerCase().includes('margine'))) {
+                return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+            
+            // Controlla se il campo contiene "Quantita" o "Qtà" nel nome
+            if (typeof value === 'number' && 
+                (columnName.toLowerCase().includes('quantita') ||
+                 columnName.toLowerCase().includes('qta') ||
+                 columnName.toLowerCase().includes('qt'))) {
+                const um = row['UnitaMisura'] || row['U.M.'] || 'pz';
+                return `${value.toLocaleString('it-IT')} ${um}`;
+            }
+            
+            if (typeof value === 'number') {
+                // Formatta altri numeri con separatore migliaia
+                return value.toLocaleString('it-IT');
+            } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                // Formatta le date con ora
+                const date = new Date(value);
+                return date.toLocaleDateString('it-IT');
+            } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // Formatta le date senza ora
+                const parts = value.split('-');
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            
+            return String(value);
+        }
+
+        function displayResults(result) {
+            // Crea il popup trascinabile
+            const popup = document.createElement('div');
+            popup.className = 'floating-window';
+            
+            const timestamp = Date.now();
+            const accordionId = `sqlAccordion${timestamp}`;
+            const collapseId = `sqlCollapse${timestamp}`;
+            
+            let bodyHtml = '';
+            
+            // Accordion SQL - nascosto di default, visibile solo se admin clicca il pulsante
+            // Senza card sopra, direttamente l'accordion
+            bodyHtml += `<div class="accordion sql-accordion" id="${accordionId}" style="display: none;">`;
+            bodyHtml += '<div class="accordion-item">';
+            bodyHtml += '<h2 class="accordion-header">';
+            bodyHtml += `<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">`;
+            bodyHtml += '<i class="bi bi-code-square me-2"></i>Query SQL Generata';
+            bodyHtml += '</button></h2>';
+            bodyHtml += `<div id="${collapseId}" class="accordion-collapse collapse show">`;
+            bodyHtml += '<div class="accordion-body p-0">';
+            bodyHtml += `<div class="sql-query-box">${highlightSQL(result.sqlQuery)}</div>`;
+            bodyHtml += '</div></div></div></div>';
+
+            // Tabella risultati
+            if (result.data && result.data.length > 0) {
+                // Prepara le colonne con logica di combinazione
+                const processedColumns = processColumns(result.data[0]);
+                
+                bodyHtml += '<div class="table-responsive">';
+                bodyHtml += '<table class="table table-hover popup-results-table">';
+                
+                // Header con nomi tradotti e colonne combinate
+                bodyHtml += '<thead><tr>';
+                processedColumns.forEach(col => {
+                    bodyHtml += `<th>${escapeHtml(col.displayName)}</th>`;
+                });
+                bodyHtml += '</tr></thead>';
                 
                 // Body
-                html += '<tbody>';
+                bodyHtml += '<tbody>';
                 result.data.forEach(row => {
-                    html += '<tr>';
-                    for (const key in row) {
-                        const value = row[key] !== null && row[key] !== undefined ? row[key] : '-';
-                        html += `<td>${escapeHtml(String(value))}</td>`;
-                    }
-                    html += '</tr>';
+                    bodyHtml += '<tr>';
+                    processedColumns.forEach(col => {
+                        let value = '';
+                        
+                        if (col.combined) {
+                            // Gestione speciale per le CONSEGNE
+                            if (col.special === 'consegne') {
+                                const qtaOrdine = row['Quantita'] || 0;
+                                const qtaEvasa = row['QuantitaEvasa'] || 0;
+                                const qtaDaEvadere = qtaOrdine - qtaEvasa;
+                                const um = row['UnitaMisura'] || row['U.M.'] || 'pz';
+                                
+                                // Formatta le tre quantità con unità di misura
+                                const qtaOrdineStr = qtaOrdine !== null ? `Ord: ${qtaOrdine.toLocaleString('it-IT')} ${um}` : '';
+                                const qtaEvataStr = qtaEvasa !== null ? `Evasa: ${qtaEvasa.toLocaleString('it-IT')} ${um}` : '';
+                                const qtaDaEvadereStr = qtaDaEvadere !== null ? `Da Evadere: ${qtaDaEvadere.toLocaleString('it-IT')} ${um}` : '';
+                                
+                                const parts = [qtaOrdineStr, qtaEvataStr, qtaDaEvadereStr].filter(p => p !== '');
+                                value = parts.join(' | ') || '-';
+                            } else {
+                                // Colonna combinata normale - concatena i valori
+                                const parts = [];
+                                col.sourceColumns.forEach(srcCol => {
+                                    const val = row[srcCol];
+                                    const formattedVal = formatValue(val, srcCol, row);
+                                    // Aggiungi solo se non è vuoto
+                                    if (formattedVal && formattedVal !== '') {
+                                        parts.push(formattedVal);
+                                    }
+                                });
+                                
+                                if (parts.length > 0) {
+                                    // Usa il separatore definito nella regola
+                                    const separator = col.separator || ' - ';
+                                    value = parts.join(separator);
+                                } else {
+                                    // Se tutti i valori sono vuoti, mostra '-'
+                                    value = '-';
+                                }
+                            }
+                        } else {
+                            // Colonna singola
+                            const rawValue = row[col.sourceColumns[0]];
+                            const formattedVal = formatValue(rawValue, col.sourceColumns[0], row);
+                            value = formattedVal || '-';
+                        }
+                        
+                        bodyHtml += `<td>${escapeHtml(String(value))}</td>`;
+                    });
+                    bodyHtml += '</tr>';
                 });
-                html += '</tbody>';
-                
-                html += '</table></div>';
+                bodyHtml += '</tbody></table></div>';
             } else {
-                html += '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nessun risultato trovato</div>';
+                bodyHtml += '<div class="alert alert-info mt-3"><i class="bi bi-info-circle me-2"></i>Nessun risultato trovato</div>';
             }
-
-            card.innerHTML = html;
-            container.insertBefore(card, container.firstChild);
             
-            // Scroll to results
-            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Pulsante per mostrare SQL (solo per admin)
+            const sqlButtonHtml = isAdmin ? `
+                <button type="button" class="btn btn-warning btn-sm me-2 show-sql-btn" title="Mostra Query SQL">
+                    <i class="bi bi-code-square"></i> SQL
+                </button>
+            ` : '';
+            
+            popup.innerHTML = `
+                <div class="window-header">
+                    <h5 class="window-title">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        ${escapeHtml(result.question)}
+                    </h5>
+                    <div class="window-controls">
+                        ${sqlButtonHtml}
+                        <button type="button" class="btn btn-light btn-sm minimize-window">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm maximize-window">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm close-popup-btn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="window-body">${bodyHtml}</div>
+                <div class="window-footer">
+                    <span class="stats-badge">
+                        <i class="bi bi-list-check me-1"></i>${result.rowCount} righe trovate
+                    </span>
+                    <button type="button" class="btn btn-secondary close-window">Chiudi</button>
+                </div>
+            `;
+            
+            // Posiziona il popup al centro
+            document.body.appendChild(popup);
+            const rect = popup.getBoundingClientRect();
+            popup.style.left = `${(window.innerWidth - rect.width) / 2}px`;
+            popup.style.top = `${(window.innerHeight - rect.height) / 2}px`;
+            
+            // Aggiungi event listeners
+            setupPopupControls(popup);
+        }
+
+        function setupPopupControls(popup) {
+            // Gestione chiusura (sia pulsante X nell'header che pulsante Chiudi nel footer)
+            const closeButtons = popup.querySelectorAll('.close-popup-btn, .close-window');
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', () => popup.remove());
+            });
+            
+            // Gestione minimizza
+            const minimizeBtn = popup.querySelector('.minimize-window');
+            minimizeBtn.addEventListener('click', () => {
+                popup.classList.toggle('minimized');
+                const icon = minimizeBtn.querySelector('i');
+                icon.classList.toggle('bi-dash-lg');
+                icon.classList.toggle('bi-arrows-angle-expand');
+            });
+            
+            // Gestione massimizza
+            const maximizeBtn = popup.querySelector('.maximize-window');
+            maximizeBtn.addEventListener('click', () => {
+                popup.classList.toggle('maximized');
+                const icon = maximizeBtn.querySelector('i');
+                icon.classList.toggle('bi-arrows-fullscreen');
+                icon.classList.toggle('bi-arrows-angle-contract');
+            });
+            
+            // Gestione pulsante SQL (solo per admin)
+            const sqlBtn = popup.querySelector('.show-sql-btn');
+            if (sqlBtn) {
+                const sqlAccordion = popup.querySelector('.sql-accordion');
+                let isSqlVisible = false;
+                
+                sqlBtn.addEventListener('click', () => {
+                    isSqlVisible = !isSqlVisible;
+                    sqlAccordion.style.display = isSqlVisible ? 'block' : 'none';
+                    
+                    // Cambia l'aspetto del pulsante
+                    if (isSqlVisible) {
+                        sqlBtn.classList.remove('btn-warning');
+                        sqlBtn.classList.add('btn-success');
+                        sqlBtn.innerHTML = '<i class="bi bi-code-square-fill"></i> SQL';
+                        sqlBtn.title = 'Nascondi Query SQL';
+                    } else {
+                        sqlBtn.classList.remove('btn-success');
+                        sqlBtn.classList.add('btn-warning');
+                        sqlBtn.innerHTML = '<i class="bi bi-code-square"></i> SQL';
+                        sqlBtn.title = 'Mostra Query SQL';
+                    }
+                });
+            }
+            
+            // Rendi trascinabile
+            makeWindowDraggable(popup);
+        }
+
+        function makeWindowDraggable(windowElement) {
+            const header = windowElement.querySelector('.window-header');
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            const dragStart = (e) => {
+                if (e.target.closest('.btn')) return;
+                
+                const rect = windowElement.getBoundingClientRect();
+                initialX = e.clientX - rect.left;
+                initialY = e.clientY - rect.top;
+
+                if (e.target === header || header.contains(e.target)) {
+                    isDragging = true;
+                    windowElement.style.zIndex = '10001';
+                }
+            };
+
+            const drag = (e) => {
+                if (isDragging && !windowElement.classList.contains('maximized')) {
+                    e.preventDefault();
+                    
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    windowElement.style.left = `${currentX}px`;
+                    windowElement.style.top = `${currentY}px`;
+                    windowElement.style.transform = 'none';
+                }
+            };
+
+            const dragEnd = () => {
+                isDragging = false;
+                if (!windowElement.classList.contains('maximized')) {
+                    windowElement.style.zIndex = '10000';
+                }
+            };
+
+            header.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
         }
 
         function displayError(errorMessage) {
-            const container = document.getElementById('resultsContainer');
+            // Mostra l'errore in un popup
+            const popup = document.createElement('div');
+            popup.className = 'floating-window';
             
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            card.innerHTML = `
-                <div class="error-box">
-                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Errore</h5>
-                    <p class="mb-0">${escapeHtml(errorMessage)}</p>
+            popup.innerHTML = `
+                <div class="window-header">
+                    <h5 class="window-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Errore
+                    </h5>
+                    <div class="window-controls">
+                        <button type="button" class="btn btn-light btn-sm close-popup-btn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="window-body">
+                    <div class="error-box">
+                        <h5><i class="bi bi-exclamation-triangle me-2"></i>Errore</h5>
+                        <p class="mb-0">${escapeHtml(errorMessage)}</p>
+                    </div>
+                </div>
+                <div class="window-footer">
+                    <span></span>
+                    <button type="button" class="btn btn-danger close-window">Chiudi</button>
                 </div>
             `;
             
-            container.insertBefore(card, container.firstChild);
+            document.body.appendChild(popup);
+            const rect = popup.getBoundingClientRect();
+            popup.style.left = `${(window.innerWidth - rect.width) / 2}px`;
+            popup.style.top = `${(window.innerHeight - rect.height) / 2}px`;
+            
+            setupPopupControls(popup);
         }
 
         function highlightSQL(sql) {

@@ -156,6 +156,21 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+
+        /* Evidenziazione destinazione diversa */
+        .destinazione-diversa {
+            color: #ff8c00 !important;
+            font-weight: 600;
+        }
+
+        .badge-destinazione-diversa {
+            background-color: #ff8c00;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            margin-left: 0.5rem;
+        }
     </style>
 }
 
@@ -325,7 +340,15 @@
                                     }
                                     @if (!string.IsNullOrEmpty(ordine.IndirizzoCompletoCliente))
                                     {
-                                        <span><i class="bi bi-geo-alt me-1"></i>@ordine.IndirizzoCompletoCliente</span>
+                                        <span class="@(ordine.HasDestinazioneDiversa ? "destinazione-diversa" : "")">
+                                            <i class="bi bi-geo-alt me-1"></i>@ordine.IndirizzoCompletoCliente
+                                            @if (ordine.HasDestinazioneDiversa && !string.IsNullOrEmpty(ordine.DescrizioneDestinazione))
+                                            {
+                                                <span class="badge-destinazione-diversa">
+                                                    <i class="bi bi-truck-front-fill"></i> @ordine.DescrizioneDestinazione
+                                                </span>
+                                            }
+                                        </span>
                                     }
                                     @if (!string.IsNullOrEmpty(ordine.RiferimentoOrdine))
                                     {

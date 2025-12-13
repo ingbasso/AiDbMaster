@@ -81,6 +81,13 @@ namespace AiDbMaster.Models
         [Column("CodiceZona")]
         public short? CodiceZona { get; set; }
 
+        /// <summary>
+        /// Data e ora dell'ultimo aggiornamento del record
+        /// </summary>
+        [Display(Name = "Ultimo Aggiornamento")]
+        [Column("UltimoAggiornamento")]
+        public DateTime? UltimoAggiornamento { get; set; }
+
         // Proprietà calcolate per la visualizzazione
         /// <summary>
         /// Indirizzo completo per la visualizzazione

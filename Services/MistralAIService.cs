@@ -62,6 +62,34 @@ REGOLE IMPORTANTI:
 8. Usa INNER JOIN o LEFT JOIN appropriati
 9. Includi sempre nomi tabelle completi (es: OrdiniRighe.DataConsegna)
 10. Per calcoli su fatturato usa ValoreRiga, per quantità usa (Quantita - QuantitaEvasa)
+11. AGGIUNGI SEMPRE 'DISTINCT' nella SELECT finale (l'ultima SELECT se ci sono subquery)
+12. FORMATTA SEMPRE gli importi con 2 decimali usando CAST o ROUND: ROUND(CAST(campo AS DECIMAL(18,2)), 2)
+
+REGOLE PER CONSEGNE E QUANTITÀ:
+- Quando la domanda riguarda CONSEGNE, includi SEMPRE queste tre colonne:
+  * Quantita (la quantità ordinata)
+  * QuantitaEvasa (la quantità già consegnata/evasa)
+  * NON creare colonne calcolate come QuantitaDaConsegnare o QuantitaDaEvadere
+  * Il sistema calcolerà automaticamente (Quantita - QuantitaEvasa) nella visualizzazione
+- Includi sempre la colonna UnitaMisura quando selezioni quantità
+- NON usare alias come 'QuantitaDaConsegnare', 'QuantitaDaEvadere', 'Rimanente' - usa solo Quantita e QuantitaEvasa
+
+ESEMPIO CORRETTO PER CONSEGNE:
+SELECT DISTINCT
+    CodiceCliente,
+    RagioneSociale,
+    NumeroOrdine,
+    Quantita,           -- NON 'QuantitaOrdinata'
+    QuantitaEvasa,      -- NON 'QuantitaConsegnata'
+    UnitaMisura,        -- SEMPRE inclusa
+    DataConsegna
+FROM OrdiniRighe
+WHERE TipoOrdine = 'R' AND DataConsegna < GETDATE()
+
+ESEMPI DI FORMATTAZIONE IMPORTI:
+- ROUND(CAST(ValoreRiga AS DECIMAL(18,2)), 2) AS Importo
+- ROUND(CAST(SUM(ValoreRiga) AS DECIMAL(18,2)), 2) AS Fatturato
+- ROUND(CAST(Prezzo AS DECIMAL(18,2)), 2) AS Prezzo
 
 CONTESTO DATABASE:
 " + databaseContext;

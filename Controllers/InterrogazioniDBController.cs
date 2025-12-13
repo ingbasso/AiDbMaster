@@ -578,19 +578,24 @@ namespace AiDbMaster.Controllers
 
             try
             {
-                // Query base: Ordini clienti (TipoOrdine = 'R')
+                // Query base: Ordini clienti (TipoOrdine = 'R') con LEFT JOIN a DestinazioniDiverse
                 var query = from testata in _context.OrdiniTestate
                             join cliente in _context.AnagraficaClienti
                                 on testata.CodiceCliente equals cliente.CodiceCliente
                             join agente in _context.TabellaAgenti
                                 on cliente.CodiceAgente equals agente.CodiceAgente into agenteGroup
                             from agente in agenteGroup.DefaultIfEmpty()
+                            join destinazione in _context.DestinazioniDiverse
+                                on new { CodiceConto = testata.CodiceCliente, CodiceDestinazione = (int?)testata.CodiceDestinazione }
+                                equals new { destinazione.CodiceConto, CodiceDestinazione = (int?)destinazione.CodiceDestinazione } into destinazioneGroup
+                            from destinazione in destinazioneGroup.DefaultIfEmpty()
                             where testata.TipoOrdine == "R"
                             select new
                             {
                                 Testata = testata,
                                 Cliente = cliente,
-                                Agente = agente
+                                Agente = agente,
+                                Destinazione = destinazione
                             };
 
                 // Filtro per cliente
@@ -605,19 +610,38 @@ namespace AiDbMaster.Controllers
                     query = query.Where(x => x.Cliente.CodiceAgente == model.CodiceAgente.Value);
                 }
 
-                // Filtro per provincia
-                if (!string.IsNullOrWhiteSpace(model.Provincia))
-                {
-                    query = query.Where(x => x.Cliente.Provincia == model.Provincia);
-                }
-
-                // Filtro per comune (città)
-                if (!string.IsNullOrWhiteSpace(model.Comune))
-                {
-                    query = query.Where(x => x.Cliente.Citta != null && x.Cliente.Citta.Contains(model.Comune));
-                }
-
+                // NON applicare i filtri Provincia e Comune qui - verranno applicati dopo
+                // perché devono considerare la destinazione diversa
+                
                 var testate = await query.ToListAsync();
+                
+                _logger.LogInformation("Caricati {Count} ordini prima del filtro geografico", testate.Count);
+                
+                // Applica filtri geografici DOPO aver caricato i dati, considerando destinazione diversa
+                if (!string.IsNullOrWhiteSpace(model.Provincia) || !string.IsNullOrWhiteSpace(model.Comune))
+                {
+                    // Normalizza i filtri: Trim + case-insensitive
+                    var filtroComune = model.Comune?.Trim() ?? "";
+                    var filtroProvincia = model.Provincia?.Trim() ?? "";
+                    
+                    testate = testate.Where(item =>
+                    {
+                        var hasDestDiversa = item.Testata.CodiceDestinazione.HasValue && item.Destinazione != null;
+                        var provinciaEffettiva = (hasDestDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia)?.Trim();
+                        var comuneEffettivo = (hasDestDiversa ? item.Destinazione.Localita : item.Cliente.Citta)?.Trim();
+                        
+                        // Confronto case-insensitive con Trim
+                        bool matchProvincia = string.IsNullOrWhiteSpace(filtroProvincia) || 
+                            (provinciaEffettiva != null && provinciaEffettiva.Equals(filtroProvincia, StringComparison.OrdinalIgnoreCase));
+                        
+                        bool matchComune = string.IsNullOrWhiteSpace(filtroComune) || 
+                            (comuneEffettivo != null && comuneEffettivo.IndexOf(filtroComune, StringComparison.OrdinalIgnoreCase) >= 0);
+                        
+                        return matchProvincia && matchComune;
+                    }).ToList();
+                    
+                    _logger.LogInformation("Dopo filtro geografico: {Count} ordini", testate.Count);
+                }
 
                 // Adesso recupero le righe per ogni testata con filtro data consegna
                 var ordiniViewModel = new List<OrdineConsegnaViewModel>();
@@ -682,10 +706,14 @@ namespace AiDbMaster.Controllers
                     if (!righe.Any())
                         continue;
 
-                    // Ricava regione dalla provincia
-                    var regione = RegioniHelper.GetRegione(item.Cliente.Provincia);
+                    // Verifica se c'è una destinazione diversa
+                    var hasDestinazioneDiversa = item.Testata.CodiceDestinazione.HasValue && item.Destinazione != null;
 
-                    // Filtro per regione (se specificato)
+                    // Ricava regione dalla provincia corretta (cliente o destinazione)
+                    var provinciaEffettiva = hasDestinazioneDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia;
+                    var regione = RegioniHelper.GetRegione(provinciaEffettiva);
+
+                    // Filtro per regione (se specificato) - considera destinazione diversa
                     if (!string.IsNullOrWhiteSpace(model.Regione) && 
                         !string.Equals(regione, model.Regione, StringComparison.OrdinalIgnoreCase))
                     {
@@ -708,17 +736,25 @@ namespace AiDbMaster.Controllers
                         CodiceAgente = item.Testata.CodiceAgente,
                         NoteTestata = item.Testata.NoteTestata,
 
-                        // Dati cliente
+                        // Dati cliente (SOVRASCRITTI se c'è destinazione diversa)
                         RagioneSociale = item.Cliente.RagioneSociale,
                         DescrizioneUlteriore = item.Cliente.DescrizioneUlteriore,
-                        Indirizzo = item.Cliente.Indirizzo,
-                        Cap = item.Cliente.Cap,
-                        Citta = item.Cliente.Citta,
-                        Provincia = item.Cliente.Provincia,
+                        Indirizzo = hasDestinazioneDiversa ? item.Destinazione.Indirizzo : item.Cliente.Indirizzo,
+                        Cap = hasDestinazioneDiversa ? item.Destinazione.Cap : item.Cliente.Cap,
+                        Citta = hasDestinazioneDiversa ? item.Destinazione.Localita : item.Cliente.Citta,
+                        Provincia = hasDestinazioneDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia,
                         Regione = regione,
                         CodiceFiscale = item.Cliente.CodiceFiscale,
                         PartitaIva = item.Cliente.PartitaIva,
                         Telefono = item.Cliente.Telefono,
+
+                        // Flag e dati destinazione diversa
+                        HasDestinazioneDiversa = hasDestinazioneDiversa,
+                        DescrizioneDestinazione = item.Destinazione?.DescrizioneDestinazione,
+                        IndirizzoDestinazione = item.Destinazione?.Indirizzo,
+                        CapDestinazione = item.Destinazione?.Cap,
+                        LocalitaDestinazione = item.Destinazione?.Localita,
+                        ProvinciaDestinazione = item.Destinazione?.Provincia,
 
                         // Dati agente
                         NomeAgente = item.Agente?.DescrizioneAgente,
