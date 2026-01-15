@@ -62,6 +62,15 @@ namespace AiDbMaster.Models
         public decimal ImpegnatoDataOdierna { get; set; }
 
         /// <summary>
+        /// Quantità pronta per la consegna
+        /// </summary>
+        [Required(ErrorMessage = "La quantità pronta è obbligatoria")]
+        [Display(Name = "Pronto")]
+        [Column("Pronto", TypeName = "decimal(27,9)")]
+        [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
+        public decimal Pronto { get; set; }
+
+        /// <summary>
         /// Quantità disponibile (Esistenza - Impegnato)
         /// </summary>
         [NotMapped]

@@ -46,15 +46,31 @@ namespace AiDbMaster.Controllers
         // ========== DISPONIBILITÀ ==========
 
         /// <summary>
+        /// Helper: Ottiene i giorni impegno dalla tabella ParametriChiave
+        /// </summary>
+        private async Task<int> GetGiorniImpegno()
+        {
+            var parametri = await _context.ParametriChiave.FirstOrDefaultAsync();
+            return parametri?.GiorniImpegno ?? 0; // Default 0 se non configurato
+        }
+
+        /// <summary>
         /// GET: Mostra il form per la ricerca disponibilità
         /// </summary>
         [HttpGet]
-        public IActionResult Disponibilita()
+        public async Task<IActionResult> Disponibilita()
         {
             ViewBag.UseFluidContainer = true; // Usa larghezza completa
+            
+            // Legge i giorni impegno dalla tabella ParametriChiave
+            var giorniImpegno = await GetGiorniImpegno();
+            var oggi = DateTime.Today;
+            
             var model = new DisponibilitaViewModel
             {
-                DataRiferimento = DateTime.Today // Imposta data odierna come default
+                DataInizio = oggi,
+                DataFine = oggi.AddDays(giorniImpegno),
+                GiorniImpegno = giorniImpegno
             };
             return View(model);
         }
@@ -67,12 +83,22 @@ namespace AiDbMaster.Controllers
         public async Task<IActionResult> Disponibilita(DisponibilitaViewModel model)
         {
             ViewBag.UseFluidContainer = true; // Usa larghezza completa
+            
+            // Legge i giorni impegno dalla tabella ParametriChiave
+            var giorniImpegno = await GetGiorniImpegno();
+            var oggi = DateTime.Today;
+            
+            // Imposta le date nel model
+            model.DataInizio = oggi;
+            model.DataFine = oggi.AddDays(giorniImpegno);
+            model.GiorniImpegno = giorniImpegno;
+            
             if (!string.IsNullOrEmpty(model.CodiceArticolo))
             {
                 try
                 {
-                    // Data di riferimento (se null, usa oggi)
-                    var dataRiferimento = model.DataRiferimento ?? DateTime.Today;
+                    // Data di riferimento è ora DataFine (oggi + GiorniImpegno)
+                    var dataRiferimento = model.DataFine;
 
                     // Calcola disponibilità articolo principale
                     var risultatiPrincipale = await CalcolaDisponibilitaArticolo(model.CodiceArticolo, dataRiferimento);
@@ -213,13 +239,280 @@ namespace AiDbMaster.Controllers
                 UnitaMisura = unitaMisura,
                 CodiceMagazzino = p.CodiceMagazzino,
                 Esistenza = p.Esistenza,
+                Pronto = p.Pronto,
                 ImpegnatoAttuale = impegnatoAttuale,  // Calcolato in tempo reale con PercentualeInclusione
                 ImpegnatoFuturo = impegnatoFuturo,
                 OrdinatoFornitoriDataOdierna = p.OrdinatoFornitoriDataOdierna,
                 ProduzioneDisponibile = produzioneDisponibile
             }).ToList();
 
+            // Calcola le note dinamiche per ogni riga
+            foreach (var riga in risultati)
+            {
+                var nota = await CalcolaNotaPrevisione(codiceArticolo, riga.Esistenza, riga.UnitaMisura, dataRiferimento);
+                riga.NotaPrevisione = nota.Nota;
+                riga.DisponibilitaDaVerificare = nota.DaVerificare;
+            }
+
             return (risultati, descrizioneArticolo);
+        }
+
+        /// <summary>
+        /// Classe helper per rappresentare un movimento nella timeline
+        /// </summary>
+        private class MovimentoTimeline
+        {
+            public DateTime Data { get; set; }
+            public string Tipo { get; set; } = string.Empty; // "Esistenza", "OrdineCliente", "OrdineProduzione"
+            public decimal Quantita { get; set; } // positivo = entrata, negativo = uscita
+            public int? GiorniAsciugatura { get; set; } // solo per produzioni
+            public string Descrizione { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Calcola la nota di previsione dinamica per un articolo
+        /// Analizza la timeline di movimenti e genera una nota descrittiva
+        /// </summary>
+        private async Task<(string Nota, bool DaVerificare)> CalcolaNotaPrevisione(
+            string codiceArticolo, decimal esistenza, string unitaMisura, DateTime dataRiferimento)
+        {
+            var oggi = DateTime.Today;
+            var movimenti = new List<MovimentoTimeline>();
+
+            // 1. Aggiungi esistenza come primo movimento
+            movimenti.Add(new MovimentoTimeline
+            {
+                Data = oggi,
+                Tipo = "Esistenza",
+                Quantita = esistenza,
+                Descrizione = "Esistenza iniziale"
+            });
+
+            // 2. Carica ordini cliente (TipoOrdine = 'R') con data consegna nel periodo
+            var ordiniCliente = await _context.OrdiniRighe
+                .Where(r => r.TipoOrdine == "R")
+                .Where(r => r.CodiceArticolo == codiceArticolo)
+                .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                .Where(r => r.Quantita > r.QuantitaEvasa)
+                .Select(r => new
+                {
+                    r.DataConsegna,
+                    Residuo = (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m
+                })
+                .ToListAsync();
+
+            foreach (var ordine in ordiniCliente)
+            {
+                movimenti.Add(new MovimentoTimeline
+                {
+                    Data = ordine.DataConsegna,
+                    Tipo = "OrdineCliente",
+                    Quantita = -ordine.Residuo, // negativo perché sottrae
+                    Descrizione = "Ordine Cliente"
+                });
+            }
+
+            // 3. Carica tempi asciugatura
+            var tempiAsciugatura = await _context.TempiAsciugatura
+                .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
+
+            // 4. Carica ordini produzione (stati: Emesso=1, In Produzione=2)
+            var ordiniProduzione = await _context.ListaOP
+                .Where(op => op.CodiceArticolo == codiceArticolo)
+                .Where(op => op.IdStato == 1 || op.IdStato == 2) // Emesso o In Produzione
+                .Where(op => op.DataFinePrevista != null)
+                .Select(op => new
+                {
+                    op.Quantita,
+                    op.QuantitaProdotta,
+                    op.DataFinePrevista,
+                    Mese = op.DataFinePrevista!.Value.Month
+                })
+                .ToListAsync();
+
+            foreach (var prod in ordiniProduzione)
+            {
+                if (prod.DataFinePrevista.HasValue)
+                {
+                    var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                    var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
+
+                    // Solo se la data disponibilità è nel periodo di analisi
+                    if (dataDisponibilita >= oggi && dataDisponibilita <= dataRiferimento)
+                    {
+                        // Quantità rimanente da produrre
+                        var quantitaRimanente = prod.Quantita - prod.QuantitaProdotta;
+                        if (quantitaRimanente > 0)
+                        {
+                            movimenti.Add(new MovimentoTimeline
+                            {
+                                Data = dataDisponibilita,
+                                Tipo = "OrdineProduzione",
+                                Quantita = quantitaRimanente, // positivo perché aggiunge
+                                GiorniAsciugatura = giorniAsciugatura,
+                                Descrizione = $"Produzione (+{giorniAsciugatura}gg asc.)"
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 5. Ordina movimenti per data (esistenza sempre prima a parità di data)
+            movimenti = movimenti
+                .OrderBy(m => m.Data)
+                .ThenBy(m => m.Tipo == "Esistenza" ? 0 : m.Tipo == "OrdineProduzione" ? 1 : 2)
+                .ToList();
+
+            // 6. Calcola progressivo
+            decimal progressivo = 0;
+            var progressiviConData = new List<(DateTime Data, decimal Progressivo, string Tipo, int? GiorniAsc)>();
+            
+            foreach (var mov in movimenti)
+            {
+                if (mov.Tipo == "Esistenza")
+                {
+                    progressivo = mov.Quantita; // L'esistenza imposta il valore iniziale
+                }
+                else
+                {
+                    progressivo += mov.Quantita;
+                }
+                
+                progressiviConData.Add((mov.Data, progressivo, mov.Tipo, mov.GiorniAsciugatura));
+            }
+
+            // 7. Analizza e genera la nota
+            return GeneraNotaDaProgressivi(progressiviConData, unitaMisura, oggi);
+        }
+
+        /// <summary>
+        /// Genera la nota testuale analizzando i progressivi calcolati
+        /// </summary>
+        private (string Nota, bool DaVerificare) GeneraNotaDaProgressivi(
+            List<(DateTime Data, decimal Progressivo, string Tipo, int? GiorniAsc)> progressivi,
+            string unitaMisura,
+            DateTime oggi)
+        {
+            if (!progressivi.Any())
+            {
+                return ("Nessun dato disponibile", true);
+            }
+
+            // Trova le produzioni (punti di svolta)
+            var produzioni = progressivi
+                .Where(p => p.Tipo == "OrdineProduzione")
+                .Select(p => p.Data)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToList();
+
+            // Verifica se il progressivo va mai in negativo
+            bool vaInNegativo = progressivi.Any(p => p.Progressivo < 0);
+            
+            // Trova l'ultimo progressivo
+            var ultimoProgressivo = progressivi.Last().Progressivo;
+
+            // CASO 1: Termina in negativo senza recupero
+            if (ultimoProgressivo < 0)
+            {
+                return ("Disponibilità da verificare", true);
+            }
+
+            // CASO 2: Va in negativo ma poi recupera
+            if (vaInNegativo)
+            {
+                // Trova l'ultima volta che torna positivo (grazie a una produzione)
+                DateTime? dataUltimaRipresa = null;
+                for (int i = progressivi.Count - 1; i >= 0; i--)
+                {
+                    if (progressivi[i].Progressivo < 0)
+                    {
+                        // Il punto successivo è dove torna positivo
+                        if (i + 1 < progressivi.Count)
+                        {
+                            dataUltimaRipresa = progressivi[i + 1].Data;
+                        }
+                        break;
+                    }
+                }
+
+                if (dataUltimaRipresa.HasValue)
+                {
+                    // Calcola il minimo progressivo dalla ripresa in poi
+                    var minimoDopoRipresa = progressivi
+                        .Where(p => p.Data >= dataUltimaRipresa.Value)
+                        .Min(p => p.Progressivo);
+
+                    // Verifica se ci sono altre produzioni dopo
+                    var produzioniSuccessive = produzioni.Where(d => d > dataUltimaRipresa.Value).ToList();
+                    
+                    if (produzioniSuccessive.Any())
+                    {
+                        // Genera nota con più livelli
+                        var notaParts = new List<string>();
+                        notaParts.Add($"Disponibili {minimoDopoRipresa:N0} {unitaMisura} dal {dataUltimaRipresa.Value:dd/MM/yyyy}");
+                        
+                        foreach (var dataProd in produzioniSuccessive)
+                        {
+                            var minimoDopoQuestaProd = progressivi
+                                .Where(p => p.Data >= dataProd)
+                                .Min(p => p.Progressivo);
+                            notaParts.Add($"Disponibili {minimoDopoQuestaProd:N0} {unitaMisura} dal {dataProd:dd/MM/yyyy}");
+                        }
+                        
+                        return (string.Join(" - ", notaParts), false);
+                    }
+                    else
+                    {
+                        return ($"Disponibili {minimoDopoRipresa:N0} {unitaMisura} dal {dataUltimaRipresa.Value:dd/MM/yyyy}", false);
+                    }
+                }
+                else
+                {
+                    return ("Disponibilità da verificare", true);
+                }
+            }
+
+            // CASO 3: Mai negativo
+            if (!vaInNegativo)
+            {
+                if (!produzioni.Any())
+                {
+                    // Nessuna produzione: mostra il minimo nel periodo
+                    var minimo = progressivi.Min(p => p.Progressivo);
+                    return ($"Disponibili {minimo:N0} {unitaMisura} dal {oggi:dd/MM/yyyy}", false);
+                }
+                else
+                {
+                    // Ci sono produzioni: mostra i livelli
+                    var notaParts = new List<string>();
+                    
+                    // Minimo PRIMA della prima produzione
+                    var primaProduzione = produzioni.First();
+                    var minimoPrimaDiProduzioni = progressivi
+                        .Where(p => p.Data < primaProduzione)
+                        .DefaultIfEmpty()
+                        .Min(p => p.Progressivo);
+                    
+                    if (minimoPrimaDiProduzioni > 0)
+                    {
+                        notaParts.Add($"Disponibili {minimoPrimaDiProduzioni:N0} {unitaMisura} dal {oggi:dd/MM/yyyy}");
+                    }
+                    
+                    // Per ogni produzione, calcola il minimo da quella data in poi
+                    foreach (var dataProd in produzioni)
+                    {
+                        var minimoDopoQuestaProd = progressivi
+                            .Where(p => p.Data >= dataProd)
+                            .Min(p => p.Progressivo);
+                        notaParts.Add($"Disponibili {minimoDopoQuestaProd:N0} {unitaMisura} dal {dataProd:dd/MM/yyyy}");
+                    }
+                    
+                    return (string.Join(" - ", notaParts), false);
+                }
+            }
+
+            return ("", false);
         }
 
         /// <summary>
@@ -383,8 +676,8 @@ namespace AiDbMaster.Controllers
                 // Usa Distinct per evitare duplicati da OrdiniTestate
                 var ordini = await (from riga in _context.OrdiniRighe
                                    join testata in _context.OrdiniTestate
-                                       on new { riga.AnnoOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
-                                       equals new { testata.AnnoOrdine, testata.NumeroOrdine, testata.TipoOrdine }
+                                       on new { riga.AnnoOrdine, riga.SerieOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
+                                       equals new { testata.AnnoOrdine, testata.SerieOrdine, testata.NumeroOrdine, testata.TipoOrdine }
                                    join cliente in _context.AnagraficaClienti
                                        on testata.CodiceCliente equals cliente.CodiceCliente into clienteGroup
                                    from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
@@ -462,8 +755,8 @@ namespace AiDbMaster.Controllers
                 // Usa Distinct per evitare duplicati da OrdiniTestate
                 var ordini = await (from riga in _context.OrdiniRighe
                                    join testata in _context.OrdiniTestate
-                                       on new { riga.AnnoOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
-                                       equals new { testata.AnnoOrdine, testata.NumeroOrdine, testata.TipoOrdine }
+                                       on new { riga.AnnoOrdine, riga.SerieOrdine, riga.NumeroOrdine, riga.TipoOrdine } 
+                                       equals new { testata.AnnoOrdine, testata.SerieOrdine, testata.NumeroOrdine, testata.TipoOrdine }
                                    join cliente in _context.AnagraficaClienti
                                        on testata.CodiceCliente equals cliente.CodiceCliente into clienteGroup
                                    from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
@@ -513,6 +806,196 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore durante il recupero del dettaglio impegnato attuale per {CodiceArticolo}", codiceArticolo);
+                return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
+            }
+        }
+
+        /// <summary>
+        /// Recupera il dettaglio dei movimenti che compongono la nota previsione
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetDettaglioMovimentiNota(string codiceArticolo, decimal esistenza, DateTime dataRiferimento)
+        {
+            try
+            {
+                var oggi = DateTime.Today;
+                var movimentiResult = new List<MovimentoNotaViewModel>();
+
+                // 1. Aggiungi esistenza come primo movimento
+                decimal progressivo = esistenza;
+                movimentiResult.Add(new MovimentoNotaViewModel
+                {
+                    Data = oggi,
+                    Tipo = "Esistenza",
+                    Descrizione = "Giacenza iniziale a magazzino",
+                    Quantita = esistenza,
+                    Progressivo = progressivo
+                });
+
+                // 2. Carica ordini cliente (TipoOrdine = 'R') con data consegna nel periodo
+                var ordiniCliente = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "R")
+                    .Where(r => r.CodiceArticolo == codiceArticolo)
+                    .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                    .Where(r => r.Quantita > r.QuantitaEvasa)
+                    .Join(_context.OrdiniTestate,
+                        r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine },
+                        t => new { t.TipoOrdine, t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine },
+                        (r, t) => new
+                        {
+                            r.DataConsegna,
+                            Residuo = (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m,
+                            r.AnnoOrdine,
+                            r.NumeroOrdine,
+                            t.CodiceCliente,
+                            Cliente = _context.AnagraficaClienti
+                                .Where(c => c.CodiceCliente == t.CodiceCliente)
+                                .Select(c => c.RagioneSociale)
+                                .FirstOrDefault()
+                        })
+                    .OrderBy(o => o.DataConsegna)
+                    .ToListAsync();
+
+                foreach (var ordine in ordiniCliente)
+                {
+                    var quantita = -ordine.Residuo; // negativo
+                    progressivo += quantita;
+                    movimentiResult.Add(new MovimentoNotaViewModel
+                    {
+                        Data = ordine.DataConsegna,
+                        Tipo = "Ordine Cliente",
+                        Descrizione = $"Ord. {ordine.AnnoOrdine}/{ordine.NumeroOrdine} - {ordine.Cliente ?? ordine.CodiceCliente.ToString()}",
+                        Quantita = quantita,
+                        Progressivo = progressivo
+                    });
+                }
+
+                // 3. Carica tempi asciugatura
+                var tempiAsciugatura = await _context.TempiAsciugatura
+                    .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
+
+                // 4. Carica ordini produzione (stati: Emesso=1, In Produzione=2)
+                var ordiniProduzione = await _context.ListaOP
+                    .Where(op => op.CodiceArticolo == codiceArticolo)
+                    .Where(op => op.IdStato == 1 || op.IdStato == 2)
+                    .Where(op => op.DataFinePrevista != null)
+                    .Select(op => new
+                    {
+                        op.Quantita,
+                        op.QuantitaProdotta,
+                        op.DataFinePrevista,
+                        op.AnnoOrdine,
+                        op.NumeroOrdine,
+                        Mese = op.DataFinePrevista!.Value.Month
+                    })
+                    .ToListAsync();
+
+                var produzioniConData = new List<(DateTime DataDisponibilita, decimal Quantita, string Descrizione, int GiorniAsc)>();
+                foreach (var prod in ordiniProduzione)
+                {
+                    if (prod.DataFinePrevista.HasValue)
+                    {
+                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                        var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
+
+                        if (dataDisponibilita >= oggi && dataDisponibilita <= dataRiferimento)
+                        {
+                            var quantitaRimanente = prod.Quantita - prod.QuantitaProdotta;
+                            if (quantitaRimanente > 0)
+                            {
+                                produzioniConData.Add((
+                                    dataDisponibilita,
+                                    quantitaRimanente,
+                                    $"OP {prod.AnnoOrdine}/{prod.NumeroOrdine} (Fine: {prod.DataFinePrevista.Value:dd/MM} + {giorniAsciugatura}gg asc.)",
+                                    giorniAsciugatura
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                // 5. Ora riordino tutti i movimenti per data e ricalcolo il progressivo
+                var tuttiMovimenti = new List<(DateTime Data, string Tipo, string Descrizione, decimal Quantita, int? GiorniAsc, int Ordine)>();
+                
+                // Esistenza (ordine 0)
+                tuttiMovimenti.Add((oggi, "Esistenza", "Giacenza iniziale a magazzino", esistenza, null, 0));
+                
+                // Ordini cliente (ordine 2)
+                foreach (var ordine in ordiniCliente)
+                {
+                    tuttiMovimenti.Add((
+                        ordine.DataConsegna,
+                        "Ordine Cliente",
+                        $"Ord. {ordine.AnnoOrdine}/{ordine.NumeroOrdine} - {ordine.Cliente ?? ordine.CodiceCliente.ToString()}",
+                        -ordine.Residuo,
+                        null,
+                        2
+                    ));
+                }
+                
+                // Ordini produzione (ordine 1 - prima degli ordini cliente a parità di data)
+                foreach (var prod in produzioniConData)
+                {
+                    tuttiMovimenti.Add((
+                        prod.DataDisponibilita,
+                        "Ordine Produzione",
+                        prod.Descrizione,
+                        prod.Quantita,
+                        prod.GiorniAsc,
+                        1
+                    ));
+                }
+
+                // Ordina per data, poi per tipo (esistenza → produzione → ordine cliente)
+                tuttiMovimenti = tuttiMovimenti
+                    .OrderBy(m => m.Data)
+                    .ThenBy(m => m.Ordine)
+                    .ToList();
+
+                // Ricalcola progressivo
+                movimentiResult.Clear();
+                progressivo = 0;
+                foreach (var mov in tuttiMovimenti)
+                {
+                    if (mov.Tipo == "Esistenza")
+                        progressivo = mov.Quantita;
+                    else
+                        progressivo += mov.Quantita;
+
+                    movimentiResult.Add(new MovimentoNotaViewModel
+                    {
+                        Data = mov.Data,
+                        Tipo = mov.Tipo,
+                        Descrizione = mov.Descrizione,
+                        Quantita = mov.Quantita,
+                        Progressivo = progressivo,
+                        GiorniAsciugatura = mov.GiorniAsc
+                    });
+                }
+
+                // Recupera descrizione e unità di misura articolo
+                var articolo = await _context.AnagraficaArticoli
+                    .FirstOrDefaultAsync(a => a.CodiceArticolo == codiceArticolo);
+
+                // Genera la nota (riutilizzo la logica esistente)
+                var notaResult = await CalcolaNotaPrevisione(codiceArticolo, esistenza, articolo?.UnitaMisura ?? "pz", dataRiferimento);
+
+                var response = new DettaglioMovimentiNotaResponse
+                {
+                    CodiceArticolo = codiceArticolo,
+                    DescrizioneArticolo = articolo?.Descrizione ?? "",
+                    UnitaMisura = articolo?.UnitaMisura ?? "pz",
+                    DataInizio = oggi,
+                    DataFine = dataRiferimento,
+                    NotaGenerata = notaResult.Nota,
+                    Movimenti = movimentiResult
+                };
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante il recupero del dettaglio movimenti nota per {CodiceArticolo}", codiceArticolo);
                 return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
             }
         }
@@ -627,8 +1110,8 @@ namespace AiDbMaster.Controllers
                     testate = testate.Where(item =>
                     {
                         var hasDestDiversa = item.Testata.CodiceDestinazione.HasValue && item.Destinazione != null;
-                        var provinciaEffettiva = (hasDestDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia)?.Trim();
-                        var comuneEffettivo = (hasDestDiversa ? item.Destinazione.Localita : item.Cliente.Citta)?.Trim();
+                        var provinciaEffettiva = (hasDestDiversa && item.Destinazione != null ? item.Destinazione.Provincia : item.Cliente.Provincia)?.Trim();
+                        var comuneEffettivo = (hasDestDiversa && item.Destinazione != null ? item.Destinazione.Localita : item.Cliente.Citta)?.Trim();
                         
                         // Confronto case-insensitive con Trim
                         bool matchProvincia = string.IsNullOrWhiteSpace(filtroProvincia) || 
@@ -710,7 +1193,7 @@ namespace AiDbMaster.Controllers
                     var hasDestinazioneDiversa = item.Testata.CodiceDestinazione.HasValue && item.Destinazione != null;
 
                     // Ricava regione dalla provincia corretta (cliente o destinazione)
-                    var provinciaEffettiva = hasDestinazioneDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia;
+                    var provinciaEffettiva = hasDestinazioneDiversa && item.Destinazione != null ? item.Destinazione.Provincia : item.Cliente.Provincia;
                     var regione = RegioniHelper.GetRegione(provinciaEffettiva);
 
                     // Filtro per regione (se specificato) - considera destinazione diversa
@@ -739,10 +1222,10 @@ namespace AiDbMaster.Controllers
                         // Dati cliente (SOVRASCRITTI se c'è destinazione diversa)
                         RagioneSociale = item.Cliente.RagioneSociale,
                         DescrizioneUlteriore = item.Cliente.DescrizioneUlteriore,
-                        Indirizzo = hasDestinazioneDiversa ? item.Destinazione.Indirizzo : item.Cliente.Indirizzo,
-                        Cap = hasDestinazioneDiversa ? item.Destinazione.Cap : item.Cliente.Cap,
-                        Citta = hasDestinazioneDiversa ? item.Destinazione.Localita : item.Cliente.Citta,
-                        Provincia = hasDestinazioneDiversa ? item.Destinazione.Provincia : item.Cliente.Provincia,
+                        Indirizzo = hasDestinazioneDiversa && item.Destinazione != null ? item.Destinazione.Indirizzo : item.Cliente.Indirizzo,
+                        Cap = hasDestinazioneDiversa && item.Destinazione != null ? item.Destinazione.Cap : item.Cliente.Cap,
+                        Citta = hasDestinazioneDiversa && item.Destinazione != null ? item.Destinazione.Localita : item.Cliente.Citta,
+                        Provincia = hasDestinazioneDiversa && item.Destinazione != null ? item.Destinazione.Provincia : item.Cliente.Provincia,
                         Regione = regione,
                         CodiceFiscale = item.Cliente.CodiceFiscale,
                         PartitaIva = item.Cliente.PartitaIva,

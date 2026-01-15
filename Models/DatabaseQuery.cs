@@ -9,8 +9,8 @@ namespace AiDbMaster.Models
 
         public DatabaseQuery(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("PSTreeConnection") ?? 
-                throw new InvalidOperationException("Connection string 'PSTreeConnection' not found.");
+            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? 
+                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         }
 
         public async Task<DataTable> ExecuteQueryAsync(string query)

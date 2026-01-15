@@ -4,6 +4,7 @@ using AiDbMaster.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AiDbMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251216091838_AddProntoToProgressiviArticoli")]
+    partial class AddProntoToProgressiviArticoli
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1024,24 +1027,6 @@ namespace AiDbMaster.Migrations
                         .HasDatabaseName("IX_OrdiniTestate_ChiaveComposita");
 
                     b.ToTable("OrdiniTestate");
-                });
-
-            modelBuilder.Entity("AiDbMaster.Models.ParametriChiave", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("GiorniImpegno")
-                        .HasColumnType("int")
-                        .HasColumnName("GiorniImpegno");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ParametriChiave");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Permission", b =>

@@ -472,20 +472,85 @@
 
 @section Scripts {
     <script>
-        // Variabile globale per sapere se l'utente è admin
-        const isAdmin = @(User.IsInRole("Admin") ? "true" : "false");
-        
-        // Riferimenti agli elementi dell'interfaccia
-        const questionInput = document.getElementById('questionInput');
-        const startButton = document.getElementById('startRecording');
-        const stopButton = document.getElementById('stopRecording');
-        const askBtn = document.getElementById('askBtn');
-
-        // Inizializzazione del riconoscimento vocale
+        // ========== VARIABILI GLOBALI ==========
+        let isAdmin = @(User.IsInRole("Admin") ? "true" : "false");
+        let questionInput, startButton, stopButton, askBtn;
         let recognition = null;
-        
-        // Controlla se il browser supporta il riconoscimento vocale
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+
+        // ========== FUNZIONI GLOBALI (chiamate da onclick) ==========
+        function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) {
+                alert('Inserisci una domanda.');
+                return;
+            }
+            executeQuery(question);
+        }
+
+        function clearQuestion() {
+            questionInput.value = '';
+            questionInput.focus();
+            const popups = document.querySelectorAll('.floating-window');
+            popups.forEach(popup => popup.remove());
+        }
+
+        function fillQuestion(button) {
+            questionInput.value = button.textContent.trim();
+            questionInput.focus();
+        }
+
+        // ========== FUNZIONE PRINCIPALE PER ESEGUIRE LA QUERY ==========
+        async function executeQuery(question) {
+            if (!question) {
+                alert('Per favore, inserisci una domanda');
+                return;
+            }
+
+            // Disabilita pulsante e mostra loading
+            askBtn.disabled = true;
+            document.getElementById('loadingOverlay').classList.add('active');
+
+            try {
+                const response = await fetch('@Url.Action("AskQuestion", "InterrogazioniAI")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    displayError(result.error || 'Errore sconosciuto');
+                }
+            } catch (error) {
+                displayError('Errore di connessione: ' + error.message);
+            } finally {
+                askBtn.disabled = false;
+                document.getElementById('loadingOverlay').classList.remove('active');
+            }
+        }
+
+        // Aspetta che il DOM sia completamente caricato
+        document.addEventListener('DOMContentLoaded', function() {
+            // Riferimenti agli elementi dell'interfaccia
+            questionInput = document.getElementById('questionInput');
+            startButton = document.getElementById('startRecording');
+            stopButton = document.getElementById('stopRecording');
+            askBtn = document.getElementById('askBtn');
+
+            // Verifica che tutti gli elementi esistano
+            if (!questionInput || !startButton || !stopButton || !askBtn) {
+                console.error('Alcuni elementi della pagina non sono stati trovati!');
+                return;
+            }
+
+            // Inizializzazione del riconoscimento vocale
+            // Controlla se il browser supporta il riconoscimento vocale
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'it-IT';
             recognition.continuous = true;
@@ -591,59 +656,21 @@
             startButton.disabled = false;
         }
 
-        function clearQuestion() {
-            questionInput.value = '';
-            // Chiudi tutti i popup aperti
-            const popups = document.querySelectorAll('.floating-window');
-            popups.forEach(popup => popup.remove());
-        }
-
         // Event Listeners per i pulsanti vocali
         startButton.addEventListener('click', startRecording);
         stopButton.addEventListener('click', stopRecording);
 
-        function fillQuestion(button) {
-            document.getElementById('questionInput').value = button.textContent.trim();
-            document.getElementById('questionInput').focus();
-        }
-
-        async function askQuestion() {
-            const question = document.getElementById('questionInput').value.trim();
-            
-            if (!question) {
-                alert('Per favore, inserisci una domanda');
-                return;
+        // Enter per inviare
+        questionInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                askQuestion();
             }
+        });
 
-            // Disabilita pulsante e mostra loading
-            const askBtn = document.getElementById('askBtn');
-            askBtn.disabled = true;
-            document.getElementById('loadingOverlay').classList.add('active');
+        }); // Fine DOMContentLoaded
 
-            try {
-                const response = await fetch('@Url.Action("AskQuestion", "InterrogazioniAI")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question: question })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    displayResults(result);
-                } else {
-                    displayError(result.error || 'Errore sconosciuto');
-                }
-            } catch (error) {
-                displayError('Errore di connessione: ' + error.message);
-            } finally {
-                askBtn.disabled = false;
-                document.getElementById('loadingOverlay').classList.remove('active');
-            }
-        }
-
+        // ========== COSTANTI E MAPPE (possono essere fuori da DOMContentLoaded) ==========
+        
         // Mappa per tradurre i nomi delle colonne in modo conciso e comprensibile
         const columnNameMap = {
             // Ordini - brevi e diretti
@@ -1214,24 +1241,32 @@
             closeButtons.forEach(btn => {
                 btn.addEventListener('click', () => popup.remove());
             });
-            
-            // Gestione minimizza
+
+            // Gestione minimizza (solo se il pulsante esiste)
             const minimizeBtn = popup.querySelector('.minimize-window');
-            minimizeBtn.addEventListener('click', () => {
-                popup.classList.toggle('minimized');
-                const icon = minimizeBtn.querySelector('i');
-                icon.classList.toggle('bi-dash-lg');
-                icon.classList.toggle('bi-arrows-angle-expand');
-            });
-            
-            // Gestione massimizza
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', () => {
+                    popup.classList.toggle('minimized');
+                    const icon = minimizeBtn.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('bi-dash-lg');
+                        icon.classList.toggle('bi-arrows-angle-expand');
+                    }
+                });
+            }
+
+            // Gestione massimizza (solo se il pulsante esiste)
             const maximizeBtn = popup.querySelector('.maximize-window');
-            maximizeBtn.addEventListener('click', () => {
-                popup.classList.toggle('maximized');
-                const icon = maximizeBtn.querySelector('i');
-                icon.classList.toggle('bi-arrows-fullscreen');
-                icon.classList.toggle('bi-arrows-angle-contract');
-            });
+            if (maximizeBtn) {
+                maximizeBtn.addEventListener('click', () => {
+                    popup.classList.toggle('maximized');
+                    const icon = maximizeBtn.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('bi-arrows-fullscreen');
+                        icon.classList.toggle('bi-arrows-angle-contract');
+                    }
+                });
+            }
             
             // Gestione pulsante SQL (solo per admin)
             const sqlBtn = popup.querySelector('.show-sql-btn');
@@ -1367,11 +1402,5 @@
             return div.innerHTML;
         }
 
-        // Enter per inviare
-        document.getElementById('questionInput').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                askQuestion();
-            }
-        });
     </script>
 } 

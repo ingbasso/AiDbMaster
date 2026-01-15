@@ -22,6 +22,7 @@ namespace AiDbMaster.Data
         public DbSet<ProgressiviArticoli> ProgressiviArticoli { get; set; }
         public DbSet<TabellaAgenti> TabellaAgenti { get; set; }
         public DbSet<TabellaMagazzini> TabellaMagazzini { get; set; }
+        public DbSet<ParametriChiave> ParametriChiave { get; set; }
         public DbSet<OrdiniTestate> OrdiniTestate { get; set; }
         public DbSet<OrdiniRighe> OrdiniRighe { get; set; }
         

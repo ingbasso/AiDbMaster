@@ -55,6 +55,18 @@
             width: 95% !important;
         }
     }
+    
+    /* Header popup dettaglio movimenti nota */
+    #headerMovimentiNota {
+        background-color: #17a2b8 !important;
+        background: #17a2b8 !important;
+        color: white !important;
+    }
+    #headerMovimentiNota .modal-title,
+    #headerMovimentiNota h5,
+    #popupDettaglioMovimentiNotaLabel {
+        color: white !important;
+    }
 </style>
 
 <div class="px-4">
@@ -92,13 +104,15 @@
                             <span asp-validation-for="CodiceArticolo" class="text-danger"></span>
                         </div>
                         
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="DataRiferimento" class="form-label fw-bold">
-                                <i class="bi bi-calendar me-1"></i>@Html.DisplayNameFor(model => model.DataRiferimento)
-                            </label>
-                            <input asp-for="DataRiferimento" type="date" class="form-control" />
-                            <small class="text-muted">Se vuoto: data odierna</small>
-                            <span asp-validation-for="DataRiferimento" class="text-danger"></span>
+                        <div class="col-md-4 mb-3 d-flex align-items-center">
+                            <div class="alert alert-info mb-0 py-2 px-3 w-100">
+                                <i class="bi bi-calendar-range me-2"></i>
+                                <strong>Data riferimento:</strong> da 
+                                <span class="badge bg-primary">@Model.DataInizio.ToString("dd/MM/yyyy")</span>
+                                a 
+                                <span class="badge bg-primary">@Model.DataFine.ToString("dd/MM/yyyy")</span>
+                                <small class="d-block text-muted mt-1">(@Model.GiorniImpegno giorni)</small>
+                            </div>
                         </div>
                     </div>
 
@@ -143,8 +157,8 @@
                                     <!-- Intestazioni raggruppate -->
                                     <tr>
                                         <th colspan="4" class="header-anagrafica">ANAGRAFICA</th>
-                                        <th colspan="3" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
-                                        <th colspan="4" class="header-disponibilita-prevista">DISPONIBILITÀ PREVISTA AL (@(Model.DataRiferimento?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy")))</th>
+                                        <th colspan="4" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
+                                        <th class="header-disponibilita-prevista">NOTE PREVISIONE</th>
                                     </tr>
                                     <!-- Intestazioni colonne -->
                                     <tr class="table-dark">
@@ -155,13 +169,11 @@
                                         <th>Magazzino</th>
                                         <!-- Disponibilità Attuale -->
                                         <th class="text-end">Esistenza</th>
-                                        <th class="text-end">Impegnato</th>
+                                        <th class="text-end">Pronto</th>
+                                        <th class="text-end">Imp.Odierno</th>
                                         <th class="text-end">Disponibile</th>
-                                        <!-- Disponibilità Prevista -->
-                                        <th class="text-end">Produzione</th>
-                                        <th class="text-end">Impegnato</th>
-                                        <th class="text-end">Ord. Fornitori</th>
-                                        <th class="text-end">PREVISIONE</th>
+                                        <!-- Note Previsione -->
+                                        <th>Note</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -176,6 +188,11 @@
                                             <!-- Disponibilità Attuale -->
                                             <td class="text-end">@riga.Esistenza.ToString("N2")</td>
                                             <td class="text-end">
+                                                <span class="@(riga.Pronto > 0 ? "text-primary" : "text-muted") fw-bold">
+                                                    @riga.Pronto.ToString("N2")
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
                                                 <span class="@(riga.ImpegnatoAttuale > 0 ? "text-danger" : "text-muted") fw-bold" style="cursor: pointer;" 
                                                       onclick="mostraDettaglioImpegnatoAttuale('@riga.CodiceArticolo')"
                                                       title="Clicca per vedere il dettaglio ordini">
@@ -189,35 +206,41 @@
                                                     @riga.DisponibileAttuale.ToString("N2")
                                                 </strong>
                                             </td>
-                                            <!-- Disponibilità Prevista -->
-                                            <td class="text-end">
-                                                @if (riga.ProduzioneDisponibile > 0)
+                                            <!-- Note Previsione (dinamiche) -->
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(riga.NotaPrevisione))
                                                 {
-                                                    <span class="text-primary fw-bold" style="cursor: pointer;" 
-                                                          onclick="mostraDettaglioProduzioni('@riga.CodiceArticolo', '@Model.DataRiferimento?.ToString("yyyy-MM-dd")')">
-                                                        +@riga.ProduzioneDisponibile.ToString("N2")
-                                                        <i class="bi bi-info-circle-fill ms-1"></i>
-                                                    </span>
+                                                    @if (!User.IsInRole("Agenti"))
+                                                    {
+                                                        <span class="@riga.NotaCssClass" style="cursor: pointer; text-decoration: underline;"
+                                                              onclick="mostraDettaglioMovimentiNota('@riga.CodiceArticolo', @riga.Esistenza.ToString(System.Globalization.CultureInfo.InvariantCulture), '@Model.DataFine.ToString("yyyy-MM-dd")')"
+                                                              title="Clicca per vedere il dettaglio dei movimenti">
+                                                            @if (riga.DisponibilitaDaVerificare)
+                                                            {
+                                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-search me-1"></i>
+                                                            }
+                                                            @riga.NotaPrevisione
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="@riga.NotaCssClass">
+                                                            @if (riga.DisponibilitaDaVerificare)
+                                                            {
+                                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                            }
+                                                            @riga.NotaPrevisione
+                                                        </span>
+                                                    }
                                                 }
-                                                else
-                                                {
-                                                    <span class="text-muted">-</span>
-                                                }
-                                            </td>
-                                            <td class="text-end">
-                                                <span class="@(riga.ImpegnatoFuturo > 0 ? "text-danger" : "text-muted") fw-bold" style="cursor: pointer;" 
-                                                      onclick="mostraDettaglioImpegnatoFuturo('@riga.CodiceArticolo', '@Model.DataRiferimento?.ToString("yyyy-MM-dd")')"
-                                                      title="Clicca per vedere il dettaglio ordini">
-                                                    @(riga.ImpegnatoFuturo > 0 ? "-" : "")@riga.ImpegnatoFuturo.ToString("N2")
-                                                    <i class="bi bi-info-circle-fill ms-1"></i>
-                                                </span>
-                                            </td>
-                                            <td class="text-end">@riga.OrdinatoFornitoriDataOdierna.ToString("N2")</td>
-                                            <td class="text-end">
-                                                <strong class="fs-6 @(riga.DisponibilitaPrevista > 0 ? "text-success" : 
-                                                                     riga.DisponibilitaPrevista == 0 ? "text-warning" : "text-danger")">
-                                                    @riga.DisponibilitaPrevista.ToString("N2")
-                                                </strong>
                                             </td>
                                         </tr>
                                     }
@@ -227,32 +250,19 @@
                                         <th colspan="4">TOTALI</th>
                                         <!-- Disponibilità Attuale -->
                                         <th class="text-end">@Model.Risultati.Sum(r => r.Esistenza).ToString("N2")</th>
+                                        <th class="text-end">
+                                            <strong class="text-primary">
+                                                @Model.Risultati.Sum(r => r.Pronto).ToString("N2")
+                                            </strong>
+                                        </th>
                                         <th class="text-end">@Model.Risultati.Sum(r => r.ImpegnatoAttuale).ToString("N2")</th>
                                         <th class="text-end">
                                             <strong class="@(Model.Risultati.Sum(r => r.DisponibileAttuale) > 0 ? "text-success" : "text-danger")">
                                                 @Model.Risultati.Sum(r => r.DisponibileAttuale).ToString("N2")
                                             </strong>
                                         </th>
-                                        <!-- Disponibilità Prevista -->
-                                        <th class="text-end">
-                                            <strong class="text-primary">
-                                                @if (Model.Risultati.Sum(r => r.ProduzioneDisponibile) > 0)
-                                                {
-                                                    <span>+@Model.Risultati.Sum(r => r.ProduzioneDisponibile).ToString("N2")</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">-</span>
-                                                }
-                                            </strong>
-                                        </th>
-                                        <th class="text-end">@Model.Risultati.Sum(r => r.ImpegnatoFuturo).ToString("N2")</th>
-                                        <th class="text-end">@Model.Risultati.Sum(r => r.OrdinatoFornitoriDataOdierna).ToString("N2")</th>
-                                        <th class="text-end">
-                                            <strong class="fs-6 @(Model.Risultati.Sum(r => r.DisponibilitaPrevista) > 0 ? "text-success" : "text-danger")">
-                                                @Model.Risultati.Sum(r => r.DisponibilitaPrevista).ToString("N2")
-                                            </strong>
-                                        </th>
+                                        <!-- Note Previsione -->
+                                        <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -281,8 +291,8 @@
                                         <!-- Intestazioni raggruppate -->
                                         <tr>
                                             <th colspan="4" class="header-anagrafica">ANAGRAFICA</th>
-                                            <th colspan="3" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
-                                            <th colspan="4" class="header-disponibilita-prevista">DISPONIBILITÀ PREVISTA AL (@(Model.DataRiferimento?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy")))</th>
+                                            <th colspan="4" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
+                                            <th class="header-disponibilita-prevista">NOTE PREVISIONE</th>
                                         </tr>
                                         <!-- Intestazioni colonne -->
                                         <tr class="table-dark">
@@ -293,13 +303,11 @@
                                             <th>Magazzino</th>
                                             <!-- Disponibilità Attuale -->
                                             <th class="text-end">Esistenza</th>
-                                            <th class="text-end">Impegnato</th>
-                                            <th class="text-end">Disponibile</th>
-                                            <!-- Disponibilità Prevista -->
-                                            <th class="text-end">Produzione</th>
-                                            <th class="text-end">Impegnato</th>
-                                            <th class="text-end">Ord. Fornitori</th>
-                                            <th class="text-end">PREVISIONE</th>
+                                            <th class="text-end">Pronto</th>
+                                            <th class="text-end">Imp.Odierno</th>
+                                            <th class="text-end">Disponibile</th> 
+                                            <!-- Note Previsione -->
+                                            <th>Note</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -314,6 +322,11 @@
                                                 <!-- Disponibilità Attuale -->
                                                 <td class="text-end">@riga.Esistenza.ToString("N2")</td>
                                                 <td class="text-end">
+                                                    <span class="@(riga.Pronto > 0 ? "text-primary" : "text-muted") fw-bold">
+                                                        @riga.Pronto.ToString("N2")
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
                                                     <span class="@(riga.ImpegnatoAttuale > 0 ? "text-danger" : "text-muted") fw-bold" style="cursor: pointer;" 
                                                           onclick="mostraDettaglioImpegnatoAttuale('@riga.CodiceArticolo')"
                                                           title="Clicca per vedere il dettaglio ordini">
@@ -327,35 +340,41 @@
                                                         @riga.DisponibileAttuale.ToString("N2")
                                                     </strong>
                                                 </td>
-                                                <!-- Disponibilità Prevista -->
-                                                <td class="text-end">
-                                                    @if (riga.ProduzioneDisponibile > 0)
+                                                <!-- Note Previsione (dinamiche) -->
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(riga.NotaPrevisione))
                                                     {
-                                                        <span class="text-primary fw-bold" style="cursor: pointer;" 
-                                                              onclick="mostraDettaglioProduzioni('@riga.CodiceArticolo', '@Model.DataRiferimento?.ToString("yyyy-MM-dd")')">
-                                                            +@riga.ProduzioneDisponibile.ToString("N2")
-                                                            <i class="bi bi-info-circle-fill ms-1"></i>
-                                                        </span>
+                                                        @if (!User.IsInRole("Agenti"))
+                                                        {
+                                                            <span class="@riga.NotaCssClass" style="cursor: pointer; text-decoration: underline;"
+                                                                  onclick="mostraDettaglioMovimentiNota('@riga.CodiceArticolo', @riga.Esistenza.ToString(System.Globalization.CultureInfo.InvariantCulture), '@Model.DataFine.ToString("yyyy-MM-dd")')"
+                                                                  title="Clicca per vedere il dettaglio dei movimenti">
+                                                                @if (riga.DisponibilitaDaVerificare)
+                                                                {
+                                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-search me-1"></i>
+                                                                }
+                                                                @riga.NotaPrevisione
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="@riga.NotaCssClass">
+                                                                @if (riga.DisponibilitaDaVerificare)
+                                                                {
+                                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                                                }
+                                                                @riga.NotaPrevisione
+                                                            </span>
+                                                        }
                                                     }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td class="text-end">
-                                                    <span class="@(riga.ImpegnatoFuturo > 0 ? "text-danger" : "text-muted") fw-bold" style="cursor: pointer;" 
-                                                          onclick="mostraDettaglioImpegnatoFuturo('@riga.CodiceArticolo', '@Model.DataRiferimento?.ToString("yyyy-MM-dd")')"
-                                                          title="Clicca per vedere il dettaglio ordini">
-                                                        @(riga.ImpegnatoFuturo > 0 ? "-" : "")@riga.ImpegnatoFuturo.ToString("N2")
-                                                        <i class="bi bi-info-circle-fill ms-1"></i>
-                                                    </span>
-                                                </td>
-                                                <td class="text-end">@riga.OrdinatoFornitoriDataOdierna.ToString("N2")</td>
-                                                <td class="text-end">
-                                                    <strong class="fs-6 @(riga.DisponibilitaPrevista > 0 ? "text-success" : 
-                                                                         riga.DisponibilitaPrevista == 0 ? "text-warning" : "text-danger")">
-                                                        @riga.DisponibilitaPrevista.ToString("N2")
-                                                    </strong>
                                                 </td>
                                             </tr>
                                         }
@@ -365,32 +384,19 @@
                                             <th colspan="4">TOTALI</th>
                                             <!-- Disponibilità Attuale -->
                                             <th class="text-end">@articoloSostitutivo.Risultati.Sum(r => r.Esistenza).ToString("N2")</th>
+                                            <th class="text-end">
+                                                <strong class="text-primary">
+                                                    @articoloSostitutivo.Risultati.Sum(r => r.Pronto).ToString("N2")
+                                                </strong>
+                                            </th>
                                             <th class="text-end">@articoloSostitutivo.Risultati.Sum(r => r.ImpegnatoAttuale).ToString("N2")</th>
                                             <th class="text-end">
                                                 <strong class="@(articoloSostitutivo.Risultati.Sum(r => r.DisponibileAttuale) > 0 ? "text-success" : "text-danger")">
                                                     @articoloSostitutivo.Risultati.Sum(r => r.DisponibileAttuale).ToString("N2")
                                                 </strong>
                                             </th>
-                                            <!-- Disponibilità Prevista -->
-                                            <th class="text-end">
-                                                <strong>
-                                                    @if (articoloSostitutivo.Risultati.Sum(r => r.ProduzioneDisponibile) > 0)
-                                                    {
-                                                        <span>+@articoloSostitutivo.Risultati.Sum(r => r.ProduzioneDisponibile).ToString("N2")</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </strong>
-                                            </th>
-                                            <th class="text-end">@articoloSostitutivo.Risultati.Sum(r => r.ImpegnatoFuturo).ToString("N2")</th>
-                                            <th class="text-end">@articoloSostitutivo.Risultati.Sum(r => r.OrdinatoFornitoriDataOdierna).ToString("N2")</th>
-                                            <th class="text-end">
-                                                <strong class="fs-6 @(articoloSostitutivo.Risultati.Sum(r => r.DisponibilitaPrevista) > 0 ? "text-success" : "text-danger")">
-                                                    @articoloSostitutivo.Risultati.Sum(r => r.DisponibilitaPrevista).ToString("N2")
-                                                </strong>
-                                            </th>
+                                            <!-- Note Previsione -->
+                                            <th></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -636,6 +642,79 @@
     </div>
 </div>
 
+<!-- Popup Dettaglio Movimenti Nota (Timeline) -->
+<div class="modal fade" id="popupDettaglioMovimentiNota" tabindex="-1" aria-labelledby="popupDettaglioMovimentiNotaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xxl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header text-white" id="headerMovimentiNota" style="cursor: move; background-color: #17a2b8 !important;">
+                <h5 class="modal-title" id="popupDettaglioMovimentiNotaLabel">
+                    <i class="bi bi-graph-up me-2"></i>Dettaglio Previsione Disponibilità
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading spinner -->
+                <div id="loadingMovimentiNota" class="text-center py-5">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Caricamento timeline in corso...</p>
+                </div>
+
+                <!-- Contenuto dettaglio -->
+                <div id="contenutoDettaglioMovimentiNota" style="display: none;">
+                    <!-- Header info articolo -->
+                    <div class="alert alert-light border mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong><i class="bi bi-box-seam me-2"></i>Articolo:</strong>
+                                <span id="dettaglioArticoloMovimentiNota"></span>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <strong><i class="bi bi-calendar-range me-2"></i>Periodo:</strong>
+                                <span id="dettaglioPeriodoMovimentiNota"></span>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <strong><i class="bi bi-info-circle me-2"></i>Nota:</strong>
+                                <span id="dettaglioNotaGenerata" class="fw-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabella timeline movimenti -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 120px;">Data</th>
+                                    <th style="width: 150px;">Tipo</th>
+                                    <th>Descrizione</th>
+                                    <th class="text-end" style="width: 130px;">Quantità</th>
+                                    <th class="text-end" style="width: 130px;">Progressivo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabellaMovimentiNota">
+                                <!-- Popolato dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Messaggio errore -->
+                <div id="erroreDettaglioMovimentiNota" style="display: none;" class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span id="messaggioErroreMovimentiNota"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <!-- Include Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -743,7 +822,7 @@
         // Funzione per pulire il form
         function resetForm() {
             $('#codiceArticolo').val(null).trigger('change');
-            $('input[name="DataRiferimento"]').val('');
+            // Le date sono ora calcolate automaticamente da ParametriChiave
         }
 
         // Funzione per mostrare il dettaglio delle produzioni
@@ -1021,6 +1100,126 @@
 
             // Totale nel footer (usa il totale dal server che considera la PercentualeInclusione)
             $('#totaleImpegnatoAttuale').text(data.totaleImpegnatoAttuale.toFixed(2) + ' ' + unitaMisura);
+        }
+
+        // ========== DETTAGLIO MOVIMENTI NOTA ==========
+        
+        // Funzione per mostrare il dettaglio dei movimenti della nota previsione
+        function mostraDettaglioMovimentiNota(codiceArticolo, esistenza, dataRiferimento) {
+            console.log('Mostra dettaglio movimenti nota per:', codiceArticolo, esistenza, dataRiferimento);
+            
+            // Resetta lo stato del popup
+            $('#loadingMovimentiNota').show();
+            $('#contenutoDettaglioMovimentiNota').hide();
+            $('#erroreDettaglioMovimentiNota').hide();
+
+            // Mostra il modal SENZA backdrop
+            var modal = new bootstrap.Modal(document.getElementById('popupDettaglioMovimentiNota'), {
+                backdrop: false,
+                keyboard: true
+            });
+            modal.show();
+
+            // Rendi il popup trascinabile dall'header
+            makeDraggable('popupDettaglioMovimentiNota', 'headerMovimentiNota');
+
+            // Chiamata AJAX
+            $.ajax({
+                url: '@Url.Action("GetDettaglioMovimentiNota", "InterrogazioniDB")',
+                type: 'GET',
+                data: {
+                    codiceArticolo: codiceArticolo,
+                    esistenza: esistenza,
+                    dataRiferimento: dataRiferimento
+                },
+                success: function(response) {
+                    popolaDettaglioMovimentiNota(response);
+                    $('#loadingMovimentiNota').hide();
+                    $('#contenutoDettaglioMovimentiNota').show();
+                },
+                error: function(xhr, status, error) {
+                    $('#loadingMovimentiNota').hide();
+                    $('#messaggioErroreMovimentiNota').text('Errore durante il caricamento dei dati: ' + error);
+                    $('#erroreDettaglioMovimentiNota').show();
+                }
+            });
+        }
+
+        // Funzione per popolare il popup movimenti nota con i dati
+        function popolaDettaglioMovimentiNota(data) {
+            console.log('Dati movimenti nota ricevuti:', data);
+            
+            // Header
+            var articoloText = data.codiceArticolo;
+            if (data.descrizioneArticolo) {
+                articoloText += ' - ' + data.descrizioneArticolo;
+            }
+            $('#dettaglioArticoloMovimentiNota').text(articoloText);
+            
+            var dataInizioFormatted = new Date(data.dataInizio).toLocaleDateString('it-IT');
+            var dataFineFormatted = new Date(data.dataFine).toLocaleDateString('it-IT');
+            $('#dettaglioPeriodoMovimentiNota').text(dataInizioFormatted + ' → ' + dataFineFormatted);
+            
+            $('#dettaglioNotaGenerata').text(data.notaGenerata);
+
+            // Unità di misura
+            var unitaMisura = data.unitaMisura || 'pz';
+
+            // Tabella movimenti
+            var tbody = $('#tabellaMovimentiNota');
+            tbody.empty();
+
+            if (data.movimenti && data.movimenti.length > 0) {
+                data.movimenti.forEach(function(mov) {
+                    var dataFormatted = new Date(mov.data).toLocaleDateString('it-IT');
+                    
+                    // Formatta la quantità con segno
+                    var quantitaText = '';
+                    if (mov.tipo === 'Esistenza') {
+                        quantitaText = mov.quantita.toFixed(0) + ' ' + unitaMisura;
+                    } else if (mov.quantita >= 0) {
+                        quantitaText = '<span class="text-success fw-bold">+' + mov.quantita.toFixed(0) + ' ' + unitaMisura + '</span>';
+                    } else {
+                        quantitaText = '<span class="text-danger fw-bold">' + mov.quantita.toFixed(0) + ' ' + unitaMisura + '</span>';
+                    }
+                    
+                    // Formatta il progressivo
+                    var progressivoClass = mov.progressivo >= 0 ? 'text-success' : 'text-danger';
+                    var progressivoText = '<span class="' + progressivoClass + ' fw-bold">' + mov.progressivo.toFixed(0) + ' ' + unitaMisura + '</span>';
+                    
+                    // Badge per il tipo
+                    var tipoBadgeClass = '';
+                    var tipoIcon = '';
+                    switch(mov.tipo) {
+                        case 'Esistenza':
+                            tipoBadgeClass = 'bg-secondary';
+                            tipoIcon = 'bi-box-seam';
+                            break;
+                        case 'Ordine Cliente':
+                            tipoBadgeClass = 'bg-danger';
+                            tipoIcon = 'bi-cart-dash';
+                            break;
+                        case 'Ordine Produzione':
+                            tipoBadgeClass = 'bg-success';
+                            tipoIcon = 'bi-gear';
+                            break;
+                        default:
+                            tipoBadgeClass = 'bg-light text-dark';
+                            tipoIcon = 'bi-question';
+                    }
+                    
+                    var row = '<tr>' +
+                              '<td class="text-center">' + dataFormatted + '</td>' +
+                              '<td><span class="badge ' + tipoBadgeClass + '"><i class="bi ' + tipoIcon + ' me-1"></i>' + mov.tipo + '</span></td>' +
+                              '<td>' + mov.descrizione + '</td>' +
+                              '<td class="text-end">' + quantitaText + '</td>' +
+                              '<td class="text-end">' + progressivoText + '</td>' +
+                              '</tr>';
+                    tbody.append(row);
+                });
+            } else {
+                tbody.append('<tr><td colspan="5" class="text-center text-muted">Nessun movimento trovato nel periodo</td></tr>');
+            }
         }
 
         // Funzione per rendere un elemento trascinabile

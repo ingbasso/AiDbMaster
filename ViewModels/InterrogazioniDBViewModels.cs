@@ -14,9 +14,21 @@ namespace AiDbMaster.ViewModels
         [Display(Name = "Visualizza Articoli Sostitutivi")]
         public bool VisualizzaSostitutivi { get; set; }
         
-        [Display(Name = "Data Riferimento")]
-        [DataType(DataType.Date)]
-        public DateTime? DataRiferimento { get; set; }
+        // Date calcolate automaticamente in base ai ParametriChiave
+        /// <summary>
+        /// Data di inizio per il calcolo (sempre oggi)
+        /// </summary>
+        public DateTime DataInizio { get; set; } = DateTime.Today;
+        
+        /// <summary>
+        /// Data di fine per il calcolo (oggi + GiorniImpegno da ParametriChiave)
+        /// </summary>
+        public DateTime DataFine { get; set; } = DateTime.Today;
+        
+        /// <summary>
+        /// Numero di giorni impegno letti dalla tabella ParametriChiave
+        /// </summary>
+        public int GiorniImpegno { get; set; }
         
         // Output - Lista risultati
         public List<DisponibilitaRigaViewModel>? Risultati { get; set; }
@@ -51,7 +63,12 @@ namespace AiDbMaster.ViewModels
         
         // DISPONIBILITÀ ATTUALE
         public decimal Esistenza { get; set; }
-        
+
+        /// <summary>
+        /// Quantità pronta per la consegna
+        /// </summary>
+        public decimal Pronto { get; set; }
+
         /// <summary>
         /// Impegnato attuale - solo fino ad oggi (da DB)
         /// </summary>
@@ -89,6 +106,24 @@ namespace AiDbMaster.ViewModels
         // CSS class per colorare la riga in base alla disponibilità
         public string RowCssClass => DisponibileAttuale > 0 ? "table-success" : 
                                      DisponibileAttuale == 0 ? "table-warning" : "table-danger";
+        
+        // ========== NOTE PREVISIONE (dinamiche) ==========
+        
+        /// <summary>
+        /// Nota testuale sulla previsione di disponibilità (calcolata dinamicamente)
+        /// Es: "Disponibili 2900 MQ a partire dal 11/03/2026"
+        /// </summary>
+        public string NotaPrevisione { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Indica se la disponibilità è da verificare (progressivo negativo non recuperato)
+        /// </summary>
+        public bool DisponibilitaDaVerificare { get; set; }
+        
+        /// <summary>
+        /// CSS class per la nota in base allo stato
+        /// </summary>
+        public string NotaCssClass => DisponibilitaDaVerificare ? "text-danger" : "text-dark";
     }
 
     /// <summary>
@@ -202,6 +237,41 @@ namespace AiDbMaster.ViewModels
         public DateTime DataRiferimento { get; set; }
         public List<OrdineClienteDettaglioViewModel> Ordini { get; set; } = new List<OrdineClienteDettaglioViewModel>();
         public decimal TotaleImpegnatoAttuale { get; set; }
+    }
+
+    /// <summary>
+    /// Response per il dettaglio dei movimenti che compongono la nota previsione
+    /// </summary>
+    public class DettaglioMovimentiNotaResponse
+    {
+        public string CodiceArticolo { get; set; } = string.Empty;
+        public string DescrizioneArticolo { get; set; } = string.Empty;
+        public string UnitaMisura { get; set; } = string.Empty;
+        public DateTime DataInizio { get; set; }
+        public DateTime DataFine { get; set; }
+        public string NotaGenerata { get; set; } = string.Empty;
+        public List<MovimentoNotaViewModel> Movimenti { get; set; } = new List<MovimentoNotaViewModel>();
+    }
+
+    /// <summary>
+    /// ViewModel per un singolo movimento nella timeline della nota
+    /// </summary>
+    public class MovimentoNotaViewModel
+    {
+        public DateTime Data { get; set; }
+        public string Tipo { get; set; } = string.Empty; // "Esistenza", "Ordine Cliente", "Ordine Produzione"
+        public string TipoCssClass => Tipo switch
+        {
+            "Esistenza" => "bg-secondary",
+            "Ordine Cliente" => "bg-danger",
+            "Ordine Produzione" => "bg-success",
+            _ => "bg-light"
+        };
+        public string Descrizione { get; set; } = string.Empty;
+        public decimal Quantita { get; set; } // positivo o negativo
+        public decimal Progressivo { get; set; }
+        public string ProgressivoCssClass => Progressivo >= 0 ? "text-success" : "text-danger";
+        public int? GiorniAsciugatura { get; set; }
     }
 
     // =====================================================
