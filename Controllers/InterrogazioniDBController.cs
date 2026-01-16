@@ -288,11 +288,12 @@ namespace AiDbMaster.Controllers
                 Descrizione = "Esistenza iniziale"
             });
 
-            // 2. Carica ordini cliente (TipoOrdine = 'R') con data consegna nel periodo
+            // 2. Carica ordini cliente (TipoOrdine = 'R') aperti fino alla data di riferimento
+            // Include anche ordini arretrati (DataConsegna < oggi) per mostrare la storia completa
             var ordiniCliente = await _context.OrdiniRighe
                 .Where(r => r.TipoOrdine == "R")
                 .Where(r => r.CodiceArticolo == codiceArticolo)
-                .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                .Where(r => r.DataConsegna <= dataRiferimento)
                 .Where(r => r.Quantita > r.QuantitaEvasa)
                 .Select(r => new
                 {
@@ -357,10 +358,12 @@ namespace AiDbMaster.Controllers
                 }
             }
 
-            // 5. Ordina movimenti per data (esistenza sempre prima a parità di data)
+            // 5. Ordina movimenti: esistenza sempre PRIMA come punto di partenza,
+            // poi tutti gli altri per data (produzioni prima degli ordini cliente a parità di data)
             movimenti = movimenti
-                .OrderBy(m => m.Data)
-                .ThenBy(m => m.Tipo == "Esistenza" ? 0 : m.Tipo == "OrdineProduzione" ? 1 : 2)
+                .OrderBy(m => m.Tipo == "Esistenza" ? 0 : 1) // Esistenza sempre prima
+                .ThenBy(m => m.Data)
+                .ThenBy(m => m.Tipo == "OrdineProduzione" ? 0 : 1) // Produzioni prima a parità di data
                 .ToList();
 
             // 6. Calcola progressivo
@@ -476,6 +479,18 @@ namespace AiDbMaster.Controllers
             // CASO 3: Mai negativo
             if (!vaInNegativo)
             {
+                // Calcola la somma totale degli ordini clienti (movimenti negativi)
+                // calcolando i delta tra progressivi consecutivi
+                decimal sommaOrdiniClienti = 0;
+                for (int i = 1; i < progressivi.Count; i++)
+                {
+                    var delta = progressivi[i].Progressivo - progressivi[i - 1].Progressivo;
+                    if (delta < 0) // È un ordine cliente (sottrae)
+                    {
+                        sommaOrdiniClienti += Math.Abs(delta);
+                    }
+                }
+
                 if (!produzioni.Any())
                 {
                     // Nessuna produzione: mostra il minimo nel periodo
@@ -494,7 +509,10 @@ namespace AiDbMaster.Controllers
                         .DefaultIfEmpty()
                         .Min(p => p.Progressivo);
                     
-                    if (minimoPrimaDiProduzioni > 0)
+                    // Mostra la prima nota SOLO se il disponibile iniziale copre tutti gli ordini clienti
+                    // Se disponibile < somma ordini clienti, non ha senso mostrarla perché
+                    // non è sufficiente senza la produzione
+                    if (minimoPrimaDiProduzioni > 0 && minimoPrimaDiProduzioni >= sommaOrdiniClienti)
                     {
                         notaParts.Add($"Disponibili {minimoPrimaDiProduzioni:N0} {unitaMisura} dal {oggi:dd/MM/yyyy}");
                     }
@@ -832,11 +850,12 @@ namespace AiDbMaster.Controllers
                     Progressivo = progressivo
                 });
 
-                // 2. Carica ordini cliente (TipoOrdine = 'R') con data consegna nel periodo
+                // 2. Carica ordini cliente (TipoOrdine = 'R') aperti fino alla data di riferimento
+                // Include anche ordini arretrati (DataConsegna < oggi) per mostrare la storia completa
                 var ordiniCliente = await _context.OrdiniRighe
                     .Where(r => r.TipoOrdine == "R")
                     .Where(r => r.CodiceArticolo == codiceArticolo)
-                    .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                    .Where(r => r.DataConsegna <= dataRiferimento)
                     .Where(r => r.Quantita > r.QuantitaEvasa)
                     .Join(_context.OrdiniTestate,
                         r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine },
@@ -946,10 +965,12 @@ namespace AiDbMaster.Controllers
                     ));
                 }
 
-                // Ordina per data, poi per tipo (esistenza → produzione → ordine cliente)
+                // Ordina: esistenza sempre PRIMA come punto di partenza,
+                // poi tutti gli altri per data (produzioni prima degli ordini cliente a parità di data)
                 tuttiMovimenti = tuttiMovimenti
-                    .OrderBy(m => m.Data)
-                    .ThenBy(m => m.Ordine)
+                    .OrderBy(m => m.Tipo == "Esistenza" ? 0 : 1) // Esistenza sempre prima
+                    .ThenBy(m => m.Data)
+                    .ThenBy(m => m.Ordine) // Produzioni (1) prima di Ordini Cliente (2)
                     .ToList();
 
                 // Ricalcola progressivo

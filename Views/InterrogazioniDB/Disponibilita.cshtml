@@ -107,11 +107,9 @@
                         <div class="col-md-4 mb-3 d-flex align-items-center">
                             <div class="alert alert-info mb-0 py-2 px-3 w-100">
                                 <i class="bi bi-calendar-range me-2"></i>
-                                <strong>Data riferimento:</strong> da 
-                                <span class="badge bg-primary">@Model.DataInizio.ToString("dd/MM/yyyy")</span>
-                                a 
+                                <strong>Data riferimento:</strong>
                                 <span class="badge bg-primary">@Model.DataFine.ToString("dd/MM/yyyy")</span>
-                                <small class="d-block text-muted mt-1">(@Model.GiorniImpegno giorni)</small>
+                                <small class="text-muted ms-1">(@Model.GiorniImpegno giorni)</small>
                             </div>
                         </div>
                     </div>
@@ -157,7 +155,7 @@
                                     <!-- Intestazioni raggruppate -->
                                     <tr>
                                         <th colspan="4" class="header-anagrafica">ANAGRAFICA</th>
-                                        <th colspan="4" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
+                                        <th colspan="4" class="header-disponibilita-attuale">ANALISI DISPONIBILITA'</th>
                                         <th class="header-disponibilita-prevista">NOTE PREVISIONE</th>
                                     </tr>
                                     <!-- Intestazioni colonne -->
@@ -167,10 +165,10 @@
                                         <th>Descrizione Articolo</th>
                                         <th>U.M.</th>
                                         <th>Magazzino</th>
-                                        <!-- Disponibilità Attuale -->
+                                        <!-- Analisi Disponibilita -->
                                         <th class="text-end">Esistenza</th>
                                         <th class="text-end">Pronto</th>
-                                        <th class="text-end">Imp.Odierno</th>
+                                        <th class="text-end">Impegnato</th>
                                         <th class="text-end">Disponibile</th>
                                         <!-- Note Previsione -->
                                         <th>Note</th>
@@ -185,7 +183,7 @@
                                             <td>@riga.DescrizioneArticolo</td>
                                             <td class="text-center"><span class="badge bg-secondary">@riga.UnitaMisura</span></td>
                                             <td><span class="badge bg-info">@riga.CodiceMagazzino</span></td>
-                                            <!-- Disponibilità Attuale -->
+                                            <!-- Analisi Disponibilita -->
                                             <td class="text-end">@riga.Esistenza.ToString("N2")</td>
                                             <td class="text-end">
                                                 <span class="@(riga.Pronto > 0 ? "text-primary" : "text-muted") fw-bold">
@@ -248,7 +246,7 @@
                                 <tfoot class="table-secondary">
                                     <tr>
                                         <th colspan="4">TOTALI</th>
-                                        <!-- Disponibilità Attuale -->
+                                        <!-- Analisi Disponibilita -->
                                         <th class="text-end">@Model.Risultati.Sum(r => r.Esistenza).ToString("N2")</th>
                                         <th class="text-end">
                                             <strong class="text-primary">
@@ -291,7 +289,7 @@
                                         <!-- Intestazioni raggruppate -->
                                         <tr>
                                             <th colspan="4" class="header-anagrafica">ANAGRAFICA</th>
-                                            <th colspan="4" class="header-disponibilita-attuale">DISPONIBILITÀ ATTUALE</th>
+                                            <th colspan="4" class="header-disponibilita-attuale">ANALISI DISPONIBILITA'</th>
                                             <th class="header-disponibilita-prevista">NOTE PREVISIONE</th>
                                         </tr>
                                         <!-- Intestazioni colonne -->
@@ -301,10 +299,10 @@
                                             <th>Descrizione Articolo</th>
                                             <th>U.M.</th>
                                             <th>Magazzino</th>
-                                            <!-- Disponibilità Attuale -->
+                                            <!-- Analisi Disponibilita -->
                                             <th class="text-end">Esistenza</th>
                                             <th class="text-end">Pronto</th>
-                                            <th class="text-end">Imp.Odierno</th>
+                                            <th class="text-end">Impegnato</th>
                                             <th class="text-end">Disponibile</th> 
                                             <!-- Note Previsione -->
                                             <th>Note</th>
@@ -319,7 +317,7 @@
                                                 <td>@riga.DescrizioneArticolo</td>
                                                 <td class="text-center"><span class="badge bg-secondary">@riga.UnitaMisura</span></td>
                                                 <td><span class="badge bg-info">@riga.CodiceMagazzino</span></td>
-                                                <!-- Disponibilità Attuale -->
+                                                <!-- Analisi Disponibilita -->
                                                 <td class="text-end">@riga.Esistenza.ToString("N2")</td>
                                                 <td class="text-end">
                                                     <span class="@(riga.Pronto > 0 ? "text-primary" : "text-muted") fw-bold">
@@ -382,7 +380,7 @@
                                     <tfoot class="table-secondary">
                                         <tr>
                                             <th colspan="4">TOTALI</th>
-                                            <!-- Disponibilità Attuale -->
+                                            <!-- Analisi Disponibilita -->
                                             <th class="text-end">@articoloSostitutivo.Risultati.Sum(r => r.Esistenza).ToString("N2")</th>
                                             <th class="text-end">
                                                 <strong class="text-primary">
@@ -1173,19 +1171,19 @@
                 data.movimenti.forEach(function(mov) {
                     var dataFormatted = new Date(mov.data).toLocaleDateString('it-IT');
                     
-                    // Formatta la quantità con segno
+                    // Formatta la quantità con segno (2 decimali)
                     var quantitaText = '';
                     if (mov.tipo === 'Esistenza') {
-                        quantitaText = mov.quantita.toFixed(0) + ' ' + unitaMisura;
+                        quantitaText = mov.quantita.toFixed(2) + ' ' + unitaMisura;
                     } else if (mov.quantita >= 0) {
-                        quantitaText = '<span class="text-success fw-bold">+' + mov.quantita.toFixed(0) + ' ' + unitaMisura + '</span>';
+                        quantitaText = '<span class="text-success fw-bold">+' + mov.quantita.toFixed(2) + ' ' + unitaMisura + '</span>';
                     } else {
-                        quantitaText = '<span class="text-danger fw-bold">' + mov.quantita.toFixed(0) + ' ' + unitaMisura + '</span>';
+                        quantitaText = '<span class="text-danger fw-bold">' + mov.quantita.toFixed(2) + ' ' + unitaMisura + '</span>';
                     }
                     
-                    // Formatta il progressivo
+                    // Formatta il progressivo (2 decimali)
                     var progressivoClass = mov.progressivo >= 0 ? 'text-success' : 'text-danger';
-                    var progressivoText = '<span class="' + progressivoClass + ' fw-bold">' + mov.progressivo.toFixed(0) + ' ' + unitaMisura + '</span>';
+                    var progressivoText = '<span class="' + progressivoClass + ' fw-bold">' + mov.progressivo.toFixed(2) + ' ' + unitaMisura + '</span>';
                     
                     // Badge per il tipo
                     var tipoBadgeClass = '';
@@ -1208,7 +1206,10 @@
                             tipoIcon = 'bi-question';
                     }
                     
-                    var row = '<tr>' +
+                    // Riga esistenza in grassetto
+                    var rowClass = mov.tipo === 'Esistenza' ? 'fw-bold' : '';
+                    
+                    var row = '<tr class="' + rowClass + '">' +
                               '<td class="text-center">' + dataFormatted + '</td>' +
                               '<td><span class="badge ' + tipoBadgeClass + '"><i class="bi ' + tipoIcon + ' me-1"></i>' + mov.tipo + '</span></td>' +
                               '<td>' + mov.descrizione + '</td>' +

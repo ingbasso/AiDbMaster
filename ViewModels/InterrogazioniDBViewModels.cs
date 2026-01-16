@@ -61,7 +61,7 @@ namespace AiDbMaster.ViewModels
         public string UnitaMisura { get; set; } = string.Empty;
         public short CodiceMagazzino { get; set; }
         
-        // DISPONIBILITÀ ATTUALE
+        // ANALISI DISPONIBILITA'
         public decimal Esistenza { get; set; }
 
         /// <summary>
