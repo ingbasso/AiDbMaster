@@ -156,30 +156,18 @@ namespace AiDbMaster.Controllers
         {
             var oggi = DateTime.Today;
             
-            // Calcola impegnato attuale in tempo reale
+            // Calcola impegnato: TUTTI gli ordini clienti fino alla data di riferimento
             // Formula: Σ ((Quantita - QuantitaEvasa) × PercentualeInclusione / 100)
-            // per ordini clienti con DataConsegna <= oggi e residuo > 0
+            // per ordini clienti con DataConsegna <= dataRiferimento e residuo > 0
             decimal impegnatoAttuale = await _context.OrdiniRighe
                 .Where(r => r.TipoOrdine == "R")
                 .Where(r => r.CodiceArticolo == codiceArticolo)
-                .Where(r => r.DataConsegna <= oggi)
+                .Where(r => r.DataConsegna <= dataRiferimento)  // Tutti fino alla data di riferimento
                 .Where(r => r.Quantita > r.QuantitaEvasa)
                 .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
             
-            // Calcola impegnato futuro (solo se data > oggi)
-            // Formula: Σ ((Quantita - QuantitaEvasa) × PercentualeInclusione / 100)
-            // per ordini clienti con DataConsegna > oggi e DataConsegna <= dataRiferimento
+            // ImpegnatoFuturo non più usato (ora tutto è incluso in impegnatoAttuale)
             decimal impegnatoFuturo = 0;
-            if (dataRiferimento > oggi)
-            {
-                impegnatoFuturo = await _context.OrdiniRighe
-                    .Where(r => r.TipoOrdine == "R")
-                    .Where(r => r.CodiceArticolo == codiceArticolo)
-                    .Where(r => r.DataConsegna > oggi)
-                    .Where(r => r.DataConsegna <= dataRiferimento)
-                    .Where(r => r.Quantita > r.QuantitaEvasa)
-                    .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
-            }
 
             // Carica tempi asciugatura in memoria
             var tempiAsciugatura = await _context.TempiAsciugatura
@@ -502,22 +490,24 @@ namespace AiDbMaster.Controllers
                     // Ci sono produzioni: mostra i livelli
                     var notaParts = new List<string>();
                     
-                    // Minimo PRIMA della prima produzione
-                    var primaProduzione = produzioni.First();
-                    var minimoPrimaDiProduzioni = progressivi
-                        .Where(p => p.Data < primaProduzione)
-                        .DefaultIfEmpty()
-                        .Min(p => p.Progressivo);
+                    // Prendi l'esistenza iniziale (primo progressivo, sempre l'Esistenza)
+                    var esistenzaIniziale = progressivi.First().Progressivo;
                     
-                    // Mostra la prima nota SOLO se il disponibile iniziale copre tutti gli ordini clienti
-                    // Se disponibile < somma ordini clienti, non ha senso mostrarla perché
-                    // non è sufficiente senza la produzione
-                    if (minimoPrimaDiProduzioni > 0 && minimoPrimaDiProduzioni >= sommaOrdiniClienti)
+                    // Calcola il disponibile SENZA considerare le produzioni
+                    // = esistenza - somma di TUTTI gli ordini clienti
+                    var disponibileSenzaProduzioni = esistenzaIniziale - sommaOrdiniClienti;
+                    
+                    // Mostra la prima nota SOLO se l'esistenza copre TUTTI gli ordini clienti
+                    // (anche quelli dopo le produzioni). Il principio è: non sono sicuro che
+                    // le produzioni andranno in porto, quindi verifico prima se con l'esistente
+                    // posso comunque soddisfare tutti gli ordini cliente.
+                    if (disponibileSenzaProduzioni > 0)
                     {
-                        notaParts.Add($"Disponibili {minimoPrimaDiProduzioni:N0} {unitaMisura} dal {oggi:dd/MM/yyyy}");
+                        notaParts.Add($"Disponibili {disponibileSenzaProduzioni:N0} {unitaMisura} dal {oggi:dd/MM/yyyy}");
                     }
                     
                     // Per ogni produzione, calcola il minimo da quella data in poi
+                    // Queste note mostrano cosa succede SE le produzioni vengono completate
                     foreach (var dataProd in produzioni)
                     {
                         var minimoDopoQuestaProd = progressivi
@@ -751,10 +741,10 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
-        /// Recupera il dettaglio degli ordini clienti che compongono l'impegnato attuale (alla data odierna)
+        /// Recupera il dettaglio degli ordini clienti che compongono l'impegnato (fino alla data di riferimento)
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetDettaglioImpegnatoAttuale(string codiceArticolo)
+        public async Task<IActionResult> GetDettaglioImpegnatoAttuale(string codiceArticolo, DateTime? dataRiferimento)
         {
             try
             {
@@ -763,13 +753,14 @@ namespace AiDbMaster.Controllers
                     return BadRequest(new { error = "Codice articolo obbligatorio" });
                 }
 
-                var oggi = DateTime.Today;
+                // Se non fornita, calcola la data di riferimento come oggi + GiorniImpegno
+                var dataRif = dataRiferimento ?? DateTime.Today.AddDays(await GetGiorniImpegno());
 
-                _logger.LogInformation("Recupero dettaglio impegnato attuale per articolo {CodiceArticolo} alla data {DataOggi}", 
-                    codiceArticolo, oggi);
+                _logger.LogInformation("Recupero dettaglio impegnato per articolo {CodiceArticolo} fino alla data {DataRiferimento}", 
+                    codiceArticolo, dataRif);
 
-                // Query ordini clienti impegnati alla data odierna (TipoOrdine = 'R')
-                // Filtra per ordini con DataConsegna <= oggi e quantità da evadere > 0
+                // Query ordini clienti impegnati fino alla data di riferimento (TipoOrdine = 'R')
+                // Filtra per ordini con DataConsegna <= dataRiferimento e quantità da evadere > 0
                 // Usa Distinct per evitare duplicati da OrdiniTestate
                 var ordini = await (from riga in _context.OrdiniRighe
                                    join testata in _context.OrdiniTestate
@@ -780,7 +771,7 @@ namespace AiDbMaster.Controllers
                                    from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
                                    where riga.CodiceArticolo == codiceArticolo
                                        && riga.TipoOrdine == "R"
-                                       && riga.DataConsegna <= oggi  // ✅ Impegnato attuale: <= oggi
+                                       && riga.DataConsegna <= dataRif  // Impegnato: fino alla data di riferimento
                                        && (riga.Quantita - riga.QuantitaEvasa) > 0  // Solo quantità da evadere
                                    select new OrdineClienteDettaglioViewModel
                                    {
@@ -799,10 +790,10 @@ namespace AiDbMaster.Controllers
                                    .ThenBy(o => o.NumeroOrdine)
                                    .ToListAsync();
 
-                // Calcola totale impegnato attuale usando la PercentualeInclusione
+                // Calcola totale impegnato usando la PercentualeInclusione
                 var totaleImpegnatoAttuale = ordini.Sum(o => o.ContributoImpegnato);
 
-                _logger.LogInformation("Trovati {NumeroOrdini} ordini clienti per un totale impegnato attuale di {Totale}", 
+                _logger.LogInformation("Trovati {NumeroOrdini} ordini clienti per un totale impegnato di {Totale}", 
                     ordini.Count, totaleImpegnatoAttuale);
 
                 // Recupera descrizione e unità di misura articolo
@@ -814,7 +805,7 @@ namespace AiDbMaster.Controllers
                     CodiceArticolo = codiceArticolo,
                     DescrizioneArticolo = articolo?.Descrizione ?? "",
                     UnitaMisura = articolo?.UnitaMisura ?? "pz",
-                    DataRiferimento = oggi,
+                    DataRiferimento = dataRif,
                     Ordini = ordini,
                     TotaleImpegnatoAttuale = totaleImpegnatoAttuale
                 };
@@ -823,7 +814,7 @@ namespace AiDbMaster.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante il recupero del dettaglio impegnato attuale per {CodiceArticolo}", codiceArticolo);
+                _logger.LogError(ex, "Errore durante il recupero del dettaglio impegnato per {CodiceArticolo}", codiceArticolo);
                 return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
             }
         }
