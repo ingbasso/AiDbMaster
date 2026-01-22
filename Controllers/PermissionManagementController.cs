@@ -18,15 +18,18 @@ namespace AiDbMaster.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IResourcePermissionService _permissionService;
         private readonly ILogger<PermissionManagementController> _logger;
 
         public PermissionManagementController(
             ApplicationDbContext context,
             RoleManager<IdentityRole> roleManager,
+            IResourcePermissionService permissionService,
             ILogger<PermissionManagementController> logger)
         {
             _context = context;
             _roleManager = roleManager;
+            _permissionService = permissionService;
             _logger = logger;
         }
 
@@ -209,12 +212,15 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Permessi salvati per ruolo {RoleName} da utente {User}", role.Name, userId);
+                // Invalida la cache per tutti gli utenti con questo ruolo
+                await _permissionService.InvalidateCacheForRoleAsync(request.RoleId);
+
+                _logger.LogInformation("Permessi salvati per ruolo {RoleName} da utente {User}. Cache invalidata.", role.Name, userId);
 
                 return Json(new
                 {
                     success = true,
-                    message = $"Permessi salvati con successo per il ruolo {role.Name}"
+                    message = $"Permessi salvati e applicati subito per il ruolo {role.Name}"
                 });
             }
             catch (Exception ex)
@@ -425,6 +431,32 @@ namespace AiDbMaster.Controllers
             {
                 _logger.LogError(ex, "❌ Errore durante reset risorse");
                 return StatusCode(500, new { success = false, message = $"Errore durante il reset: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Invalida la cache dei permessi per tutti gli utenti
+        /// Utile per applicare immediatamente le modifiche ai permessi
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> InvalidateAllCache()
+        {
+            try
+            {
+                _logger.LogInformation("Richiesta invalidazione cache permessi da utente {User}", User.Identity?.Name);
+
+                await _permissionService.InvalidateAllCacheAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Cache permessi invalidata per tutti gli utenti. Le modifiche sono ora attive."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante invalidazione cache");
+                return StatusCode(500, new { success = false, message = $"Errore: {ex.Message}" });
             }
         }
 

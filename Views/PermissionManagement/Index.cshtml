@@ -150,6 +150,10 @@
                 Gestione Permessi (Profilazione)
             </h4>
             <div>
+                <button class="btn btn-info btn-sm me-2" onclick="invalidaCache()" id="btnInvalidateCache" title="Applica immediatamente le modifiche ai permessi per tutti gli utenti">
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    Applica Subito
+                </button>
                 <button class="btn btn-success btn-sm me-2" onclick="aggiungiNuoveRisorse()" id="btnAddNewResources" title="Aggiunge solo le nuove risorse dai controller con [RegisterResource]">
                     <i class="bi bi-plus-circle me-1"></i>
                     Aggiungi Nuove Risorse
@@ -517,6 +521,45 @@
          */
         function chiudiPopupRisorseNonConfigurate() {
             popupRisorseNonConfigurate.hide();
+        }
+
+        /**
+         * Invalida la cache dei permessi per tutti gli utenti
+         * Applica immediatamente le modifiche ai permessi
+         */
+        async function invalidaCache() {
+            const btn = document.getElementById('btnInvalidateCache');
+            const originalHtml = btn.innerHTML;
+            
+            try {
+                // Disabilita pulsante e mostra spinner
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Applicando...';
+
+                const response = await fetch('/PermissionManagement/InvalidateAllCache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Errore sconosciuto');
+                }
+
+                // Mostra messaggio di successo
+                alert('✅ ' + result.message);
+
+            } catch (error) {
+                console.error('Errore invalidazione cache:', error);
+                alert('❌ Errore durante l\'invalidazione della cache: ' + error.message);
+            } finally {
+                // Ripristina pulsante
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
 
         /**

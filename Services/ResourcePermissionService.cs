@@ -233,5 +233,57 @@ namespace AiDbMaster.Services
             _cache.Remove(cacheKey);
             _logger.LogInformation("Cache permessi invalidata per utente {UserId}", userId);
         }
+
+        /// <summary>
+        /// Invalida la cache dei permessi per tutti gli utenti con un determinato ruolo
+        /// </summary>
+        public async Task InvalidateCacheForRoleAsync(string roleId)
+        {
+            try
+            {
+                // Trova tutti gli utenti con questo ruolo
+                var usersInRole = await _context.UserRoles
+                    .Where(ur => ur.RoleId == roleId)
+                    .Select(ur => ur.UserId)
+                    .ToListAsync();
+
+                foreach (var userId in usersInRole)
+                {
+                    InvalidateUserCache(userId);
+                }
+
+                _logger.LogInformation("Cache permessi invalidata per {Count} utenti con ruolo {RoleId}", 
+                    usersInRole.Count, roleId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante invalidazione cache per ruolo {RoleId}", roleId);
+            }
+        }
+
+        /// <summary>
+        /// Invalida la cache dei permessi per TUTTI gli utenti
+        /// </summary>
+        public async Task InvalidateAllCacheAsync()
+        {
+            try
+            {
+                // Trova tutti gli utenti attivi
+                var allUserIds = await _context.Users
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                foreach (var userId in allUserIds)
+                {
+                    InvalidateUserCache(userId);
+                }
+
+                _logger.LogInformation("Cache permessi invalidata per TUTTI gli utenti ({Count})", allUserIds.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante invalidazione cache globale");
+            }
+        }
     }
 }

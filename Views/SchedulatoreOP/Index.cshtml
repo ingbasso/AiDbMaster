@@ -911,13 +911,17 @@
                     Name: centro.name
                 }));
                 
+                // Recupera data salvata dal localStorage (se esiste)
+                const savedDate = localStorage.getItem('schedulatoreOP_selectedDate');
+                const initialDate = savedDate ? new Date(savedDate) : new Date();
+                
                 // Crea istanza Schedule con visualizzazione Timeline 2 Settimane
                 scheduleObj = new ej.schedule.Schedule({
                     width: '100%',
                     height: '100%',
                     locale: 'it',  // Imposta la cultura italiana
                     currentView: 'TimelineWeek',
-                    selectedDate: new Date(),
+                    selectedDate: initialDate,
                     timeFormat: 'HH',  // Solo ore in formato 24h
                     showQuickInfo: false,
                     quickInfoOnSelectionEnd: false,  // Disabilita popup su selezione
@@ -1053,7 +1057,7 @@
             }
         }
 
-        // Handler navigazione calendario - non serve più ricaricare, abbiamo già tutti gli ordini
+        // Handler navigazione calendario - salva la data corrente nel localStorage
         async function onNavigating(args) {
             // L'evento args.currentDate contiene la data corrente del calendario
             console.log('📅 Navigating calendar:', {
@@ -1061,6 +1065,11 @@
                 currentDate: args.currentDate,
                 previousDate: args.previousDate
             });
+            
+            // Salva la data corrente nel localStorage per mantenerla dopo refresh
+            if (args.currentDate) {
+                localStorage.setItem('schedulatoreOP_selectedDate', args.currentDate.toISOString());
+            }
             
             // Non serve ricaricare: abbiamo già tutti gli ordini con IdStato != 4 in memoria
         }

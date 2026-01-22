@@ -36,6 +36,16 @@ namespace AiDbMaster.Services
         /// Invalida la cache dei permessi per un utente
         /// </summary>
         void InvalidateUserCache(string userId);
+
+        /// <summary>
+        /// Invalida la cache dei permessi per tutti gli utenti con un determinato ruolo
+        /// </summary>
+        Task InvalidateCacheForRoleAsync(string roleId);
+
+        /// <summary>
+        /// Invalida la cache dei permessi per TUTTI gli utenti
+        /// </summary>
+        Task InvalidateAllCacheAsync();
     }
 
     /// <summary>

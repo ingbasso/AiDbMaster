@@ -74,55 +74,55 @@
                                             <span>Articoli Sostitutivi</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ProgressiviArticoli:View">
                                         <a class="sidebar-link" asp-controller="ProgressiviArticoli" asp-action="Index">
                                             <i class="bi bi-boxes"></i>
                                             <span>Progressivi Articoli</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="TabellaAgenti:View">
                                         <a class="sidebar-link" asp-controller="TabellaAgenti" asp-action="Index">
                                             <i class="bi bi-person-workspace"></i>
                                             <span>Agenti</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="TabellaMagazzini:View">
                                         <a class="sidebar-link" asp-controller="TabellaMagazzini" asp-action="Index">
                                             <i class="bi bi-building"></i>
                                             <span>Magazzini</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="Lavorazioni:View">
                                         <a class="sidebar-link" asp-controller="Lavorazioni" asp-action="Index">
                                             <i class="bi bi-gear-wide"></i>
                                             <span>Lavorazioni</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="CentriLavoro:View">
                                         <a class="sidebar-link" asp-controller="CentriLavoro" asp-action="Index">
                                             <i class="bi bi-building-gear"></i>
                                             <span>Centri di Lavoro</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="Operatori:View">
                                         <a class="sidebar-link" asp-controller="Operatori" asp-action="Index">
                                             <i class="bi bi-people"></i>
                                             <span>Operatori</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="StatiOP:View">
                                         <a class="sidebar-link" asp-controller="StatiOP" asp-action="Index">
                                             <i class="bi bi-flag"></i>
                                             <span>Stati OP</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="OrdiniTestate:View">
                                         <a class="sidebar-link" asp-controller="OrdiniTestate" asp-action="Index">
                                             <i class="bi bi-clipboard-check"></i>
                                             <span>Gestione Ordini CF</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="TempiAsciugatura:View">
                                         <a class="sidebar-link" asp-controller="TempiAsciugatura" asp-action="Index">
                                             <i class="bi bi-calendar-day"></i>
                                             <span>Tempi di Asciugatura</span>
@@ -141,25 +141,25 @@
                             </a>
                             <div class="collapse" id="produzioneSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ListaOPDashboard:View">
                                         <a class="sidebar-link" asp-controller="ListaOP" asp-action="Dashboard">
                                             <i class="bi bi-graph-up"></i>
                                             <span>Dashboard</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="SchedulatoreOP:View">
                                         <a class="sidebar-link" asp-controller="SchedulatoreOP" asp-action="Index">
                                             <i class="bi bi-calendar2-check"></i>
                                             <span>Schedulatore OP</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ListaOP:View">
                                         <a class="sidebar-link" asp-controller="ListaOP" asp-action="Index">
                                             <i class="bi bi-list-ul"></i>
                                             <span>Ordini di Produzione</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="FermiSchedulati:View">
                                         <a class="sidebar-link" asp-controller="FermiSchedulati" asp-action="Index">
                                             <i class="bi bi-calendar-check"></i>
                                             <span>Fermi Schedulati</span>
@@ -178,39 +178,36 @@
                             </a>
                             <div class="collapse" id="interrogazioniDBSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="Disponibilita:View">
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="Disponibilita">
                                             <i class="bi bi-boxes"></i>
                                             <span>Disponibilità</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
                                             <i class="bi bi-calendar-event"></i>
                                             <span>Consegne Programmate</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="DashboardConsegne:View">
                                         <a class="sidebar-link" asp-controller="DashboardConsegne" asp-action="Index">
                                             <i class="bi bi-graph-up"></i>
                                             <span>Dashboard Consegne</span>
                                         </a>
                                     </li>
-                                    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-                                    {
-                                        <li class="sidebar-item">
-                                            <a class="sidebar-link" asp-controller="Grafici" asp-action="Index">
-                                                <i class="bi bi-graph-up"></i>
-                                                <span>Grafici</span>
-                                            </a>
-                                        </li>
-                                        <li class="sidebar-item">
-                                            <a class="sidebar-link" asp-controller="InterrogazioniAI" asp-action="Index">
-                                                <i class="bi bi-robot"></i>
-                                                <span>Interrogazioni AI</span>
-                                            </a>
-                                        </li>
-                                    }
+                                    <li class="sidebar-item" permission-required="Grafici:View">
+                                        <a class="sidebar-link" asp-controller="Grafici" asp-action="Index">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Grafici</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="InterrogazioniAI:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniAI" asp-action="Index">
+                                            <i class="bi bi-robot"></i>
+                                            <span>Interrogazioni AI</span>
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
