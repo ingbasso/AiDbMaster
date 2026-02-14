@@ -1,0 +1,265 @@
+@model AiDbMaster.ViewModels.ListaEmailInviateViewModel
+
+@{
+    ViewData["Title"] = "Lista Email Inviate";
+    ViewBag.UseFluidContainer = true;
+}
+
+@section Styles {
+    <style>
+        .stats-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-email {
+            font-size: 0.82rem;
+        }
+
+        .table-email thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table-email thead th {
+            border: none;
+            padding: 0.6rem 0.5rem;
+            white-space: nowrap;
+        }
+
+        .table-email td {
+            padding: 0.4rem 0.5rem;
+            vertical-align: middle;
+        }
+
+        .table-email tbody tr:hover {
+            background-color: #e8f0fe;
+        }
+
+        .badge-custom {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.55rem;
+        }
+
+        .result-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-box {
+            max-width: 300px;
+        }
+    </style>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">
+            <i class="fas fa-envelope-open-text text-primary me-2"></i>
+            Lista Email Inviate
+        </h4>
+        <p class="text-muted mb-0">Storico di tutte le notifiche "Avviso Merce Pronta" inviate</p>
+    </div>
+    <div>
+        <a asp-action="AvvisoMercePronta" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-paper-plane me-1"></i> Avviso Merce Pronta
+        </a>
+    </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <h5 class="mb-0 text-primary">@Model.TotaleEmail</h5>
+            <small class="text-muted">Totale Email Inviate</small>
+        </div>
+        <div class="col-md-4">
+            @{
+                var ordiniDistinti = Model.EmailInviate
+                    .Select(e => new { e.TipoOrdine, e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine })
+                    .Distinct().Count();
+            }
+            <h5 class="mb-0 text-info">@ordiniDistinti</h5>
+            <small class="text-muted">Ordini Distinti</small>
+        </div>
+        <div class="col-md-4">
+            @{
+                var clientiDistinti = Model.EmailInviate
+                    .Where(e => e.CodiceCliente > 0)
+                    .Select(e => e.CodiceCliente)
+                    .Distinct().Count();
+            }
+            <h5 class="mb-0 text-success">@clientiDistinti</h5>
+            <small class="text-muted">Clienti Distinti</small>
+        </div>
+    </div>
+</div>
+
+@if (Model.TotaleEmail == 0)
+{
+    <!-- Stato vuoto -->
+    <div class="card result-card">
+        <div class="card-body empty-state">
+            <i class="fas fa-inbox text-muted"></i>
+            <h5>Nessuna email inviata</h5>
+            <p>Non ci sono ancora notifiche email registrate nel sistema.</p>
+            <a asp-action="AvvisoMercePronta" class="btn btn-primary btn-sm">
+                <i class="fas fa-paper-plane me-1"></i> Vai ad Avviso Merce Pronta
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Filtro ricerca -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="input-group search-box">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Cerca per cliente, articolo, ordine...">
+        </div>
+        <small class="text-muted">
+            Visualizzati <strong id="countVisible">@Model.TotaleEmail</strong> di @Model.TotaleEmail record
+        </small>
+    </div>
+
+    <!-- Tabella -->
+    <div class="card result-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-email table-striped table-hover mb-0" id="tabellaEmail">
+                    <thead>
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Data Invio</th>
+                            <th>Ordine</th>
+                            <th>Riga</th>
+                            <th>Cliente</th>
+                            <th>Agente</th>
+                            <th>Articolo</th>
+                            <th>Descrizione</th>
+                            <th class="text-center">U.M.</th>
+                            <th class="text-end">Qta Ord.</th>
+                            <th class="text-end">Qta Evasa</th>
+                            <th class="text-end">Qta Rim.</th>
+                            <th>Data Consegna</th>
+                            <th class="text-center">Contab.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var email in Model.EmailInviate)
+                        {
+                            <tr>
+                                <td class="text-center text-muted">@email.ID</td>
+                                <td>
+                                    <strong>@email.DataInvio.ToString("dd/MM/yyyy")</strong>
+                                    <br />
+                                    <small class="text-muted">@email.DataInvio.ToString("HH:mm")</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary badge-custom">@email.NumeroOrdineCompleto</span>
+                                </td>
+                                <td class="text-center">@email.RigaOrdine</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(email.RagioneSociale))
+                                    {
+                                        <span>@email.RagioneSociale</span>
+                                        <br />
+                                        <small class="text-muted">Cod. @email.CodiceCliente</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Cod. @email.CodiceCliente</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(email.NomeAgente))
+                                    {
+                                        <span>@email.NomeAgente</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(email.CodiceArticolo))
+                                    {
+                                        <code>@email.CodiceArticolo</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/D</span>
+                                    }
+                                </td>
+                                <td>@(email.DescrizioneArticolo ?? "-")</td>
+                                <td class="text-center">@(email.UnitaMisura ?? "-")</td>
+                                <td class="text-end">@email.Quantita.ToString("N2")</td>
+                                <td class="text-end">@email.QuantitaEvasa.ToString("N2")</td>
+                                <td class="text-end">
+                                    <strong>@email.QuantitaRimanente.ToString("N2")</strong>
+                                </td>
+                                <td>
+                                    @if (email.DataConsegna.HasValue)
+                                    {
+                                        @email.DataConsegna.Value.ToString("dd/MM/yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="@email.ContabilizzatoCssClass">@email.ContabilizzatoDescrizione</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Filtro di ricerca nella tabella
+        document.getElementById('searchInput')?.addEventListener('input', function () {
+            var searchText = this.value.toLowerCase();
+            var rows = document.querySelectorAll('#tabellaEmail tbody tr');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var text = row.textContent.toLowerCase();
+                if (text.indexOf(searchText) > -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('countVisible').textContent = visibleCount;
+        });
+    </script>
+}

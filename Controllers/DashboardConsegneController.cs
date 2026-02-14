@@ -182,7 +182,8 @@ namespace AiDbMaster.Controllers
                 var consegneInRitardoDettaglio = righeInRitardo
                     .GroupBy(x => new 
                     { 
-                        x.Testata.AnnoOrdine, 
+                        x.Testata.AnnoOrdine,
+                        x.Testata.SerieOrdine,
                         x.Testata.NumeroOrdine, 
                         x.Riga.DataConsegna,
                         x.Cliente.CodiceCliente,
@@ -192,6 +193,7 @@ namespace AiDbMaster.Controllers
                     .Select(g => new ConsegnaInRitardoDto
                     {
                         AnnoOrdine = g.Key.AnnoOrdine,
+                        SerieOrdine = g.Key.SerieOrdine,
                         NumeroOrdine = g.Key.NumeroOrdine,
                         DataConsegna = g.Key.DataConsegna,
                         CodiceCliente = g.Key.CodiceCliente.ToString(),
@@ -202,6 +204,35 @@ namespace AiDbMaster.Controllers
                     .OrderBy(x => x.DataConsegna)
                     .Take(20)
                     .ToList();
+
+                // Pre-carica le email inviate per gli ordini in ritardo
+                var ordiniChiavi = consegneInRitardoDettaglio
+                    .Select(c => new { AnnoOrdine = (short)c.AnnoOrdine, c.SerieOrdine, c.NumeroOrdine })
+                    .Distinct()
+                    .ToList();
+
+                var emailInviate = await _context.InvioEmail
+                    .Where(e => e.TipoOrdine == "R")
+                    .ToListAsync();
+
+                // Raggruppa per ordine e prendi la data più recente
+                var emailPerOrdine = emailInviate
+                    .GroupBy(e => new { e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine })
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Max(e => e.DataInvio)
+                    );
+
+                // Imposta il flag email su ogni consegna in ritardo
+                foreach (var consegna in consegneInRitardoDettaglio)
+                {
+                    var chiave = new { AnnoOrdine = (short)consegna.AnnoOrdine, SerieOrdine = consegna.SerieOrdine, NumeroOrdine = consegna.NumeroOrdine };
+                    if (emailPerOrdine.ContainsKey(chiave))
+                    {
+                        consegna.HasEmailInviata = true;
+                        consegna.DataEmailInviata = emailPerOrdine[chiave];
+                    }
+                }
 
                 model.ConsegneInRitardo = consegneInRitardoDettaglio;
 

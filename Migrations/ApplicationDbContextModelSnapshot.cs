@@ -31,6 +31,10 @@ namespace AiDbMaster.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<short?>("ClasseProvvigione")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ClasseProvvigione");
+
                     b.Property<string>("CodiceAlternativo")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -61,10 +65,35 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("DescrizioneUlteriore");
 
+                    b.Property<string>("Famiglia")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("Famiglia");
+
+                    b.Property<string>("FuoriProduzione")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasDefaultValue("N")
+                        .HasColumnName("FuoriProduzione");
+
                     b.Property<string>("MakeOrBuy")
                         .HasMaxLength(1)
                         .HasColumnType("varchar(1)")
                         .HasColumnName("MakeOrBuy");
+
+                    b.Property<short?>("Marca")
+                        .HasColumnType("smallint")
+                        .HasColumnName("Marca");
+
+                    b.Property<string>("Outlet")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasDefaultValue("N")
+                        .HasColumnName("Outlet");
 
                     b.Property<string>("SecondaUnitaMisura")
                         .HasMaxLength(3)
@@ -88,6 +117,12 @@ namespace AiDbMaster.Migrations
                         .HasColumnName("UnitàMisuraConfezione");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClasseProvvigione");
+
+                    b.HasIndex("Famiglia");
+
+                    b.HasIndex("Marca");
 
                     b.ToTable("AnagraficaArticoli");
                 });
@@ -128,6 +163,11 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("DescrizioneUlteriore");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Email");
 
                     b.Property<string>("Indirizzo")
                         .HasMaxLength(70)
@@ -448,6 +488,38 @@ namespace AiDbMaster.Migrations
                     b.ToTable("CentriLavoro");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.ClasseProvvigione", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("CodiceClasse")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("DescrizioneClasse")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Perc_Sconto")
+                        .HasColumnType("decimal(27,9)");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceClasse")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TabellaClassiProvvigioni_CodiceClasse");
+
+                    b.ToTable("TabellaClassiProvvigioni");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.DestinazioniDiverse", b =>
                 {
                     b.Property<int>("CodiceConto")
@@ -620,6 +692,94 @@ namespace AiDbMaster.Migrations
                     b.ToTable("DocumentPermissions");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.Famiglia", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("CodiceFamiglia")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)");
+
+                    b.Property<string>("DescrizioneFamiglia")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceFamiglia")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TabellaFamiglie_CodiceFamiglia");
+
+                    b.ToTable("TabellaFamiglie");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.InvioEmail", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("AnnoOrdine")
+                        .HasColumnType("smallint")
+                        .HasColumnName("AnnoOrdine");
+
+                    b.Property<string>("Contabilizzato")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasDefaultValue("N")
+                        .HasColumnName("Contabilizzato");
+
+                    b.Property<DateTime>("DataInvio")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataInvio");
+
+                    b.Property<int>("NumeroOrdine")
+                        .HasColumnType("int")
+                        .HasColumnName("NumeroOrdine");
+
+                    b.Property<int>("RigaOrdine")
+                        .HasColumnType("int")
+                        .HasColumnName("RigaOrdine");
+
+                    b.Property<string>("SerieOrdine")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("SerieOrdine");
+
+                    b.Property<string>("TipoOrdine")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("TipoOrdine");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("DataInvio")
+                        .HasDatabaseName("IX_InvioEmail_DataInvio");
+
+                    b.HasIndex("TipoOrdine", "AnnoOrdine", "SerieOrdine", "NumeroOrdine", "RigaOrdine")
+                        .IsUnique()
+                        .HasDatabaseName("IX_InvioEmail_OrdineRiga");
+
+                    b.ToTable("InvioEmail");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Lavorazioni", b =>
                 {
                     b.Property<short>("CodiceLavorazione")
@@ -782,6 +942,35 @@ namespace AiDbMaster.Migrations
                     b.ToTable("ListaOP");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.Marca", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("CodiceMarca")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("DescrizioneMarca")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceMarca")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TabellaMarche_CodiceMarca");
+
+                    b.ToTable("TabellaMarche");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Operatore", b =>
                 {
                     b.Property<int>("IdOperatore")
@@ -839,6 +1028,35 @@ namespace AiDbMaster.Migrations
                         .HasDatabaseName("IX_Operatori_NomeCognome");
 
                     b.ToTable("Operatori");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.Opzione", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("NomeOpzione")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("NomeOpzione");
+
+                    b.Property<string>("ValoreOpzione")
+                        .IsRequired()
+                        .HasColumnType("varchar(max)")
+                        .HasColumnName("ValoreOpzione");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("NomeOpzione")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TabellaOpzioni_NomeOpzione");
+
+                    b.ToTable("TabellaOpzioni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.OrdiniRighe", b =>
@@ -991,6 +1209,10 @@ namespace AiDbMaster.Migrations
                     b.Property<int>("NumeroOrdine")
                         .HasColumnType("int")
                         .HasColumnName("NumeroOrdine");
+
+                    b.Property<string>("Porto")
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("Porto");
 
                     b.Property<string>("RiferimentoOrdine")
                         .HasMaxLength(50)
@@ -1290,6 +1512,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("DescrizioneAgente");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Email");
+
                     b.Property<string>("IndirizzoAgente")
                         .HasMaxLength(70)
                         .HasColumnType("nvarchar(70)")
@@ -1523,6 +1750,33 @@ namespace AiDbMaster.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.AnagraficaArticoli", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.ClasseProvvigione", "ClasseProvvigioneNavigation")
+                        .WithMany()
+                        .HasForeignKey("ClasseProvvigione")
+                        .HasPrincipalKey("CodiceClasse")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AiDbMaster.Models.Famiglia", "FamigliaNavigation")
+                        .WithMany()
+                        .HasForeignKey("Famiglia")
+                        .HasPrincipalKey("CodiceFamiglia")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AiDbMaster.Models.Marca", "MarcaNavigation")
+                        .WithMany()
+                        .HasForeignKey("Marca")
+                        .HasPrincipalKey("CodiceMarca")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClasseProvvigioneNavigation");
+
+                    b.Navigation("FamigliaNavigation");
+
+                    b.Navigation("MarcaNavigation");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.AnagraficaClienti", b =>

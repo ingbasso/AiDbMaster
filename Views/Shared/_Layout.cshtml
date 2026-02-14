@@ -190,6 +190,18 @@
                                             <span>Consegne Programmate</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item" permission-required="AvvisoMercePronta:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="AvvisoMercePronta">
+                                            <i class="bi bi-envelope-paper"></i>
+                                            <span>Avviso Merce Pronta</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ListaEmailInviate:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ListaEmailInviate">
+                                            <i class="bi bi-envelope-open"></i>
+                                            <span>Lista Email Inviate</span>
+                                        </a>
+                                    </li>
                                     <li class="sidebar-item" permission-required="DashboardConsegne:View">
                                         <a class="sidebar-link" asp-controller="DashboardConsegne" asp-action="Index">
                                             <i class="bi bi-graph-up"></i>

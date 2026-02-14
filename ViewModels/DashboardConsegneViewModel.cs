@@ -71,6 +71,7 @@ namespace AiDbMaster.ViewModels
     public class ConsegnaInRitardoDto
     {
         public int AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = "";
         public int NumeroOrdine { get; set; }
         public string NumeroOrdineCompleto => $"{AnnoOrdine}/{NumeroOrdine:D4}";
         public DateTime DataConsegna { get; set; }
@@ -79,6 +80,16 @@ namespace AiDbMaster.ViewModels
         public string RagioneSociale { get; set; } = "";
         public string? NomeAgente { get; set; }
         public decimal ValoreRimanente { get; set; }
+
+        /// <summary>
+        /// Indica se almeno una riga di questo ordine ha già ricevuto una notifica email.
+        /// </summary>
+        public bool HasEmailInviata { get; set; }
+
+        /// <summary>
+        /// Data dell'ultimo invio email per questo ordine (se presente).
+        /// </summary>
+        public DateTime? DataEmailInviata { get; set; }
     }
 }
 

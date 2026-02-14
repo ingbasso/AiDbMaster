@@ -208,6 +208,19 @@ namespace AiDbMaster.Controllers
 
                 ViewBag.Statistiche = statistiche;
 
+                // Pre-carica le email inviate raggruppate per ordine
+                var emailInviate = await _context.InvioEmail
+                    .Where(e => e.TipoOrdine == "R")
+                    .GroupBy(e => new { e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine })
+                    .Select(g => new { g.Key.AnnoOrdine, g.Key.SerieOrdine, g.Key.NumeroOrdine, DataInvio = g.Max(e => e.DataInvio) })
+                    .ToListAsync();
+
+                ViewBag.OrdiniConEmail = emailInviate
+                    .ToDictionary(
+                        e => $"{e.AnnoOrdine}|{e.SerieOrdine}|{e.NumeroOrdine}",
+                        e => e.DataInvio
+                    );
+
                 _logger.LogInformation("Caricati {Count} ordini su {Total} totali", ordini.Count, totalCount);
 
                 return View(ordini);

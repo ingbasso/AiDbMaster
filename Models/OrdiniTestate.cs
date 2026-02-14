@@ -106,6 +106,57 @@ namespace AiDbMaster.Models
         [Column("NoteTestata")]
         public string? NoteTestata { get; set; }
 
+        /// <summary>
+        /// Indica se l'ordine è prenotato: "S" = Sì, "N" = No
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Prenotato")]
+        [Column("Prenotato")]
+        public string? Prenotato { get; set; }
+
+        /// <summary>
+        /// Codice porto: "1" = Porto Franco, "2" = Porto Assegnato.
+        /// Nel database è un varchar, non un smallint.
+        /// Nullable: potrebbe non essere valorizzato.
+        /// </summary>
+        [Display(Name = "Porto")]
+        [Column("Porto")]
+        public string? Porto { get; set; }
+
+        /// <summary>
+        /// Descrizione del porto in base al codice
+        /// </summary>
+        [NotMapped]
+        public string DescrizionePorto
+        {
+            get
+            {
+                return Porto?.Trim() switch
+                {
+                    "1" => "Porto Franco",
+                    "2" => "Porto Assegnato",
+                    _ => !string.IsNullOrEmpty(Porto) ? $"Porto {Porto}" : "Non specificato"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Classe CSS per il badge del porto
+        /// </summary>
+        [NotMapped]
+        public string PortoCssClass
+        {
+            get
+            {
+                return Porto?.Trim() switch
+                {
+                    "1" => "badge bg-success",       // Porto Franco = verde
+                    "2" => "badge bg-warning text-dark", // Porto Assegnato = giallo
+                    _ => "badge bg-secondary"
+                };
+            }
+        }
+
         // Proprietà di navigazione per le relazioni
         /// <summary>
         /// Cliente associato all'ordine

@@ -108,6 +108,14 @@ namespace AiDbMaster.Models
         public string? Telefono { get; set; }
 
         /// <summary>
+        /// Indirizzo email del cliente
+        /// </summary>
+        [StringLength(100, ErrorMessage = "L'email non può superare i 100 caratteri")]
+        [Display(Name = "Email")]
+        [Column("Email", TypeName = "varchar(100)")]
+        public string? Email { get; set; }
+
+        /// <summary>
         /// Codice agente associato al cliente
         /// </summary>
         [Required(ErrorMessage = "Il codice agente è obbligatorio")]

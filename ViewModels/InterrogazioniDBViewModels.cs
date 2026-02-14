@@ -36,6 +36,14 @@ namespace AiDbMaster.ViewModels
         // Output - Lista risultati articoli sostitutivi
         public List<DisponibilitaArticoloGruppoViewModel>? ArticoliSostitutivi { get; set; }
         
+        // Output - Lista risultati articoli Outlet
+        public List<DisponibilitaArticoloGruppoViewModel>? ArticoliOutlet { get; set; }
+        
+        /// <summary>
+        /// Flag che indica se è stata richiesta la ricerca Outlet
+        /// </summary>
+        public bool RicercaOutlet { get; set; }
+        
         // Informazioni aggiuntive sull'articolo selezionato
         public string? DescrizioneArticolo { get; set; }
     }
@@ -49,6 +57,12 @@ namespace AiDbMaster.ViewModels
         public string DescrizioneArticolo { get; set; } = string.Empty;
         public bool IsArticoloPrincipale { get; set; }
         public List<DisponibilitaRigaViewModel> Risultati { get; set; } = new List<DisponibilitaRigaViewModel>();
+        
+        /// <summary>
+        /// Percentuale sconto extra (da TabellaClassiProvvigioni.Perc_Sconto).
+        /// Null se l'articolo non ha una ClasseProvvigione assegnata.
+        /// </summary>
+        public decimal? PercScontoExtra { get; set; }
     }
 
     /// <summary>
@@ -103,9 +117,14 @@ namespace AiDbMaster.ViewModels
         /// </summary>
         public decimal DisponibilitaPrevista => Esistenza - ImpegnatoAttuale - ImpegnatoFuturo + ProduzioneDisponibile + OrdinatoFornitoriDataOdierna;
         
-        // CSS class per colorare la riga in base alla disponibilità
-        public string RowCssClass => DisponibileAttuale > 0 ? "table-success" : 
-                                     DisponibileAttuale == 0 ? "table-warning" : "table-danger";
+        /// <summary>
+        /// Indica se l'articolo è Fuori Produzione (FuoriProduzione = 'S').
+        /// Usato per colorare la riga in giallino.
+        /// </summary>
+        public bool IsFuoriProduzione { get; set; }
+        
+        // CSS class per colorare la riga: giallino se FuoriProduzione, altrimenti sfondo bianco
+        public string RowCssClass => IsFuoriProduzione ? "table-warning" : "";
         
         // ========== NOTE PREVISIONE (dinamiche) ==========
         
@@ -360,6 +379,12 @@ namespace AiDbMaster.ViewModels
         public string? NomeAgente { get; set; }
         public string? TelefonoAgente { get; set; }
 
+        // Flag Email Inviata
+        /// <summary>Indica se almeno una riga di questo ordine ha ricevuto una notifica email</summary>
+        public bool HasEmailInviata { get; set; }
+        /// <summary>Data dell'ultimo invio email per questo ordine</summary>
+        public DateTime? DataEmailInviata { get; set; }
+
         // Righe dell'ordine
         public List<RigaOrdineConsegnaViewModel> Righe { get; set; } = new List<RigaOrdineConsegnaViewModel>();
 
@@ -430,6 +455,215 @@ namespace AiDbMaster.ViewModels
             "Completamente Evasa" => "badge bg-success",
             _ => "badge bg-secondary"
         };
+    }
+
+    // ===== VIEWMODELS AVVISO MERCE PRONTA =====
+
+    /// <summary>
+    /// ViewModel principale per la pagina Avviso Merce Pronta.
+    /// Contiene la lista di ordini con righe disponibili, pronte per l'invio email.
+    /// </summary>
+    public class AvvisoMerceProntaViewModel
+    {
+        /// <summary>Data inizio range (oggi)</summary>
+        public DateTime DataDa { get; set; }
+
+        /// <summary>Data fine range (oggi + GiorniEmail)</summary>
+        public DateTime DataA { get; set; }
+
+        /// <summary>Giorni di range configurati (da TabellaOpzioni)</summary>
+        public int GiorniEmail { get; set; }
+
+        /// <summary>Lista ordini con righe disponibili</summary>
+        public List<OrdineEmailViewModel> Ordini { get; set; } = new List<OrdineEmailViewModel>();
+
+        /// <summary>Numero totale di righe disponibili</summary>
+        public int TotaleRigheDisponibili => Ordini.Sum(o => o.Righe.Count);
+
+        /// <summary>Messaggio informativo (es. errori, avvisi)</summary>
+        public string? Messaggio { get; set; }
+
+        /// <summary>Tipo messaggio (success, warning, danger, info)</summary>
+        public string? TipoMessaggio { get; set; }
+    }
+
+    /// <summary>
+    /// ViewModel per un ordine nell'avviso merce pronta (testata + righe disponibili).
+    /// </summary>
+    public class OrdineEmailViewModel
+    {
+        // Chiave ordine
+        public string TipoOrdine { get; set; } = string.Empty;
+        public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
+        public int NumeroOrdine { get; set; }
+
+        // Dati cliente
+        public int CodiceCliente { get; set; }
+        public string RagioneSociale { get; set; } = string.Empty;
+        public string? EmailCliente { get; set; }
+
+        // Dati agente
+        public short CodiceAgente { get; set; }
+        public string? NomeAgente { get; set; }
+        public string? EmailAgente { get; set; }
+
+        // Dati ordine
+        public DateTime DataOrdine { get; set; }
+        public string? RiferimentoOrdine { get; set; }
+        public string? Porto { get; set; }
+        public string? DescrizionePorto { get; set; }
+        public string? PortoCssClass { get; set; }
+
+        // Righe disponibili
+        public List<RigaEmailViewModel> Righe { get; set; } = new List<RigaEmailViewModel>();
+
+        // Flag Email Inviata (almeno una riga dell'ordine)
+        /// <summary>Indica se almeno una riga di questo ordine ha ricevuto una notifica email</summary>
+        public bool HasEmailInviata { get; set; }
+        /// <summary>Data dell'ultimo invio email per questo ordine</summary>
+        public DateTime? DataEmailInviata { get; set; }
+
+        // Proprietà calcolate
+        public string NumeroOrdineCompleto => $"{AnnoOrdine}/{SerieOrdine}/{NumeroOrdine:D6}";
+    }
+
+    /// <summary>
+    /// ViewModel per una singola riga ordine nell'avviso merce pronta.
+    /// Contiene dati sulla disponibilità e un flag per selezione.
+    /// </summary>
+    public class RigaEmailViewModel
+    {
+        // Chiave riga
+        public string TipoOrdine { get; set; } = string.Empty;
+        public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
+        public int NumeroOrdine { get; set; }
+        public int RigaOrdine { get; set; }
+
+        // Dati articolo
+        public string CodiceArticolo { get; set; } = string.Empty;
+        public string? DescrizioneArticolo { get; set; }
+        public string? UnitaMisura { get; set; }
+
+        // Quantità ordine
+        public decimal Quantita { get; set; }
+        public decimal QuantitaEvasa { get; set; }
+        public decimal QuantitaRimanente => Quantita - QuantitaEvasa;
+
+        // Data consegna riga
+        public DateTime DataConsegna { get; set; }
+
+        // Disponibilità magazzino
+        public decimal Esistenza { get; set; }
+
+        /// <summary>
+        /// True se la riga è disponibile (Esistenza >= QuantitaRimanente)
+        /// </summary>
+        public bool IsDisponibile => Esistenza >= QuantitaRimanente;
+
+        /// <summary>
+        /// True se l'articolo è in conflitto (presente in più ordini e disponibilità insufficiente per tutti)
+        /// </summary>
+        public bool IsConflitto { get; set; }
+
+        /// <summary>
+        /// Messaggio di conflitto (spiega perché c'è conflitto)
+        /// </summary>
+        public string? MessaggioConflitto { get; set; }
+
+        /// <summary>
+        /// True se l'email è già stata inviata per questa riga
+        /// </summary>
+        public bool EmailGiaInviata { get; set; }
+
+        /// <summary>
+        /// Data dell'ultimo invio email (se già inviata)
+        /// </summary>
+        public DateTime? DataUltimoInvio { get; set; }
+
+        /// <summary>
+        /// Selezionata dall'operatore per l'invio email
+        /// </summary>
+        public bool Selezionata { get; set; }
+
+        /// <summary>
+        /// Chiave unica per identificare la riga nel form (TipoOrdine|Anno|Serie|Numero|Riga)
+        /// </summary>
+        public string ChiaveRiga => $"{TipoOrdine}|{AnnoOrdine}|{SerieOrdine}|{NumeroOrdine}|{RigaOrdine}";
+
+        /// <summary>
+        /// CSS class per lo sfondo della riga
+        /// </summary>
+        public string RowCssClass
+        {
+            get
+            {
+                if (EmailGiaInviata) return "table-secondary"; // Grigio: già inviata
+                if (IsConflitto) return "table-warning";       // Giallo: conflitto disponibilità
+                return "";                                      // Bianco: disponibile
+            }
+        }
+    }
+
+    /// <summary>
+    /// ViewModel per la richiesta di invio email (POST dal form)
+    /// </summary>
+    public class InvioEmailRequest
+    {
+        /// <summary>Lista chiavi righe selezionate (formato: TipoOrdine|Anno|Serie|Numero|Riga)</summary>
+        public List<string> RigheSelezionate { get; set; } = new List<string>();
+    }
+
+    // ===== VIEWMODELS LISTA EMAIL INVIATE =====
+
+    /// <summary>
+    /// ViewModel per la pagina Lista Email Inviate.
+    /// </summary>
+    public class ListaEmailInviateViewModel
+    {
+        /// <summary>Lista dei record email inviate con dettagli ordine</summary>
+        public List<EmailInviataDettaglioViewModel> EmailInviate { get; set; } = new List<EmailInviataDettaglioViewModel>();
+
+        /// <summary>Totale email inviate</summary>
+        public int TotaleEmail => EmailInviate.Count;
+    }
+
+    /// <summary>
+    /// ViewModel per un singolo record di email inviata con tutti i dettagli ordine/cliente.
+    /// </summary>
+    public class EmailInviataDettaglioViewModel
+    {
+        // Dati InvioEmail
+        public int ID { get; set; }
+        public string TipoOrdine { get; set; } = string.Empty;
+        public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
+        public int NumeroOrdine { get; set; }
+        public int RigaOrdine { get; set; }
+        public DateTime DataInvio { get; set; }
+        public string Contabilizzato { get; set; } = "N";
+
+        // Dati Riga Ordine
+        public string? CodiceArticolo { get; set; }
+        public string? DescrizioneArticolo { get; set; }
+        public string? UnitaMisura { get; set; }
+        public decimal Quantita { get; set; }
+        public decimal QuantitaEvasa { get; set; }
+        public decimal QuantitaRimanente => Quantita - QuantitaEvasa;
+        public DateTime? DataConsegna { get; set; }
+
+        // Dati Cliente
+        public int CodiceCliente { get; set; }
+        public string? RagioneSociale { get; set; }
+
+        // Dati Agente
+        public string? NomeAgente { get; set; }
+
+        // Proprietà calcolate
+        public string NumeroOrdineCompleto => $"{AnnoOrdine}/{SerieOrdine.Trim()}/{NumeroOrdine:D6}";
+        public string ContabilizzatoDescrizione => Contabilizzato == "S" ? "Sì" : "No";
+        public string ContabilizzatoCssClass => Contabilizzato == "S" ? "badge bg-success" : "badge bg-secondary";
     }
 }
 

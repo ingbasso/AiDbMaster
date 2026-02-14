@@ -51,6 +51,10 @@ builder.Services.AddScoped<LavorazioniService>();
 builder.Services.AddScoped<CentriLavoroService>();
 builder.Services.AddScoped<OperatoriService>();
 builder.Services.AddScoped<StatiOPService>();
+builder.Services.AddScoped<ClassiProvvigioniService>();
+builder.Services.AddScoped<FamiglieService>();
+builder.Services.AddScoped<MarcheService>();
+builder.Services.AddScoped<EmailService>();
 
 // Registrazione servizi sistema permessi risorse
 builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();

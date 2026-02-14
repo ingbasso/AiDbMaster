@@ -1,6 +1,6 @@
 🚀 COME USARE GLI SCRIPT:
 STEP 1: Sul tuo PC di sviluppo
-cd C:\AiDbMaster
+cd C:\AiDbMaster\
 .\Build-and-Package.ps1
 Questo crea il file: AiDbMasterDeploy-Final-Clean.zip
 STEP 2: Sul server SVRGEST

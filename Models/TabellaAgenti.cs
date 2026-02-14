@@ -60,6 +60,14 @@ namespace AiDbMaster.Models
         public string? ProvinciaAgente { get; set; }
 
         /// <summary>
+        /// Indirizzo email dell'agente
+        /// </summary>
+        [StringLength(100, ErrorMessage = "L'email non può superare i 100 caratteri")]
+        [Display(Name = "Email")]
+        [Column("Email", TypeName = "varchar(100)")]
+        public string? Email { get; set; }
+
+        /// <summary>
         /// Indica se l'agente è attivo
         /// </summary>
         [Required(ErrorMessage = "Lo stato attivo è obbligatorio")]

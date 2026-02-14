@@ -361,6 +361,12 @@
                                 </div>
                             </div>
                             <div class="text-end ms-3">
+                                @if (ordine.HasEmailInviata)
+                                {
+                                    <span class="badge bg-success badge-custom me-2" title="Email inviata il @ordine.DataEmailInviata?.ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
+                                        <i class="bi bi-envelope-check me-1"></i>EMAIL
+                                    </span>
+                                }
                                 @if (hasRitardo)
                                 {
                                     <span class="badge badge-ritardo badge-custom me-2">
@@ -476,6 +482,14 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        // Inizializza tooltip Bootstrap per i badge email
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+        });
+    </script>
 
     <script>
         $(document).ready(function () {

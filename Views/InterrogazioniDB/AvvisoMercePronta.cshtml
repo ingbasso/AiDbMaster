@@ -1,0 +1,464 @@
+@model AiDbMaster.ViewModels.AvvisoMerceProntaViewModel
+
+@{
+    ViewData["Title"] = "Avviso Merce Pronta";
+    ViewBag.UseFluidContainer = true;
+}
+
+@section Styles {
+    <style>
+        .accordion-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.375rem 0.375rem 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-header-custom:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .accordion-header-custom.collapsed {
+            border-radius: 0.375rem;
+        }
+
+        .header-info-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .header-info-inline > span {
+            white-space: nowrap;
+        }
+
+        .header-info-inline strong {
+            font-weight: 600;
+        }
+
+        .table-righe {
+            font-size: 0.8rem;
+        }
+
+        .table-righe thead {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .table-righe td, .table-righe th {
+            padding: 0.4rem 0.5rem;
+        }
+
+        .result-card {
+            margin-bottom: 1rem;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .badge-custom {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.65rem;
+        }
+
+        .conflitto-icon {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .gia-inviata {
+            opacity: 0.6;
+        }
+
+        .stats-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-invia-email {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-invia-email:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            color: white;
+        }
+
+        .btn-invia-email:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .select-all-checkbox {
+            cursor: pointer;
+        }
+    </style>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">
+            <i class="bi bi-envelope-paper text-primary"></i> Avviso Merce Pronta
+        </h4>
+        <small class="text-muted">
+            Consegne dal <strong>@Model.DataDa.ToString("dd/MM/yyyy")</strong> al <strong>@Model.DataA.ToString("dd/MM/yyyy")</strong>
+            (prossimi @Model.GiorniEmail giorni)
+        </small>
+    </div>
+    <a asp-action="AvvisoMercePronta" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-clockwise"></i> Aggiorna
+    </a>
+</div>
+
+<!-- Messaggi TempData (dopo invio email) -->
+@if (TempData["Messaggio"] != null)
+{
+    <div class="alert alert-@(TempData["TipoMessaggio"] ?? "info") alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        @TempData["Messaggio"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Messaggio dal Model -->
+@if (!string.IsNullOrEmpty(Model.Messaggio))
+{
+    <div class="alert alert-@(Model.TipoMessaggio ?? "info") alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        @Model.Messaggio
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model.Ordini.Any())
+{
+    <!-- Barra Statistiche -->
+    <div class="stats-bar d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <span class="badge bg-primary badge-custom me-2">
+                <i class="bi bi-box-seam"></i> @Model.Ordini.Count ordini
+            </span>
+            <span class="badge bg-info badge-custom me-2">
+                <i class="bi bi-list-check"></i> @Model.TotaleRigheDisponibili righe disponibili
+            </span>
+            @{
+                var righeConflitto = Model.Ordini.SelectMany(o => o.Righe).Count(r => r.IsConflitto);
+                var righeGiaInviate = Model.Ordini.SelectMany(o => o.Righe).Count(r => r.EmailGiaInviata);
+            }
+            @if (righeConflitto > 0)
+            {
+                <span class="badge bg-warning text-dark badge-custom me-2">
+                    <i class="bi bi-exclamation-triangle"></i> @righeConflitto righe in conflitto
+                </span>
+            }
+            @if (righeGiaInviate > 0)
+            {
+                <span class="badge bg-secondary badge-custom">
+                    <i class="bi bi-check-circle"></i> @righeGiaInviate già inviate
+                </span>
+            }
+        </div>
+        <div>
+            <span class="text-muted small">Seleziona le righe e clicca "Invia Email"</span>
+        </div>
+    </div>
+
+    <!-- Form per invio email -->
+    <form asp-action="InviaEmailMercePronta" method="post" id="formInvioEmail">
+        @Html.AntiForgeryToken()
+
+        <!-- Pulsanti azione -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelezionaTutte">
+                    <i class="bi bi-check-all"></i> Seleziona tutte
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselezionaTutte">
+                    <i class="bi bi-x-lg"></i> Deseleziona tutte
+                </button>
+            </div>
+            <div>
+                <span id="contatoreSelezionate" class="badge bg-dark badge-custom me-2">0 selezionate</span>
+                <button type="submit" class="btn btn-invia-email" id="btnInviaEmail" disabled>
+                    <i class="bi bi-envelope-fill"></i> Invia Email
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista ordini con accordion -->
+        <div class="accordion" id="accordionOrdini">
+            @for (int i = 0; i < Model.Ordini.Count; i++)
+            {
+                var ordine = Model.Ordini[i];
+                var collapseId = $"collapse_{i}";
+                var headerId = $"header_{i}";
+
+                <div class="result-card card">
+                    <!-- Header Ordine (accordion) -->
+                    <div class="accordion-header-custom" id="@headerId" data-bs-toggle="collapse"
+                         data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="fs-6">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    Ordine @ordine.NumeroOrdineCompleto
+                                </strong>
+                                <span class="ms-3">@ordine.RagioneSociale</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                @if (ordine.HasEmailInviata)
+                                {
+                                    <span class="badge bg-success" title="Email inviata il @ordine.DataEmailInviata?.ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
+                                        <i class="bi bi-envelope-check me-1"></i>EMAIL
+                                    </span>
+                                }
+                                <span class="badge bg-light text-dark">@ordine.Righe.Count righe</span>
+                                @if (ordine.Righe.Any(r => r.IsConflitto))
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-triangle"></i> Conflitto
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(ordine.DescrizionePorto))
+                                {
+                                    <span class="@ordine.PortoCssClass">@ordine.DescrizionePorto</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="header-info-inline">
+                            <span><i class="bi bi-person"></i> Cliente: @ordine.CodiceCliente</span>
+                            <span><i class="bi bi-calendar3"></i> Ordine: @ordine.DataOrdine.ToString("dd/MM/yyyy")</span>
+                            @if (!string.IsNullOrEmpty(ordine.NomeAgente))
+                            {
+                                <span><i class="bi bi-person-badge"></i> Agente: @ordine.NomeAgente</span>
+                            }
+                            @if (!string.IsNullOrEmpty(ordine.RiferimentoOrdine))
+                            {
+                                <span><i class="bi bi-hash"></i> Rif: @ordine.RiferimentoOrdine</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Corpo: tabella righe -->
+                    <div id="@collapseId" class="accordion-collapse collapse @(i == 0 ? "show" : "")"
+                         data-bs-parent="#accordionOrdini">
+                        <div class="card-body p-2">
+                            <table class="table table-righe table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;" class="text-center">
+                                            <input type="checkbox" class="form-check-input select-all-ordine"
+                                                   data-ordine="@i" title="Seleziona tutte le righe dell'ordine">
+                                        </th>
+                                        <th>Articolo</th>
+                                        <th>Descrizione</th>
+                                        <th class="text-center">U.M.</th>
+                                        <th class="text-end">Ordinato</th>
+                                        <th class="text-end">Evaso</th>
+                                        <th class="text-end">Rimanente</th>
+                                        <th class="text-end">Esistenza</th>
+                                        <th class="text-center">Consegna</th>
+                                        <th class="text-center">Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var riga in ordine.Righe)
+                                    {
+                                        <tr class="@riga.RowCssClass @(riga.EmailGiaInviata ? "gia-inviata" : "")">
+                                            <td class="text-center">
+                                                @if (riga.EmailGiaInviata)
+                                                {
+                                                    <i class="bi bi-check-circle-fill text-success" 
+                                                       title="Email già inviata il @(riga.DataUltimoInvio?.ToString("dd/MM/yyyy HH:mm"))"></i>
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" class="form-check-input riga-checkbox" 
+                                                           name="righeSelezionate" value="@riga.ChiaveRiga"
+                                                           data-ordine="@i">
+                                                }
+                                            </td>
+                                            <td><strong>@riga.CodiceArticolo</strong></td>
+                                            <td>@riga.DescrizioneArticolo</td>
+                                            <td class="text-center">@riga.UnitaMisura</td>
+                                            <td class="text-end">@riga.Quantita.ToString("N2")</td>
+                                            <td class="text-end">@riga.QuantitaEvasa.ToString("N2")</td>
+                                            <td class="text-end"><strong>@riga.QuantitaRimanente.ToString("N2")</strong></td>
+                                            <td class="text-end">
+                                                <span class="@(riga.Esistenza >= riga.QuantitaRimanente ? "text-success" : "text-danger")">
+                                                    @riga.Esistenza.ToString("N2")
+                                                </span>
+                                            </td>
+                                            <td class="text-center">@riga.DataConsegna.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-center">
+                                                @if (riga.EmailGiaInviata)
+                                                {
+                                                    <span class="badge bg-secondary" title="Inviata il @(riga.DataUltimoInvio?.ToString("dd/MM/yyyy HH:mm"))">
+                                                        <i class="bi bi-envelope-check"></i> Inviata
+                                                    </span>
+                                                }
+                                                else if (riga.IsConflitto)
+                                                {
+                                                    <span class="badge bg-warning text-dark" title="@riga.MessaggioConflitto">
+                                                        <i class="bi bi-exclamation-triangle"></i> Conflitto
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i> Disponibile
+                                                    </span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        @if (riga.IsConflitto && !string.IsNullOrEmpty(riga.MessaggioConflitto))
+                                        {
+                                            <tr class="table-warning">
+                                                <td colspan="10" class="text-danger small ps-5">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> @riga.MessaggioConflitto
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Pulsante invio in fondo -->
+        <div class="d-flex justify-content-end mt-3 mb-5">
+            <span id="contatoreSelezionateFondo" class="badge bg-dark badge-custom me-2 align-self-center">0 selezionate</span>
+            <button type="submit" class="btn btn-invia-email" id="btnInviaEmailFondo" disabled>
+                <i class="bi bi-envelope-fill"></i> Invia Email
+            </button>
+        </div>
+    </form>
+}
+else
+{
+    <!-- Nessun risultato -->
+    <div class="text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <h5 class="mt-3 text-muted">Nessun ordine con merce disponibile</h5>
+        <p class="text-muted">
+            Non ci sono ordini con consegna nei prossimi @Model.GiorniEmail giorni
+            che abbiano merce disponibile in magazzino.
+        </p>
+    </div>
+}
+
+<!-- Legenda -->
+<div class="card mt-3 mb-5">
+    <div class="card-body py-2">
+        <small class="text-muted">
+            <strong>Legenda:</strong>
+            <span class="badge bg-success me-1">Disponibile</span> Merce pronta in magazzino
+            <span class="badge bg-warning text-dark me-1 ms-2">Conflitto</span> Articolo richiesto in più ordini, disponibilità insufficiente per tutti
+            <span class="badge bg-secondary me-1 ms-2">Inviata</span> Email già inviata per questa riga
+            <span class="ms-2"><span style="display:inline-block;width:12px;height:12px;background:#fff3cd;border:1px solid #ddd;"></span> Riga in conflitto</span>
+            <span class="ms-2"><span style="display:inline-block;width:12px;height:12px;background:#e2e3e5;border:1px solid #ddd;"></span> Email già inviata</span>
+        </small>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkboxes = document.querySelectorAll('.riga-checkbox');
+            const contatoreTop = document.getElementById('contatoreSelezionate');
+            const contatoreFondo = document.getElementById('contatoreSelezionateFondo');
+            const btnInviaTop = document.getElementById('btnInviaEmail');
+            const btnInviaFondo = document.getElementById('btnInviaEmailFondo');
+            const btnSelTutte = document.getElementById('btnSelezionaTutte');
+            const btnDeselTutte = document.getElementById('btnDeselezionaTutte');
+
+            function aggiornaContatore() {
+                const selezionate = document.querySelectorAll('.riga-checkbox:checked').length;
+                const testo = selezionate + ' selezionate';
+                contatoreTop.textContent = testo;
+                contatoreFondo.textContent = testo;
+                btnInviaTop.disabled = selezionate === 0;
+                btnInviaFondo.disabled = selezionate === 0;
+            }
+
+            // Checkbox singola riga
+            checkboxes.forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    aggiornaContatore();
+                    aggiornaCheckboxOrdine(this.dataset.ordine);
+                });
+            });
+
+            // Seleziona tutte le righe di un ordine
+            document.querySelectorAll('.select-all-ordine').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    var ordineIdx = this.dataset.ordine;
+                    var righeOrdine = document.querySelectorAll('.riga-checkbox[data-ordine="' + ordineIdx + '"]');
+                    righeOrdine.forEach(function (r) { r.checked = cb.checked; });
+                    aggiornaContatore();
+                });
+            });
+
+            function aggiornaCheckboxOrdine(ordineIdx) {
+                var righeOrdine = document.querySelectorAll('.riga-checkbox[data-ordine="' + ordineIdx + '"]');
+                var tutteSelezionate = true;
+                righeOrdine.forEach(function (r) { if (!r.checked) tutteSelezionate = false; });
+                var selectAll = document.querySelector('.select-all-ordine[data-ordine="' + ordineIdx + '"]');
+                if (selectAll) selectAll.checked = tutteSelezionate;
+            }
+
+            // Seleziona tutte
+            btnSelTutte.addEventListener('click', function () {
+                checkboxes.forEach(function (cb) { cb.checked = true; });
+                document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = true; });
+                aggiornaContatore();
+            });
+
+            // Deseleziona tutte
+            btnDeselTutte.addEventListener('click', function () {
+                checkboxes.forEach(function (cb) { cb.checked = false; });
+                document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = false; });
+                aggiornaContatore();
+            });
+
+            // Conferma prima dell'invio
+            document.getElementById('formInvioEmail').addEventListener('submit', function (e) {
+                var selezionate = document.querySelectorAll('.riga-checkbox:checked').length;
+                if (selezionate === 0) {
+                    e.preventDefault();
+                    alert('Seleziona almeno una riga per inviare l\'email.');
+                    return false;
+                }
+                if (!confirm('Confermi l\'invio di email per ' + selezionate + ' righe selezionate?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}

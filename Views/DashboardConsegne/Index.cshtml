@@ -309,6 +309,7 @@
                                 <th>Agente</th>
                             }
                             <th class="text-end">Valore Rimanente</th>
+                            <th class="text-center">Email</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -328,6 +329,20 @@
                                     <td>@riga.NomeAgente</td>
                                 }
                                 <td class="text-end"><strong>€ @riga.ValoreRimanente.ToString("N2")</strong></td>
+                                <td class="text-center">
+                                    @if (riga.HasEmailInviata)
+                                    {
+                                        <span class="badge bg-success" title="Email inviata il @riga.DataEmailInviata?.ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
+                                            <i class="bi bi-envelope-check"></i>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" title="Nessuna email inviata">
+                                            <i class="bi bi-envelope-x"></i>
+                                        </span>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -335,6 +350,7 @@
                         <tr class="fw-bold">
                             <td colspan="@(Model.CodiceAgente.HasValue ? 4 : 5)" class="text-end">TOTALE:</td>
                             <td class="text-end text-danger">€ @Model.ValoreConsegneInRitardo.ToString("N2")</td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -349,6 +365,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Inizializza tooltip Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
             // Dati per il grafico
             var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.MeseNome)));
             var consegnato = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.Consegnato)));

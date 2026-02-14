@@ -105,5 +105,72 @@ namespace AiDbMaster.Models
         [Display(Name = "Make or Buy")]
         [Column("MakeOrBuy", TypeName = "varchar(1)")]
         public string? MakeOrBuy { get; set; }
+
+        // ===== NUOVI CAMPI =====
+
+        /// <summary>
+        /// Codice marca dell'articolo (FK verso TabellaMarche.CodiceMarca).
+        /// Nullable: se non valorizzato, l'articolo non ha una marca assegnata.
+        /// </summary>
+        [Display(Name = "Marca")]
+        [Column("Marca")]
+        public short? Marca { get; set; }
+
+        /// <summary>
+        /// Codice famiglia dell'articolo (FK verso TabellaFamiglie.CodiceFamiglia).
+        /// Nullable: se non valorizzato, l'articolo non ha una famiglia assegnata.
+        /// </summary>
+        [StringLength(4)]
+        [Display(Name = "Famiglia")]
+        [Column("Famiglia", TypeName = "varchar(4)")]
+        public string? Famiglia { get; set; }
+
+        /// <summary>
+        /// Codice classe provvigione dell'articolo (FK verso TabellaClassiProvvigioni.CodiceClasse).
+        /// Nullable: se non valorizzato, l'articolo non ha una classe provvigione assegnata.
+        /// </summary>
+        [Display(Name = "Classe Provvigione")]
+        [Column("ClasseProvvigione")]
+        public short? ClasseProvvigione { get; set; }
+
+        /// <summary>
+        /// Indica se l'articolo è Outlet (vecchio, da vendere il prima possibile).
+        /// Valori: 'S' = Sì, 'N' = No. Default: 'N'.
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Outlet")]
+        [Column("Outlet", TypeName = "varchar(1)")]
+        public string Outlet { get; set; } = "N";
+
+        /// <summary>
+        /// Indica se l'articolo è fuori produzione.
+        /// Valori: 'S' = Sì, 'N' = No. Default: 'N'.
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Fuori Produzione")]
+        [Column("FuoriProduzione", TypeName = "varchar(1)")]
+        public string FuoriProduzione { get; set; } = "N";
+
+        // ===== NAVIGATION PROPERTIES =====
+
+        /// <summary>
+        /// Navigation property verso la marca collegata
+        /// </summary>
+        [ForeignKey("Marca")]
+        public virtual Models.Marca? MarcaNavigation { get; set; }
+
+        /// <summary>
+        /// Navigation property verso la famiglia collegata
+        /// </summary>
+        [ForeignKey("Famiglia")]
+        public virtual Models.Famiglia? FamigliaNavigation { get; set; }
+
+        /// <summary>
+        /// Navigation property verso la classe provvigione collegata
+        /// </summary>
+        [ForeignKey("ClasseProvvigione")]
+        public virtual ClasseProvvigione? ClasseProvvigioneNavigation { get; set; }
     }
 }

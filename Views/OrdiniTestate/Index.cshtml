@@ -298,6 +298,7 @@
                                     <th class="col-agente">Agente</th>
                                     <th>Note</th>
                                     <th class="col-stato">Stato</th>
+                                    <th class="text-center" style="width: 50px;">Email</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -388,10 +389,23 @@
                                         <td>
                                             <span class="@ordine.StatoOrdineCssClass">@ordine.StatoOrdine</span>
                                         </td>
+                                        <td class="text-center">
+                                            @{
+                                                var ordiniConEmail = ViewBag.OrdiniConEmail as Dictionary<string, DateTime>;
+                                                var chiaveEmail = $"{ordine.AnnoOrdine}|{ordine.SerieOrdine}|{ordine.NumeroOrdine}";
+                                                var hasEmail = ordiniConEmail != null && ordiniConEmail.ContainsKey(chiaveEmail);
+                                            }
+                                            @if (hasEmail && ordiniConEmail != null)
+                                            {
+                                                <span class="badge bg-success" title="Email inviata il @ordiniConEmail[chiaveEmail].ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
+                                                    <i class="bi bi-envelope-check"></i>
+                                                </span>
+                                            }
+                                        </td>
                                     </tr>
                                     <!-- Riga per le righe ordine (inizialmente nascosta) -->
                                     <tr class="righe-container" id="righe-@ordine.Id" style="display: none;">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="9" class="p-0">
                                             <div class="bg-light border-top">
                                                 <div class="p-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -541,6 +555,12 @@
 
 @section Scripts {
     <script>
+        // Inizializza tooltip Bootstrap per badge email
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+        });
+
         // Gestione switch tipo ordine
         $(document).ready(function() {
             // Gestione cambio tipo ordine

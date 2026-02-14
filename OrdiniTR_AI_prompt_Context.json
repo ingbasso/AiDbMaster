@@ -108,8 +108,8 @@
       "ordine_completato": "Un ordine è completato quando TUTTE le righe sono evase"
     },
     "consegne_in_ritardo": {
-      "definizione": "Una consegna è in ritardo se DataConsegna < DATA_ODIERNA e (Quantita - QuantitaEvasa) > 0",
-      "calcolo_giorni_ritardo": "Giorni di ritardo = DATA_ODIERNA - DataConsegna",
+      "definizione": "Una consegna è in ritardo se CONVERT(date, DataConsegna, 112) < CONVERT(date, GETDATE()) e (Quantita - QuantitaEvasa) > 0",
+      "calcolo_giorni_ritardo": "Giorni di ritardo = DATEDIFF(day, CONVERT(date, DataConsegna, 112), CONVERT(date, GETDATE()))",
       "valore_ritardo": "Valore in ritardo = (ValoreRiga / Quantita) * (Quantita - QuantitaEvasa)"
     },
     "calcoli_fatturato": {
@@ -119,7 +119,7 @@
       "percentuale_evasione": "(Fatturato consegnato / Fatturato totale) * 100"
     },
     "filtri_comuni": {
-      "periodo_consegna": "Filtrare su OrdiniRighe.DataConsegna per periodo specifico",
+      "periodo_consegna": "Filtrare usando CONVERT(date, OrdiniRighe.DataConsegna, 112) BETWEEN CONVERT(date, 'YYYYMMDD', 112) AND CONVERT(date, 'YYYYMMDD', 112)",
       "cliente_specifico": "JOIN con AnagraficaClienti e filtrare su CodiceCliente",
       "agente_specifico": "JOIN con TabellaAgenti e filtrare su CodiceAgente",
       "provincia_regione": "Filtrare su AnagraficaClienti.Provincia (es: 'MI', 'RM', 'TO')"
@@ -146,7 +146,11 @@
     },
     "ordini_cliente_periodo": {
       "domanda": "Ordini del cliente X nel mese di ottobre 2024",
-      "query": "SELECT t.*, r.* FROM OrdiniTestate t JOIN OrdiniRighe r ON (...) WHERE t.CodiceCliente = X AND t.TipoOrdine = 'R' AND r.DataConsegna BETWEEN '2024-10-01' AND '2024-10-31'"
+      "query": "SELECT t.*, r.* FROM OrdiniTestate t JOIN OrdiniRighe r ON (...) WHERE t.CodiceCliente = X AND t.TipoOrdine = 'R' AND r.DataConsegna BETWEEN '20241001' AND '20241031'"
+    },
+    "consegne_mese_novembre": {
+      "domanda": "Mostrami le consegne di novembre 2024",
+      "query": "SELECT t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine, t.CodiceCliente, c.RagioneSociale, r.CodiceArticolo, r.DescrizioneArticolo, r.DataConsegna, r.Quantita FROM OrdiniTestate t JOIN OrdiniRighe r ON (t.TipoOrdine = r.TipoOrdine AND t.AnnoOrdine = r.AnnoOrdine AND t.SerieOrdine = r.SerieOrdine AND t.NumeroOrdine = r.NumeroOrdine) JOIN AnagraficaClienti c ON t.CodiceCliente = c.CodiceCliente WHERE t.TipoOrdine = 'R' AND r.DataConsegna BETWEEN '20241101' AND '20241130' ORDER BY r.DataConsegna"
     },
     "top_agenti_fatturato": {
       "domanda": "Top 10 agenti per fatturato",
@@ -176,6 +180,53 @@
     "QuantitaEvasa può essere minore, uguale o maggiore di Quantita",
     "Per calcolare l'importo rimanente: (ValoreRiga / Quantita) * (Quantita - QuantitaEvasa)",
     "TabellaAgenti.Attivo = 1 indica agenti attivi, 0 indica agenti disattivati",
-    "LEFT JOIN su TabellaAgenti permette di gestire ordini senza agente assegnato"
-  ]
+    "LEFT JOIN su TabellaAgenti permette di gestire ordini senza agente assegnato",
+    "FONDAMENTALE - FORMATO DATE: I campi datetime (DataConsegna, DataOrdine) devono essere confrontati usando il formato 'YYYYMMDD' senza trattini (es: '20241101' per 1 novembre 2024, '20241231' per 31 dicembre 2024). NON usare MAI formati come '2024-11-01' o '2024/11/01' perché causano errori di conversione datetime"
+  ],
+  "date_format_rules": {
+    "description": "Regole per il formato delle date nelle query SQL",
+    "correct_format": "'YYYYMMDD' - Otto caratteri senza separatori",
+    "examples_correct": [
+      "'20241101' per 1 novembre 2024",
+      "'20241130' per 30 novembre 2024",
+      "'20240101' per 1 gennaio 2024",
+      "'20241231' per 31 dicembre 2024"
+    ],
+    "examples_wrong": [
+      "'2024-11-01' - NON USARE (causa errori)",
+      "'2024/11/01' - NON USARE (causa errori)",
+      "'01-11-2024' - NON USARE (causa errori)"
+    ],
+    "usage_in_queries": "r.DataConsegna BETWEEN '20241101' AND '20241130'",
+    "mandatory": "SEMPRE usare questo formato per evitare errori di conversione"
+  },
+  "date_handling": {
+    "description": "IMPORTANTE: Gestione corretta delle date per evitare errori di conversione",
+    "problem": "I campi DataConsegna e DataOrdine potrebbero essere memorizzati come VARCHAR invece che datetime, causando errori di conversione",
+    "solution": "Usare sempre la funzione CONVERT con formato esplicito quando si confrontano date",
+    "format": "Il formato standard del database è: YYYYMMDD (es: 20241101 per 1 novembre 2024)",
+    "correct_syntax": {
+      "confronto_date": "CONVERT(date, r.DataConsegna, 112) BETWEEN CONVERT(date, '20241101', 112) AND CONVERT(date, '20241130', 112)",
+      "data_odierna": "CONVERT(date, GETDATE())",
+      "year_month": "Per filtrare per mese/anno usare: YEAR(CONVERT(date, r.DataConsegna, 112)) = 2024 AND MONTH(CONVERT(date, r.DataConsegna, 112)) = 11"
+    },
+    "examples": [
+      {
+        "domanda": "Consegne di novembre 2024",
+        "query_corretta": "WHERE CONVERT(date, r.DataConsegna, 112) BETWEEN CONVERT(date, '20241101', 112) AND CONVERT(date, '20241130', 112)",
+        "query_errata": "WHERE r.DataConsegna BETWEEN '2024-11-01' AND '2024-11-30'"
+      },
+      {
+        "domanda": "Consegne in ritardo",
+        "query_corretta": "WHERE CONVERT(date, r.DataConsegna, 112) < CONVERT(date, GETDATE()) AND (r.Quantita - r.QuantitaEvasa) > 0",
+        "query_errata": "WHERE r.DataConsegna < GETDATE()"
+      },
+      {
+        "domanda": "Ordini dell'anno 2024",
+        "query_corretta": "WHERE YEAR(CONVERT(date, r.DataConsegna, 112)) = 2024",
+        "query_errata": "WHERE YEAR(r.DataConsegna) = 2024"
+      }
+    ],
+    "mandatory_rule": "SEMPRE usare CONVERT(date, nomeColonna, 112) quando si lavora con DataConsegna o DataOrdine in clausole WHERE, ORDER BY, o calcoli"
+  }
 }

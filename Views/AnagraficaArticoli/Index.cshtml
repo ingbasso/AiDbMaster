@@ -157,8 +157,10 @@
                                             }
                                         </a>
                                     </th>
-                                    <th>Codice Alt.</th>
-                                    <th>Conversione</th>
+                                    <th>Marca</th>
+                                    <th>Famiglia</th>
+                                    <th>Outlet</th>
+                                    <th>F.P.</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
@@ -199,9 +201,9 @@
                                             }
                                         </td>
                                         <td>
-                                            @if (!string.IsNullOrEmpty(item.CodiceAlternativo))
+                                            @if (item.MarcaNavigation != null)
                                             {
-                                                <small class="text-muted">@Html.DisplayFor(modelItem => item.CodiceAlternativo)</small>
+                                                <small>@item.MarcaNavigation.DescrizioneMarca</small>
                                             }
                                             else
                                             {
@@ -209,13 +211,34 @@
                                             }
                                         </td>
                                         <td>
-                                            <div class="text-center">
-                                                <span class="fw-bold text-primary">@item.Conversione.ToString("F2")</span>
-                                                @if (item.ConversioneConfezione != 0)
-                                                {
-                                                    <br><small class="text-muted">Conf: @item.ConversioneConfezione.ToString("F2")</small>
-                                                }
-                                            </div>
+                                            @if (item.FamigliaNavigation != null)
+                                            {
+                                                <small>@item.FamigliaNavigation.DescrizioneFamiglia</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.Outlet == "S")
+                                            {
+                                                <span class="badge bg-warning text-dark" title="Outlet">S</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.FuoriProduzione == "S")
+                                            {
+                                                <span class="badge bg-danger" title="Fuori Produzione">S</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
                                         </td>
                                         <td>
                                             <div class="btn-group">

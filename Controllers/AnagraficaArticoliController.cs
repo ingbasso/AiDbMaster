@@ -45,8 +45,12 @@ namespace AiDbMaster.Controllers
             {
                 _logger.LogInformation("Caricamento anagrafica articoli - Pagina: {Page}, Articolo: {CodiceArticolo}", page, codiceArticolo);
 
-                // Query base
-                var query = _context.AnagraficaArticoli.AsQueryable();
+                // Query base con Include per le relazioni (Marca, Famiglia, ClasseProvvigione)
+                var query = _context.AnagraficaArticoli
+                    .Include(a => a.MarcaNavigation)
+                    .Include(a => a.FamigliaNavigation)
+                    .Include(a => a.ClasseProvvigioneNavigation)
+                    .AsQueryable();
 
                 // Filtro per codice articolo (ricerca esatta come Select2)
                 if (!string.IsNullOrEmpty(codiceArticolo))
@@ -119,6 +123,9 @@ namespace AiDbMaster.Controllers
             try
             {
                 var articolo = await _context.AnagraficaArticoli
+                    .Include(a => a.MarcaNavigation)
+                    .Include(a => a.FamigliaNavigation)
+                    .Include(a => a.ClasseProvvigioneNavigation)
                     .FirstOrDefaultAsync(a => a.Id == id);
 
                 if (articolo == null)
@@ -150,6 +157,9 @@ namespace AiDbMaster.Controllers
             try
             {
                 var articoli = await _context.AnagraficaArticoli
+                    .Include(a => a.MarcaNavigation)
+                    .Include(a => a.FamigliaNavigation)
+                    .Include(a => a.ClasseProvvigioneNavigation)
                     .OrderBy(a => a.CodiceArticolo)
                     .Select(a => new
                     {
@@ -163,7 +173,15 @@ namespace AiDbMaster.Controllers
                         a.SecondaUnitaMisura,
                         Conversione = a.Conversione.ToString("F6"),
                         a.UnitaMisuraConfezione,
-                        ConversioneConfezione = a.ConversioneConfezione.ToString("F6")
+                        ConversioneConfezione = a.ConversioneConfezione.ToString("F6"),
+                        a.Marca,
+                        DescrizioneMarca = a.MarcaNavigation != null ? a.MarcaNavigation.DescrizioneMarca : null,
+                        a.Famiglia,
+                        DescrizioneFamiglia = a.FamigliaNavigation != null ? a.FamigliaNavigation.DescrizioneFamiglia : null,
+                        a.ClasseProvvigione,
+                        DescrizioneClasseProvvigione = a.ClasseProvvigioneNavigation != null ? a.ClasseProvvigioneNavigation.DescrizioneClasse : null,
+                        a.Outlet,
+                        a.FuoriProduzione
                     })
                     .ToListAsync();
 

@@ -240,3 +240,6 @@ Uploads/*.docx
 # Ignore release packages
 Release-Package/
 publish-production/
+
+# Ignore ZIP files
+*.zip

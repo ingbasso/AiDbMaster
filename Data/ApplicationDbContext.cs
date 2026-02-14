@@ -35,6 +35,17 @@ namespace AiDbMaster.Data
         public DbSet<CalendarioFermiCentriLavoro> CalendarioFermiCentriLavoro { get; set; }
         public DbSet<TempiAsciugatura> TempiAsciugatura { get; set; }
         
+        // Tabelle Anagrafiche / Provvigioni
+        public DbSet<ClasseProvvigione> ClassiProvvigioni { get; set; }
+        public DbSet<Famiglia> Famiglie { get; set; }
+        public DbSet<Marca> Marche { get; set; }
+        
+        // Tabella Log Invio Email
+        public DbSet<InvioEmail> InvioEmail { get; set; }
+        
+        // Tabella Opzioni di Sistema
+        public DbSet<Opzione> Opzioni { get; set; }
+        
         // Tabelle Sistema Permessi
         public DbSet<Resource> Resources { get; set; }
         public DbSet<Permission> Permissions { get; set; }
@@ -332,6 +343,155 @@ namespace AiDbMaster.Data
                 new StatoOP { IdStato = 3, CodiceStato = "CH", DescrizioneStato = "Chiuso", Attivo = true, Ordine = 4 },
                 new StatoOP { IdStato = 4, CodiceStato = "SO", DescrizioneStato = "Sospeso", Attivo = true, Ordine = 3 }
             );
+
+            // ===== CONFIGURAZIONI ANAGRAFICA ARTICOLI - NUOVI CAMPI =====
+
+            // Configurazione tipi di dato per i nuovi campi
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.Famiglia)
+                .HasColumnType("varchar(4)");
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.Outlet)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.FuoriProduzione)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            // FK: AnagraficaArticoli.Marca --> TabellaMarche.CodiceMarca
+            builder.Entity<AnagraficaArticoli>()
+                .HasOne(a => a.MarcaNavigation)
+                .WithMany()
+                .HasForeignKey(a => a.Marca)
+                .HasPrincipalKey(m => m.CodiceMarca)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK: AnagraficaArticoli.Famiglia --> TabellaFamiglie.CodiceFamiglia
+            builder.Entity<AnagraficaArticoli>()
+                .HasOne(a => a.FamigliaNavigation)
+                .WithMany()
+                .HasForeignKey(a => a.Famiglia)
+                .HasPrincipalKey(f => f.CodiceFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK: AnagraficaArticoli.ClasseProvvigione --> TabellaClassiProvvigioni.CodiceClasse
+            builder.Entity<AnagraficaArticoli>()
+                .HasOne(a => a.ClasseProvvigioneNavigation)
+                .WithMany()
+                .HasForeignKey(a => a.ClasseProvvigione)
+                .HasPrincipalKey(c => c.CodiceClasse)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== CONFIGURAZIONI CLASSI PROVVIGIONI =====
+
+            // Indice univoco sul CodiceClasse
+            builder.Entity<ClasseProvvigione>()
+                .HasIndex(c => c.CodiceClasse)
+                .IsUnique()
+                .HasDatabaseName("IX_TabellaClassiProvvigioni_CodiceClasse");
+
+            // Configurazione del tipo di dato per Perc_Sconto
+            builder.Entity<ClasseProvvigione>()
+                .Property(c => c.Perc_Sconto)
+                .HasColumnType("decimal(27,9)");
+
+            // Default value per UltimoAggiornamento
+            builder.Entity<ClasseProvvigione>()
+                .Property(c => c.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            // ===== CONFIGURAZIONI FAMIGLIE =====
+
+            // Indice univoco sul CodiceFamiglia
+            builder.Entity<Famiglia>()
+                .HasIndex(f => f.CodiceFamiglia)
+                .IsUnique()
+                .HasDatabaseName("IX_TabellaFamiglie_CodiceFamiglia");
+
+            // Configurazione dei tipi di dato varchar (non nvarchar)
+            builder.Entity<Famiglia>()
+                .Property(f => f.CodiceFamiglia)
+                .HasColumnType("varchar(4)");
+
+            builder.Entity<Famiglia>()
+                .Property(f => f.DescrizioneFamiglia)
+                .HasColumnType("varchar(50)");
+
+            // Default value per UltimoAggiornamento
+            builder.Entity<Famiglia>()
+                .Property(f => f.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            // ===== CONFIGURAZIONI MARCHE =====
+
+            // Indice univoco sul CodiceMarca
+            builder.Entity<Marca>()
+                .HasIndex(m => m.CodiceMarca)
+                .IsUnique()
+                .HasDatabaseName("IX_TabellaMarche_CodiceMarca");
+
+            // Configurazione del tipo di dato varchar per DescrizioneMarca
+            builder.Entity<Marca>()
+                .Property(m => m.DescrizioneMarca)
+                .HasColumnType("varchar(50)");
+
+            // Default value per UltimoAggiornamento
+            builder.Entity<Marca>()
+                .Property(m => m.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            // ===== CONFIGURAZIONE CAMPO PORTO (OrdiniTestate) =====
+            // Il campo Porto nel database è un varchar, non smallint
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.Porto)
+                .HasColumnType("varchar(10)");
+
+            // ===== CONFIGURAZIONI TABELLA OPZIONI =====
+
+            // Configurazione dei tipi di dato varchar (non nvarchar)
+            builder.Entity<Opzione>()
+                .Property(o => o.NomeOpzione)
+                .HasColumnType("varchar(255)");
+
+            builder.Entity<Opzione>()
+                .Property(o => o.ValoreOpzione)
+                .HasColumnType("varchar(max)");
+
+            // Indice univoco sul NomeOpzione (ogni opzione deve avere un nome univoco)
+            builder.Entity<Opzione>()
+                .HasIndex(o => o.NomeOpzione)
+                .IsUnique()
+                .HasDatabaseName("IX_TabellaOpzioni_NomeOpzione");
+
+            // ===== CONFIGURAZIONI INVIO EMAIL =====
+
+            // Configurazione dei tipi di dato varchar (non nvarchar)
+            builder.Entity<InvioEmail>()
+                .Property(e => e.TipoOrdine)
+                .HasColumnType("varchar(1)");
+
+            builder.Entity<InvioEmail>()
+                .Property(e => e.SerieOrdine)
+                .HasColumnType("varchar(3)");
+
+            builder.Entity<InvioEmail>()
+                .Property(e => e.Contabilizzato)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            // Indice univoco sulla combinazione ordine+riga per evitare invii duplicati
+            builder.Entity<InvioEmail>()
+                .HasIndex(e => new { e.TipoOrdine, e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine, e.RigaOrdine })
+                .IsUnique()
+                .HasDatabaseName("IX_InvioEmail_OrdineRiga");
+
+            // Indice sulla DataInvio per query temporali
+            builder.Entity<InvioEmail>()
+                .HasIndex(e => e.DataInvio)
+                .HasDatabaseName("IX_InvioEmail_DataInvio");
 
             // ===== CONFIGURAZIONI SISTEMA PERMESSI =====
 
