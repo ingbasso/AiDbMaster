@@ -153,6 +153,17 @@ namespace AiDbMaster.Models
         [Column("FuoriProduzione", TypeName = "varchar(1)")]
         public string FuoriProduzione { get; set; } = "N";
 
+        /// <summary>
+        /// Indica se l'articolo è gestito a Supermarket (scaffale).
+        /// Se 'S', la disponibilità coincide con l'esistenza (l'impegnato non viene sottratto).
+        /// Valori: 'S' = Sì, 'N' = No. Default: 'N'.
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Supermarket")]
+        [Column("Supermarket", TypeName = "varchar(1)")]
+        public string Supermarket { get; set; } = "N";
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

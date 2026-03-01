@@ -185,7 +185,15 @@
                                     {
                                         <tr class="@riga.RowCssClass">
                                             <!-- Anagrafica -->
-                                            <td><strong>@riga.CodiceArticolo</strong></td>
+                                            <td>
+                                                <strong>@riga.CodiceArticolo</strong>
+                                                @if (riga.IsSupermarket)
+                                                {
+                                                    <span class="badge bg-info ms-1" title="Articolo Supermarket: disponibilità = esistenza">
+                                                        <i class="bi bi-shop me-1"></i>SM
+                                                    </span>
+                                                }
+                                            </td>
                                             <td>@riga.DescrizioneArticolo</td>
                                             <td class="text-center"><span class="badge bg-secondary">@riga.UnitaMisura</span></td>
                                             <td><span class="badge bg-info">@riga.CodiceMagazzino</span></td>
@@ -354,7 +362,15 @@
                                         {
                                             <tr class="@riga.RowCssClass">
                                                 <!-- Anagrafica -->
-                                                <td><strong>@riga.CodiceArticolo</strong></td>
+                                                <td>
+                                                    <strong>@riga.CodiceArticolo</strong>
+                                                    @if (riga.IsSupermarket)
+                                                    {
+                                                        <span class="badge bg-info ms-1" title="Articolo Supermarket: disponibilità = esistenza">
+                                                            <i class="bi bi-shop me-1"></i>SM
+                                                        </span>
+                                                    }
+                                                </td>
                                                 <td>@riga.DescrizioneArticolo</td>
                                                 <td class="text-center"><span class="badge bg-secondary">@riga.UnitaMisura</span></td>
                                                 <td><span class="badge bg-info">@riga.CodiceMagazzino</span></td>
@@ -520,7 +536,15 @@
                                     @foreach (var riga in articoloOutlet.Risultati)
                                     {
                                         <tr class="@riga.RowCssClass">
-                                            <td><strong>@riga.CodiceArticolo</strong></td>
+                                            <td>
+                                                <strong>@riga.CodiceArticolo</strong>
+                                                @if (riga.IsSupermarket)
+                                                {
+                                                    <span class="badge bg-info ms-1" title="Articolo Supermarket: disponibilità = esistenza">
+                                                        <i class="bi bi-shop me-1"></i>SM
+                                                    </span>
+                                                }
+                                            </td>
                                             <td>@riga.DescrizioneArticolo</td>
                                             <td class="text-center"><span class="badge bg-secondary">@riga.UnitaMisura</span></td>
                                             <td><span class="badge bg-info">@riga.CodiceMagazzino</span></td>

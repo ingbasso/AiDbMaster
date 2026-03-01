@@ -106,10 +106,28 @@ namespace AiDbMaster.Controllers
                 model.RicercaOutlet = true;
                 try
                 {
-                    // Recupera tutti gli articoli con Outlet = 'S' (con la ClasseProvvigione per lo sconto)
+                    // Articoli con Outlet = 'S' in anagrafica
+                    var codiciOutletAnagrafica = await _context.AnagraficaArticoli
+                        .Where(a => a.Outlet == "S")
+                        .Select(a => a.CodiceArticolo)
+                        .ToListAsync();
+
+                    // Articoli con giacenza > 0 nel magazzino 20
+                    var codiciOutletMag20 = await _context.ProgressiviArticoli
+                        .Where(p => p.CodiceMagazzino == 20 && p.Esistenza > 0)
+                        .Select(p => p.CodiceArticolo)
+                        .ToListAsync();
+
+                    // Unione delle due liste (OR), senza duplicati
+                    var codiciOutletTutti = codiciOutletAnagrafica
+                        .Union(codiciOutletMag20)
+                        .Distinct()
+                        .ToList();
+
+                    // Recupera i dati anagrafici con ClasseProvvigione per lo sconto
                     var articoliOutlet = await _context.AnagraficaArticoli
                         .Include(a => a.ClasseProvvigioneNavigation)
-                        .Where(a => a.Outlet == "S")
+                        .Where(a => codiciOutletTutti.Contains(a.CodiceArticolo))
                         .OrderBy(a => a.CodiceArticolo)
                         .Select(a => new { 
                             a.CodiceArticolo, 
@@ -119,7 +137,8 @@ namespace AiDbMaster.Controllers
                         })
                         .ToListAsync();
 
-                    _logger.LogInformation("Trovati {NumOutlet} articoli Outlet", articoliOutlet.Count);
+                    _logger.LogInformation("Trovati {NumOutlet} articoli Outlet (anagrafica: {NumAnagrafica}, magazzino 20: {NumMag20})", 
+                        articoliOutlet.Count, codiciOutletAnagrafica.Count, codiciOutletMag20.Count);
 
                     // Calcola disponibilità per ogni articolo outlet
                     model.ArticoliOutlet = new List<DisponibilitaArticoloGruppoViewModel>();
@@ -270,8 +289,8 @@ namespace AiDbMaster.Controllers
 
             // Mappa i risultati
             // Nota: ImpegnatoAttuale viene calcolato in tempo reale (non da ProgressiviArticoli)
-            // Determina se l'articolo è Fuori Produzione
             var isFuoriProduzione = articolo?.FuoriProduzione == "S";
+            var isSupermarket = articolo?.Supermarket == "S";
 
             var risultati = progressivi.Select(p => new DisponibilitaRigaViewModel
             {
@@ -281,11 +300,12 @@ namespace AiDbMaster.Controllers
                 CodiceMagazzino = p.CodiceMagazzino,
                 Esistenza = p.Esistenza,
                 Pronto = p.Pronto,
-                ImpegnatoAttuale = impegnatoAttuale,  // Calcolato in tempo reale con PercentualeInclusione
+                ImpegnatoAttuale = impegnatoAttuale,
                 ImpegnatoFuturo = impegnatoFuturo,
                 OrdinatoFornitoriDataOdierna = p.OrdinatoFornitoriDataOdierna,
                 ProduzioneDisponibile = produzioneDisponibile,
-                IsFuoriProduzione = isFuoriProduzione
+                IsFuoriProduzione = isFuoriProduzione,
+                IsSupermarket = isSupermarket
             }).ToList();
 
             // Calcola le note dinamiche per ogni riga

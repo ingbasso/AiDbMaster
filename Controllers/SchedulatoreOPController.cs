@@ -108,6 +108,16 @@ namespace AiDbMaster.Controllers
                 // Carica TUTTI i fermi per calcolare gli EndTime estesi
                 var tuttiFermi = await _context.CalendarioFermiCentriLavoro.ToListAsync();
                 
+                _logger.LogInformation("📋 Fermi totali caricati: {Count}", tuttiFermi.Count);
+                foreach (var f in tuttiFermi)
+                {
+                    _logger.LogInformation("  Fermo: Centro=[{Centro}] (len={Len}), Da={Da}, A={A}, Motivo={Motivo}", 
+                        f.CodiceCentro, f.CodiceCentro?.Length ?? 0, f.DataInizioFermo, f.DataFineFermo, f.Motivo);
+                }
+                
+                var centriOrdini = ordini.Select(o => o.CodiceCentro).Distinct().ToList();
+                _logger.LogInformation("📋 Centri ordini distinti: {Centri}", string.Join(", ", centriOrdini.Select(c => $"[{c}] (len={c?.Length ?? 0})")));
+                
                 // ===== RICALCOLO DataFinePrevista per ordini non modificati =====
                 _logger.LogInformation("🔄 Ricalcolo DataFinePrevista per ordini con Modificato = 0...");
                 
@@ -127,9 +137,19 @@ namespace AiDbMaster.Controllers
                     
                     // Filtra fermi per questo centro lavoro
                     var fermiCentro = tuttiFermi
-                        .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                        .Where(f => (f.CodiceCentro ?? "").Trim() == (ordine.CodiceCentro ?? "").Trim())
                         .OrderBy(f => f.DataInizioFermo)
                         .ToList();
+                    
+                    if ((ordine.CodiceCentro ?? "").Trim().Equals("FRIMA", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogWarning("🔍 FRIMA ordine {Anno}-{Num}: Inizio={Inizio}, Durata={Durata}s, Fermi trovati={NumFermi}", 
+                            ordine.AnnoOrdine, ordine.NumeroOrdine, ordine.DataInizioOP, durataTotaleSecondi, fermiCentro.Count);
+                        foreach (var fc in fermiCentro)
+                        {
+                            _logger.LogWarning("   Fermo: {Da} → {A}", fc.DataInizioFermo, fc.DataFineFermo);
+                        }
+                    }
                     
                     // Calcola DataFinePrevista SALTANDO i fermi
                     var nuovaDataFinePrevista = durataTotaleSecondi > 0
@@ -168,7 +188,7 @@ namespace AiDbMaster.Controllers
                     var durataTotaleSecondi = durataLavoroSecondi + tempoSetupSecondi;
                     
                     // 2. Applica la logica sequenziale che SALTA i fermi
-                    var fermiCentro = tuttiFermi.Where(f => f.CodiceCentro == o.CodiceCentro).OrderBy(f => f.DataInizioFermo).ToList();
+                    var fermiCentro = tuttiFermi.Where(f => (f.CodiceCentro ?? "").Trim() == (o.CodiceCentro ?? "").Trim()).OrderBy(f => f.DataInizioFermo).ToList();
                     var endTime = durataTotaleSecondi > 0
                         ? CalcolaEndTimeConFermi(o.DataInizioOP, durataTotaleSecondi, fermiCentro)
                         : o.DataInizioOP.AddHours(1);
@@ -367,7 +387,7 @@ namespace AiDbMaster.Controllers
 
                 // ===== VALIDAZIONE 4: DataInizioOP non può cadere in un fermo =====
                 var fermiCentro = await _context.CalendarioFermiCentriLavoro
-                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .Where(f => (f.CodiceCentro ?? "").Trim() == (ordine.CodiceCentro ?? "").Trim())
                     .ToListAsync();
 
                 var fermoInConflitto = fermiCentro.FirstOrDefault(fermo =>
@@ -537,7 +557,7 @@ namespace AiDbMaster.Controllers
 
                 // ===== CARICA FERMI DEL CENTRO LAVORO =====
                 var fermiCentro = await _context.CalendarioFermiCentriLavoro
-                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .Where(f => (f.CodiceCentro ?? "").Trim() == (ordine.CodiceCentro ?? "").Trim())
                     .ToListAsync();
 
                 // ===== VALIDAZIONE 3: La nuova data di inizio NON deve cadere dentro un fermo =====
@@ -686,7 +706,7 @@ namespace AiDbMaster.Controllers
                 
                 // 1. Carica fermi del centro lavoro
                 var fermiCentro = await _context.CalendarioFermiCentriLavoro
-                    .Where(f => f.CodiceCentro == ordine.CodiceCentro)
+                    .Where(f => (f.CodiceCentro ?? "").Trim() == (ordine.CodiceCentro ?? "").Trim())
                     .ToListAsync();
                 
                 // 2. Calcola durata lavoro: Quantità × TempoCiclo + TempoSetup
@@ -749,18 +769,17 @@ namespace AiDbMaster.Controllers
             var currentTime = startTime;
             var secondiRimasti = durataLavoroSecondi;
             
-            // Ordina i fermi per data inizio
-            var fermiOrdinati = fermiCentro.OrderBy(f => f.DataInizioFermo).ToList();
+            // Pre-filtra: solo fermi la cui fine è DOPO startTime (ignora fermi già passati)
+            // e ordina per data inizio
+            var fermiRilevanti = fermiCentro
+                .Where(f => (f.DataFineFermo ?? DateTime.MaxValue) > startTime)
+                .OrderBy(f => f.DataInizioFermo)
+                .ToList();
             
-            int iterazioni = 0;
-            const int maxIterazioni = 100;
-            
-            foreach (var fermo in fermiOrdinati)
+            foreach (var fermo in fermiRilevanti)
             {
-                if (iterazioni++ > maxIterazioni || secondiRimasti <= 0)
-                {
+                if (secondiRimasti <= 0)
                     break;
-                }
                 
                 var fermoInizio = fermo.DataInizioFermo;
                 var fermoFine = fermo.DataFineFermo ?? currentTime.AddYears(1);
@@ -768,24 +787,24 @@ namespace AiDbMaster.Controllers
                 // Calcola dove arriverebbe senza questo fermo
                 var endTimeSenzaFermo = currentTime.AddSeconds((double)secondiRimasti);
                 
+                // Se il fermo inizia dopo la fine prevista, non serve continuare
+                if (fermoInizio >= endTimeSenzaFermo)
+                    break;
+                
                 // Verifica se questo fermo interseca il percorso [currentTime, endTimeSenzaFermo]
-                if (fermoInizio < endTimeSenzaFermo && fermoFine > currentTime)
+                if (fermoFine > currentTime)
                 {
-                    // C'è intersezione
-                    
                     // Calcola tempo di lavoro PRIMA del fermo
                     if (fermoInizio > currentTime)
                     {
                         var tempoPreFermo = (decimal)(fermoInizio - currentTime).TotalSeconds;
                         if (tempoPreFermo <= secondiRimasti)
                         {
-                            // Lavoro fino al fermo
                             currentTime = fermoInizio;
                             secondiRimasti -= tempoPreFermo;
                         }
                         else
                         {
-                            // Il lavoro finisce prima del fermo
                             return currentTime.AddSeconds((double)secondiRimasti);
                         }
                     }
@@ -793,7 +812,7 @@ namespace AiDbMaster.Controllers
                     // Se siamo nel fermo e abbiamo ancora secondi da lavorare, SALTO il fermo
                     if (secondiRimasti > 0 && currentTime >= fermoInizio && currentTime < fermoFine)
                     {
-                        currentTime = fermoFine; // Salto alla fine del fermo
+                        currentTime = fermoFine;
                     }
                 }
             }

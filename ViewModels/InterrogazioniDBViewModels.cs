@@ -89,9 +89,9 @@ namespace AiDbMaster.ViewModels
         public decimal ImpegnatoAttuale { get; set; }
         
         /// <summary>
-        /// Disponibile attuale = Esistenza - Impegnato Attuale
+        /// Disponibile attuale: se Supermarket = Esistenza, altrimenti = Esistenza - Impegnato Attuale
         /// </summary>
-        public decimal DisponibileAttuale => Esistenza - ImpegnatoAttuale;
+        public decimal DisponibileAttuale => IsSupermarket ? Esistenza : (Esistenza - ImpegnatoAttuale);
         
         // DISPONIBILITÀ PREVISTA
         
@@ -122,9 +122,14 @@ namespace AiDbMaster.ViewModels
         /// Usato per colorare la riga in giallino.
         /// </summary>
         public bool IsFuoriProduzione { get; set; }
+
+        /// <summary>
+        /// Indica se l'articolo è gestito a Supermarket (Supermarket = 'S').
+        /// Se true, la disponibilità coincide con l'esistenza (l'impegnato non viene sottratto).
+        /// </summary>
+        public bool IsSupermarket { get; set; }
         
-        // CSS class per colorare la riga: giallino se FuoriProduzione, altrimenti sfondo bianco
-        public string RowCssClass => IsFuoriProduzione ? "table-warning" : "";
+        public string RowCssClass => IsSupermarket ? "table-info" : (IsFuoriProduzione ? "table-warning" : "");
         
         // ========== NOTE PREVISIONE (dinamiche) ==========
         

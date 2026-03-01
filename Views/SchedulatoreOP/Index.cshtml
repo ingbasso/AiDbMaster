@@ -594,16 +594,16 @@
             let currentTime = new Date(startTime);
             let secondiRimasti = durataLavoroSecondi;
             
-            // Ordina i fermi per data inizio
-            const fermiOrdinati = [...fermiCentro].sort((a, b) => a.dataInizio - b.dataInizio);
+            // Pre-filtra: solo fermi la cui fine è DOPO startTime, poi ordina
+            const fermiRilevanti = [...fermiCentro]
+                .filter(f => {
+                    const fine = f.dataFine || new Date(9999, 0, 1);
+                    return fine > startTime;
+                })
+                .sort((a, b) => a.dataInizio - b.dataInizio);
             
-            let iterazioni = 0;
-            const maxIterazioni = 100;
-            
-            for (const fermo of fermiOrdinati) {
-                if (iterazioni++ > maxIterazioni || secondiRimasti <= 0) {
-                    break;
-                }
+            for (const fermo of fermiRilevanti) {
+                if (secondiRimasti <= 0) break;
                 
                 const fermoInizio = fermo.dataInizio;
                 const fermoFine = fermo.dataFine || new Date(currentTime.getTime() + (365 * 24 * 60 * 60 * 1000));
@@ -611,31 +611,27 @@
                 // Calcola dove arriverebbe senza questo fermo
                 const endTimeSenzaFermo = new Date(currentTime.getTime() + (secondiRimasti * 1000));
                 
+                // Se il fermo inizia dopo la fine prevista, non serve continuare
+                if (fermoInizio >= endTimeSenzaFermo) break;
+                
                 // Verifica se questo fermo interseca il percorso
-                if (fermoInizio < endTimeSenzaFermo && fermoFine > currentTime) {
-                    // C'è intersezione
-                    
-                    // Calcola tempo di lavoro PRIMA del fermo
+                if (fermoFine > currentTime) {
                     if (fermoInizio > currentTime) {
-                        const tempoPreFermo = (fermoInizio - currentTime) / 1000; // in secondi
+                        const tempoPreFermo = (fermoInizio - currentTime) / 1000;
                         if (tempoPreFermo <= secondiRimasti) {
-                            // Lavoro fino al fermo
                             currentTime = new Date(fermoInizio);
                             secondiRimasti -= tempoPreFermo;
                         } else {
-                            // Il lavoro finisce prima del fermo
                             return new Date(currentTime.getTime() + (secondiRimasti * 1000));
                         }
                     }
                     
-                    // Se siamo nel fermo e abbiamo ancora secondi da lavorare, SALTO il fermo
                     if (secondiRimasti > 0 && currentTime >= fermoInizio && currentTime < fermoFine) {
-                        currentTime = new Date(fermoFine); // Salto alla fine del fermo
+                        currentTime = new Date(fermoFine);
                     }
                 }
             }
             
-            // Aggiungi i secondi rimanenti
             return new Date(currentTime.getTime() + (secondiRimasti * 1000));
         }
 
@@ -1416,7 +1412,7 @@
             // 3. Verifica che la nuova data di inizio NON cada dentro un fermo
             const nuovaDataInizio = new Date(evento.StartTime);
             const codiceCentro = evento.CodiceCentro;
-            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro === codiceCentro);
+            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro.trim() === codiceCentro.trim());
             
             for (const fermo of fermiDelCentro) {
                 if (nuovaDataInizio >= fermo.dataInizio && nuovaDataInizio < fermo.dataFine) {
@@ -1693,7 +1689,7 @@
             
             // Filtra i fermi per questo centro lavoro
             const codiceCentro = currentOrdine.CodiceCentro;
-            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro === codiceCentro);
+            const fermiDelCentro = fermiCentriLavoro.filter(f => f.codiceCentro.trim() === codiceCentro.trim());
             
             // Calcola DataFinePrevista con logica che salta i fermi
             const dataFinePrevista = calcolaEndTimeConFermiJS(dataInizioOP, durataTotaleSecondi, fermiDelCentro);
@@ -1727,7 +1723,7 @@
             const durataTotaleSecondi = durataLavorazioneSecondi + tempoSetupSecondi;
             
             // Filtra fermi per il centro di lavoro corrente
-            const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro === currentOrdine.CodiceCentro);
+            const fermiCentro = fermiCentriLavoro.filter(f => f.codiceCentro.trim() === currentOrdine.CodiceCentro.trim());
             
             // Usa la funzione con fermi per calcolare la DataFinePrevista corretta
             const dataFinePrevista = calcolaEndTimeConFermiJS(dataInizioOP, durataTotaleSecondi, fermiCentro);
