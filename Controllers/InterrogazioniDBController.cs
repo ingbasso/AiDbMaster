@@ -106,45 +106,51 @@ namespace AiDbMaster.Controllers
                 model.RicercaOutlet = true;
                 try
                 {
-                    // Articoli con Outlet = 'S' in anagrafica
-                    var codiciOutletAnagrafica = await _context.AnagraficaArticoli
-                        .Where(a => a.Outlet == "S")
-                        .Select(a => a.CodiceArticolo)
-                        .ToListAsync();
+                    List<string> codiciOutletTutti;
 
-                    // Articoli con giacenza > 0 nel magazzino 20
-                    var codiciOutletMag20 = await _context.ProgressiviArticoli
-                        .Where(p => p.CodiceMagazzino == 20 && p.Esistenza > 0)
-                        .Select(p => p.CodiceArticolo)
-                        .ToListAsync();
+                    if (model.OutletSoloSelezionato && !string.IsNullOrEmpty(model.CodiceArticolo))
+                    {
+                        // Modalità "Solo Selezionato": usa solo l'articolo scelto nel filtro
+                        codiciOutletTutti = new List<string> { model.CodiceArticolo };
+                        _logger.LogInformation("Ricerca Outlet solo per articolo selezionato: {CodiceArticolo}", model.CodiceArticolo);
+                    }
+                    else
+                    {
+                        // Modalità standard: tutti gli articoli Outlet
+                        var codiciOutletAnagrafica = await _context.AnagraficaArticoli
+                            .Where(a => a.Outlet == "S")
+                            .Select(a => a.CodiceArticolo)
+                            .ToListAsync();
 
-                    // Unione delle due liste (OR), senza duplicati
-                    var codiciOutletTutti = codiciOutletAnagrafica
-                        .Union(codiciOutletMag20)
-                        .Distinct()
-                        .ToList();
+                        var codiciOutletMag20 = await _context.ProgressiviArticoli
+                            .Where(p => p.CodiceMagazzino == 20 && p.Esistenza > 0)
+                            .Select(p => p.CodiceArticolo)
+                            .ToListAsync();
 
-                    // Recupera i dati anagrafici con ClasseProvvigione per lo sconto
+                        codiciOutletTutti = codiciOutletAnagrafica
+                            .Union(codiciOutletMag20)
+                            .Distinct()
+                            .ToList();
+
+                        _logger.LogInformation("Trovati {NumOutlet} articoli Outlet (anagrafica: {NumAnagrafica}, magazzino 20: {NumMag20})", 
+                            codiciOutletTutti.Count, codiciOutletAnagrafica.Count, codiciOutletMag20.Count);
+                    }
+
+                    // Recupera i dati anagrafici con lo sconto Outlet diretto dall'anagrafica
                     var articoliOutlet = await _context.AnagraficaArticoli
-                        .Include(a => a.ClasseProvvigioneNavigation)
                         .Where(a => codiciOutletTutti.Contains(a.CodiceArticolo))
                         .OrderBy(a => a.CodiceArticolo)
                         .Select(a => new { 
                             a.CodiceArticolo, 
-                            PercSconto = a.ClasseProvvigioneNavigation != null 
-                                ? (decimal?)a.ClasseProvvigioneNavigation.Perc_Sconto 
-                                : null 
+                            PercSconto = a.PercScontoOutlet
                         })
                         .ToListAsync();
-
-                    _logger.LogInformation("Trovati {NumOutlet} articoli Outlet (anagrafica: {NumAnagrafica}, magazzino 20: {NumMag20})", 
-                        articoliOutlet.Count, codiciOutletAnagrafica.Count, codiciOutletMag20.Count);
 
                     // Calcola disponibilità per ogni articolo outlet
                     model.ArticoliOutlet = new List<DisponibilitaArticoloGruppoViewModel>();
                     foreach (var artOutlet in articoliOutlet)
                     {
-                        var risultatiOutlet = await CalcolaDisponibilitaArticolo(artOutlet.CodiceArticolo, dataRiferimento);
+                        var risultatiOutlet = await CalcolaDisponibilitaArticolo(artOutlet.CodiceArticolo, dataRiferimento, includiMagazzino20: true);
                         
                         model.ArticoliOutlet.Add(new DisponibilitaArticoloGruppoViewModel
                         {
@@ -218,24 +224,50 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
-        /// Calcola la disponibilità per un singolo articolo (metodo helper)
+        /// Calcola la disponibilità per un singolo articolo (metodo helper).
+        /// Se includiMagazzino20 = true, mostra anche il magazzino 20 e calcola l'impegnato per magazzino.
         /// </summary>
         private async Task<(List<DisponibilitaRigaViewModel> Risultati, string DescrizioneArticolo)> 
-            CalcolaDisponibilitaArticolo(string codiceArticolo, DateTime dataRiferimento)
+            CalcolaDisponibilitaArticolo(string codiceArticolo, DateTime dataRiferimento, bool includiMagazzino20 = false)
         {
             var oggi = DateTime.Today;
             
-            // Calcola impegnato: TUTTI gli ordini clienti fino alla data di riferimento
-            // Formula: Σ ((Quantita - QuantitaEvasa) × PercentualeInclusione / 100)
-            // per ordini clienti con DataConsegna <= dataRiferimento e residuo > 0
-            decimal impegnatoAttuale = await _context.OrdiniRighe
-                .Where(r => r.TipoOrdine == "R")
-                .Where(r => r.CodiceArticolo == codiceArticolo)
-                .Where(r => r.DataConsegna <= dataRiferimento)  // Tutti fino alla data di riferimento
-                .Where(r => r.Quantita > r.QuantitaEvasa)
-                .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
+            // === IMPEGNATO ===
+            decimal impegnatoGlobale = 0;
+            var impegnatoPerMagazzino = new Dictionary<short, decimal>();
+
+            if (includiMagazzino20)
+            {
+                // Calcola impegnato raggruppato per CodiceMagazzino delle righe ordine
+                var impegnati = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "R")
+                    .Where(r => r.CodiceArticolo == codiceArticolo)
+                    .Where(r => r.DataConsegna <= dataRiferimento)
+                    .Where(r => r.Quantita > r.QuantitaEvasa)
+                    .GroupBy(r => r.CodiceMagazzino)
+                    .Select(g => new
+                    {
+                        CodiceMagazzino = g.Key,
+                        Impegnato = g.Sum(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0
+                    })
+                    .ToListAsync();
+
+                foreach (var imp in impegnati)
+                {
+                    impegnatoPerMagazzino[imp.CodiceMagazzino] = imp.Impegnato;
+                }
+            }
+            else
+            {
+                // Comportamento standard: impegnato globale (senza filtro magazzino)
+                impegnatoGlobale = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "R")
+                    .Where(r => r.CodiceArticolo == codiceArticolo)
+                    .Where(r => r.DataConsegna <= dataRiferimento)
+                    .Where(r => r.Quantita > r.QuantitaEvasa)
+                    .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
+            }
             
-            // ImpegnatoFuturo non più usato (ora tutto è incluso in impegnatoAttuale)
             decimal impegnatoFuturo = 0;
 
             // Carica tempi asciugatura in memoria
@@ -273,10 +305,12 @@ namespace AiDbMaster.Controllers
                 }
             }
 
-            // Query sulla tabella ProgressiviArticoli (solo magazzino 1)
+            // === PROGRESSIVI ARTICOLI ===
             var progressivi = await _context.ProgressiviArticoli
                 .Where(p => p.CodiceArticolo == codiceArticolo)
-                .Where(p => p.CodiceMagazzino == 1)
+                .Where(p => includiMagazzino20 
+                    ? (p.CodiceMagazzino == 1 || p.CodiceMagazzino == 20) 
+                    : p.CodiceMagazzino == 1)
                 .OrderBy(p => p.CodiceMagazzino)
                 .ToListAsync();
 
@@ -288,7 +322,6 @@ namespace AiDbMaster.Controllers
             var unitaMisura = articolo?.UnitaMisura ?? "";
 
             // Mappa i risultati
-            // Nota: ImpegnatoAttuale viene calcolato in tempo reale (non da ProgressiviArticoli)
             var isFuoriProduzione = articolo?.FuoriProduzione == "S";
             var isSupermarket = articolo?.Supermarket == "S";
 
@@ -300,20 +333,25 @@ namespace AiDbMaster.Controllers
                 CodiceMagazzino = p.CodiceMagazzino,
                 Esistenza = p.Esistenza,
                 Pronto = p.Pronto,
-                ImpegnatoAttuale = impegnatoAttuale,
+                ImpegnatoAttuale = includiMagazzino20
+                    ? impegnatoPerMagazzino.GetValueOrDefault(p.CodiceMagazzino, 0)
+                    : impegnatoGlobale,
                 ImpegnatoFuturo = impegnatoFuturo,
                 OrdinatoFornitoriDataOdierna = p.OrdinatoFornitoriDataOdierna,
-                ProduzioneDisponibile = produzioneDisponibile,
+                ProduzioneDisponibile = (!includiMagazzino20 || p.CodiceMagazzino == 1) ? produzioneDisponibile : 0,
                 IsFuoriProduzione = isFuoriProduzione,
                 IsSupermarket = isSupermarket
             }).ToList();
 
-            // Calcola le note dinamiche per ogni riga
+            // Calcola le note dinamiche (solo per magazzino 1; per il 20 la nota non è significativa)
             foreach (var riga in risultati)
             {
-                var nota = await CalcolaNotaPrevisione(codiceArticolo, riga.Esistenza, riga.UnitaMisura, dataRiferimento);
-                riga.NotaPrevisione = nota.Nota;
-                riga.DisponibilitaDaVerificare = nota.DaVerificare;
+                if (!includiMagazzino20 || riga.CodiceMagazzino == 1)
+                {
+                    var nota = await CalcolaNotaPrevisione(codiceArticolo, riga.Esistenza, riga.UnitaMisura, dataRiferimento);
+                    riga.NotaPrevisione = nota.Nota;
+                    riga.DisponibilitaDaVerificare = nota.DaVerificare;
+                }
             }
 
             return (risultati, descrizioneArticolo);

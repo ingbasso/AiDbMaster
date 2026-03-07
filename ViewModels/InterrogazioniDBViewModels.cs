@@ -43,6 +43,12 @@ namespace AiDbMaster.ViewModels
         /// Flag che indica se è stata richiesta la ricerca Outlet
         /// </summary>
         public bool RicercaOutlet { get; set; }
+
+        /// <summary>
+        /// Se true, la ricerca Outlet mostra solo l'articolo selezionato nel filtro (invece di tutti gli Outlet)
+        /// </summary>
+        [Display(Name = "Solo Articolo Selezionato")]
+        public bool OutletSoloSelezionato { get; set; }
         
         // Informazioni aggiuntive sull'articolo selezionato
         public string? DescrizioneArticolo { get; set; }

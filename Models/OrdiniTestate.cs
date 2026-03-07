@@ -115,6 +115,30 @@ namespace AiDbMaster.Models
         public string? Prenotato { get; set; }
 
         /// <summary>
+        /// Indica se serve motrice con gru: "S" = Sì, "N" = No
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Motrice Gru")]
+        [Column("MotriceGru")]
+        public string? MotriceGru { get; set; }
+
+        /// <summary>
+        /// Indica se serve autotreno con gru: "S" = Sì, "N" = No
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Autotreno Gru")]
+        [Column("AutotrenoGru")]
+        public string? AutotrenoGru { get; set; }
+
+        /// <summary>
+        /// Indica se è necessario il trasbordo: "S" = Sì, "N" = No
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Trasbordo")]
+        [Column("Trasbordo")]
+        public string? Trasbordo { get; set; }
+
+        /// <summary>
         /// Codice porto: "1" = Porto Franco, "2" = Porto Assegnato.
         /// Nel database è un varchar, non un smallint.
         /// Nullable: potrebbe non essere valorizzato.

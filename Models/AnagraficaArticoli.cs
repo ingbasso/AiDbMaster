@@ -164,6 +164,14 @@ namespace AiDbMaster.Models
         [Column("Supermarket", TypeName = "varchar(1)")]
         public string Supermarket { get; set; } = "N";
 
+        /// <summary>
+        /// Percentuale di sconto Outlet applicabile all'articolo.
+        /// Nullable: se non valorizzato, l'articolo non ha uno sconto Outlet.
+        /// </summary>
+        [Display(Name = "% Sconto Outlet")]
+        [Column("Perc_Sconto_Outlet", TypeName = "decimal(18,2)")]
+        public decimal? PercScontoOutlet { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

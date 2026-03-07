@@ -249,19 +249,49 @@ $migrationsCheck
         Write-Log "Tutti i file essenziali sono presenti" "SUCCESS"
     }
 
-    # 7. CREAZIONE ZIP
+    # 7. CREAZIONE ZIP (usa .NET diretto per evitare bug Compress-Archive con file lock)
+    Write-Log "Chiusura server di build..."
+    dotnet build-server shutdown 2>$null | Out-Null
+
     Write-Log "Creazione pacchetto ZIP..."
     
-    # Crea ZIP temporaneo con timestamp
-    $zipPath = "$deployFolder.zip"
+    $sourceFullPath = (Resolve-Path $deployFolder).Path
+    $zipFullPath = "$sourceFullPath.zip"
+    $zipPath = $zipFullPath
     
-    # Rimuovi ZIP esistente se presente
     if (Test-Path $zipPath) {
         Remove-Item $zipPath -Force
     }
     
-    # Crea il ZIP
-    Compress-Archive -Path "$deployFolder\*" -DestinationPath $zipPath -CompressionLevel Optimal
+    Add-Type -Assembly 'System.IO.Compression'
+    Add-Type -Assembly 'System.IO.Compression.FileSystem'
+    
+    $zip = [System.IO.Compression.ZipFile]::Open($zipFullPath, 'Create')
+    try {
+        $files = Get-ChildItem -Path $sourceFullPath -Recurse -File
+        $totalFiles = $files.Count
+        $current = 0
+        foreach ($file in $files) {
+            $current++
+            $relativePath = $file.FullName.Substring($sourceFullPath.Length + 1)
+            # Apre il file in modalità condivisa (FileShare.ReadWrite) per evitare lock
+            $stream = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'ReadWrite')
+            try {
+                $entry = $zip.CreateEntry($relativePath, [System.IO.Compression.CompressionLevel]::Optimal)
+                $entryStream = $entry.Open()
+                try {
+                    $stream.CopyTo($entryStream)
+                } finally {
+                    $entryStream.Close()
+                }
+            } finally {
+                $stream.Close()
+            }
+        }
+        Write-Log "Aggiunti $totalFiles file al pacchetto ZIP"
+    } finally {
+        $zip.Dispose()
+    }
     
     if (Test-Path $zipPath) {
         $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
