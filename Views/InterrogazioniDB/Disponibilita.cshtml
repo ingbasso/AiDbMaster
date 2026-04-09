@@ -512,17 +512,53 @@
                 </div>
                 <div class="card-body">
                     <!-- Barra filtro Outlet -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-funnel"></i></span>
-                                <input type="text" id="filtroOutlet" class="form-control" placeholder="Filtra per codice o descrizione articolo..." />
+                                <input type="text" id="filtroOutlet" class="form-control" placeholder="Filtra per codice o descrizione..." />
                                 <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('filtroOutlet').value=''; filtraOutlet();">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-6 text-end">
+                        <div class="col-md-2">
+                            <select id="filtroOutletMagazzino" class="form-select form-select-sm" onchange="filtraOutlet()">
+                                <option value="">Tutti i magazzini</option>
+                                @{
+                                    var magazziniOutlet = Model.ArticoliOutlet.SelectMany(a => a.Risultati).Select(r => r.CodiceMagazzino).Distinct().OrderBy(m => m);
+                                }
+                                @foreach (var mag in magazziniOutlet)
+                                {
+                                    <option value="@mag">Magazzino @mag</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="filtroOutletFamiglia" class="form-select form-select-sm" onchange="filtraOutlet()">
+                                <option value="">Tutte le famiglie</option>
+                                @{
+                                    var famiglieOutlet = Model.ArticoliOutlet.Where(a => !string.IsNullOrEmpty(a.Famiglia)).Select(a => new { a.Famiglia, a.DescrizioneFamiglia }).Distinct().OrderBy(f => f.Famiglia);
+                                }
+                                @foreach (var fam in famiglieOutlet)
+                                {
+                                    <option value="@fam.Famiglia">@fam.Famiglia - @(fam.DescrizioneFamiglia ?? "N/D")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="filtroOutletClasseProv" class="form-select form-select-sm" onchange="filtraOutlet()">
+                                <option value="">Tutte le classi provv.</option>
+                                @{
+                                    var classiOutlet = Model.ArticoliOutlet.Where(a => !string.IsNullOrEmpty(a.ClasseProvvigione)).Select(a => new { a.ClasseProvvigione, a.DescrizioneClasseProvvigione }).Distinct().OrderBy(c => c.ClasseProvvigione);
+                                }
+                                @foreach (var cl in classiOutlet)
+                                {
+                                    <option value="@cl.ClasseProvvigione">@cl.ClasseProvvigione - @(cl.DescrizioneClasseProvvigione ?? "N/D")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2 text-end">
                             <span id="contatoreFiltroOutlet" class="text-muted"></span>
                         </div>
                     </div>
@@ -556,7 +592,7 @@
                                 {
                                     @foreach (var riga in articoloOutlet.Risultati)
                                     {
-                                        <tr class="@riga.RowCssClass">
+                                        <tr class="@riga.RowCssClass" data-magazzino="@riga.CodiceMagazzino" data-famiglia="@(articoloOutlet.Famiglia ?? "")" data-classe-provvigione="@(articoloOutlet.ClasseProvvigione ?? "")">
                                             <td>
                                                 <strong>@riga.CodiceArticolo</strong>
                                                 @if (riga.IsSupermarket)
@@ -987,6 +1023,7 @@
                                     <th>Descrizione</th>
                                     <th class="text-end" style="width: 130px;">Quantità</th>
                                     <th class="text-end" style="width: 130px;">Progressivo</th>
+                                    <th class="text-center" style="width: 80px;">Email</th>
                                 </tr>
                             </thead>
                             <tbody id="tabellaMovimentiNota">
@@ -1500,6 +1537,10 @@
                             tipoBadgeClass = 'bg-success';
                             tipoIcon = 'bi-gear';
                             break;
+                        case 'Ordine Fornitore':
+                            tipoBadgeClass = 'bg-info';
+                            tipoIcon = 'bi-truck';
+                            break;
                         default:
                             tipoBadgeClass = 'bg-light text-dark';
                             tipoIcon = 'bi-question';
@@ -1508,17 +1549,29 @@
                     // Riga esistenza in grassetto
                     var rowClass = mov.tipo === 'Esistenza' ? 'fw-bold' : '';
                     
+                    // Colonna Email: icona solo per righe "Ordine Cliente"
+                    var emailHtml = '';
+                    if (mov.tipo === 'Ordine Cliente') {
+                        if (mov.emailInviata) {
+                            var dataEmailFormatted = mov.dataInvioEmail ? new Date(mov.dataInvioEmail).toLocaleDateString('it-IT') : '';
+                            emailHtml = '<span class="text-success" title="Email inviata il ' + dataEmailFormatted + '"><i class="bi bi-envelope-check-fill fs-5"></i></span>';
+                        } else {
+                            emailHtml = '<span class="text-muted" title="Email non inviata"><i class="bi bi-envelope-x fs-5"></i></span>';
+                        }
+                    }
+
                     var row = '<tr class="' + rowClass + '">' +
                               '<td class="text-center">' + dataFormatted + '</td>' +
                               '<td><span class="badge ' + tipoBadgeClass + '"><i class="bi ' + tipoIcon + ' me-1"></i>' + mov.tipo + '</span></td>' +
                               '<td>' + mov.descrizione + '</td>' +
                               '<td class="text-end">' + quantitaText + '</td>' +
                               '<td class="text-end">' + progressivoText + '</td>' +
+                              '<td class="text-center">' + emailHtml + '</td>' +
                               '</tr>';
                     tbody.append(row);
                 });
             } else {
-                tbody.append('<tr><td colspan="5" class="text-center text-muted">Nessun movimento trovato nel periodo</td></tr>');
+                tbody.append('<tr><td colspan="6" class="text-center text-muted">Nessun movimento trovato nel periodo</td></tr>');
             }
         }
 
@@ -1588,15 +1641,26 @@
             var tabella = document.getElementById('tabellaOutlet');
             if (!tabella) return;
 
-            var filtro = document.getElementById('filtroOutlet').value.toLowerCase();
+            var filtro = (document.getElementById('filtroOutlet').value || '').toLowerCase();
+            var filtroMag = (document.getElementById('filtroOutletMagazzino')?.value || '');
+            var filtroFam = (document.getElementById('filtroOutletFamiglia')?.value || '');
+            var filtroClasse = (document.getElementById('filtroOutletClasseProv')?.value || '');
             var righe = tabella.querySelectorAll('tbody tr');
             var visibili = 0;
 
             righe.forEach(function(riga) {
                 var codice = riga.cells[0] ? riga.cells[0].textContent.toLowerCase() : '';
                 var descrizione = riga.cells[1] ? riga.cells[1].textContent.toLowerCase() : '';
+                var magazzino = riga.dataset.magazzino || '';
+                var famiglia = riga.dataset.famiglia || '';
+                var classeProvvigione = riga.dataset.classeProvvigione || '';
 
-                if (codice.indexOf(filtro) > -1 || descrizione.indexOf(filtro) > -1) {
+                var matchTesto = !filtro || codice.indexOf(filtro) > -1 || descrizione.indexOf(filtro) > -1;
+                var matchMag = !filtroMag || magazzino === filtroMag;
+                var matchFam = !filtroFam || famiglia === filtroFam;
+                var matchClasse = !filtroClasse || classeProvvigione === filtroClasse;
+
+                if (matchTesto && matchMag && matchFam && matchClasse) {
                     riga.style.display = '';
                     visibili++;
                 } else {
@@ -1606,7 +1670,8 @@
 
             var contatore = document.getElementById('contatoreFiltroOutlet');
             if (contatore) {
-                if (filtro) {
+                var hasFiltro = filtro || filtroMag || filtroFam || filtroClasse;
+                if (hasFiltro) {
                     contatore.textContent = visibili + ' di ' + righe.length + ' articoli';
                 } else {
                     contatore.textContent = '';

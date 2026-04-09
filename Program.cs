@@ -75,6 +75,9 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<Folder
 // Registra il servizio di notifica della catalogazione
 builder.Services.AddScoped<CatalogNotificationService>();
 
+// Registra il servizio di invio automatico email (ore 14:00)
+builder.Services.AddHostedService<EmailAutomaticoService>();
+
 // Aggiungi SignalR
 builder.Services.AddSignalR();
 

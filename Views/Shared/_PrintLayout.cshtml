@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Stampa</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #222; padding: 15px; }
+        h1 { font-size: 16pt; margin-bottom: 4px; }
+        h2 { font-size: 13pt; margin-bottom: 3px; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th, td { border: 1px solid #aaa; padding: 4px 8px; text-align: left; font-size: 10pt; }
+        th { background: #0d6efd; color: #fff; font-weight: 600; }
+        tr:nth-child(even) { background: #f5f7fa; }
+        .header-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #0d6efd; }
+        .header-info .left { flex: 1; }
+        .header-info .right { text-align: right; font-size: 10pt; color: #555; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 20px; margin-bottom: 12px; font-size: 10pt; }
+        .info-grid .label { font-weight: 600; color: #555; }
+        .info-grid .value { font-weight: 700; }
+        .totals { margin-top: 8px; font-size: 11pt; font-weight: 700; text-align: right; }
+        .badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 9pt; font-weight: 600; }
+        .badge-si { background: #198754; color: #fff; }
+        .badge-no { background: #ccc; color: #666; }
+        .note-box { background: #fff8e1; border: 1px solid #ffc107; border-radius: 6px; padding: 6px 10px; margin-bottom: 12px; font-size: 10pt; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .separator { border: none; border-top: 1px dashed #ccc; margin: 15px 0; }
+        .firma-box { margin-top: 30px; display: flex; justify-content: space-between; }
+        .firma-box div { width: 45%; border-top: 1px solid #333; padding-top: 4px; text-align: center; font-size: 10pt; color: #555; }
+        .no-print { margin-bottom: 15px; }
+
+        @@media print {
+            body { padding: 0; }
+            .no-print { display: none !important; }
+            @@page { size: A4; margin: 12mm; }
+        }
+
+        @@media screen {
+            body { max-width: 900px; margin: 0 auto; background: #f0f0f0; }
+            .print-page { background: #fff; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 20px; }
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()" style="padding: 8px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt;">
+            🖨️ Stampa
+        </button>
+        <button onclick="window.close()" style="padding: 8px 20px; background: #6c757d; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; margin-left: 8px;">
+            Chiudi
+        </button>
+    </div>
+    @RenderBody()
+</body>
+</html>

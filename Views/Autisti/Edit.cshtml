@@ -1,0 +1,57 @@
+@model AiDbMaster.Models.Autista
+
+@{
+    ViewData["Title"] = "Modifica Autista";
+    ViewBag.UseFluidContainer = true;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-pencil me-2 text-primary"></i>Modifica Autista</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-person-badge me-1"></i>Dati autista</div>
+        <div class="card-body">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Cognome <span class="text-danger">*</span></label>
+                        <input asp-for="Cognome" class="form-control" maxlength="50" required />
+                        <span asp-validation-for="Cognome" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Nome <span class="text-danger">*</span></label>
+                        <input asp-for="Nome" class="form-control" maxlength="50" required />
+                        <span asp-validation-for="Nome" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Telefono</label>
+                        <input asp-for="Telefono" class="form-control" maxlength="20" />
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check mt-4">
+                            <input asp-for="Attivo" class="form-check-input" />
+                            <label class="form-check-label" asp-for="Attivo">Attivo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-x-lg me-1"></i>Annulla
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Salva modifiche
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

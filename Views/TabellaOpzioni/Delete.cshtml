@@ -1,0 +1,70 @@
+@model AiDbMaster.Models.Opzione
+
+@{
+    ViewData["Title"] = "Elimina Opzione";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">
+            <i class="bi bi-trash text-danger"></i> Elimina Opzione
+        </h4>
+        <small class="text-muted">Conferma eliminazione</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Torna alla lista
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Conferma Eliminazione</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Sei sicuro di voler eliminare questa opzione? L'operazione non è reversibile e potrebbe compromettere il funzionamento del sistema.
+                </div>
+
+                <table class="table table-bordered mb-4">
+                    <tbody>
+                        <tr>
+                            <th class="table-light" style="width: 40%;">ID</th>
+                            <td>@Model.ID</td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">Nome Opzione</th>
+                            <td><strong>@Model.NomeOpzione</strong></td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">Valore</th>
+                            <td>
+                                @if (Model.NomeOpzione.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="text-muted fst-italic"><i class="bi bi-lock-fill me-1"></i>••••••••</span>
+                                }
+                                else
+                                {
+                                    <code>@Model.ValoreOpzione</code>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ID" />
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Annulla</a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Elimina Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

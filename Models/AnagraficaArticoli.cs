@@ -172,6 +172,29 @@ namespace AiDbMaster.Models
         [Column("Perc_Sconto_Outlet", TypeName = "decimal(18,2)")]
         public decimal? PercScontoOutlet { get; set; }
 
+        /// <summary>
+        /// Peso unitario articolo in Kg.
+        /// Usato per la pianificazione carichi nelle consegne.
+        /// </summary>
+        [Display(Name = "Peso Unitario (Kg)")]
+        [Column("PesoUnitarioKg", TypeName = "decimal(18,3)")]
+        public decimal? PesoUnitarioKg { get; set; }
+
+        [Required]
+        [Display(Name = "Qtà UMP per Tavola")]
+        [Column("QtàUMPPerTavola", TypeName = "decimal(27,9)")]
+        public decimal QtaUMPPerTavola { get; set; }
+
+        [Required]
+        [Display(Name = "Qtà UMP per Pallet")]
+        [Column("QtàUMPPerPallet", TypeName = "decimal(27,9)")]
+        public decimal QtaUMPPerPallet { get; set; }
+
+        [Required]
+        [Display(Name = "Tavole per Pallet")]
+        [Column("TavolePerPallet", TypeName = "decimal(27,9)")]
+        public decimal TavolePerPallet { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

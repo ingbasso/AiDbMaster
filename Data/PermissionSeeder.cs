@@ -72,27 +72,40 @@ namespace AiDbMaster.Data
                         IsConfigured = true
                     },
 
-                    // 4. GRUPPO INTERROGAZIONI DB
+                    // 4. GRUPPO CONSEGNE
+                    new Resource
+                    {
+                        Name = "Consegne",
+                        DisplayName = "Consegne",
+                        Description = "Gruppo pianificazione consegne",
+                        MenuIcon = "bi-truck",
+                        MenuOrder = 4,
+                        ParentResourceId = null,
+                        IsMenuGroup = true,
+                        IsConfigured = true
+                    },
+
+                    // 5. GRUPPO INTERROGAZIONI DB
                     new Resource 
                     { 
                         Name = "InterrogazioniDB", 
                         DisplayName = "Interrogazioni DB", 
                         Description = "Interrogazioni e analisi database",
                         MenuIcon = "bi-search", 
-                        MenuOrder = 4, 
+                        MenuOrder = 5, 
                         ParentResourceId = null, 
                         IsMenuGroup = true,
                         IsConfigured = true
                     },
 
-                    // 5. GRUPPO AMMINISTRAZIONE
+                    // 6. GRUPPO AMMINISTRAZIONE
                     new Resource 
                     { 
                         Name = "Amministrazione", 
                         DisplayName = "Amministrazione", 
                         Description = "Gruppo amministrazione sistema",
                         MenuIcon = "bi-gear", 
-                        MenuOrder = 5, 
+                        MenuOrder = 6, 
                         ParentResourceId = null, 
                         IsMenuGroup = true,
                         IsConfigured = true
@@ -108,12 +121,14 @@ namespace AiDbMaster.Data
                 var homeRes = await context.Resources.FirstAsync(r => r.Name == "Home");
                 var tabelleRes = await context.Resources.FirstAsync(r => r.Name == "Tabelle");
                 var produzioneRes = await context.Resources.FirstAsync(r => r.Name == "Produzione");
+                var consegneRes = await context.Resources.FirstAsync(r => r.Name == "Consegne");
                 var interrogazioniDBRes = await context.Resources.FirstAsync(r => r.Name == "InterrogazioniDB");
                 var amministrazioneRes = await context.Resources.FirstAsync(r => r.Name == "Amministrazione");
 
                 logger.LogInformation($"   → Home ID: {homeRes.Id}");
                 logger.LogInformation($"   → Tabelle ID: {tabelleRes.Id}");
                 logger.LogInformation($"   → Produzione ID: {produzioneRes.Id}");
+                logger.LogInformation($"   → Consegne ID: {consegneRes.Id}");
                 logger.LogInformation($"   → InterrogazioniDB ID: {interrogazioniDBRes.Id}");
                 logger.LogInformation($"   → Amministrazione ID: {amministrazioneRes.Id}");
 
@@ -134,12 +149,24 @@ namespace AiDbMaster.Data
                     new Resource { Name = "StatiOP", DisplayName = "Stati OP", Description = "Gestione stati ordini di produzione", MenuIcon = "bi-flag", MenuOrder = 11, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "OrdiniTestate", DisplayName = "Gestione Ordini CF", Description = "Gestione ordini clienti", MenuIcon = "bi-clipboard-check", MenuOrder = 12, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "TempiAsciugatura", DisplayName = "Tempi di Asciugatura", Description = "Gestione tempi di asciugatura", MenuIcon = "bi-calendar-day", MenuOrder = 13, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "DbTestate", DisplayName = "Testate Distinta Base", Description = "Gestione testate distinta base", MenuIcon = "bi-file-earmark-text", MenuOrder = 14, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "DbLavorazioni", DisplayName = "Cicli di Lavorazione", Description = "Gestione cicli/distinte di lavorazione", MenuIcon = "bi-diagram-3", MenuOrder = 15, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "DbMateriali", DisplayName = "Distinta Base Materiali", Description = "Gestione distinta base materiali", MenuIcon = "bi-box-seam", MenuOrder = 16, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "PoliticheRiordinoMagazzino", DisplayName = "Politiche Riordino", Description = "Gestione politiche riordino magazzino", MenuIcon = "bi-arrow-repeat", MenuOrder = 17, ParentResourceId = tabelleRes.Id, IsMenuGroup = false, IsConfigured = true },
 
                     // ==== PRODUZIONE (4 pagine) ====
                     new Resource { Name = "ListaOPDashboard", DisplayName = "Dashboard", Description = "Dashboard produzione", MenuIcon = "bi-graph-up", MenuOrder = 1, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "SchedulatoreOP", DisplayName = "Schedulatore OP", Description = "Schedulazione ordini di produzione", MenuIcon = "bi-calendar2-check", MenuOrder = 2, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "ListaOP", DisplayName = "Ordini di Produzione", Description = "Gestione ordini di produzione", MenuIcon = "bi-list-ul", MenuOrder = 3, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "FermiSchedulati", DisplayName = "Fermi Schedulati", Description = "Gestione fermi centri lavoro", MenuIcon = "bi-calendar-check", MenuOrder = 4, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ProductionCalc", DisplayName = "Production Calc", Description = "Calcolo produzione articoli", MenuIcon = "bi-calculator", MenuOrder = 5, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
+
+                    // ==== CONSEGNE (5 pagine) ====
+                    new Resource { Name = "ConsegneKanban", DisplayName = "Kanban Consegne", Description = "Kanban pianificazione consegne", MenuIcon = "bi-kanban", MenuOrder = 1, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ViaggiConsegna", DisplayName = "Viaggi Consegna", Description = "Elenco viaggi consegna", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "Mezzi", DisplayName = "Mezzi", Description = "Anagrafica mezzi di trasporto", MenuIcon = "bi-truck-front", MenuOrder = 3, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "TipiTrasporto", DisplayName = "Tipi Trasporto", Description = "Anagrafica tipi trasporto", MenuIcon = "bi-signpost-split", MenuOrder = 4, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "MezziTrasportoEsterni", DisplayName = "Mezzi Esterni", Description = "Anagrafica mezzi di trasporto esterni", MenuIcon = "bi-truck-flatbed", MenuOrder = 5, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
 
                     // ==== INTERROGAZIONI DB (5 pagine) ====
                     new Resource { Name = "Disponibilita", DisplayName = "Disponibilità", Description = "Verifica disponibilità articoli", MenuIcon = "bi-boxes", MenuOrder = 1, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
@@ -267,6 +294,21 @@ namespace AiDbMaster.Data
                         {
                             RoleId = agentiRole.Id,
                             ResourceId = dashboardConsegneResource.Id,
+                            CanView = true,
+                            CanCreate = false,
+                            CanEdit = false,
+                            CanDelete = false
+                        });
+                    }
+
+                    // Agenti: Kanban Consegne (view)
+                    var kanbanConsegneResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "ConsegneKanban");
+                    if (kanbanConsegneResource != null)
+                    {
+                        agentiPermissions.Add(new Permission
+                        {
+                            RoleId = agentiRole.Id,
+                            ResourceId = kanbanConsegneResource.Id,
                             CanView = true,
                             CanCreate = false,
                             CanEdit = false,

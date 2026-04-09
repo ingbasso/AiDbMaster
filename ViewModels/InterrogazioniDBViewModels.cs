@@ -69,6 +69,11 @@ namespace AiDbMaster.ViewModels
         /// Null se l'articolo non ha una ClasseProvvigione assegnata.
         /// </summary>
         public decimal? PercScontoExtra { get; set; }
+
+        public string? Famiglia { get; set; }
+        public string? DescrizioneFamiglia { get; set; }
+        public string? ClasseProvvigione { get; set; }
+        public string? DescrizioneClasseProvvigione { get; set; }
     }
 
     /// <summary>
@@ -295,6 +300,7 @@ namespace AiDbMaster.ViewModels
             "Esistenza" => "bg-secondary",
             "Ordine Cliente" => "bg-danger",
             "Ordine Produzione" => "bg-success",
+            "Ordine Fornitore" => "bg-info",
             _ => "bg-light"
         };
         public string Descrizione { get; set; } = string.Empty;
@@ -302,6 +308,17 @@ namespace AiDbMaster.ViewModels
         public decimal Progressivo { get; set; }
         public string ProgressivoCssClass => Progressivo >= 0 ? "text-success" : "text-danger";
         public int? GiorniAsciugatura { get; set; }
+
+        /// <summary>
+        /// True se per questa riga ordine cliente è stata inviata un'email di avviso.
+        /// Valorizzato solo per righe di tipo "Ordine Cliente".
+        /// </summary>
+        public bool EmailInviata { get; set; }
+
+        /// <summary>
+        /// Data e ora dell'invio email (se inviata).
+        /// </summary>
+        public DateTime? DataInvioEmail { get; set; }
     }
 
     // =====================================================
@@ -496,6 +513,15 @@ namespace AiDbMaster.ViewModels
 
         /// <summary>Tipo messaggio (success, warning, danger, info)</summary>
         public string? TipoMessaggio { get; set; }
+
+        /// <summary>True se il sistema è in modalità test (EmailProva valorizzata)</summary>
+        public bool IsModalitaTest { get; set; }
+
+        /// <summary>Indirizzi EmailProva configurati (per visualizzazione nel banner)</summary>
+        public string? EmailProva { get; set; }
+
+        /// <summary>True se l'invio automatico è attivo (EmailAutomatiche = 1 in TabellaOpzioni)</summary>
+        public bool EmailAutomaticheAttive { get; set; }
     }
 
     /// <summary>
@@ -537,6 +563,15 @@ namespace AiDbMaster.ViewModels
 
         // Proprietà calcolate
         public string NumeroOrdineCompleto => $"{AnnoOrdine}/{SerieOrdine}/{NumeroOrdine:D6}";
+
+        /// <summary>Chiave univoca dell'ordine per il form (TipoOrdine|Anno|Serie|Numero)</summary>
+        public string ChiaveOrdine => $"{TipoOrdine}|{AnnoOrdine}|{SerieOrdine}|{NumeroOrdine}";
+
+        /// <summary>True se il cliente ha un indirizzo email valorizzato</summary>
+        public bool HasEmailCliente => !string.IsNullOrWhiteSpace(EmailCliente);
+
+        /// <summary>True se l'agente ha un indirizzo email valorizzato</summary>
+        public bool HasEmailAgente => !string.IsNullOrWhiteSpace(EmailAgente);
     }
 
     /// <summary>

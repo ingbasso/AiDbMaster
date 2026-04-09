@@ -30,12 +30,11 @@ namespace AiDbMaster.Models
         public string NomeOpzione { get; set; } = string.Empty;
 
         /// <summary>
-        /// Valore dell'opzione (può contenere testi lunghi).
+        /// Valore dell'opzione (può contenere testi lunghi, nullable).
         /// Es: "mail.favaro1.com", "587", "21", ecc.
         /// </summary>
-        [Required]
         [Display(Name = "Valore Opzione")]
         [Column("ValoreOpzione", TypeName = "varchar(max)")]
-        public string ValoreOpzione { get; set; } = string.Empty;
+        public string? ValoreOpzione { get; set; }
     }
 }

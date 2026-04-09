@@ -31,6 +31,7 @@ namespace AiDbMaster.Data
         public DbSet<Operatore> Operatori { get; set; }
         public DbSet<CentroLavoro> CentriLavoro { get; set; }
         public DbSet<ListaOP> ListaOP { get; set; }
+        public DbSet<ListaIP> ListaIP { get; set; }
         public DbSet<Lavorazioni> Lavorazioni { get; set; }
         public DbSet<CalendarioFermiCentriLavoro> CalendarioFermiCentriLavoro { get; set; }
         public DbSet<TempiAsciugatura> TempiAsciugatura { get; set; }
@@ -45,7 +46,23 @@ namespace AiDbMaster.Data
         
         // Tabella Opzioni di Sistema
         public DbSet<Opzione> Opzioni { get; set; }
+
+        // Tabelle Modulo Consegne
+        public DbSet<Autista> Autisti { get; set; }
+        public DbSet<TipoTrasporto> TipiTrasporto { get; set; }
+        public DbSet<MezzoTrasporto> MezziTrasporto { get; set; }
+        public DbSet<ViaggioConsegna> ViaggiConsegna { get; set; }
+        public DbSet<ViaggioConsegnaRiga> ViaggioConsegnaRighe { get; set; }
+        public DbSet<MezzoTrasportoEsterno> MezziTrasportoEsterni { get; set; }
         
+        // Tabelle Distinte Base (Testate, Cicli e Materiali)
+        public DbSet<DbTestata> DbTestate { get; set; }
+        public DbSet<DbLavorazione> DbLavorazioni { get; set; }
+        public DbSet<DbMateriale> DbMateriali { get; set; }
+        
+        // Tabella Politiche Riordino Magazzino
+        public DbSet<PoliticaRiordinoMagazzino> PoliticheRiordinoMagazzino { get; set; }
+
         // Tabelle Sistema Permessi
         public DbSet<Resource> Resources { get; set; }
         public DbSet<Permission> Permissions { get; set; }
@@ -466,6 +483,170 @@ namespace AiDbMaster.Data
                 .IsUnique()
                 .HasDatabaseName("IX_TabellaOpzioni_NomeOpzione");
 
+            // ===== CONFIGURAZIONI MODULO CONSEGNE =====
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.PesoUnitarioKg)
+                .HasColumnType("decimal(18,3)");
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.QtaUMPPerTavola)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.QtaUMPPerPallet)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.TavolePerPallet)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<TipoTrasporto>()
+                .HasIndex(t => t.Codice)
+                .IsUnique()
+                .HasDatabaseName("IX_TipiTrasporto_Codice");
+
+            builder.Entity<TipoTrasporto>()
+                .HasIndex(t => t.Attivo)
+                .HasDatabaseName("IX_TipiTrasporto_Attivo");
+
+            builder.Entity<MezzoTrasporto>()
+                .HasIndex(m => m.CodiceMezzo)
+                .IsUnique()
+                .HasDatabaseName("IX_MezziTrasporto_CodiceMezzo");
+
+            builder.Entity<MezzoTrasporto>()
+                .HasIndex(m => m.Targa)
+                .HasDatabaseName("IX_MezziTrasporto_Targa");
+
+            builder.Entity<MezzoTrasporto>()
+                .HasIndex(m => m.Attivo)
+                .HasDatabaseName("IX_MezziTrasporto_Attivo");
+
+            builder.Entity<MezzoTrasporto>()
+                .Property(m => m.PortataMaxKg)
+                .HasColumnType("decimal(18,3)");
+
+            builder.Entity<MezzoTrasporto>()
+                .HasOne(m => m.AutistaDefault)
+                .WithMany()
+                .HasForeignKey(m => m.AutistaDefaultId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Autista>()
+                .HasIndex(a => new { a.Cognome, a.Nome })
+                .HasDatabaseName("IX_Autisti_CognomeNome");
+
+            builder.Entity<Autista>()
+                .HasIndex(a => a.Attivo)
+                .HasDatabaseName("IX_Autisti_Attivo");
+
+            builder.Entity<ViaggioConsegna>()
+                .HasOne(v => v.TipoTrasporto)
+                .WithMany()
+                .HasForeignKey(v => v.TipoTrasportoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ViaggioConsegna>()
+                .HasOne(v => v.MezzoTrasporto)
+                .WithMany()
+                .HasForeignKey(v => v.MezzoTrasportoId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ViaggioConsegna>()
+                .HasOne(v => v.MezzoTrasportoEsterno)
+                .WithMany()
+                .HasForeignKey(v => v.MezzoTrasportoEsternoId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ViaggioConsegna>()
+                .HasOne(v => v.Autista)
+                .WithMany()
+                .HasForeignKey(v => v.AutistaId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<ViaggioConsegna>()
+                .HasIndex(v => v.DataConsegna)
+                .HasDatabaseName("IX_ViaggiConsegna_DataConsegna");
+
+            builder.Entity<ViaggioConsegna>()
+                .HasIndex(v => new { v.DataConsegna, v.MezzoTrasportoId })
+                .HasDatabaseName("IX_ViaggiConsegna_DataConsegna_Mezzo");
+
+            builder.Entity<ViaggioConsegna>()
+                .HasIndex(v => v.Stato)
+                .HasDatabaseName("IX_ViaggiConsegna_Stato");
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .HasOne(r => r.ViaggioConsegna)
+                .WithMany(v => v.Righe)
+                .HasForeignKey(r => r.ViaggioConsegnaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .HasOne(r => r.OrdineRiga)
+                .WithMany()
+                .HasForeignKey(r => r.OrdineRigaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .HasIndex(r => new { r.ViaggioConsegnaId, r.OrdineRigaId })
+                .IsUnique()
+                .HasDatabaseName("IX_ViaggioConsegnaRighe_Viaggio_OrdineRiga");
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .Property(r => r.QuantitaAssegnata)
+                .HasColumnType("decimal(18,4)");
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .Property(r => r.PesoUnitarioKgSnapshot)
+                .HasColumnType("decimal(18,3)");
+
+            builder.Entity<ViaggioConsegnaRiga>()
+                .Property(r => r.PesoTotaleKgSnapshot)
+                .HasColumnType("decimal(18,3)");
+
+            // ===== CONFIGURAZIONI MEZZI TRASPORTO ESTERNI =====
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.Comune)
+                .HasColumnType("varchar(50)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.Provincia)
+                .HasColumnType("varchar(50)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.Regione)
+                .HasColumnType("varchar(50)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.NomeVettore)
+                .HasColumnType("varchar(50)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.TipoMezzo)
+                .HasColumnType("varchar(50)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .Property(m => m.Note)
+                .HasColumnType("varchar(max)");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .HasIndex(m => m.Comune)
+                .HasDatabaseName("IX_MezziTrasportoEsterni_Comune");
+
+            builder.Entity<MezzoTrasportoEsterno>()
+                .HasIndex(m => m.NomeVettore)
+                .HasDatabaseName("IX_MezziTrasportoEsterni_NomeVettore");
+
             // ===== CONFIGURAZIONI INVIO EMAIL =====
 
             // Configurazione dei tipi di dato varchar (non nvarchar)
@@ -537,6 +718,271 @@ namespace AiDbMaster.Data
             builder.Entity<UserDataFilter>()
                 .HasIndex(f => new { f.UserId, f.ResourceName })
                 .HasDatabaseName("IX_UserDataFilters_UserId_ResourceName");
+
+            // ===== CONFIGURAZIONI PROGRESSIVI ARTICOLI (nuovi campi) =====
+
+            builder.Entity<ProgressiviArticoli>()
+                .Property(p => p.Prenotato)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<ProgressiviArticoli>()
+                .Property(p => p.DurataDelleScorte)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<ProgressiviArticoli>()
+                .Property(p => p.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<ProgressiviArticoli>()
+                .Property(p => p.DataUltimoCarico)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<ProgressiviArticoli>()
+                .Property(p => p.DataUltimoScarico)
+                .HasDefaultValueSql("GETDATE()");
+
+            // ===== CONFIGURAZIONI DB_TESTATA (DISTINTA BASE) =====
+
+            builder.Entity<DbTestata>()
+                .Property(d => d.CodiceDistinta)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbTestata>()
+                .Property(d => d.DbFantasma)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<DbTestata>()
+                .Property(d => d.DbGruppo)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<DbTestata>()
+                .Property(d => d.DbVersione)
+                .HasColumnType("varchar(10)")
+                .HasDefaultValue("000");
+
+            builder.Entity<DbTestata>()
+                .Property(d => d.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<DbTestata>()
+                .HasIndex(d => d.CodiceDistinta)
+                .IsUnique()
+                .HasDatabaseName("IX_DB_Testata_CodiceDistinta");
+
+            // ===== CONFIGURAZIONI DB_LAVORAZIONI (CICLI) =====
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.CodiceDistinta)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.RigaCiclo)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TempoAttrezzaggioCentro)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TempoEsecuzioneCentro)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TempoAttrezzaggioManodopera)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TempoEsecuzioneManodopera)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.PerPezzi)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(1m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TavoleOraTeoriche)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.Efficienza)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(100m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.TavoleOraReali)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.Note)
+                .HasColumnType("varchar(max)");
+
+            builder.Entity<DbLavorazione>()
+                .Property(d => d.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<DbLavorazione>()
+                .HasIndex(d => d.CodiceDistinta)
+                .HasDatabaseName("IX_DB_Lavorazioni_CodiceDistinta");
+
+            builder.Entity<DbLavorazione>()
+                .HasIndex(d => d.CodiceLavorazione)
+                .HasDatabaseName("IX_DB_Lavorazioni_CodiceLavorazione");
+
+            builder.Entity<DbLavorazione>()
+                .HasIndex(d => d.CodiceCentro)
+                .HasDatabaseName("IX_DB_Lavorazioni_CodiceCentro");
+
+            builder.Entity<DbLavorazione>()
+                .HasIndex(d => new { d.CodiceDistinta, d.RigaCiclo })
+                .HasDatabaseName("IX_DB_Lavorazioni_Distinta_RigaCiclo");
+
+            builder.Entity<DbLavorazione>()
+                .HasOne(d => d.Lavorazione)
+                .WithMany()
+                .HasForeignKey(d => d.CodiceLavorazione)
+                .HasPrincipalKey(l => l.CodiceLavorazione)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== CONFIGURAZIONI DB_MATERIALI (DISTINTA BASE) =====
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.CodiceDistinta)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.CodiceFiglio)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.UnitaMisura)
+                .HasColumnType("varchar(3)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.UnitaMisuraPrincipale)
+                .HasColumnType("varchar(3)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.RigaDistinta)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.Quantita)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.QuantitaUMP)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.PerPezzi)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(1m);
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.Sfrido)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.Note)
+                .HasColumnType("varchar(max)");
+
+            builder.Entity<DbMateriale>()
+                .Property(d => d.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<DbMateriale>()
+                .HasIndex(d => d.CodiceDistinta)
+                .HasDatabaseName("IX_DB_Materiali_CodiceDistinta");
+
+            builder.Entity<DbMateriale>()
+                .HasIndex(d => d.CodiceFiglio)
+                .HasDatabaseName("IX_DB_Materiali_CodiceFiglio");
+
+            builder.Entity<DbMateriale>()
+                .HasIndex(d => new { d.CodiceDistinta, d.RigaDistinta })
+                .HasDatabaseName("IX_DB_Materiali_Distinta_RigaDistinta");
+
+            // ===== CONFIGURAZIONI POLITICHE RIORDINO MAGAZZINO =====
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.CodiceArticolo)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue(" ");
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.PoliticaDiRiordino)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue("G");
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.PeriodoRagruppamento)
+                .HasColumnType("varchar(20)")
+                .HasDefaultValue("G");
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.ScortaMinima)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.ScortaMassima)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.LottoStandardProduzione)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.Sottolotto)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.LottoMassimo)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.ScortaDiSicurezza)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .Property(p => p.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .HasIndex(p => p.CodiceArticolo)
+                .HasDatabaseName("IX_PoliticheRiordino_CodiceArticolo");
+
+            builder.Entity<PoliticaRiordinoMagazzino>()
+                .HasIndex(p => new { p.CodiceArticolo, p.CodiceMagazzino })
+                .IsUnique()
+                .HasDatabaseName("IX_PoliticheRiordino_Articolo_Magazzino");
 
             // Seed data per Lavorazioni
             // Nota: I dati di seed vengono ora gestiti tramite la migrazione per preservare i dati esistenti

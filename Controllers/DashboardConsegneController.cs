@@ -1,252 +1,334 @@
+using AiDbMaster.Attributes;
+using AiDbMaster.Data;
+using AiDbMaster.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AiDbMaster.Data;
-using AiDbMaster.ViewModels;
-using AiDbMaster.Models;
-using Microsoft.AspNetCore.Identity;
-using AiDbMaster.Helpers;
-using System.Globalization;
 
 namespace AiDbMaster.Controllers
 {
     [Authorize]
+    [RegisterResource("DashboardConsegne", "Dashboard Consegne", Description = "Dashboard analisi consegne", MenuIcon = "bi-graph-up", MenuOrder = 0)]
+    [RequirePermission("DashboardConsegne", "View")]
     public class DashboardConsegneController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<DashboardConsegneController> _logger;
-        private readonly UserManager<ApplicationUser> _userManager;
 
-        public DashboardConsegneController(
-            ApplicationDbContext context,
-            ILogger<DashboardConsegneController> logger,
-            UserManager<ApplicationUser> userManager)
+        public DashboardConsegneController(ApplicationDbContext context)
         {
             _context = context;
-            _logger = logger;
-            _userManager = userManager;
         }
 
-        /// <summary>
-        /// Helper: Ottiene il CodiceAgente dell'utente corrente (se è un agente)
-        /// </summary>
-        private async Task<short?> GetCodiceAgenteUtenteCorrente()
+        public async Task<IActionResult> Index(string periodo = "mese")
         {
-            var currentUser = await _userManager.GetUserAsync(User);
-            return currentUser?.CodiceAgente;
-        }
-
-        public async Task<IActionResult> Index(DateTime? dataDa, DateTime? dataA)
-        {
-            ViewBag.UseFluidContainer = true;
-
-            // Recupera codice agente se loggato come agente
-            var codiceAgente = await GetCodiceAgenteUtenteCorrente();
-            
-            // Default: ultimi 6 mesi
+            DateTime dataDa, dataA;
+            string periodoLabel;
             var oggi = DateTime.Today;
-            dataDa ??= oggi.AddMonths(-6);
-            dataA ??= oggi.AddMonths(3); // Include previsioni
 
-            var model = new DashboardConsegneViewModel
+            switch (periodo)
             {
-                DataDa = dataDa.Value,
-                DataA = dataA.Value,
-                CodiceAgente = codiceAgente
+                case "settimana":
+                    var giorno = (int)oggi.DayOfWeek;
+                    var lunedi = oggi.AddDays(-(giorno == 0 ? 6 : giorno - 1));
+                    dataDa = lunedi;
+                    dataA = lunedi.AddDays(6);
+                    periodoLabel = $"Settimana {dataDa:dd/MM} - {dataA:dd/MM/yyyy}";
+                    break;
+                case "mese":
+                    dataDa = new DateTime(oggi.Year, oggi.Month, 1);
+                    dataA = dataDa.AddMonths(1).AddDays(-1);
+                    periodoLabel = oggi.ToString("MMMM yyyy");
+                    break;
+                case "trimestre":
+                    var trimestre = (oggi.Month - 1) / 3;
+                    dataDa = new DateTime(oggi.Year, trimestre * 3 + 1, 1);
+                    dataA = dataDa.AddMonths(3).AddDays(-1);
+                    periodoLabel = $"Q{trimestre + 1} {oggi.Year}";
+                    break;
+                case "anno":
+                    dataDa = new DateTime(oggi.Year, 1, 1);
+                    dataA = new DateTime(oggi.Year, 12, 31);
+                    periodoLabel = oggi.Year.ToString();
+                    break;
+                default:
+                    dataDa = new DateTime(oggi.Year, oggi.Month, 1);
+                    dataA = dataDa.AddMonths(1).AddDays(-1);
+                    periodoLabel = oggi.ToString("MMMM yyyy");
+                    break;
+            }
+
+            var durataPeriodo = (dataA - dataDa).Days + 1;
+            var dataDaPrecedente = dataDa.AddDays(-durataPeriodo);
+            var dataAPrecedente = dataDa.AddDays(-1);
+
+            var viaggi = await _context.ViaggiConsegna
+                .AsNoTracking()
+                .Include(v => v.MezzoTrasporto)
+                .Include(v => v.MezzoTrasportoEsterno)
+                .Include(v => v.Autista)
+                .Include(v => v.Righe)
+                .Where(v => v.DataConsegna.Date >= dataDa && v.DataConsegna.Date <= dataA && v.Stato != "Annullato")
+                .ToListAsync();
+
+            var viaggiPrecedenti = await _context.ViaggiConsegna
+                .AsNoTracking()
+                .Include(v => v.Righe)
+                .Where(v => v.DataConsegna.Date >= dataDaPrecedente && v.DataConsegna.Date <= dataAPrecedente && v.Stato != "Annullato")
+                .ToListAsync();
+
+            // KPI principali
+            var totViaggi = viaggi.Count;
+            var totRighe = viaggi.SelectMany(v => v.Righe).Count();
+            var pesoTotale = viaggi.SelectMany(v => v.Righe).Sum(r => r.PesoTotaleKgSnapshot);
+            var costoTotale = viaggi.Sum(v => v.CostoTrasporto ?? 0);
+            var ricavoTotale = viaggi.Sum(v => v.PrezzoVendita ?? 0);
+
+            // Utilizzo medio: peso caricato / portata max del mezzo
+            var utilizzoMedio = 0m;
+            var viaggiConMezzo = viaggi.Where(v => v.MezzoTrasportoId.HasValue || v.MezzoTrasportoEsternoId.HasValue).ToList();
+            if (viaggiConMezzo.Any())
+            {
+                var listaUtilizzi = new List<decimal>();
+                foreach (var v in viaggiConMezzo)
+                {
+                    var pesoViaggio = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
+                    decimal portataMax = 0;
+                    if (v.MezzoTrasportoId.HasValue && v.MezzoTrasporto != null)
+                        portataMax = v.MezzoTrasporto.PortataMaxKg;
+                    else if (v.MezzoTrasportoEsternoId.HasValue && v.MezzoTrasportoEsterno != null)
+                        portataMax = v.MezzoTrasportoEsterno.PortataMax;
+
+                    if (portataMax > 0)
+                        listaUtilizzi.Add(Math.Min(100, (pesoViaggio / portataMax) * 100));
+                }
+                if (listaUtilizzi.Any())
+                    utilizzoMedio = Math.Round(listaUtilizzi.Average(), 1);
+            }
+
+            // Confronto con periodo precedente
+            var viaggiPrec = viaggiPrecedenti.Count;
+            var costoPrec = viaggiPrecedenti.Sum(v => v.CostoTrasporto ?? 0);
+            var ricavoPrec = viaggiPrecedenti.Sum(v => v.PrezzoVendita ?? 0);
+
+            // Grafico viaggi per giorno (interni vs esterni)
+            var giorniLabels = new List<string>();
+            var viaggiInterni = new List<int>();
+            var viaggiEsterni = new List<int>();
+            var pesoPerGiorno = new List<decimal>();
+            var marginePerGiorno = new List<decimal>();
+            var margineCumulato = new List<decimal>();
+            var cumulato = 0m;
+
+            var giorniConViaggi = viaggi
+                .GroupBy(v => v.DataConsegna.Date)
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            foreach (var g in giorniConViaggi)
+            {
+                giorniLabels.Add(g.Key.ToString("dd/MM"));
+                viaggiInterni.Add(g.Count(v => v.MezzoTrasportoId.HasValue && !v.MezzoTrasportoEsternoId.HasValue));
+                viaggiEsterni.Add(g.Count(v => v.MezzoTrasportoEsternoId.HasValue));
+                pesoPerGiorno.Add(Math.Round(g.SelectMany(v => v.Righe).Sum(r => r.PesoTotaleKgSnapshot), 0));
+                var margineGiorno = g.Sum(v => (v.PrezzoVendita ?? 0) - (v.CostoTrasporto ?? 0));
+                marginePerGiorno.Add(Math.Round(margineGiorno, 2));
+                cumulato += margineGiorno;
+                margineCumulato.Add(Math.Round(cumulato, 2));
+            }
+
+            // Torta distribuzione mezzi
+            var tortaLabels = new List<string>();
+            var tortaValori = new List<int>();
+
+            var gruppoMezzi = viaggi
+                .GroupBy(v =>
+                {
+                    if (v.MezzoTrasportoId.HasValue && v.MezzoTrasporto != null)
+                        return v.MezzoTrasporto.Descrizione;
+                    if (v.MezzoTrasportoEsternoId.HasValue && v.MezzoTrasportoEsterno != null)
+                        return $"{v.MezzoTrasportoEsterno.NomeVettore} ({v.MezzoTrasportoEsterno.Comune})";
+                    return "N/D";
+                })
+                .OrderByDescending(g => g.Count())
+                .Take(10)
+                .ToList();
+
+            foreach (var g in gruppoMezzi)
+            {
+                tortaLabels.Add(g.Key);
+                tortaValori.Add(g.Count());
+            }
+
+            // Top mezzi
+            var topMezzi = viaggi
+                .Where(v => v.MezzoTrasportoId.HasValue || v.MezzoTrasportoEsternoId.HasValue)
+                .GroupBy(v => new
+                {
+                    Nome = v.MezzoTrasportoId.HasValue && v.MezzoTrasporto != null
+                        ? v.MezzoTrasporto.Descrizione
+                        : v.MezzoTrasportoEsterno != null
+                            ? $"{v.MezzoTrasportoEsterno.NomeVettore} ({v.MezzoTrasportoEsterno.Comune})"
+                            : "N/D",
+                    Tipo = v.MezzoTrasportoId.HasValue ? "Interno" : "Esterno",
+                    PortataMax = v.MezzoTrasportoId.HasValue && v.MezzoTrasporto != null
+                        ? v.MezzoTrasporto.PortataMaxKg
+                        : v.MezzoTrasportoEsterno != null ? (decimal)v.MezzoTrasportoEsterno.PortataMax : 0
+                })
+                .Select(g =>
+                {
+                    var pesoTot = g.SelectMany(v => v.Righe).Sum(r => r.PesoTotaleKgSnapshot);
+                    var utilizzi = g.Select(v =>
+                    {
+                        var pv = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
+                        return g.Key.PortataMax > 0 ? Math.Min(100, (pv / g.Key.PortataMax) * 100) : 0;
+                    }).ToList();
+
+                    return new DashboardMezzoDto
+                    {
+                        Mezzo = g.Key.Nome,
+                        Tipo = g.Key.Tipo,
+                        Viaggi = g.Count(),
+                        PesoTotaleKg = Math.Round(pesoTot, 0),
+                        CostoTotale = g.Sum(v => v.CostoTrasporto ?? 0),
+                        RicavoTotale = g.Sum(v => v.PrezzoVendita ?? 0),
+                        UtilizzoMedioPerc = utilizzi.Any() ? Math.Round(utilizzi.Average(), 1) : 0
+                    };
+                })
+                .OrderByDescending(m => m.Viaggi)
+                .Take(10)
+                .ToList();
+
+            // Top autisti
+            var topAutisti = viaggi
+                .Where(v => v.AutistaId.HasValue && v.Autista != null)
+                .GroupBy(v => v.Autista!.NomeCompleto)
+                .Select(g => new DashboardAutistaDto
+                {
+                    Autista = g.Key,
+                    Viaggi = g.Count(),
+                    OreTotali = Math.Round(g.Sum(v => v.DurataStimataMinuti) / 60m, 1),
+                    PesoTotaleKg = Math.Round(g.SelectMany(v => v.Righe).Sum(r => r.PesoTotaleKgSnapshot), 0),
+                    ViaggiConGru = g.Count(v => v.Gru == true),
+                    ViaggiConTrasbordo = g.Count(v => v.Trasbordo == true)
+                })
+                .OrderByDescending(a => a.Viaggi)
+                .Take(10)
+                .ToList();
+
+            // Top clienti: serve join con OrdiniRighe -> OrdiniTestate -> AnagraficaClienti
+            var righeViaggio = await _context.ViaggioConsegnaRighe
+                .AsNoTracking()
+                .Include(r => r.ViaggioConsegna)
+                .Include(r => r.OrdineRiga)
+                .Where(r => r.ViaggioConsegna != null
+                    && r.ViaggioConsegna.DataConsegna.Date >= dataDa
+                    && r.ViaggioConsegna.DataConsegna.Date <= dataA
+                    && r.ViaggioConsegna.Stato != "Annullato")
+                .ToListAsync();
+
+            var ordineRigaIds = righeViaggio.Select(r => r.OrdineRigaId).Distinct().ToList();
+
+            var clientiPerOrdine = await (from or in _context.OrdiniRighe.AsNoTracking()
+                                          join t in _context.OrdiniTestate.AsNoTracking()
+                                              on new { or.TipoOrdine, or.AnnoOrdine, or.SerieOrdine, or.NumeroOrdine }
+                                              equals new { t.TipoOrdine, t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine }
+                                          join c in _context.AnagraficaClienti.AsNoTracking()
+                                              on t.CodiceCliente equals c.CodiceCliente
+                                          where ordineRigaIds.Contains(or.Id)
+                                          select new { or.Id, c.RagioneSociale })
+                                          .ToDictionaryAsync(x => x.Id, x => x.RagioneSociale);
+
+            var topClienti = righeViaggio
+                .GroupBy(r => clientiPerOrdine.TryGetValue(r.OrdineRigaId, out var nome) ? nome : "N/D")
+                .Select(g =>
+                {
+                    var viaggiIds = g.Select(r => r.ViaggioConsegnaId).Distinct().ToList();
+                    var viaggiCliente = viaggi.Where(v => viaggiIds.Contains(v.Id)).ToList();
+
+                    return new DashboardClienteDto
+                    {
+                        Cliente = g.Key,
+                        RigheConsegnate = g.Count(),
+                        PesoTotaleKg = Math.Round(g.Sum(r => r.PesoTotaleKgSnapshot), 0),
+                        Viaggi = viaggiIds.Count,
+                        CostoTrasporto = viaggiCliente.Sum(v => v.CostoTrasporto ?? 0),
+                        RicavoTrasporto = viaggiCliente.Sum(v => v.PrezzoVendita ?? 0)
+                    };
+                })
+                .OrderByDescending(c => c.PesoTotaleKg)
+                .Take(10)
+                .ToList();
+
+            // Allerte
+            var assegnazioniPerRiga = await _context.ViaggioConsegnaRighe
+                .AsNoTracking()
+                .Include(x => x.ViaggioConsegna)
+                .Where(x => x.ViaggioConsegna != null && x.ViaggioConsegna.Stato != "Annullato")
+                .GroupBy(x => x.OrdineRigaId)
+                .Select(g => new { OrdineRigaId = g.Key, QuantitaAssegnata = g.Sum(x => x.QuantitaAssegnata) })
+                .ToDictionaryAsync(x => x.OrdineRigaId, x => x.QuantitaAssegnata);
+
+            var startDate = DateTime.Today.AddDays(-7).Date;
+            var endDate = DateTime.Today.AddDays(15).Date;
+            var righeDaPianificare = await _context.OrdiniRighe
+                .AsNoTracking()
+                .Where(r => r.TipoOrdine == "R"
+                    && r.DataConsegna.Date >= startDate
+                    && r.DataConsegna.Date <= endDate)
+                .ToListAsync();
+
+            var countDaPianificare = righeDaPianificare.Count(r =>
+            {
+                var assegnata = assegnazioniPerRiga.TryGetValue(r.Id, out var q) ? q : 0;
+                return (r.Quantita - r.QuantitaEvasa - assegnata) > 0;
+            });
+
+            var viaggiSenzaAutista = viaggi.Count(v => !v.AutistaId.HasValue);
+            var viaggiSottoutilizzati = viaggiConMezzo.Count(v =>
+            {
+                var pesoV = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
+                decimal portata = 0;
+                if (v.MezzoTrasportoId.HasValue && v.MezzoTrasporto != null)
+                    portata = v.MezzoTrasporto.PortataMaxKg;
+                else if (v.MezzoTrasportoEsternoId.HasValue && v.MezzoTrasportoEsterno != null)
+                    portata = v.MezzoTrasportoEsterno.PortataMax;
+                return portata > 0 && (pesoV / portata) < 0.3m;
+            });
+            var viaggiSenzaPrezzo = viaggi.Count(v => !v.PrezzoVendita.HasValue || v.PrezzoVendita == 0);
+
+            var vm = new DashboardConsegneViewModel
+            {
+                PeriodoLabel = periodoLabel,
+                DataDa = dataDa,
+                DataA = dataA,
+                TotaleViaggi = totViaggi,
+                TotaleRighe = totRighe,
+                PesoTotaleKg = pesoTotale,
+                CostoTotale = costoTotale,
+                RicavoTotale = ricavoTotale,
+                UtilizzoMedioPercentuale = utilizzoMedio,
+                ViaggiPeriodoPrecedente = viaggiPrec,
+                CostoPeriodoPrecedente = costoPrec,
+                MarginePeriodoPrecedente = ricavoPrec - costoPrec,
+                RigheDaPianificare = countDaPianificare,
+                ViaggiSenzaAutista = viaggiSenzaAutista,
+                ViaggiSottoutilizzati = viaggiSottoutilizzati,
+                ViaggiSenzaPrezzo = viaggiSenzaPrezzo,
+                GraficoGiorniLabels = giorniLabels,
+                GraficoViaggiInterni = viaggiInterni,
+                GraficoViaggiEsterni = viaggiEsterni,
+                GraficoPesoPerGiorno = pesoPerGiorno,
+                GraficoMarginePerGiorno = marginePerGiorno,
+                GraficoMargineCumulato = margineCumulato,
+                TortaMezziLabels = tortaLabels,
+                TortaMezziValori = tortaValori,
+                TopMezzi = topMezzi,
+                TopAutisti = topAutisti,
+                TopClienti = topClienti
             };
 
-            // Se è un agente, recupera il nome
-            if (codiceAgente.HasValue)
-            {
-                var agente = await _context.TabellaAgenti
-                    .FirstOrDefaultAsync(a => a.CodiceAgente == codiceAgente.Value);
-                model.NomeAgente = agente?.DescrizioneAgente;
-            }
-
-            try
-            {
-                // Query base ordini clienti nel periodo
-                var query = from testata in _context.OrdiniTestate
-                            join riga in _context.OrdiniRighe
-                                on new { testata.TipoOrdine, testata.AnnoOrdine, testata.SerieOrdine, testata.NumeroOrdine }
-                                equals new { riga.TipoOrdine, riga.AnnoOrdine, riga.SerieOrdine, riga.NumeroOrdine }
-                            join cliente in _context.AnagraficaClienti
-                                on testata.CodiceCliente equals cliente.CodiceCliente
-                            join agente in _context.TabellaAgenti
-                                on cliente.CodiceAgente equals agente.CodiceAgente into agenteGroup
-                            from agente in agenteGroup.DefaultIfEmpty()
-                            where testata.TipoOrdine == "R"
-                                && riga.DataConsegna >= dataDa
-                                && riga.DataConsegna <= dataA
-                            select new
-                            {
-                                Testata = testata,
-                                Riga = riga,
-                                Cliente = cliente,
-                                Agente = agente
-                            };
-
-                // Filtro agente se necessario
-                if (codiceAgente.HasValue)
-                {
-                    query = query.Where(x => x.Cliente.CodiceAgente == codiceAgente.Value);
-                }
-
-                var ordini = await query.ToListAsync();
-
-                // === KPI CARDS ===
-                model.NumeroOrdiniTotali = ordini.Select(x => new { x.Testata.AnnoOrdine, x.Testata.NumeroOrdine }).Distinct().Count();
-                model.FatturatoTotale = ordini.Sum(x => x.Riga.ValoreRiga);
-                model.FatturatoConsegnato = ordini.Where(x => x.Riga.QuantitaEvasa > 0).Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * x.Riga.QuantitaEvasa);
-                model.FatturatoDaConsegnare = model.FatturatoTotale - model.FatturatoConsegnato;
-                model.PercentualeEvasione = model.FatturatoTotale > 0 ? Math.Round((model.FatturatoConsegnato / model.FatturatoTotale) * 100, 2) : 0;
-                model.ValoreMedioConsegna = model.NumeroOrdiniTotali > 0 ? model.FatturatoTotale / model.NumeroOrdiniTotali : 0;
-
-                // Consegne in ritardo
-                var righeInRitardo = ordini.Where(x => x.Riga.DataConsegna < oggi && (x.Riga.Quantita - x.Riga.QuantitaEvasa) > 0).ToList();
-                model.NumeroConsegneInRitardo = righeInRitardo.Count;
-                model.ValoreConsegneInRitardo = righeInRitardo.Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * (x.Riga.Quantita - x.Riga.QuantitaEvasa));
-
-                // === GRAFICO CONSEGNE PER MESE ===
-                var consegnePerMese = ordini
-                    .GroupBy(x => new { x.Riga.DataConsegna.Year, x.Riga.DataConsegna.Month })
-                    .Select(g => new ConsegnePerMeseDto
-                    {
-                        Anno = g.Key.Year,
-                        Mese = g.Key.Month,
-                        MeseNome = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy", new CultureInfo("it-IT")),
-                        Consegnato = g.Where(x => x.Riga.QuantitaEvasa > 0).Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * x.Riga.QuantitaEvasa),
-                        DaConsegnare = g.Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * (x.Riga.Quantita - x.Riga.QuantitaEvasa))
-                    })
-                    .OrderBy(x => x.Anno).ThenBy(x => x.Mese)
-                    .ToList();
-
-                model.ConsegnePerMese = consegnePerMese;
-
-                // === TOP 10 AGENTI ===
-                if (!codiceAgente.HasValue) // Solo se admin/manager
-                {
-                    var topAgenti = ordini
-                        .GroupBy(x => new { x.Agente.CodiceAgente, x.Agente.DescrizioneAgente })
-                        .Select(g => new ClassificaAgenteDto
-                        {
-                            CodiceAgente = g.Key.CodiceAgente,
-                            NomeAgente = g.Key.DescrizioneAgente ?? $"Agente {g.Key.CodiceAgente}",
-                            NumeroOrdini = g.Select(x => new { x.Testata.AnnoOrdine, x.Testata.NumeroOrdine }).Distinct().Count(),
-                            Fatturato = g.Sum(x => x.Riga.ValoreRiga),
-                            PercentualeEvasione = g.Sum(x => x.Riga.ValoreRiga) > 0 
-                                ? Math.Round((g.Where(x => x.Riga.QuantitaEvasa > 0).Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * x.Riga.QuantitaEvasa) / g.Sum(x => x.Riga.ValoreRiga)) * 100, 2)
-                                : 0
-                        })
-                        .OrderByDescending(x => x.Fatturato)
-                        .Take(10)
-                        .ToList();
-
-                    model.TopAgenti = topAgenti;
-                }
-
-                // === TOP 10 PROVINCE ===
-                var topProvince = ordini
-                    .GroupBy(x => new { x.Cliente.Provincia })
-                    .Select(g => new ClassificaProvinciaDto
-                    {
-                        Provincia = g.Key.Provincia ?? "N/D",
-                        Regione = RegioniHelper.GetRegione(g.Key.Provincia),
-                        NumeroOrdini = g.Select(x => new { x.Testata.AnnoOrdine, x.Testata.NumeroOrdine }).Distinct().Count(),
-                        Fatturato = g.Sum(x => x.Riga.ValoreRiga)
-                    })
-                    .OrderByDescending(x => x.Fatturato)
-                    .Take(10)
-                    .ToList();
-
-                model.TopProvince = topProvince;
-
-                // === TOP 10 CLIENTI ===
-                var topClienti = ordini
-                    .GroupBy(x => new { x.Cliente.CodiceCliente, x.Cliente.RagioneSociale, x.Cliente.Provincia })
-                    .Select(g => new TopClienteDto
-                    {
-                        CodiceCliente = g.Key.CodiceCliente,
-                        RagioneSociale = g.Key.RagioneSociale ?? "N/D",
-                        Provincia = g.Key.Provincia,
-                        NumeroOrdini = g.Select(x => new { x.Testata.AnnoOrdine, x.Testata.NumeroOrdine }).Distinct().Count(),
-                        Fatturato = g.Sum(x => x.Riga.ValoreRiga)
-                    })
-                    .OrderByDescending(x => x.Fatturato)
-                    .Take(10)
-                    .ToList();
-
-                model.TopClienti = topClienti;
-
-                // === DETTAGLIO CONSEGNE IN RITARDO ===
-                var consegneInRitardoDettaglio = righeInRitardo
-                    .GroupBy(x => new 
-                    { 
-                        x.Testata.AnnoOrdine,
-                        x.Testata.SerieOrdine,
-                        x.Testata.NumeroOrdine, 
-                        x.Riga.DataConsegna,
-                        x.Cliente.CodiceCliente,
-                        x.Cliente.RagioneSociale,
-                        NomeAgente = x.Agente != null ? x.Agente.DescrizioneAgente : null
-                    })
-                    .Select(g => new ConsegnaInRitardoDto
-                    {
-                        AnnoOrdine = g.Key.AnnoOrdine,
-                        SerieOrdine = g.Key.SerieOrdine,
-                        NumeroOrdine = g.Key.NumeroOrdine,
-                        DataConsegna = g.Key.DataConsegna,
-                        CodiceCliente = g.Key.CodiceCliente.ToString(),
-                        RagioneSociale = g.Key.RagioneSociale ?? "N/D",
-                        NomeAgente = g.Key.NomeAgente,
-                        ValoreRimanente = g.Sum(x => (x.Riga.ValoreRiga / x.Riga.Quantita) * (x.Riga.Quantita - x.Riga.QuantitaEvasa))
-                    })
-                    .OrderBy(x => x.DataConsegna)
-                    .Take(20)
-                    .ToList();
-
-                // Pre-carica le email inviate per gli ordini in ritardo
-                var ordiniChiavi = consegneInRitardoDettaglio
-                    .Select(c => new { AnnoOrdine = (short)c.AnnoOrdine, c.SerieOrdine, c.NumeroOrdine })
-                    .Distinct()
-                    .ToList();
-
-                var emailInviate = await _context.InvioEmail
-                    .Where(e => e.TipoOrdine == "R")
-                    .ToListAsync();
-
-                // Raggruppa per ordine e prendi la data più recente
-                var emailPerOrdine = emailInviate
-                    .GroupBy(e => new { e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine })
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Max(e => e.DataInvio)
-                    );
-
-                // Imposta il flag email su ogni consegna in ritardo
-                foreach (var consegna in consegneInRitardoDettaglio)
-                {
-                    var chiave = new { AnnoOrdine = (short)consegna.AnnoOrdine, SerieOrdine = consegna.SerieOrdine, NumeroOrdine = consegna.NumeroOrdine };
-                    if (emailPerOrdine.ContainsKey(chiave))
-                    {
-                        consegna.HasEmailInviata = true;
-                        consegna.DataEmailInviata = emailPerOrdine[chiave];
-                    }
-                }
-
-                model.ConsegneInRitardo = consegneInRitardoDettaglio;
-
-                _logger.LogInformation("Dashboard Consegne caricata. Periodo: {DataDa} - {DataA}, Agente: {CodiceAgente}", 
-                    dataDa, dataA, codiceAgente);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Errore durante il caricamento della Dashboard Consegne");
-                ModelState.AddModelError("", "Errore durante il caricamento dei dati.");
-            }
-
-            return View(model);
+            ViewBag.PeriodoCorrente = periodo;
+            return View(vm);
         }
     }
 }
-

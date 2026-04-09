@@ -165,10 +165,83 @@
                                             <span>Fermi Schedulati</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item" permission-required="ProductionCalc:View">
+                                        <a class="sidebar-link" asp-controller="ProductionCalc" asp-action="Index">
+                                            <i class="bi bi-calculator"></i>
+                                            <span>Production Calc</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ConsumiProduzione:View">
+                                        <a class="sidebar-link" asp-controller="ConsumiProduzione" asp-action="Index">
+                                            <i class="bi bi-clipboard-data"></i>
+                                            <span>Consumi Prod. Previsti</span>
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
                         
+                        <!-- Consegne -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#consegneSubmenu" aria-expanded="false">
+                                <i class="bi bi-truck"></i>
+                                <span>Consegne</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="consegneSubmenu">
+                                <ul class="sidebar-submenu">
+                                    <li class="sidebar-item" permission-required="ConsegneKanban:View">
+                                        <a class="sidebar-link" asp-controller="ConsegneKanban" asp-action="Index">
+                                            <i class="bi bi-kanban"></i>
+                                            <span>Kanban Consegne</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ViaggiConsegna:View">
+                                        <a class="sidebar-link" asp-controller="ViaggiConsegna" asp-action="Index">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <span>Viaggi Consegna</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="Mezzi:View">
+                                        <a class="sidebar-link" asp-controller="Mezzi" asp-action="Index">
+                                            <i class="bi bi-truck-front"></i>
+                                            <span>Mezzi Interni</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="Autisti:View">
+                                        <a class="sidebar-link" asp-controller="Autisti" asp-action="Index">
+                                            <i class="bi bi-person-badge"></i>
+                                            <span>Autisti</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="TipiTrasporto:View">
+                                        <a class="sidebar-link" asp-controller="TipiTrasporto" asp-action="Index">
+                                            <i class="bi bi-signpost-split"></i>
+                                            <span>Tipi Trasporto</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="MezziTrasportoEsterni:View">
+                                        <a class="sidebar-link" asp-controller="MezziTrasportoEsterni" asp-action="Index">
+                                            <i class="bi bi-truck-flatbed"></i>
+                                            <span>Mezzi Esterni</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <span>Consegne Programmate</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="DashboardConsegne:View">
+                                        <a class="sidebar-link" asp-controller="DashboardConsegne" asp-action="Index">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Dashboard Consegne</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
                         <!-- Interrogazioni DB -->
                         <li class="sidebar-item">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#interrogazioniDBSubmenu" aria-expanded="false">
@@ -184,12 +257,6 @@
                                             <span>Disponibilità</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
-                                            <i class="bi bi-calendar-event"></i>
-                                            <span>Consegne Programmate</span>
-                                        </a>
-                                    </li>
                                     <li class="sidebar-item" permission-required="AvvisoMercePronta:View">
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="AvvisoMercePronta">
                                             <i class="bi bi-envelope-paper"></i>
@@ -200,12 +267,6 @@
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ListaEmailInviate">
                                             <i class="bi bi-envelope-open"></i>
                                             <span>Lista Email Inviate</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="DashboardConsegne:View">
-                                        <a class="sidebar-link" asp-controller="DashboardConsegne" asp-action="Index">
-                                            <i class="bi bi-graph-up"></i>
-                                            <span>Dashboard Consegne</span>
                                         </a>
                                     </li>
                                     <li class="sidebar-item" permission-required="Grafici:View">
@@ -271,6 +332,12 @@
                                                 <a class="sidebar-link" asp-controller="SyncfusionTest" asp-action="Index">
                                                     <i class="bi bi-grid-3x3-gap"></i>
                                                     <span>Test Syncfusion</span>
+                                                </a>
+                                            </li>
+                                            <li class="sidebar-item">
+                                                <a class="sidebar-link" asp-controller="TabellaOpzioni" asp-action="Index">
+                                                    <i class="bi bi-sliders"></i>
+                                                    <span>Tabella Opzioni</span>
                                                 </a>
                                             </li>
                                         }

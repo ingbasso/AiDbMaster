@@ -85,5 +85,13 @@ namespace AiDbMaster.Models
         [Display(Name = "Contabilizzato")]
         [Column("Contabilizzato", TypeName = "varchar(1)")]
         public string Contabilizzato { get; set; } = "N";
+
+        /// <summary>
+        /// Origine dell'invio: "Manuale" o "Automatico".
+        /// </summary>
+        [StringLength(20)]
+        [Display(Name = "Origine")]
+        [Column("Origine", TypeName = "varchar(20)")]
+        public string Origine { get; set; } = "Manuale";
     }
 }

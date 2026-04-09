@@ -62,6 +62,15 @@ namespace AiDbMaster.Models
         public decimal ImpegnatoDataOdierna { get; set; }
 
         /// <summary>
+        /// Quantità prenotata (riservata per ordini di produzione)
+        /// </summary>
+        [Required]
+        [Display(Name = "Prenotato")]
+        [Column("Prenotato", TypeName = "decimal(27,9)")]
+        [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
+        public decimal Prenotato { get; set; }
+
+        /// <summary>
         /// Quantità pronta per la consegna
         /// </summary>
         [Required(ErrorMessage = "La quantità pronta è obbligatoria")]
@@ -69,6 +78,36 @@ namespace AiDbMaster.Models
         [Column("Pronto", TypeName = "decimal(27,9)")]
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
         public decimal Pronto { get; set; }
+
+        /// <summary>
+        /// Data ultimo aggiornamento del record
+        /// </summary>
+        [Required]
+        [Display(Name = "Ultimo Aggiornamento")]
+        public DateTime UltimoAggiornamento { get; set; } = DateTime.Now;
+
+        /// <summary>
+        /// Data dell'ultimo carico di magazzino
+        /// </summary>
+        [Required]
+        [Display(Name = "Data Ultimo Carico")]
+        public DateTime DataUltimoCarico { get; set; } = DateTime.Now;
+
+        /// <summary>
+        /// Data dell'ultimo scarico di magazzino
+        /// </summary>
+        [Required]
+        [Display(Name = "Data Ultimo Scarico")]
+        public DateTime DataUltimoScarico { get; set; } = DateTime.Now;
+
+        /// <summary>
+        /// Durata delle scorte in giorni (calcolata dal gestionale)
+        /// </summary>
+        [Required]
+        [Display(Name = "Durata delle Scorte")]
+        [Column("DurataDelleScorte", TypeName = "decimal(27,9)")]
+        [DisplayFormat(DataFormatString = "{0:N1}", ApplyFormatInEditMode = true)]
+        public decimal DurataDelleScorte { get; set; }
 
         /// <summary>
         /// Quantità disponibile (Esistenza - Impegnato)

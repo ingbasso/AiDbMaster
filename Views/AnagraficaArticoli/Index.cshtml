@@ -159,6 +159,7 @@
                                     </th>
                                     <th>Marca</th>
                                     <th>Famiglia</th>
+                                    <th class="text-end">Peso Kg</th>
                                     <th>Outlet</th>
                                     <th>F.P.</th>
                                     <th>Azioni</th>
@@ -218,6 +219,16 @@
                                             else
                                             {
                                                 <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (item.PesoUnitarioKg.HasValue && item.PesoUnitarioKg.Value > 0)
+                                            {
+                                                @item.PesoUnitarioKg.Value.ToString("N3")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger">N/D</span>
                                             }
                                         </td>
                                         <td class="text-center">

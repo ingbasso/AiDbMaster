@@ -66,6 +66,10 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
 
+        .result-card.no-email-cliente {
+            border-left: 4px solid #dc3545;
+        }
+
         .badge-custom {
             font-size: 0.85rem;
             padding: 0.35rem 0.65rem;
@@ -113,6 +117,11 @@
         .select-all-checkbox {
             cursor: pointer;
         }
+
+        .cc-agente-label {
+            cursor: pointer;
+            user-select: none;
+        }
     </style>
 }
 
@@ -121,15 +130,91 @@
     <div>
         <h4 class="mb-0">
             <i class="bi bi-envelope-paper text-primary"></i> Avviso Merce Pronta
+            @if (Model.IsModalitaTest)
+            {
+                <span class="badge bg-success ms-2" style="font-size: 0.55em; vertical-align: middle;" title="Le email vengono inviate a: @Model.EmailProva">Modalità Test</span>
+            }
+            else
+            {
+                <span class="badge bg-danger ms-2" style="font-size: 0.55em; vertical-align: middle;" title="Le email verranno inviate ai clienti reali">Modalità Produzione</span>
+            }
         </h4>
         <small class="text-muted">
             Consegne dal <strong>@Model.DataDa.ToString("dd/MM/yyyy")</strong> al <strong>@Model.DataA.ToString("dd/MM/yyyy")</strong>
             (prossimi @Model.GiorniEmail giorni)
         </small>
     </div>
-    <a asp-action="AvvisoMercePronta" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-arrow-clockwise"></i> Aggiorna
-    </a>
+    <div class="d-flex gap-2">
+        @if (!Model.EmailAutomaticheAttive)
+        {
+            <button type="button" class="btn btn-info btn-sm" id="btnEmailDomani" onclick="apriPopupEmailDomani()">
+                <i class="bi bi-calendar-event me-1"></i>Email Domani
+            </button>
+        }
+        else
+        {
+            <span class="badge bg-success align-self-center" title="Le email vengono inviate automaticamente alle 14:00">
+                <i class="bi bi-robot me-1"></i>Invio Automatico Attivo
+            </span>
+        }
+        <a asp-action="AvvisoMercePronta" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-clockwise"></i> Aggiorna
+        </a>
+    </div>
+</div>
+
+<!-- Token antiforgery per chiamate AJAX -->
+<input type="hidden" id="__AjaxRequestVerificationToken" value="@(new Microsoft.AspNetCore.Antiforgery.AntiforgeryTokenSet(
+    ViewContext.HttpContext.RequestServices.GetService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()?.GetAndStoreTokens(ViewContext.HttpContext).RequestToken ?? "",
+    ViewContext.HttpContext.RequestServices.GetService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()?.GetAndStoreTokens(ViewContext.HttpContext).CookieToken ?? "",
+    "RequestVerificationToken", "").RequestToken)" />
+
+<!-- Modal Email Domani -->
+<div class="modal fade" id="modalEmailDomani" tabindex="-1" aria-labelledby="modalEmailDomaniLabel" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-xl" style="max-width: 95vw; margin-top: 80px; max-height: calc(100vh - 120px);">
+        <div class="modal-content" style="max-height: calc(100vh - 120px);">
+            <div class="modal-header bg-info text-white py-2" style="cursor: move;">
+                <h6 class="modal-title" id="modalEmailDomaniLabel">
+                    <i class="bi bi-calendar-event me-1"></i>Email Domani - Ordini con consegna: <span id="dataConsegnaDomani"></span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-2" style="overflow-y: auto; max-height: calc(100vh - 240px);">
+                <div id="emailDomaniLoading" class="text-center py-4">
+                    <div class="spinner-border text-info" role="status"><span class="visually-hidden">Caricamento...</span></div>
+                    <p class="mt-2">Caricamento ordini...</p>
+                </div>
+                <div id="emailDomaniContent" style="display:none;"></div>
+                <div id="emailDomaniEmpty" style="display:none;" class="text-center py-4">
+                    <i class="bi bi-inbox" style="font-size:48px;color:#ccc;"></i>
+                    <p class="mt-2 text-muted">Nessun ordine trovato per domani.</p>
+                </div>
+                <div id="emailDomaniErrore" style="display:none;" class="alert alert-danger"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <div class="d-flex justify-content-between w-100 align-items-center">
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selezionaTutteDomani(true)">
+                            <i class="bi bi-check-all"></i> Sel. Tutte
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selezionaTutteDomani(false)">
+                            <i class="bi bi-x-lg"></i> Desel. Tutte
+                        </button>
+                        <span id="contatoreDomani" class="badge bg-dark ms-2">0 selezionate</span>
+                        <button type="button" class="btn btn-sm btn-outline-warning ms-2" onclick="toggleCcAgenteDomani()" title="Deseleziona/Seleziona CC Agente per tutti gli ordini">
+                            <i class="bi bi-person-badge"></i> Toggle CC Agenti
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="btnInviaDomani" onclick="inviaEmailDomani()" disabled>
+                            <i class="bi bi-send-fill"></i> Invia Selezionate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Messaggi TempData (dopo invio email) -->
@@ -166,6 +251,7 @@
             @{
                 var righeConflitto = Model.Ordini.SelectMany(o => o.Righe).Count(r => r.IsConflitto);
                 var righeGiaInviate = Model.Ordini.SelectMany(o => o.Righe).Count(r => r.EmailGiaInviata);
+                var ordiniSenzaEmail = Model.Ordini.Count(o => !o.HasEmailCliente);
             }
             @if (righeConflitto > 0)
             {
@@ -175,8 +261,14 @@
             }
             @if (righeGiaInviate > 0)
             {
-                <span class="badge bg-secondary badge-custom">
+                <span class="badge bg-secondary badge-custom me-2">
                     <i class="bi bi-check-circle"></i> @righeGiaInviate già inviate
+                </span>
+            }
+            @if (ordiniSenzaEmail > 0)
+            {
+                <span class="badge bg-danger badge-custom">
+                    <i class="bi bi-envelope-x"></i> @ordiniSenzaEmail ordini senza email cliente
                 </span>
             }
         </div>
@@ -214,8 +306,10 @@
                 var ordine = Model.Ordini[i];
                 var collapseId = $"collapse_{i}";
                 var headerId = $"header_{i}";
+                var hasEmailCliente = ordine.HasEmailCliente;
+                var hasEmailAgente = ordine.HasEmailAgente;
 
-                <div class="result-card card">
+                <div class="result-card card @(!hasEmailCliente ? "no-email-cliente" : "")">
                     <!-- Header Ordine (accordion) -->
                     <div class="accordion-header-custom" id="@headerId" data-bs-toggle="collapse"
                          data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")">
@@ -228,6 +322,12 @@
                                 <span class="ms-3">@ordine.RagioneSociale</span>
                             </div>
                             <div class="d-flex gap-2">
+                                @if (!hasEmailCliente)
+                                {
+                                    <span class="badge bg-danger" title="Il cliente non ha un indirizzo email in anagrafica. Invio non possibile in modalità produzione." data-bs-toggle="tooltip">
+                                        <i class="bi bi-envelope-x me-1"></i>NO EMAIL
+                                    </span>
+                                }
                                 @if (ordine.HasEmailInviata)
                                 {
                                     <span class="badge bg-success" title="Email inviata il @ordine.DataEmailInviata?.ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
@@ -248,11 +348,38 @@
                             </div>
                         </div>
                         <div class="header-info-inline">
-                            <span><i class="bi bi-person"></i> Cliente: @ordine.CodiceCliente</span>
+                            <span>
+                                <i class="bi bi-person"></i> Cliente: @ordine.CodiceCliente
+                                @if (hasEmailCliente)
+                                {
+                                    <span class="ms-2"><i class="bi bi-envelope-fill"></i> @ordine.EmailCliente</span>
+                                }
+                                else
+                                {
+                                    <span class="ms-2 text-warning"><i class="bi bi-exclamation-circle-fill"></i> <em>senza email</em></span>
+                                }
+                            </span>
                             <span><i class="bi bi-calendar3"></i> Ordine: @ordine.DataOrdine.ToString("dd/MM/yyyy")</span>
                             @if (!string.IsNullOrEmpty(ordine.NomeAgente))
                             {
-                                <span><i class="bi bi-person-badge"></i> Agente: @ordine.NomeAgente</span>
+                                <span onclick="event.stopPropagation();">
+                                    <i class="bi bi-person-badge"></i> Agente: @ordine.NomeAgente
+                                    @if (hasEmailAgente)
+                                    {
+                                        <span class="ms-2"><i class="bi bi-envelope"></i> @ordine.EmailAgente</span>
+                                        <label class="cc-agente-label ms-2" title="Invia copia dell'email all'agente @ordine.NomeAgente (@ordine.EmailAgente)">
+                                            <input type="checkbox" class="form-check-input cc-agente-checkbox"
+                                                   name="ccAgente" value="@ordine.ChiaveOrdine" checked>
+                                            <span class="ms-1">CC</span>
+                                        </label>
+                                    }
+                                    else
+                                    {
+                                        <span class="ms-2 text-warning" title="L'agente @ordine.NomeAgente non ha un indirizzo email configurato" data-bs-toggle="tooltip">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> <em>senza email</em>
+                                        </span>
+                                    }
+                                </span>
                             }
                             @if (!string.IsNullOrEmpty(ordine.RiferimentoOrdine))
                             {
@@ -265,12 +392,23 @@
                     <div id="@collapseId" class="accordion-collapse collapse @(i == 0 ? "show" : "")"
                          data-bs-parent="#accordionOrdini">
                         <div class="card-body p-2">
+                            @if (!hasEmailCliente && !Model.IsModalitaTest)
+                            {
+                                <div class="alert alert-danger py-2 mb-2 small">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                    <strong>Attenzione:</strong> Il cliente <strong>@ordine.RagioneSociale</strong> non ha un indirizzo email in anagrafica.
+                                    Le righe di questo ordine non possono essere selezionate per l'invio in modalità produzione.
+                                </div>
+                            }
                             <table class="table table-righe table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th style="width: 40px;" class="text-center">
-                                            <input type="checkbox" class="form-check-input select-all-ordine"
-                                                   data-ordine="@i" title="Seleziona tutte le righe dell'ordine">
+                                            @if (hasEmailCliente || Model.IsModalitaTest)
+                                            {
+                                                <input type="checkbox" class="form-check-input select-all-ordine"
+                                                       data-ordine="@i" title="Seleziona tutte le righe dell'ordine">
+                                            }
                                         </th>
                                         <th>Articolo</th>
                                         <th>Descrizione</th>
@@ -286,18 +424,23 @@
                                 <tbody>
                                     @foreach (var riga in ordine.Righe)
                                     {
+                                        var canSelect = (hasEmailCliente || Model.IsModalitaTest) && !riga.EmailGiaInviata;
                                         <tr class="@riga.RowCssClass @(riga.EmailGiaInviata ? "gia-inviata" : "")">
                                             <td class="text-center">
                                                 @if (riga.EmailGiaInviata)
                                                 {
-                                                    <i class="bi bi-check-circle-fill text-success" 
+                                                    <i class="bi bi-check-circle-fill text-success"
                                                        title="Email già inviata il @(riga.DataUltimoInvio?.ToString("dd/MM/yyyy HH:mm"))"></i>
+                                                }
+                                                else if (canSelect)
+                                                {
+                                                    <input type="checkbox" class="form-check-input riga-checkbox"
+                                                           name="righeSelezionate" value="@riga.ChiaveRiga"
+                                                           data-ordine="@i">
                                                 }
                                                 else
                                                 {
-                                                    <input type="checkbox" class="form-check-input riga-checkbox" 
-                                                           name="righeSelezionate" value="@riga.ChiaveRiga"
-                                                           data-ordine="@i">
+                                                    <i class="bi bi-dash-circle text-muted" title="Invio non possibile: cliente senza email"></i>
                                                 }
                                             </td>
                                             <td><strong>@riga.CodiceArticolo</strong></td>
@@ -380,6 +523,7 @@ else
             <span class="badge bg-success me-1">Disponibile</span> Merce pronta in magazzino
             <span class="badge bg-warning text-dark me-1 ms-2">Conflitto</span> Articolo richiesto in più ordini, disponibilità insufficiente per tutti
             <span class="badge bg-secondary me-1 ms-2">Inviata</span> Email già inviata per questa riga
+            <span class="badge bg-danger me-1 ms-2">NO EMAIL</span> Cliente senza email in anagrafica
             <span class="ms-2"><span style="display:inline-block;width:12px;height:12px;background:#fff3cd;border:1px solid #ddd;"></span> Riga in conflitto</span>
             <span class="ms-2"><span style="display:inline-block;width:12px;height:12px;background:#e2e3e5;border:1px solid #ddd;"></span> Email già inviata</span>
         </small>
@@ -400,13 +544,12 @@ else
             function aggiornaContatore() {
                 const selezionate = document.querySelectorAll('.riga-checkbox:checked').length;
                 const testo = selezionate + ' selezionate';
-                contatoreTop.textContent = testo;
-                contatoreFondo.textContent = testo;
-                btnInviaTop.disabled = selezionate === 0;
-                btnInviaFondo.disabled = selezionate === 0;
+                if (contatoreTop) contatoreTop.textContent = testo;
+                if (contatoreFondo) contatoreFondo.textContent = testo;
+                if (btnInviaTop) btnInviaTop.disabled = selezionate === 0;
+                if (btnInviaFondo) btnInviaFondo.disabled = selezionate === 0;
             }
 
-            // Checkbox singola riga
             checkboxes.forEach(function (cb) {
                 cb.addEventListener('change', function () {
                     aggiornaContatore();
@@ -414,7 +557,6 @@ else
                 });
             });
 
-            // Seleziona tutte le righe di un ordine
             document.querySelectorAll('.select-all-ordine').forEach(function (cb) {
                 cb.addEventListener('change', function () {
                     var ordineIdx = this.dataset.ordine;
@@ -432,29 +574,38 @@ else
                 if (selectAll) selectAll.checked = tutteSelezionate;
             }
 
-            // Seleziona tutte
-            btnSelTutte.addEventListener('click', function () {
-                checkboxes.forEach(function (cb) { cb.checked = true; });
-                document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = true; });
-                aggiornaContatore();
-            });
+            if (btnSelTutte) {
+                btnSelTutte.addEventListener('click', function () {
+                    checkboxes.forEach(function (cb) { cb.checked = true; });
+                    document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = true; });
+                    aggiornaContatore();
+                });
+            }
 
-            // Deseleziona tutte
-            btnDeselTutte.addEventListener('click', function () {
-                checkboxes.forEach(function (cb) { cb.checked = false; });
-                document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = false; });
-                aggiornaContatore();
-            });
+            if (btnDeselTutte) {
+                btnDeselTutte.addEventListener('click', function () {
+                    checkboxes.forEach(function (cb) { cb.checked = false; });
+                    document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = false; });
+                    aggiornaContatore();
+                });
+            }
 
-            // Conferma prima dell'invio
-            document.getElementById('formInvioEmail').addEventListener('submit', function (e) {
+            var formInvioEmail = document.getElementById('formInvioEmail');
+            if (formInvioEmail) formInvioEmail.addEventListener('submit', function (e) {
                 var selezionate = document.querySelectorAll('.riga-checkbox:checked').length;
                 if (selezionate === 0) {
                     e.preventDefault();
                     alert('Seleziona almeno una riga per inviare l\'email.');
                     return false;
                 }
-                if (!confirm('Confermi l\'invio di email per ' + selezionate + ' righe selezionate?')) {
+
+                var ccAgente = document.querySelectorAll('.cc-agente-checkbox:checked').length;
+                var msgConferma = 'Confermi l\'invio di email per ' + selezionate + ' righe selezionate?';
+                if (ccAgente > 0) {
+                    msgConferma += '\n\nL\'agente verrà messo in CC per ' + ccAgente + ' ordini.';
+                }
+
+                if (!confirm(msgConferma)) {
                     e.preventDefault();
                     return false;
                 }
@@ -462,3 +613,212 @@ else
         });
     </script>
 }
+
+<script>
+    // ===== FUNZIONI POPUP EMAIL DOMANI =====
+
+    function apriPopupEmailDomani() {
+        var modal = new bootstrap.Modal(document.getElementById('modalEmailDomani'));
+        modal.show();
+
+        document.getElementById('emailDomaniLoading').style.display = '';
+        document.getElementById('emailDomaniContent').style.display = 'none';
+        document.getElementById('emailDomaniEmpty').style.display = 'none';
+        document.getElementById('emailDomaniErrore').style.display = 'none';
+
+        fetch('@Url.Action("GetEmailDomani", "InterrogazioniDB")')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('emailDomaniLoading').style.display = 'none';
+                if (!data.success) {
+                    document.getElementById('emailDomaniErrore').textContent = data.errore || 'Errore sconosciuto';
+                    document.getElementById('emailDomaniErrore').style.display = '';
+                    return;
+                }
+
+                document.getElementById('dataConsegnaDomani').textContent = data.dataConsegna;
+
+                if (!data.ordini || data.ordini.length === 0) {
+                    document.getElementById('emailDomaniEmpty').style.display = '';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < data.ordini.length; i++) {
+                    var ordine = data.ordini[i];
+                    var noEmail = !ordine.hasEmailCliente;
+                    var hasAgente = ordine.hasAgente;
+                    html += '<div class="card mb-2' + (noEmail ? ' border-danger' : '') + '">';
+                    html += '<div class="card-header py-2 d-flex justify-content-between align-items-start" style="font-size:0.85rem;">';
+                    html += '<div><strong>' + ordine.annoOrdine + '/' + String(ordine.numeroOrdine).padStart(4, '0') + '</strong>';
+                    html += ' - ' + ordine.ragioneSociale;
+                    if (ordine.emailCliente) {
+                        html += ' <span class="text-muted">(' + ordine.emailCliente + ')</span>';
+                    } else {
+                        html += ' <span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> senza email</span>';
+                    }
+                    html += '</div></div>';
+                    if (hasAgente) {
+                        html += '<div class="px-3 pt-1 small">';
+                        html += '<i class="bi bi-person-badge text-muted me-1"></i><span class="text-muted">' + ordine.nomeAgente + '</span>';
+                        html += '<span class="text-muted ms-1">(' + ordine.emailAgente + ')</span>';
+                        html += '<label class="ms-2" style="cursor:pointer;">';
+                        html += '<input type="checkbox" class="form-check-input domani-cc-agente" value="' + ordine.chiaveOrdine + '"' + (noEmail ? ' disabled' : ' checked') + '>';
+                        html += '<span class="ms-1 badge border text-dark bg-light">CC Agente</span>';
+                        html += '</label></div>';
+                    }
+                    html += '<div class="card-body p-2"><table class="table table-sm table-hover mb-0" style="font-size:0.85rem;"><thead><tr>';
+                    html += '<th style="width:40px;" class="text-center"><input type="checkbox" class="form-check-input domani-sel-ordine" ' + (noEmail ? 'disabled' : '') + ' onchange="toggleOrdinedomani(this)"></th>';
+                    html += '<th>Articolo</th><th>Descrizione</th><th class="text-center">U.M.</th>';
+                    html += '<th class="text-end">Qtà Rim.</th><th class="text-center">Stato</th></tr></thead><tbody>';
+
+                    for (var j = 0; j < ordine.righe.length; j++) {
+                        var riga = ordine.righe[j];
+                        var disabledRiga = noEmail || riga.giaInviata;
+                        html += '<tr class="' + (riga.giaInviata ? 'table-secondary' : '') + '">';
+                        html += '<td class="text-center"><input type="checkbox" class="form-check-input domani-riga-checkbox" value="' + riga.chiaveRiga + '"';
+                        html += ' data-ordine="' + i + '"' + (disabledRiga ? ' disabled' : '') + ' onchange="aggiornaContatoreDomani()"></td>';
+                        html += '<td>' + riga.codiceArticolo + '</td>';
+                        html += '<td>' + riga.descrizioneArticolo + '</td>';
+                        html += '<td class="text-center">' + riga.unitaMisura + '</td>';
+                        html += '<td class="text-end">' + riga.quantitaRimanente.toFixed(2) + '</td>';
+                        html += '<td class="text-center">';
+                        if (riga.giaInviata) {
+                            html += '<span class="badge bg-secondary"><i class="bi bi-check-circle"></i> Già inviata</span>';
+                        } else if (noEmail) {
+                            html += '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> No email</span>';
+                        } else {
+                            html += '<span class="badge bg-success"><i class="bi bi-envelope"></i> Da inviare</span>';
+                        }
+                        html += '</td></tr>';
+                    }
+                    html += '</tbody></table></div></div>';
+                }
+
+                document.getElementById('emailDomaniContent').innerHTML = html;
+                document.getElementById('emailDomaniContent').style.display = '';
+                aggiornaContatoreDomani();
+            })
+            .catch(function(err) {
+                document.getElementById('emailDomaniLoading').style.display = 'none';
+                document.getElementById('emailDomaniErrore').textContent = 'Errore di comunicazione: ' + err.message;
+                document.getElementById('emailDomaniErrore').style.display = '';
+            });
+    }
+
+    function toggleOrdinedomani(cb) {
+        var row = cb.closest('table');
+        var checkboxes = row.querySelectorAll('.domani-riga-checkbox:not(:disabled)');
+        checkboxes.forEach(function(c) { c.checked = cb.checked; });
+        aggiornaContatoreDomani();
+    }
+
+    function selezionaTutteDomani(stato) {
+        document.querySelectorAll('.domani-riga-checkbox:not(:disabled)').forEach(function(cb) { cb.checked = stato; });
+        document.querySelectorAll('.domani-sel-ordine:not(:disabled)').forEach(function(cb) { cb.checked = stato; });
+        aggiornaContatoreDomani();
+    }
+
+    function toggleCcAgenteDomani() {
+        var checkboxes = document.querySelectorAll('.domani-cc-agente:not(:disabled)');
+        var tutteChecked = true;
+        checkboxes.forEach(function(cb) { if (!cb.checked) tutteChecked = false; });
+        checkboxes.forEach(function(cb) { cb.checked = !tutteChecked; });
+    }
+
+    function aggiornaContatoreDomani() {
+        var sel = document.querySelectorAll('.domani-riga-checkbox:checked').length;
+        document.getElementById('contatoreDomani').textContent = sel + ' selezionate';
+        document.getElementById('btnInviaDomani').disabled = sel === 0;
+    }
+
+    function inviaEmailDomani() {
+        var selezionate = [];
+        document.querySelectorAll('.domani-riga-checkbox:checked').forEach(function(cb) {
+            selezionate.push(cb.value);
+        });
+        if (selezionate.length === 0) { alert('Seleziona almeno una riga.'); return; }
+
+        var ccAgente = [];
+        document.querySelectorAll('.domani-cc-agente:checked').forEach(function(cb) {
+            ccAgente.push(cb.value);
+        });
+
+        var msgConferma = 'Confermi l\'invio di email per ' + selezionate.length + ' righe selezionate?';
+        if (ccAgente.length > 0) {
+            msgConferma += '\n\nL\'agente verrà messo in CC per ' + ccAgente.length + ' ordini.';
+        }
+        if (!confirm(msgConferma)) return;
+
+        document.getElementById('btnInviaDomani').disabled = true;
+        document.getElementById('btnInviaDomani').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Invio...';
+
+        var token = document.getElementById('__AjaxRequestVerificationToken')?.value
+            || document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        fetch('@Url.Action("InviaEmailDomani", "InterrogazioniDB")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+            body: JSON.stringify({ righeSelezionate: selezionate, ccAgente: ccAgente })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                alert(data.messaggio || 'Email inviate con successo!');
+                location.reload();
+            } else {
+                alert('Errore: ' + (data.errore || 'Errore sconosciuto'));
+                document.getElementById('btnInviaDomani').disabled = false;
+                document.getElementById('btnInviaDomani').innerHTML = '<i class="bi bi-send-fill"></i> Invia Selezionate';
+            }
+        })
+        .catch(function(err) {
+            alert('Errore di comunicazione: ' + err.message);
+            document.getElementById('btnInviaDomani').disabled = false;
+            document.getElementById('btnInviaDomani').innerHTML = '<i class="bi bi-send-fill"></i> Invia Selezionate';
+        });
+    }
+
+    // ===== DRAG MODALE EMAIL DOMANI =====
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalEl = document.getElementById('modalEmailDomani');
+        if (modalEl) {
+            var header = modalEl.querySelector('.modal-header');
+            var dialog = modalEl.querySelector('.modal-dialog');
+            var isDragging = false, startX, startY, origX, origY;
+
+            header.addEventListener('mousedown', function (e) {
+                if (e.target.closest('.btn-close')) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                var rect = dialog.getBoundingClientRect();
+                dialog.style.width = rect.width + 'px';
+                dialog.style.position = 'fixed';
+                dialog.style.margin = '0';
+                origX = rect.left;
+                origY = rect.top;
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging) return;
+                dialog.style.left = (origX + e.clientX - startX) + 'px';
+                dialog.style.top = (origY + e.clientY - startY) + 'px';
+            });
+
+            document.addEventListener('mouseup', function () {
+                isDragging = false;
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                dialog.style.position = '';
+                dialog.style.left = '';
+                dialog.style.top = '';
+                dialog.style.margin = '';
+                dialog.style.width = '';
+            });
+        }
+    });
+</script>

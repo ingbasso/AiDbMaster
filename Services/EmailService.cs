@@ -44,17 +44,32 @@ namespace AiDbMaster.Services
         }
 
         /// <summary>
-        /// Invia un'email usando i parametri SMTP configurati in TabellaOpzioni.
-        /// In modalità test, invia agli indirizzi di prova (EmailProva).
+        /// Verifica se il sistema è in modalità test (EmailProva valorizzata) o produzione.
         /// </summary>
-        /// <param name="oggetto">Oggetto dell'email</param>
-        /// <param name="corpoHtml">Corpo HTML dell'email</param>
-        /// <returns>True se l'invio è riuscito</returns>
-        public async Task<bool> InviaEmailAsync(string oggetto, string corpoHtml)
+        public async Task<bool> IsModalitaTestAsync()
+        {
+            var emailProva = await GetOpzioneAsync("EmailProva");
+            return !string.IsNullOrEmpty(emailProva);
+        }
+
+        /// <summary>
+        /// Restituisce gli indirizzi EmailProva configurati (per visualizzazione nel banner).
+        /// </summary>
+        public async Task<string?> GetEmailProvaAsync()
+        {
+            return await GetOpzioneAsync("EmailProva");
+        }
+
+        /// <summary>
+        /// Invia un'email usando i parametri SMTP configurati in TabellaOpzioni.
+        /// Se EmailProva è valorizzata → modalità test: invia tutto a EmailProva.
+        /// Se EmailProva è vuota → modalità produzione: invia a emailDestinatario, con CC opzionale all'agente.
+        /// </summary>
+        public async Task<bool> InviaEmailAsync(string oggetto, string corpoHtml,
+            string? emailDestinatario, string? emailAgenteCc = null, bool inviaAdAgente = false)
         {
             try
             {
-                // Leggi parametri SMTP da TabellaOpzioni
                 var smtpServer = await GetOpzioneAsync("SmtpServer");
                 var smtpPortStr = await GetOpzioneAsync("SmtpPort");
                 var smtpUsername = await GetOpzioneAsync("SmtpUsername");
@@ -69,53 +84,82 @@ namespace AiDbMaster.Services
                     return false;
                 }
 
-                if (string.IsNullOrEmpty(emailProva))
+                var ccnOpzione = await GetOpzioneAsync("Ccn");
+                var isTest = !string.IsNullOrEmpty(emailProva);
+
+                if (!isTest && string.IsNullOrEmpty(emailDestinatario))
                 {
-                    _logger.LogError("EmailProva non configurata in TabellaOpzioni.");
+                    _logger.LogError("Modalità produzione: email destinatario mancante.");
                     return false;
                 }
 
                 var port = int.TryParse(smtpPortStr, out var p) ? p : 587;
 
-                // Crea il messaggio
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Uff. Commerciale Favaro1", smtpSender));
 
-                // Destinatari: in modalità test, usa EmailProva (indirizzi separati da ';')
-                var indirizzi = emailProva.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var indirizzo in indirizzi)
+                var destinatariLog = new List<string>();
+
+                if (isTest)
                 {
-                    var email = indirizzo.Trim();
-                    if (!string.IsNullOrEmpty(email))
+                    // Modalità TEST: tutto va a EmailProva
+                    var indirizzi = emailProva!.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var indirizzo in indirizzi)
                     {
-                        message.To.Add(MailboxAddress.Parse(email));
+                        var email = indirizzo.Trim();
+                        if (!string.IsNullOrEmpty(email))
+                        {
+                            message.To.Add(MailboxAddress.Parse(email));
+                            destinatariLog.Add(email);
+                        }
+                    }
+                    _logger.LogInformation("Modalità TEST: email diretta a EmailProva ({Dest})", string.Join(", ", destinatariLog));
+                }
+                else
+                {
+                    // Modalità PRODUZIONE: email al cliente, CC opzionale all'agente
+                    message.To.Add(MailboxAddress.Parse(emailDestinatario!));
+                    destinatariLog.Add(emailDestinatario!);
+
+                    if (inviaAdAgente && !string.IsNullOrEmpty(emailAgenteCc))
+                    {
+                        message.Cc.Add(MailboxAddress.Parse(emailAgenteCc));
+                        destinatariLog.Add($"CC: {emailAgenteCc}");
+                    }
+                    _logger.LogInformation("Modalità PRODUZIONE: email a {Dest}", string.Join(", ", destinatariLog));
+                }
+
+                // CCN: aggiunge destinatari in copia nascosta (sia in test che in produzione)
+                if (!string.IsNullOrEmpty(ccnOpzione))
+                {
+                    var indirizziBcc = ccnOpzione.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var indirizzo in indirizziBcc)
+                    {
+                        var email = indirizzo.Trim();
+                        if (!string.IsNullOrEmpty(email))
+                        {
+                            message.Bcc.Add(MailboxAddress.Parse(email));
+                            destinatariLog.Add($"CCN: {email}");
+                        }
                     }
                 }
 
                 message.Subject = oggetto;
 
-                // Corpo HTML
-                var bodyBuilder = new BodyBuilder
-                {
-                    HtmlBody = corpoHtml
-                };
+                var bodyBuilder = new BodyBuilder { HtmlBody = corpoHtml };
                 message.Body = bodyBuilder.ToMessageBody();
 
-                // Invio tramite SMTP
                 using var client = new SmtpClient();
-
-                // Accetta il certificato SSL anche se il nome host non corrisponde
-                // (il server mail.favaro1.com usa un certificato intestato a cl-137.noamweb.net)
+                // Il server mail.favaro1.com usa un certificato intestato a cl-137.noamweb.net
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                // Connessione con STARTTLS sulla porta 587
                 await client.ConnectAsync(smtpServer, port, SecureSocketOptions.StartTls);
                 await client.AuthenticateAsync(smtpUsername, smtpPassword);
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
                 _logger.LogInformation("Email inviata con successo. Oggetto: {Oggetto}, Destinatari: {Dest}",
-                    oggetto, string.Join(", ", indirizzi));
+                    oggetto, string.Join(", ", destinatariLog));
 
                 return true;
             }
@@ -131,7 +175,7 @@ namespace AiDbMaster.Services
         /// </summary>
         public string GeneraCorpoEmail(OrdineEmailViewModel ordine, List<RigaEmailViewModel> righeSelezionate, int giorniScadenza)
         {
-            var dataDisponibilita = DateTime.Today;
+            var dataDisponibilita = righeSelezionate.Min(r => r.DataConsegna);
             var dataScadenza = dataDisponibilita.AddDays(giorniScadenza);
 
             // Tabella articoli
@@ -186,11 +230,14 @@ namespace AiDbMaster.Services
        se tale attivit&agrave; non fosse possibile La invitiamo a contattare i nostri uffici per riprogrammare 
        una nuova data di produzione.</p>
 
+    <p style='margin-top: 20px; font-style: italic; color: #555;'>Se avete gi&agrave; organizzato la consegna o il ritiro, oppure avete gi&agrave; versato un acconto o saldato l&rsquo;intero ordine, vi preghiamo di non considerare valida questa email.</p>
+
     <p>Grazie,<br>
     <strong>Uff. Commerciale Favaro1</strong></p>
 
     <div class='footer'>
         <p><em>Questa email &egrave; stata generata automaticamente dal sistema AiDbMaster.</em></p>
+        <p><em>Non rispondere a questa email.</em></p>
     </div>
 </body>
 </html>";
@@ -201,7 +248,7 @@ namespace AiDbMaster.Services
         /// <summary>
         /// Registra l'invio email nella tabella InvioEmail per evitare duplicati.
         /// </summary>
-        public async Task RegistraInvioAsync(RigaEmailViewModel riga)
+        public async Task RegistraInvioAsync(RigaEmailViewModel riga, string origine = "Manuale")
         {
             var invio = new InvioEmail
             {
@@ -211,7 +258,8 @@ namespace AiDbMaster.Services
                 NumeroOrdine = riga.NumeroOrdine,
                 RigaOrdine = riga.RigaOrdine,
                 DataInvio = DateTime.Now,
-                Contabilizzato = "N"
+                Contabilizzato = "N",
+                Origine = origine
             };
 
             _context.InvioEmail.Add(invio);

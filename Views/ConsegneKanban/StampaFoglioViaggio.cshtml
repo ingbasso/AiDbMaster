@@ -1,0 +1,86 @@
+@model AiDbMaster.ViewModels.FoglioViaggioViewModel
+@{
+    Layout = "~/Views/Shared/_PrintLayout.cshtml";
+    ViewData["Title"] = $"Foglio Viaggio #{Model.ViaggioId}";
+}
+
+<div class="print-page">
+    <div class="header-info">
+        <div class="left">
+            <h1>Foglio di Viaggio #@Model.ViaggioId</h1>
+            <h2>@Model.DataConsegna.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))</h2>
+        </div>
+        <div class="right">
+            <div>Tipo: <strong>@Model.TipoTrasporto</strong></div>
+            <div>Stampato il @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div><span class="label">Mezzo:</span> <span class="value">@Model.Mezzo</span></div>
+        <div><span class="label">Targa:</span> <span class="value">@(Model.Targa ?? "—")</span></div>
+        <div><span class="label">Autista:</span> <span class="value">@(Model.Autista ?? "Non assegnato")</span></div>
+        <div><span class="label">Telefono:</span> <span class="value">@(Model.TelefonoAutista ?? "—")</span></div>
+        <div><span class="label">Partenza:</span> <span class="value">@Model.OraPartenza.ToString(@"hh\:mm")</span></div>
+        <div><span class="label">Ritorno stimato:</span> <span class="value">@Model.OraArrivoStimata.ToString(@"hh\:mm")</span></div>
+        <div><span class="label">Carico:</span> <span class="value">@Model.PesoTotaleKg.ToString("N0") / @Model.PortataMaxKg.ToString("N0") Kg (@Model.PercentualeCarico%)</span></div>
+        <div>
+            <span class="label">Servizi:</span>
+            <span class="badge @(Model.Gru ? "badge-si" : "badge-no")">Gru @(Model.Gru ? "Sì" : "No")</span>
+            <span class="badge @(Model.Trasbordo ? "badge-si" : "badge-no")">Trasb. @(Model.Trasbordo ? "Sì" : "No")</span>
+        </div>
+        @if (Model.TempoPausa > 0 || Model.TempoScarico > 0)
+        {
+            <div><span class="label">Pausa:</span> <span class="value">@Model.TempoPausa min</span></div>
+            <div><span class="label">Scarico:</span> <span class="value">@Model.TempoScarico min</span></div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Note))
+    {
+        <div class="note-box">
+            <strong>Note viaggio:</strong> @Model.Note
+        </div>
+    }
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center" style="width:30px">#</th>
+                <th>Cliente</th>
+                <th>Destinazione</th>
+                <th>Articolo</th>
+                <th class="text-right" style="width:70px">Qtà</th>
+                <th class="text-right" style="width:80px">Peso Kg</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Righe)
+            {
+                <tr>
+                    <td class="text-center">@r.Progressivo</td>
+                    <td><strong>@r.Cliente</strong><br /><small style="color:#888">@r.OrdineCompleto R@r.RigaOrdine</small></td>
+                    <td><small>@(r.Destinazione ?? "—")</small></td>
+                    <td>@r.CodiceArticolo<br /><small>@r.DescrizioneArticolo</small></td>
+                    <td class="text-right">@r.QuantitaAssegnata.ToString("N2") @(r.UnitaMisura ?? "")</td>
+                    <td class="text-right">@r.PesoTotaleKg.ToString("N3")</td>
+                    <td><small>@(r.NoteRiga ?? "")</small></td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr style="font-weight:700; background:#e8f0fe;">
+                <td colspan="4" class="text-right">TOTALE</td>
+                <td class="text-right">@Model.Righe.Count righe</td>
+                <td class="text-right">@Model.PesoTotaleKg.ToString("N3")</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="firma-box">
+        <div>Firma Autista</div>
+        <div>Firma Destinatario</div>
+    </div>
+</div>

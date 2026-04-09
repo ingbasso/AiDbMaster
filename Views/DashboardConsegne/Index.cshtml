@@ -1,437 +1,510 @@
 @model AiDbMaster.ViewModels.DashboardConsegneViewModel
-
 @{
     ViewData["Title"] = "Dashboard Consegne";
-    ViewBag.UseFluidContainer = true;
 }
 
-@section Styles {
-    <style>
-        .kpi-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            transition: transform 0.3s ease;
-            height: 100%;
-        }
+<style>
+    .dashboard-container { max-width: 1600px; margin: 0 auto; }
+    .kpi-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        transition: transform .15s, box-shadow .15s;
+        height: 100%;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+    .kpi-icon { font-size: 2.2rem; opacity: .2; position: absolute; right: 20px; top: 15px; }
+    .kpi-value { font-size: 1.9rem; font-weight: 700; margin: 0; }
+    .kpi-label { font-size: .82rem; text-transform: uppercase; letter-spacing: .5px; opacity: .7; margin-bottom: 4px; }
+    .kpi-trend { font-size: .78rem; }
+    .kpi-trend .trend-up { color: #198754; }
+    .kpi-trend .trend-down { color: #dc3545; }
+    .kpi-trend .trend-neutral { color: #6c757d; }
 
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
+    .alert-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: .85rem;
+        font-weight: 500;
+    }
+    .alert-badge i { font-size: 1.1rem; }
 
-        .kpi-card.danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
+    .chart-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .chart-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid rgba(0,0,0,.06);
+        font-weight: 600;
+        font-size: .95rem;
+    }
 
-        .kpi-card.success {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-        }
+    .table-detail th { font-size: .78rem; text-transform: uppercase; letter-spacing: .3px; color: #6c757d; }
+    .table-detail td { font-size: .88rem; vertical-align: middle; }
 
-        .kpi-card.warning {
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-        }
+    .periodo-btn { border-radius: 20px; font-size: .85rem; padding: 5px 16px; }
+    .periodo-btn.active { background: var(--bs-primary); color: #fff; border-color: var(--bs-primary); }
 
-        .kpi-card.info {
-            background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
-        }
+    .mezzo-badge-int { background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 10px; font-size: .78rem; }
+    .mezzo-badge-ext { background: #fff3cd; color: #856404; padding: 3px 10px; border-radius: 10px; font-size: .78rem; }
+</style>
 
-        .kpi-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 0.5rem 0;
-        }
+<div class="dashboard-container p-3">
 
-        .kpi-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .kpi-icon {
-            font-size: 3rem;
-            opacity: 0.3;
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-        }
-
-        .dashboard-section {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #333;
-            border-left: 4px solid #667eea;
-            padding-left: 0.75rem;
-        }
-
-        .filter-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 400px;
-        }
-
-        .table-dashboard {
-            font-size: 0.9rem;
-        }
-
-        .table-dashboard thead {
-            background-color: #f8f9fa;
-        }
-
-        .badge-rank {
-            font-size: 0.9rem;
-            padding: 0.4rem 0.6rem;
-        }
-    </style>
-}
-
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Dashboard Consegne</h2>
-        <a asp-controller="InterrogazioniDB" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Torna al Menu
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Dashboard Consegne</h4>
+            <small class="text-muted">Periodo: @Model.PeriodoLabel</small>
+        </div>
+        <div class="btn-group">
+            <a asp-action="Index" asp-route-periodo="settimana" class="btn btn-outline-primary periodo-btn @(ViewBag.PeriodoCorrente == "settimana" ? "active" : "")">Settimana</a>
+            <a asp-action="Index" asp-route-periodo="mese" class="btn btn-outline-primary periodo-btn @(ViewBag.PeriodoCorrente == "mese" ? "active" : "")">Mese</a>
+            <a asp-action="Index" asp-route-periodo="trimestre" class="btn btn-outline-primary periodo-btn @(ViewBag.PeriodoCorrente == "trimestre" ? "active" : "")">Trimestre</a>
+            <a asp-action="Index" asp-route-periodo="anno" class="btn btn-outline-primary periodo-btn @(ViewBag.PeriodoCorrente == "anno" ? "active" : "")">Anno</a>
+        </div>
     </div>
 
-    <!-- FILTRI -->
-    <div class="filter-section">
-        <form asp-action="Index" method="get" class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label fw-bold"><i class="bi bi-calendar3 me-1"></i>Data Da</label>
-                <input type="date" name="dataDa" class="form-control" value="@Model.DataDa?.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold"><i class="bi bi-calendar3 me-1"></i>Data A</label>
-                <input type="date" name="dataA" class="form-control" value="@Model.DataA?.ToString("yyyy-MM-dd")" />
-            </div>
-            @if (Model.CodiceAgente.HasValue)
+    @* ALLERTE *@
+    @if (Model.RigheDaPianificare > 0 || Model.ViaggiSenzaAutista > 0 || Model.ViaggiSottoutilizzati > 0 || Model.ViaggiSenzaPrezzo > 0)
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            @if (Model.RigheDaPianificare > 0)
             {
-                <div class="col-md-4">
-                    <label class="form-label fw-bold"><i class="bi bi-person-badge me-1"></i>Agente</label>
-                    <input type="text" class="form-control" value="@Model.NomeAgente" disabled />
-                </div>
+                <span class="alert-badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> @Model.RigheDaPianificare righe da pianificare</span>
             }
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search me-1"></i>Aggiorna
-                </button>
-            </div>
-        </form>
-    </div>
+            @if (Model.ViaggiSenzaAutista > 0)
+            {
+                <span class="alert-badge bg-danger text-white"><i class="bi bi-person-x"></i> @Model.ViaggiSenzaAutista viaggi senza autista</span>
+            }
+            @if (Model.ViaggiSottoutilizzati > 0)
+            {
+                <span class="alert-badge bg-info text-dark"><i class="bi bi-truck"></i> @Model.ViaggiSottoutilizzati mezzi sotto il 30%</span>
+            }
+            @if (Model.ViaggiSenzaPrezzo > 0)
+            {
+                <span class="alert-badge bg-secondary text-white"><i class="bi bi-currency-euro"></i> @Model.ViaggiSenzaPrezzo viaggi senza prezzo</span>
+            }
+        </div>
+    }
 
-    <!-- KPI CARDS -->
+    @* KPI CARDS *@
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="kpi-card">
-                <i class="bi bi-file-earmark-text kpi-icon"></i>
-                <div class="kpi-label">Ordini Totali</div>
-                <div class="kpi-value">@Model.NumeroOrdiniTotali.ToString("N0")</div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card bg-primary text-white">
+                <div class="card-body position-relative">
+                    <i class="bi bi-truck kpi-icon"></i>
+                    <p class="kpi-label mb-1">Viaggi</p>
+                    <p class="kpi-value">@Model.TotaleViaggi</p>
+                    <div class="kpi-trend">
+                        @{ var varViaggi = Model.VariazioneViaggiPerc; }
+                        @if (varViaggi > 0) { <span class="trend-up"><i class="bi bi-arrow-up-short"></i>+@varViaggi% vs periodo prec.</span> }
+                        else if (varViaggi < 0) { <span class="trend-down"><i class="bi bi-arrow-down-short"></i>@varViaggi% vs periodo prec.</span> }
+                        else { <span class="trend-neutral">= periodo prec.</span> }
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="kpi-card info">
-                <i class="bi bi-currency-euro kpi-icon"></i>
-                <div class="kpi-label">Fatturato Totale</div>
-                <div class="kpi-value">€ @Model.FatturatoTotale.ToString("N0")</div>
-                <small>Media: € @Model.ValoreMedioConsegna.ToString("N2")</small>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
+                <div class="card-body position-relative">
+                    <i class="bi bi-box-seam kpi-icon"></i>
+                    <p class="kpi-label mb-1">Righe consegnate</p>
+                    <p class="kpi-value">@Model.TotaleRighe</p>
+                    <div class="kpi-trend">
+                        <span>Peso medio/viaggio: @Model.PesoMedioPerViaggio.ToString("N0") kg</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="kpi-card @(Model.NumeroConsegneInRitardo > 0 ? "danger" : "success")">
-                <i class="bi bi-exclamation-triangle kpi-icon"></i>
-                <div class="kpi-label">Consegne in Ritardo</div>
-                <div class="kpi-value">@Model.NumeroConsegneInRitardo</div>
-                <small>Valore: € @Model.ValoreConsegneInRitardo.ToString("N0")</small>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: #fff;">
+                <div class="card-body position-relative">
+                    <i class="bi bi-speedometer kpi-icon"></i>
+                    <p class="kpi-label mb-1">Peso totale</p>
+                    <p class="kpi-value">@((Model.PesoTotaleKg / 1000).ToString("N1")) t</p>
+                    <div class="kpi-trend">
+                        <span>Utilizzo medio: @Model.UtilizzoMedioPercentuale%</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="kpi-card success">
-                <i class="bi bi-check-circle kpi-icon"></i>
-                <div class="kpi-label">% Evasione</div>
-                <div class="kpi-value">@Model.PercentualeEvasione.ToString("N1")%</div>
-                <div class="progress" style="height: 8px; background-color: rgba(255,255,255,0.3);">
-                    <div class="progress-bar bg-white" style="width: @Model.PercentualeEvasione%"></div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #155724;">
+                <div class="card-body position-relative">
+                    <i class="bi bi-graph-up-arrow kpi-icon"></i>
+                    <p class="kpi-label mb-1">Margine</p>
+                    <p class="kpi-value">@Model.MargineTotale.ToString("C0")</p>
+                    <div class="kpi-trend">
+                        @{ var varMarg = Model.VariazioneMarginePrecedentePerc; }
+                        @if (varMarg > 0) { <span class="trend-up"><i class="bi bi-arrow-up-short"></i>+@varMarg% vs periodo prec.</span> }
+                        else if (varMarg < 0) { <span class="trend-down"><i class="bi bi-arrow-down-short"></i>@varMarg% vs periodo prec.</span> }
+                        else { <span class="trend-neutral">= periodo prec.</span> }
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- GRAFICO CONSEGNE PER MESE -->
-    <div class="dashboard-section">
-        <h5 class="section-title"><i class="bi bi-bar-chart me-2"></i>Consegnato vs Da Consegnare per Mese</h5>
-        <div class="chart-container">
-            <canvas id="chartConsegnePerMese"></canvas>
+    @* SECONDA RIGA KPI *@
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card">
+                <div class="card-body position-relative">
+                    <i class="bi bi-cash-stack kpi-icon text-success"></i>
+                    <p class="kpi-label mb-1 text-muted">Costo trasporti</p>
+                    <p class="kpi-value text-danger">@Model.CostoTotale.ToString("C0")</p>
+                    <div class="kpi-trend">
+                        @{ var varCosto = Model.VariazioneCostoPerc; }
+                        @if (varCosto > 0) { <span class="trend-down"><i class="bi bi-arrow-up-short"></i>+@varCosto% vs periodo prec.</span> }
+                        else if (varCosto < 0) { <span class="trend-up"><i class="bi bi-arrow-down-short"></i>@varCosto% vs periodo prec.</span> }
+                        else { <span class="trend-neutral">= periodo prec.</span> }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card">
+                <div class="card-body position-relative">
+                    <i class="bi bi-wallet2 kpi-icon text-primary"></i>
+                    <p class="kpi-label mb-1 text-muted">Ricavo trasporti</p>
+                    <p class="kpi-value text-success">@Model.RicavoTotale.ToString("C0")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card">
+                <div class="card-body position-relative">
+                    <i class="bi bi-percent kpi-icon text-info"></i>
+                    <p class="kpi-label mb-1 text-muted">Margine %</p>
+                    <p class="kpi-value" style="color: @(Model.MarginePercentuale >= 0 ? "#198754" : "#dc3545");">@Model.MarginePercentuale%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card">
+                <div class="card-body position-relative">
+                    <i class="bi bi-currency-euro kpi-icon text-warning"></i>
+                    <p class="kpi-label mb-1 text-muted">Costo medio / ton</p>
+                    <p class="kpi-value text-dark">@Model.CostoMedioPerKg.ToString("C0")</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- CLASSIFICHE -->
-    <div class="row g-3">
-        @if (Model.TopAgenti.Any())
-        {
-            <div class="col-md-6">
-                <div class="dashboard-section">
-                    <h5 class="section-title"><i class="bi bi-trophy me-2"></i>Top 10 Agenti per Fatturato</h5>
+    @* GRAFICI *@
+    <div class="row g-3 mb-4">
+        <div class="col-xl-8">
+            <div class="card chart-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bar-chart me-1"></i> Viaggi per giorno</span>
+                </div>
+                <div class="card-body" style="height: 320px;">
+                    <canvas id="chartViaggi"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-1"></i> Distribuzione mezzi
+                </div>
+                <div class="card-body" style="height: 320px;">
+                    <canvas id="chartTorta"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-6">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <i class="bi bi-speedometer me-1"></i> Peso trasportato per giorno (kg)
+                </div>
+                <div class="card-body" style="height: 280px;">
+                    <canvas id="chartPeso"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <i class="bi bi-graph-up me-1"></i> Margine giornaliero e cumulato
+                </div>
+                <div class="card-body" style="height: 280px;">
+                    <canvas id="chartMargine"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* TABELLE DETTAGLIO *@
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4">
+            <div class="card chart-card">
+                <div class="card-header"><i class="bi bi-truck me-1"></i> Top Mezzi</div>
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-dashboard table-hover">
+                        <table class="table table-sm table-hover table-detail mb-0">
                             <thead>
                                 <tr>
-                                    <th style="width: 50px;">Pos</th>
-                                    <th>Agente</th>
-                                    <th class="text-end">Ordini</th>
-                                    <th class="text-end">Fatturato</th>
-                                    <th class="text-end">% Evas.</th>
+                                    <th>Mezzo</th>
+                                    <th class="text-center">Viaggi</th>
+                                    <th class="text-end">Peso (kg)</th>
+                                    <th class="text-end">Margine</th>
+                                    <th class="text-center">Util. %</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @for (int i = 0; i < Model.TopAgenti.Count; i++)
+                                @foreach (var m in Model.TopMezzi)
                                 {
-                                    var agente = Model.TopAgenti[i];
-                                    var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
                                     <tr>
-                                        <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
-                                        <td><strong>@agente.NomeAgente</strong></td>
-                                        <td class="text-end">@agente.NumeroOrdini</td>
-                                        <td class="text-end"><strong>€ @agente.Fatturato.ToString("N0")</strong></td>
-                                        <td class="text-end">@agente.PercentualeEvasione.ToString("N1")%</td>
+                                        <td>
+                                            <span class="@(m.Tipo == "Interno" ? "mezzo-badge-int" : "mezzo-badge-ext")">@m.Tipo[0]</span>
+                                            <span class="ms-1">@m.Mezzo</span>
+                                        </td>
+                                        <td class="text-center">@m.Viaggi</td>
+                                        <td class="text-end">@m.PesoTotaleKg.ToString("N0")</td>
+                                        <td class="text-end" style="color: @(m.Margine >= 0 ? "#198754" : "#dc3545")">@m.Margine.ToString("C0")</td>
+                                        <td class="text-center">
+                                            <div class="progress" style="height: 14px; min-width: 60px;">
+                                                <div class="progress-bar @(m.UtilizzoMedioPerc < 30 ? "bg-warning" : m.UtilizzoMedioPerc < 70 ? "bg-info" : "bg-success")"
+                                                     style="width: @m.UtilizzoMedioPerc%;">
+                                                    @m.UtilizzoMedioPerc%
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
+                                }
+                                @if (!Model.TopMezzi.Any())
+                                {
+                                    <tr><td colspan="5" class="text-center text-muted py-3">Nessun dato</td></tr>
                                 }
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        }
+        </div>
 
-        <div class="col-md-6">
-            <div class="dashboard-section">
-                <h5 class="section-title"><i class="bi bi-geo-alt me-2"></i>Top 10 Province per Fatturato</h5>
-                <div class="table-responsive">
-                    <table class="table table-dashboard table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">Pos</th>
-                                <th>Provincia</th>
-                                <th>Regione</th>
-                                <th class="text-end">Ordini</th>
-                                <th class="text-end">Fatturato</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int i = 0; i < Model.TopProvince.Count; i++)
-                            {
-                                var provincia = Model.TopProvince[i];
-                                var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
+        <div class="col-xl-4">
+            <div class="card chart-card">
+                <div class="card-header"><i class="bi bi-person-badge me-1"></i> Top Autisti</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-detail mb-0">
+                            <thead>
                                 <tr>
-                                    <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
-                                    <td><strong>@provincia.Provincia</strong></td>
-                                    <td><small>@provincia.Regione</small></td>
-                                    <td class="text-end">@provincia.NumeroOrdini</td>
-                                    <td class="text-end"><strong>€ @provincia.Fatturato.ToString("N0")</strong></td>
+                                    <th>Autista</th>
+                                    <th class="text-center">Viaggi</th>
+                                    <th class="text-end">Ore</th>
+                                    <th class="text-end">Peso (kg)</th>
+                                    <th class="text-center" title="Gru"><i class="bi bi-arrows-vertical"></i></th>
+                                    <th class="text-center" title="Trasbordo"><i class="bi bi-box-arrow-in-right"></i></th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.TopAutisti)
+                                {
+                                    <tr>
+                                        <td>@a.Autista</td>
+                                        <td class="text-center">@a.Viaggi</td>
+                                        <td class="text-end">@a.OreTotali.ToString("N1")</td>
+                                        <td class="text-end">@a.PesoTotaleKg.ToString("N0")</td>
+                                        <td class="text-center">@(a.ViaggiConGru > 0 ? a.ViaggiConGru.ToString() : "-")</td>
+                                        <td class="text-center">@(a.ViaggiConTrasbordo > 0 ? a.ViaggiConTrasbordo.ToString() : "-")</td>
+                                    </tr>
+                                }
+                                @if (!Model.TopAutisti.Any())
+                                {
+                                    <tr><td colspan="6" class="text-center text-muted py-3">Nessun dato</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card chart-card">
+                <div class="card-header"><i class="bi bi-building me-1"></i> Top Clienti</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-detail mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th class="text-center">Righe</th>
+                                    <th class="text-end">Peso (kg)</th>
+                                    <th class="text-end">Costo</th>
+                                    <th class="text-end">Ricavo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in Model.TopClienti)
+                                {
+                                    <tr>
+                                        <td title="@c.Cliente" style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@c.Cliente</td>
+                                        <td class="text-center">@c.RigheConsegnate</td>
+                                        <td class="text-end">@c.PesoTotaleKg.ToString("N0")</td>
+                                        <td class="text-end text-danger">@c.CostoTrasporto.ToString("C0")</td>
+                                        <td class="text-end text-success">@c.RicavoTrasporto.ToString("C0")</td>
+                                    </tr>
+                                }
+                                @if (!Model.TopClienti.Any())
+                                {
+                                    <tr><td colspan="5" class="text-center text-muted py-3">Nessun dato</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TOP CLIENTI -->
-    @if (Model.TopClienti.Any())
-    {
-        <div class="dashboard-section">
-            <h5 class="section-title"><i class="bi bi-people me-2"></i>Top 10 Clienti per Fatturato</h5>
-            <div class="table-responsive">
-                <table class="table table-dashboard table-hover">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;">Pos</th>
-                            <th>Codice</th>
-                            <th>Ragione Sociale</th>
-                            <th>Provincia</th>
-                            <th class="text-end">Ordini</th>
-                            <th class="text-end">Fatturato</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (int i = 0; i < Model.TopClienti.Count; i++)
-                        {
-                            var cliente = Model.TopClienti[i];
-                            var badgeClass = i == 0 ? "bg-warning" : i == 1 ? "bg-secondary" : i == 2 ? "bg-danger" : "bg-light text-dark";
-                            <tr>
-                                <td><span class="badge @badgeClass badge-rank">@(i + 1)</span></td>
-                                <td>@cliente.CodiceCliente</td>
-                                <td><strong>@cliente.RagioneSociale</strong></td>
-                                <td>@cliente.Provincia</td>
-                                <td class="text-end">@cliente.NumeroOrdini</td>
-                                <td class="text-end"><strong>€ @cliente.Fatturato.ToString("N0")</strong></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-
-    <!-- CONSEGNE IN RITARDO -->
-    @if (Model.ConsegneInRitardo.Any())
-    {
-        <div class="dashboard-section" style="border: 2px solid #dc3545;">
-            <h5 class="section-title" style="border-left-color: #dc3545;"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Consegne in Ritardo (Prime 20)</h5>
-            <div class="table-responsive">
-                <table class="table table-dashboard table-hover">
-                    <thead>
-                        <tr>
-                            <th>Ordine</th>
-                            <th>Data Consegna</th>
-                            <th>Giorni Ritardo</th>
-                            <th>Cliente</th>
-                            @if (!Model.CodiceAgente.HasValue)
-                            {
-                                <th>Agente</th>
-                            }
-                            <th class="text-end">Valore Rimanente</th>
-                            <th class="text-center">Email</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var riga in Model.ConsegneInRitardo)
-                        {
-                            <tr class="table-danger">
-                                <td><strong>@riga.NumeroOrdineCompleto</strong></td>
-                                <td>@riga.DataConsegna.ToString("dd/MM/yyyy")</td>
-                                <td>
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-clock me-1"></i>@riga.GiorniRitardo gg
-                                    </span>
-                                </td>
-                                <td>@riga.CodiceCliente - @riga.RagioneSociale</td>
-                                @if (!Model.CodiceAgente.HasValue)
-                                {
-                                    <td>@riga.NomeAgente</td>
-                                }
-                                <td class="text-end"><strong>€ @riga.ValoreRimanente.ToString("N2")</strong></td>
-                                <td class="text-center">
-                                    @if (riga.HasEmailInviata)
-                                    {
-                                        <span class="badge bg-success" title="Email inviata il @riga.DataEmailInviata?.ToString("dd/MM/yyyy HH:mm")" data-bs-toggle="tooltip">
-                                            <i class="bi bi-envelope-check"></i>
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted" title="Nessuna email inviata">
-                                            <i class="bi bi-envelope-x"></i>
-                                        </span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light">
-                        <tr class="fw-bold">
-                            <td colspan="@(Model.CodiceAgente.HasValue ? 4 : 5)" class="text-end">TOTALE:</td>
-                            <td class="text-end text-danger">€ @Model.ValoreConsegneInRitardo.ToString("N2")</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-    }
 </div>
 
 @section Scripts {
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoGiorniLabels));
+    const viaggiInt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoViaggiInterni));
+    const viaggiExt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoViaggiEsterni));
+    const pesoGiorno = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoPesoPerGiorno));
+    const margineGiorno = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoMarginePerGiorno));
+    const margineCumulato = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoMargineCumulato));
+    const tortaLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TortaMezziLabels));
+    const tortaValori = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TortaMezziValori));
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inizializza tooltip Bootstrap
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } }
+    };
 
-            // Dati per il grafico
-            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.MeseNome)));
-            var consegnato = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.Consegnato)));
-            var daConsegnare = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsegnePerMese.Select(x => x.DaConsegnare)));
-
-            // Grafico Consegne per Mese
-            var ctx = document.getElementById('chartConsegnePerMese').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Consegnato',
-                            data: consegnato,
-                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
-                            borderColor: 'rgba(40, 167, 69, 1)',
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Da Consegnare',
-                            data: daConsegnare,
-                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
-                            borderColor: 'rgba(255, 193, 7, 1)',
-                            borderWidth: 2
-                        }
-                    ]
+    // Viaggi per giorno (stacked bar)
+    new Chart(document.getElementById('chartViaggi'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Interni',
+                    data: viaggiInt,
+                    backgroundColor: 'rgba(40, 167, 69, .7)',
+                    borderRadius: 4
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    label += '€ ' + context.parsed.y.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '€ ' + value.toLocaleString('it-IT');
-                                }
-                            }
-                        }
+                {
+                    label: 'Esterni',
+                    data: viaggiExt,
+                    backgroundColor: 'rgba(255, 193, 7, .7)',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // Torta distribuzione mezzi
+    const colori = [
+        '#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f',
+        '#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'
+    ];
+    new Chart(document.getElementById('chartTorta'), {
+        type: 'doughnut',
+        data: {
+            labels: tortaLabels,
+            datasets: [{
+                data: tortaValori,
+                backgroundColor: colori.slice(0, tortaLabels.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            ...commonOptions,
+            cutout: '55%',
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.label}: ${ctx.parsed} viaggi`
                     }
                 }
-            });
-        });
-    </script>
-}
+            }
+        }
+    });
 
+    // Peso per giorno
+    new Chart(document.getElementById('chartPeso'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Peso (kg)',
+                data: pesoGiorno,
+                backgroundColor: 'rgba(102, 126, 234, .6)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Margine giornaliero + cumulato
+    new Chart(document.getElementById('chartMargine'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Margine giorno',
+                    data: margineGiorno,
+                    type: 'bar',
+                    backgroundColor: margineGiorno.map(v => v >= 0 ? 'rgba(40, 167, 69, .6)' : 'rgba(220, 53, 69, .6)'),
+                    borderRadius: 4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Cumulato',
+                    data: margineCumulato,
+                    type: 'line',
+                    borderColor: '#4e79a7',
+                    backgroundColor: 'rgba(78, 121, 167, .1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                x: { grid: { display: false } },
+                y: { position: 'left', grid: { color: 'rgba(0,0,0,.05)' } },
+                y1: { position: 'right', grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+</script>
+}

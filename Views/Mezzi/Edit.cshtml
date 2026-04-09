@@ -1,0 +1,82 @@
+@model AiDbMaster.Models.MezzoTrasporto
+
+@{
+    ViewData["Title"] = "Modifica Mezzo Interno";
+    ViewBag.UseFluidContainer = true;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-pencil me-2 text-primary"></i>Modifica Mezzo Interno #@Model.Id</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-truck-front me-1"></i>Dati mezzo interno</div>
+        <div class="card-body">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Codice Mezzo <span class="text-danger">*</span></label>
+                        <input asp-for="CodiceMezzo" class="form-control" maxlength="20" required />
+                        <span asp-validation-for="CodiceMezzo" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Targa</label>
+                        <input asp-for="Targa" class="form-control" maxlength="15" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Descrizione <span class="text-danger">*</span></label>
+                        <input asp-for="Descrizione" class="form-control" maxlength="100" required />
+                        <span asp-validation-for="Descrizione" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label">Portata max Kg</label>
+                        <input asp-for="PortataMaxKg" class="form-control" type="number" min="0" step="0.001" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Autista default</label>
+                        <select asp-for="AutistaDefaultId" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Autisti)">
+                            <option value="">-- nessuno --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-4">
+                            <input asp-for="Attivo" class="form-check-input" />
+                            <label class="form-check-label" asp-for="Attivo">Attivo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-4">
+                            <input asp-for="Gru" class="form-check-input" />
+                            <label class="form-check-label" asp-for="Gru">Gru</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-4">
+                            <input asp-for="Trasbordo" class="form-check-input" />
+                            <label class="form-check-label" asp-for="Trasbordo">Trasbordo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-x-lg me-1"></i>Annulla
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Salva modifiche
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

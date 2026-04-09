@@ -136,13 +136,24 @@ namespace AiDbMaster.Controllers
                             codiciOutletTutti.Count, codiciOutletAnagrafica.Count, codiciOutletMag20.Count);
                     }
 
-                    // Recupera i dati anagrafici con lo sconto Outlet diretto dall'anagrafica
+                    // Recupera i dati anagrafici con lo sconto Outlet e il flag Outlet
                     var articoliOutlet = await _context.AnagraficaArticoli
                         .Where(a => codiciOutletTutti.Contains(a.CodiceArticolo))
                         .OrderBy(a => a.CodiceArticolo)
                         .Select(a => new { 
                             a.CodiceArticolo, 
-                            PercSconto = a.PercScontoOutlet
+                            PercSconto = a.PercScontoOutlet,
+                            IsOutletAnagrafica = a.Outlet == "S",
+                            a.Famiglia,
+                            DescrizioneFamiglia = _context.Famiglie
+                                .Where(f => f.CodiceFamiglia == a.Famiglia)
+                                .Select(f => f.DescrizioneFamiglia)
+                                .FirstOrDefault(),
+                            a.ClasseProvvigione,
+                            DescrizioneClasseProvvigione = _context.ClassiProvvigioni
+                                .Where(cp => cp.CodiceClasse == a.ClasseProvvigione)
+                                .Select(cp => cp.DescrizioneClasse)
+                                .FirstOrDefault()
                         })
                         .ToListAsync();
 
@@ -151,15 +162,31 @@ namespace AiDbMaster.Controllers
                     foreach (var artOutlet in articoliOutlet)
                     {
                         var risultatiOutlet = await CalcolaDisponibilitaArticolo(artOutlet.CodiceArticolo, dataRiferimento, includiMagazzino20: true);
-                        
-                        model.ArticoliOutlet.Add(new DisponibilitaArticoloGruppoViewModel
+
+                        var righe = risultatiOutlet.Risultati;
+
+                        // Se l'articolo NON è flaggato Outlet in anagrafica (è nella lista
+                        // solo per giacenza > 0 su Mag.20), mostra solo la riga del Magazzino 20
+                        if (!artOutlet.IsOutletAnagrafica)
                         {
-                            CodiceArticolo = artOutlet.CodiceArticolo,
-                            DescrizioneArticolo = risultatiOutlet.DescrizioneArticolo,
-                            IsArticoloPrincipale = false,
-                            Risultati = risultatiOutlet.Risultati,
-                            PercScontoExtra = artOutlet.PercSconto
-                        });
+                            righe = righe.Where(r => r.CodiceMagazzino == 20).ToList();
+                        }
+
+                        if (righe.Any())
+                        {
+                            model.ArticoliOutlet.Add(new DisponibilitaArticoloGruppoViewModel
+                            {
+                                CodiceArticolo = artOutlet.CodiceArticolo,
+                                DescrizioneArticolo = risultatiOutlet.DescrizioneArticolo,
+                                IsArticoloPrincipale = false,
+                                Risultati = righe,
+                                PercScontoExtra = artOutlet.PercSconto,
+                                Famiglia = artOutlet.Famiglia,
+                                DescrizioneFamiglia = artOutlet.DescrizioneFamiglia,
+                                ClasseProvvigione = artOutlet.ClasseProvvigione?.ToString(),
+                                DescrizioneClasseProvvigione = artOutlet.DescrizioneClasseProvvigione
+                            });
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -458,12 +485,36 @@ namespace AiDbMaster.Controllers
                 }
             }
 
+            // 4b. Carica ordini fornitore (TipoOrdine = 'O') con DataConsegna nel periodo
+            var ordiniFornitore = await _context.OrdiniRighe
+                .Where(r => r.TipoOrdine == "O")
+                .Where(r => r.CodiceArticolo == codiceArticolo)
+                .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                .Where(r => r.Quantita > r.QuantitaEvasa)
+                .Select(r => new
+                {
+                    r.DataConsegna,
+                    Residuo = r.Quantita - r.QuantitaEvasa
+                })
+                .ToListAsync();
+
+            foreach (var ordFor in ordiniFornitore)
+            {
+                movimenti.Add(new MovimentoTimeline
+                {
+                    Data = ordFor.DataConsegna,
+                    Tipo = "OrdineFornitore",
+                    Quantita = ordFor.Residuo,
+                    Descrizione = "Ordine Fornitore"
+                });
+            }
+
             // 5. Ordina movimenti: esistenza sempre PRIMA come punto di partenza,
-            // poi tutti gli altri per data (produzioni prima degli ordini cliente a parità di data)
+            // poi tutti gli altri per data (produzioni/fornitori prima degli ordini cliente a parità di data)
             movimenti = movimenti
                 .OrderBy(m => m.Tipo == "Esistenza" ? 0 : 1) // Esistenza sempre prima
                 .ThenBy(m => m.Data)
-                .ThenBy(m => m.Tipo == "OrdineProduzione" ? 0 : 1) // Produzioni prima a parità di data
+                .ThenBy(m => m.Tipo == "OrdineCliente" ? 1 : 0) // Produzioni e fornitori prima a parità di data
                 .ToList();
 
             // 6. Calcola progressivo
@@ -967,8 +1018,11 @@ namespace AiDbMaster.Controllers
                         {
                             r.DataConsegna,
                             Residuo = (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m,
+                            r.TipoOrdine,
                             r.AnnoOrdine,
+                            r.SerieOrdine,
                             r.NumeroOrdine,
+                            r.RigaOrdine,
                             t.CodiceCliente,
                             Cliente = _context.AnagraficaClienti
                                 .Where(c => c.CodiceCliente == t.CodiceCliente)
@@ -977,6 +1031,19 @@ namespace AiDbMaster.Controllers
                         })
                     .OrderBy(o => o.DataConsegna)
                     .ToListAsync();
+
+                // 2b. Carica in blocco i record InvioEmail per le righe ordine cliente trovate
+                var emailInviate = await _context.InvioEmail
+                    .Where(e => e.TipoOrdine == "R")
+                    .Where(e => ordiniCliente.Select(o => o.AnnoOrdine).Distinct().Contains(e.AnnoOrdine))
+                    .Where(e => ordiniCliente.Select(o => o.NumeroOrdine).Distinct().Contains(e.NumeroOrdine))
+                    .ToListAsync();
+
+                var emailLookup = emailInviate
+                    .ToDictionary(
+                        e => (e.TipoOrdine, e.AnnoOrdine, e.SerieOrdine.Trim(), e.NumeroOrdine, e.RigaOrdine),
+                        e => e.DataInvio
+                    );
 
                 foreach (var ordine in ordiniCliente)
                 {
@@ -1037,21 +1104,26 @@ namespace AiDbMaster.Controllers
                 }
 
                 // 5. Ora riordino tutti i movimenti per data e ricalcolo il progressivo
-                var tuttiMovimenti = new List<(DateTime Data, string Tipo, string Descrizione, decimal Quantita, int? GiorniAsc, int Ordine)>();
+                var tuttiMovimenti = new List<(DateTime Data, string Tipo, string Descrizione, decimal Quantita, int? GiorniAsc, int Ordine, bool EmailInviata, DateTime? DataInvioEmail)>();
                 
                 // Esistenza (ordine 0)
-                tuttiMovimenti.Add((oggi, "Esistenza", "Giacenza iniziale a magazzino", esistenza, null, 0));
+                tuttiMovimenti.Add((oggi, "Esistenza", "Giacenza iniziale a magazzino", esistenza, null, 0, false, null));
                 
-                // Ordini cliente (ordine 2)
+                // Ordini cliente (ordine 2) - con lookup email
                 foreach (var ordine in ordiniCliente)
                 {
+                    var chiaveEmail = (ordine.TipoOrdine, ordine.AnnoOrdine, ordine.SerieOrdine.Trim(), ordine.NumeroOrdine, ordine.RigaOrdine);
+                    var hasEmail = emailLookup.TryGetValue(chiaveEmail, out var dataInvio);
+
                     tuttiMovimenti.Add((
                         ordine.DataConsegna,
                         "Ordine Cliente",
                         $"Ord. {ordine.AnnoOrdine}/{ordine.NumeroOrdine} - {ordine.Cliente ?? ordine.CodiceCliente.ToString()}",
                         -ordine.Residuo,
                         null,
-                        2
+                        2,
+                        hasEmail,
+                        hasEmail ? dataInvio : null
                     ));
                 }
                 
@@ -1064,16 +1136,56 @@ namespace AiDbMaster.Controllers
                         prod.Descrizione,
                         prod.Quantita,
                         prod.GiorniAsc,
-                        1
+                        1,
+                        false,
+                        null
+                    ));
+                }
+
+                // 4b. Carica ordini fornitore (TipoOrdine = 'O') con DataConsegna nel periodo
+                var ordiniFornitore = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "O")
+                    .Where(r => r.CodiceArticolo == codiceArticolo)
+                    .Where(r => r.DataConsegna >= oggi && r.DataConsegna <= dataRiferimento)
+                    .Where(r => r.Quantita > r.QuantitaEvasa)
+                    .Join(_context.OrdiniTestate,
+                        r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine },
+                        t => new { t.TipoOrdine, t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine },
+                        (r, t) => new
+                        {
+                            r.DataConsegna,
+                            Residuo = r.Quantita - r.QuantitaEvasa,
+                            r.AnnoOrdine,
+                            r.NumeroOrdine,
+                            t.CodiceCliente,
+                            Fornitore = _context.AnagraficaFornitori
+                                .Where(f => f.CodiceFornitore == t.CodiceCliente)
+                                .Select(f => f.RagioneSociale)
+                                .FirstOrDefault()
+                        })
+                    .OrderBy(o => o.DataConsegna)
+                    .ToListAsync();
+
+                foreach (var ordFor in ordiniFornitore)
+                {
+                    tuttiMovimenti.Add((
+                        ordFor.DataConsegna,
+                        "Ordine Fornitore",
+                        $"OF {ordFor.AnnoOrdine}/{ordFor.NumeroOrdine} - {ordFor.Fornitore ?? ordFor.CodiceCliente.ToString()}",
+                        ordFor.Residuo,
+                        null,
+                        1,
+                        false,
+                        null
                     ));
                 }
 
                 // Ordina: esistenza sempre PRIMA come punto di partenza,
-                // poi tutti gli altri per data (produzioni prima degli ordini cliente a parità di data)
+                // poi tutti gli altri per data (produzioni/fornitori prima degli ordini cliente a parità di data)
                 tuttiMovimenti = tuttiMovimenti
                     .OrderBy(m => m.Tipo == "Esistenza" ? 0 : 1) // Esistenza sempre prima
                     .ThenBy(m => m.Data)
-                    .ThenBy(m => m.Ordine) // Produzioni (1) prima di Ordini Cliente (2)
+                    .ThenBy(m => m.Ordine) // Produzioni/Fornitori (1) prima di Ordini Cliente (2)
                     .ToList();
 
                 // Ricalcola progressivo
@@ -1093,7 +1205,9 @@ namespace AiDbMaster.Controllers
                         Descrizione = mov.Descrizione,
                         Quantita = mov.Quantita,
                         Progressivo = progressivo,
-                        GiorniAsciugatura = mov.GiorniAsc
+                        GiorniAsciugatura = mov.GiorniAsc,
+                        EmailInviata = mov.EmailInviata,
+                        DataInvioEmail = mov.DataInvioEmail
                     });
                 }
 
@@ -1585,6 +1699,11 @@ namespace AiDbMaster.Controllers
 
             try
             {
+                // Rileva modalità test/produzione
+                model.IsModalitaTest = await _emailService.IsModalitaTestAsync();
+                model.EmailProva = await _emailService.GetEmailProvaAsync();
+                model.EmailAutomaticheAttive = await _emailService.GetOpzioneIntAsync("EmailAutomatiche", 0) == 1;
+
                 // 1. Leggi GiorniEmail da TabellaOpzioni
                 var giorniEmail = await _emailService.GetOpzioneIntAsync("GiorniEmail", 7);
                 var clienteEsclusoStr = await _emailService.GetOpzioneAsync("ClienteEscluso");
@@ -1780,10 +1899,12 @@ namespace AiDbMaster.Controllers
         /// <summary>
         /// POST: Invia le email per le righe selezionate dall'operatore.
         /// Raggruppa le righe per ordine e invia un'email per ogni ordine.
+        /// In modalità test (EmailProva valorizzata) tutto va agli indirizzi di prova.
+        /// In modalità produzione invia al cliente, con CC opzionale all'agente.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> InviaEmailMercePronta(List<string> righeSelezionate)
+        public async Task<IActionResult> InviaEmailMercePronta(List<string> righeSelezionate, List<string>? ccAgente)
         {
             ViewBag.UseFluidContainer = true;
 
@@ -1794,11 +1915,13 @@ namespace AiDbMaster.Controllers
                 return RedirectToAction("AvvisoMercePronta");
             }
 
+            // Set di chiavi ordine per cui l'operatore ha scelto di mettere l'agente in CC
+            var ordiniConCcAgente = new HashSet<string>(ccAgente ?? new List<string>());
+
             try
             {
                 var giorniScadenza = await _emailService.GetOpzioneIntAsync("GiorniScadenzaMerce", 21);
 
-                // Parse delle chiavi selezionate (formato: TipoOrdine|Anno|Serie|Numero|Riga)
                 var righeParsate = new List<(string TipoOrdine, short AnnoOrdine, string SerieOrdine, int NumeroOrdine, int RigaOrdine)>();
                 foreach (var chiave in righeSelezionate)
                 {
@@ -1819,16 +1942,15 @@ namespace AiDbMaster.Controllers
                     return RedirectToAction("AvvisoMercePronta");
                 }
 
-                // Raggruppa per ordine
                 var righePerOrdine = righeParsate.GroupBy(r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine });
 
                 int emailInviate = 0;
                 int emailFallite = 0;
                 int righeGiàInviate = 0;
+                int ordiniSenzaEmailCliente = 0;
 
                 foreach (var gruppoOrdine in righePerOrdine)
                 {
-                    // Recupera dati testata e cliente
                     var testata = await _context.OrdiniTestate
                         .FirstOrDefaultAsync(t => t.TipoOrdine == gruppoOrdine.Key.TipoOrdine &&
                                                   t.AnnoOrdine == gruppoOrdine.Key.AnnoOrdine &&
@@ -1839,11 +1961,24 @@ namespace AiDbMaster.Controllers
 
                     var cliente = await _context.AnagraficaClienti
                         .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
-                    var agente = cliente != null 
-                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente) 
+                    var agente = cliente != null
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
                         : null;
 
-                    // Costruisci il ViewModel dell'ordine per il template email
+                    var emailCliente = cliente?.Email;
+                    var emailAgente = agente?.Email;
+
+                    // In modalità produzione, se il cliente non ha email, salta l'ordine
+                    var isTest = await _emailService.IsModalitaTestAsync();
+                    if (!isTest && string.IsNullOrWhiteSpace(emailCliente))
+                    {
+                        ordiniSenzaEmailCliente++;
+                        _logger.LogWarning("Ordine {Tipo}{Anno}/{Serie}/{Numero}: cliente {Cliente} senza email, invio saltato.",
+                            gruppoOrdine.Key.TipoOrdine, gruppoOrdine.Key.AnnoOrdine,
+                            gruppoOrdine.Key.SerieOrdine, gruppoOrdine.Key.NumeroOrdine, testata.CodiceCliente);
+                        continue;
+                    }
+
                     var ordineVm = new OrdineEmailViewModel
                     {
                         TipoOrdine = testata.TipoOrdine,
@@ -1852,19 +1987,21 @@ namespace AiDbMaster.Controllers
                         NumeroOrdine = testata.NumeroOrdine,
                         CodiceCliente = testata.CodiceCliente,
                         RagioneSociale = cliente?.RagioneSociale ?? "N/D",
-                        EmailCliente = cliente?.Email,
+                        EmailCliente = emailCliente,
                         CodiceAgente = cliente?.CodiceAgente ?? 0,
                         NomeAgente = agente?.DescrizioneAgente,
-                        EmailAgente = agente?.Email,
+                        EmailAgente = emailAgente,
                         DataOrdine = testata.DataOrdine,
                         RiferimentoOrdine = testata.RiferimentoOrdine,
                     };
 
-                    // Recupera le righe ordine dal DB
+                    // Verifica se l'operatore ha scelto CC agente per questo ordine
+                    var chiaveOrdine = $"{gruppoOrdine.Key.TipoOrdine}|{gruppoOrdine.Key.AnnoOrdine}|{gruppoOrdine.Key.SerieOrdine}|{gruppoOrdine.Key.NumeroOrdine}";
+                    var inviaAdAgente = ordiniConCcAgente.Contains(chiaveOrdine);
+
                     var righeEmail = new List<RigaEmailViewModel>();
                     foreach (var rigaParsata in gruppoOrdine)
                     {
-                        // Verifica se email già inviata
                         var giaInviata = await _emailService.EmailGiaInviataAsync(
                             rigaParsata.TipoOrdine, rigaParsata.AnnoOrdine, rigaParsata.SerieOrdine,
                             rigaParsata.NumeroOrdine, rigaParsata.RigaOrdine);
@@ -1904,15 +2041,14 @@ namespace AiDbMaster.Controllers
                     if (!righeEmail.Any())
                         continue;
 
-                    // Genera e invia email
                     var oggetto = "Avviso disponibilità merce pronta";
                     var corpo = _emailService.GeneraCorpoEmail(ordineVm, righeEmail, giorniScadenza);
-                    var esito = await _emailService.InviaEmailAsync(oggetto, corpo);
+                    var esito = await _emailService.InviaEmailAsync(oggetto, corpo,
+                        emailCliente, emailAgente, inviaAdAgente);
 
                     if (esito)
                     {
                         emailInviate++;
-                        // Registra l'invio per ogni riga
                         foreach (var riga in righeEmail)
                         {
                             await _emailService.RegistraInvioAsync(riga);
@@ -1924,7 +2060,6 @@ namespace AiDbMaster.Controllers
                     }
                 }
 
-                // Messaggio di riepilogo
                 var messaggi = new List<string>();
                 if (emailInviate > 0)
                     messaggi.Add($"{emailInviate} email inviate con successo");
@@ -1932,9 +2067,11 @@ namespace AiDbMaster.Controllers
                     messaggi.Add($"{emailFallite} email fallite");
                 if (righeGiàInviate > 0)
                     messaggi.Add($"{righeGiàInviate} righe già inviate in precedenza (saltate)");
+                if (ordiniSenzaEmailCliente > 0)
+                    messaggi.Add($"{ordiniSenzaEmailCliente} ordini saltati (cliente senza email)");
 
                 TempData["Messaggio"] = string.Join(". ", messaggi) + ".";
-                TempData["TipoMessaggio"] = emailFallite > 0 ? "warning" : "success";
+                TempData["TipoMessaggio"] = (emailFallite > 0 || ordiniSenzaEmailCliente > 0) ? "warning" : "success";
             }
             catch (Exception ex)
             {
@@ -2058,6 +2195,239 @@ namespace AiDbMaster.Controllers
             }
 
             return View(model);
+        }
+
+        // ===== ENDPOINT API: EMAIL DOMANI (popup manuale) =====
+
+        /// <summary>
+        /// GET API: Restituisce la lista ordini/righe con DataConsegna = prossimo giorno feriale
+        /// per il popup "Email Domani" nella pagina AvvisoMercePronta.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetEmailDomani()
+        {
+            try
+            {
+                var oggi = DateTime.Today;
+                var dataConsegnaDomani = Services.CalendarioFeriale.ProssimoGiornoFeriale(oggi);
+
+                var clienteEsclusoStr = await _emailService.GetOpzioneAsync("ClienteEscluso");
+                var clienteEscluso = int.TryParse(clienteEsclusoStr, out var ce) ? ce : 9060650;
+
+                var righeOrdine = await _context.OrdiniRighe
+                    .Where(r => r.TipoOrdine == "R"
+                             && r.DataConsegna.Date == dataConsegnaDomani.Date
+                             && (r.Quantita - r.QuantitaEvasa) > 0)
+                    .ToListAsync();
+
+                if (!righeOrdine.Any())
+                    return Json(new { success = true, ordini = new List<object>(), dataConsegna = dataConsegnaDomani.ToString("dd/MM/yyyy"), totaleOrdini = 0, totaleRighe = 0 });
+
+                var inviiEsistenti = await _context.InvioEmail
+                    .Where(e => e.TipoOrdine == "R")
+                    .Select(e => new { e.TipoOrdine, e.AnnoOrdine, e.SerieOrdine, e.NumeroOrdine, e.RigaOrdine })
+                    .ToListAsync();
+                var inviiSet = new HashSet<string>(
+                    inviiEsistenti.Select(e => $"{e.TipoOrdine}|{e.AnnoOrdine}|{e.SerieOrdine}|{e.NumeroOrdine}|{e.RigaOrdine}"));
+
+                var righePerOrdine = righeOrdine
+                    .GroupBy(r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine })
+                    .ToList();
+
+                var risultato = new List<object>();
+
+                foreach (var gruppo in righePerOrdine)
+                {
+                    var testata = await _context.OrdiniTestate
+                        .FirstOrDefaultAsync(t => t.TipoOrdine == gruppo.Key.TipoOrdine
+                            && t.AnnoOrdine == gruppo.Key.AnnoOrdine
+                            && t.SerieOrdine == gruppo.Key.SerieOrdine
+                            && t.NumeroOrdine == gruppo.Key.NumeroOrdine);
+
+                    if (testata == null) continue;
+                    if (testata.Prenotato == "S" || testata.CodiceCliente == clienteEscluso) continue;
+
+                    var cliente = await _context.AnagraficaClienti
+                        .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
+                    var agente = cliente != null
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
+                        : null;
+
+                    var emailCliente = cliente?.Email;
+                    var chiaveOrdine = $"{gruppo.Key.TipoOrdine}|{gruppo.Key.AnnoOrdine}|{gruppo.Key.SerieOrdine}|{gruppo.Key.NumeroOrdine}";
+
+                    var righe = gruppo.Select(r =>
+                    {
+                        var chiaveRiga = $"{r.TipoOrdine}|{r.AnnoOrdine}|{r.SerieOrdine}|{r.NumeroOrdine}|{r.RigaOrdine}";
+                        return new
+                        {
+                            chiaveRiga,
+                            codiceArticolo = r.CodiceArticolo,
+                            descrizioneArticolo = r.DescrizioneArticolo,
+                            unitaMisura = r.UnitaMisura,
+                            quantitaRimanente = r.Quantita - r.QuantitaEvasa,
+                            giaInviata = inviiSet.Contains(chiaveRiga)
+                        };
+                    }).ToList();
+
+                    risultato.Add(new
+                    {
+                        chiaveOrdine,
+                        annoOrdine = gruppo.Key.AnnoOrdine,
+                        numeroOrdine = gruppo.Key.NumeroOrdine,
+                        ragioneSociale = cliente?.RagioneSociale ?? "N/D",
+                        emailCliente,
+                        hasEmailCliente = !string.IsNullOrWhiteSpace(emailCliente),
+                        nomeAgente = agente?.DescrizioneAgente,
+                        emailAgente = agente?.Email,
+                        hasAgente = agente != null && !string.IsNullOrWhiteSpace(agente.Email),
+                        righe
+                    });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    ordini = risultato,
+                    dataConsegna = dataConsegnaDomani.ToString("dd/MM/yyyy"),
+                    totaleOrdini = risultato.Count,
+                    totaleRighe = risultato.Sum(o => ((dynamic)o).righe.Count)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore in GetEmailDomani");
+                return Json(new { success = false, errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// POST API: Invia le email selezionate dal popup "Email Domani".
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InviaEmailDomani([FromBody] InviaEmailDomaniRequest request)
+        {
+            try
+            {
+                if (request.righeSelezionate == null || !request.righeSelezionate.Any())
+                    return Json(new { success = false, errore = "Nessuna riga selezionata." });
+
+                var giorniScadenza = await _emailService.GetOpzioneIntAsync("GiorniScadenzaMerce", 21);
+                var ordiniConCcAgente = new HashSet<string>(request.ccAgente ?? new List<string>());
+
+                var righePerOrdine = request.righeSelezionate
+                    .Select(r => r.Split('|'))
+                    .Where(p => p.Length == 5)
+                    .Select(p => new { TipoOrdine = p[0], AnnoOrdine = short.Parse(p[1]), SerieOrdine = p[2], NumeroOrdine = int.Parse(p[3]), RigaOrdine = int.Parse(p[4]) })
+                    .GroupBy(r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine })
+                    .ToList();
+
+                int emailInviate = 0;
+                int emailFallite = 0;
+
+                foreach (var gruppoOrdine in righePerOrdine)
+                {
+                    var testata = await _context.OrdiniTestate
+                        .FirstOrDefaultAsync(t => t.TipoOrdine == gruppoOrdine.Key.TipoOrdine &&
+                                                  t.AnnoOrdine == gruppoOrdine.Key.AnnoOrdine &&
+                                                  t.SerieOrdine == gruppoOrdine.Key.SerieOrdine &&
+                                                  t.NumeroOrdine == gruppoOrdine.Key.NumeroOrdine);
+                    if (testata == null) continue;
+
+                    var cliente = await _context.AnagraficaClienti
+                        .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
+                    var agente = cliente != null
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
+                        : null;
+
+                    var emailCliente = cliente?.Email;
+                    var emailAgente = agente?.Email;
+                    var isTest = await _emailService.IsModalitaTestAsync();
+                    if (!isTest && string.IsNullOrWhiteSpace(emailCliente))
+                        continue;
+
+                    var chiaveOrdine = $"{gruppoOrdine.Key.TipoOrdine}|{gruppoOrdine.Key.AnnoOrdine}|{gruppoOrdine.Key.SerieOrdine}|{gruppoOrdine.Key.NumeroOrdine}";
+                    var inviaAdAgente = ordiniConCcAgente.Contains(chiaveOrdine);
+
+                    var ordineVm = new OrdineEmailViewModel
+                    {
+                        TipoOrdine = testata.TipoOrdine,
+                        AnnoOrdine = testata.AnnoOrdine,
+                        SerieOrdine = testata.SerieOrdine,
+                        NumeroOrdine = testata.NumeroOrdine,
+                        CodiceCliente = testata.CodiceCliente,
+                        RagioneSociale = cliente?.RagioneSociale ?? "N/D",
+                        EmailCliente = emailCliente,
+                    };
+
+                    var righeEmail = new List<RigaEmailViewModel>();
+                    foreach (var rigaParsata in gruppoOrdine)
+                    {
+                        var rigaDb = await _context.OrdiniRighe
+                            .FirstOrDefaultAsync(r => r.TipoOrdine == rigaParsata.TipoOrdine &&
+                                                      r.AnnoOrdine == rigaParsata.AnnoOrdine &&
+                                                      r.SerieOrdine == rigaParsata.SerieOrdine &&
+                                                      r.NumeroOrdine == rigaParsata.NumeroOrdine &&
+                                                      r.RigaOrdine == rigaParsata.RigaOrdine);
+                        if (rigaDb != null)
+                        {
+                            righeEmail.Add(new RigaEmailViewModel
+                            {
+                                TipoOrdine = rigaDb.TipoOrdine,
+                                AnnoOrdine = rigaDb.AnnoOrdine,
+                                SerieOrdine = rigaDb.SerieOrdine,
+                                NumeroOrdine = rigaDb.NumeroOrdine,
+                                RigaOrdine = rigaDb.RigaOrdine,
+                                CodiceArticolo = rigaDb.CodiceArticolo,
+                                DescrizioneArticolo = rigaDb.DescrizioneArticolo,
+                                UnitaMisura = rigaDb.UnitaMisura,
+                                Quantita = rigaDb.Quantita,
+                                QuantitaEvasa = rigaDb.QuantitaEvasa,
+                                DataConsegna = rigaDb.DataConsegna
+                            });
+                        }
+                    }
+
+                    if (!righeEmail.Any()) continue;
+
+                    var oggetto = "Avviso disponibilità merce pronta";
+                    var corpo = _emailService.GeneraCorpoEmail(ordineVm, righeEmail, giorniScadenza);
+                    var esito = await _emailService.InviaEmailAsync(oggetto, corpo, emailCliente, emailAgente, inviaAdAgente);
+
+                    if (esito)
+                    {
+                        emailInviate++;
+                        foreach (var riga in righeEmail)
+                        {
+                            await _emailService.RegistraInvioAsync(riga, "Manuale");
+                        }
+                    }
+                    else
+                    {
+                        emailFallite++;
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    inviate = emailInviate,
+                    fallite = emailFallite,
+                    messaggio = $"Inviate {emailInviate} email. {(emailFallite > 0 ? $"{emailFallite} invii falliti." : "")}"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore in InviaEmailDomani");
+                return Json(new { success = false, errore = ex.Message });
+            }
+        }
+
+        public class InviaEmailDomaniRequest
+        {
+            public List<string> righeSelezionate { get; set; } = new();
+            public List<string>? ccAgente { get; set; }
         }
     }
 }

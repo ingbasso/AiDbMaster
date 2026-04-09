@@ -1,95 +1,84 @@
-using System;
-using System.Collections.Generic;
-
 namespace AiDbMaster.ViewModels
 {
     public class DashboardConsegneViewModel
     {
-        // Filtri
-        public DateTime? DataDa { get; set; }
-        public DateTime? DataA { get; set; }
-        public short? CodiceAgente { get; set; }
-        public string? NomeAgente { get; set; }
+        public string PeriodoLabel { get; set; } = string.Empty;
+        public DateTime DataDa { get; set; }
+        public DateTime DataA { get; set; }
 
-        // KPI Cards
-        public int NumeroOrdiniTotali { get; set; }
-        public decimal FatturatoTotale { get; set; }
-        public decimal FatturatoConsegnato { get; set; }
-        public decimal FatturatoDaConsegnare { get; set; }
-        public int NumeroConsegneInRitardo { get; set; }
-        public decimal ValoreConsegneInRitardo { get; set; }
-        public decimal PercentualeEvasione { get; set; }
-        public decimal ValoreMedioConsegna { get; set; }
+        // KPI
+        public int TotaleViaggi { get; set; }
+        public int TotaleRighe { get; set; }
+        public decimal PesoTotaleKg { get; set; }
+        public decimal CostoTotale { get; set; }
+        public decimal RicavoTotale { get; set; }
+        public decimal MargineTotale => RicavoTotale - CostoTotale;
+        public decimal MarginePercentuale => RicavoTotale > 0 ? Math.Round((MargineTotale / RicavoTotale) * 100, 1) : 0;
+        public decimal UtilizzoMedioPercentuale { get; set; }
+        public decimal CostoMedioPerKg => PesoTotaleKg > 0 ? Math.Round(CostoTotale / (PesoTotaleKg / 1000), 2) : 0;
+        public decimal PesoMedioPerViaggio => TotaleViaggi > 0 ? Math.Round(PesoTotaleKg / TotaleViaggi, 0) : 0;
 
-        // Grafici
-        public List<ConsegnePerMeseDto> ConsegnePerMese { get; set; } = new();
+        // Confronto periodo precedente
+        public int ViaggiPeriodoPrecedente { get; set; }
+        public decimal CostoPeriodoPrecedente { get; set; }
+        public decimal MarginePeriodoPrecedente { get; set; }
+        public decimal VariazioneViaggiPerc => ViaggiPeriodoPrecedente > 0 ? Math.Round(((decimal)(TotaleViaggi - ViaggiPeriodoPrecedente) / ViaggiPeriodoPrecedente) * 100, 1) : 0;
+        public decimal VariazioneCostoPerc => CostoPeriodoPrecedente > 0 ? Math.Round(((CostoTotale - CostoPeriodoPrecedente) / CostoPeriodoPrecedente) * 100, 1) : 0;
+        public decimal VariazioneMarginePrecedentePerc => MarginePeriodoPrecedente != 0 ? Math.Round(((MargineTotale - MarginePeriodoPrecedente) / Math.Abs(MarginePeriodoPrecedente)) * 100, 1) : 0;
 
-        // Classifiche
-        public List<ClassificaAgenteDto> TopAgenti { get; set; } = new();
-        public List<ClassificaProvinciaDto> TopProvince { get; set; } = new();
-        public List<TopClienteDto> TopClienti { get; set; } = new();
+        // Allerte
+        public int RigheDaPianificare { get; set; }
+        public int ViaggiSenzaAutista { get; set; }
+        public int ViaggiSottoutilizzati { get; set; }
+        public int ViaggiSenzaPrezzo { get; set; }
 
-        // Consegne in Ritardo
-        public List<ConsegnaInRitardoDto> ConsegneInRitardo { get; set; } = new();
+        // Grafici (dati serializzati per Chart.js)
+        public List<string> GraficoGiorniLabels { get; set; } = new();
+        public List<int> GraficoViaggiInterni { get; set; } = new();
+        public List<int> GraficoViaggiEsterni { get; set; } = new();
+        public List<decimal> GraficoPesoPerGiorno { get; set; } = new();
+        public List<decimal> GraficoMarginePerGiorno { get; set; } = new();
+        public List<decimal> GraficoMargineCumulato { get; set; } = new();
+
+        // Torta mezzi
+        public List<string> TortaMezziLabels { get; set; } = new();
+        public List<int> TortaMezziValori { get; set; } = new();
+
+        // Tabelle dettaglio
+        public List<DashboardMezzoDto> TopMezzi { get; set; } = new();
+        public List<DashboardAutistaDto> TopAutisti { get; set; } = new();
+        public List<DashboardClienteDto> TopClienti { get; set; } = new();
     }
 
-    public class ConsegnePerMeseDto
+    public class DashboardMezzoDto
     {
-        public int Anno { get; set; }
-        public int Mese { get; set; }
-        public string MeseNome { get; set; } = "";
-        public decimal Consegnato { get; set; }
-        public decimal DaConsegnare { get; set; }
+        public string Mezzo { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public int Viaggi { get; set; }
+        public decimal PesoTotaleKg { get; set; }
+        public decimal CostoTotale { get; set; }
+        public decimal RicavoTotale { get; set; }
+        public decimal Margine => RicavoTotale - CostoTotale;
+        public decimal UtilizzoMedioPerc { get; set; }
     }
 
-    public class ClassificaAgenteDto
+    public class DashboardAutistaDto
     {
-        public short CodiceAgente { get; set; }
-        public string NomeAgente { get; set; } = "";
-        public int NumeroOrdini { get; set; }
-        public decimal Fatturato { get; set; }
-        public decimal PercentualeEvasione { get; set; }
+        public string Autista { get; set; } = string.Empty;
+        public int Viaggi { get; set; }
+        public decimal OreTotali { get; set; }
+        public decimal PesoTotaleKg { get; set; }
+        public int ViaggiConGru { get; set; }
+        public int ViaggiConTrasbordo { get; set; }
     }
 
-    public class ClassificaProvinciaDto
+    public class DashboardClienteDto
     {
-        public string Provincia { get; set; } = "";
-        public string? Regione { get; set; }
-        public int NumeroOrdini { get; set; }
-        public decimal Fatturato { get; set; }
-    }
-
-    public class TopClienteDto
-    {
-        public int CodiceCliente { get; set; }
-        public string RagioneSociale { get; set; } = "";
-        public string? Provincia { get; set; }
-        public int NumeroOrdini { get; set; }
-        public decimal Fatturato { get; set; }
-    }
-
-    public class ConsegnaInRitardoDto
-    {
-        public int AnnoOrdine { get; set; }
-        public string SerieOrdine { get; set; } = "";
-        public int NumeroOrdine { get; set; }
-        public string NumeroOrdineCompleto => $"{AnnoOrdine}/{NumeroOrdine:D4}";
-        public DateTime DataConsegna { get; set; }
-        public int GiorniRitardo => (DateTime.Today - DataConsegna).Days;
-        public string CodiceCliente { get; set; } = "";
-        public string RagioneSociale { get; set; } = "";
-        public string? NomeAgente { get; set; }
-        public decimal ValoreRimanente { get; set; }
-
-        /// <summary>
-        /// Indica se almeno una riga di questo ordine ha già ricevuto una notifica email.
-        /// </summary>
-        public bool HasEmailInviata { get; set; }
-
-        /// <summary>
-        /// Data dell'ultimo invio email per questo ordine (se presente).
-        /// </summary>
-        public DateTime? DataEmailInviata { get; set; }
+        public string Cliente { get; set; } = string.Empty;
+        public int RigheConsegnate { get; set; }
+        public decimal PesoTotaleKg { get; set; }
+        public int Viaggi { get; set; }
+        public decimal CostoTrasporto { get; set; }
+        public decimal RicavoTrasporto { get; set; }
     }
 }
-

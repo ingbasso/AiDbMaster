@@ -95,10 +95,42 @@ namespace AiDbMaster.Migrations
                         .HasDefaultValue("N")
                         .HasColumnName("Outlet");
 
+                    b.Property<decimal?>("PercScontoOutlet")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Perc_Sconto_Outlet");
+
+                    b.Property<decimal?>("PesoUnitarioKg")
+                        .HasColumnType("decimal(18,3)")
+                        .HasColumnName("PesoUnitarioKg");
+
+                    b.Property<decimal>("QtaUMPPerPallet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("QtàUMPPerPallet");
+
+                    b.Property<decimal>("QtaUMPPerTavola")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("QtàUMPPerTavola");
+
                     b.Property<string>("SecondaUnitaMisura")
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)")
                         .HasColumnName("SecondaUnitàMisura");
+
+                    b.Property<string>("Supermarket")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("Supermarket");
+
+                    b.Property<decimal>("TavolePerPallet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("TavolePerPallet");
 
                     b.Property<string>("TipoArticolo")
                         .HasMaxLength(1)
@@ -383,6 +415,47 @@ namespace AiDbMaster.Migrations
                     b.ToTable("ArticoliSostitutivi");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.Autista", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Attivo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Attivo");
+
+                    b.Property<string>("Cognome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Cognome");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Nome");
+
+                    b.Property<string>("Telefono")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Telefono");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Attivo")
+                        .HasDatabaseName("IX_Autisti_Attivo");
+
+                    b.HasIndex("Cognome", "Nome")
+                        .HasDatabaseName("IX_Autisti_CognomeNome");
+
+                    b.ToTable("Autisti");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.CalendarioFermiCentriLavoro", b =>
                 {
                     b.Property<int>("Id")
@@ -518,6 +591,273 @@ namespace AiDbMaster.Migrations
                         .HasDatabaseName("IX_TabellaClassiProvvigioni_CodiceClasse");
 
                     b.ToTable("TabellaClassiProvvigioni");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.DbLavorazione", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("CodiceCentro")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("CodiceDistinta")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue(" ");
+
+                    b.Property<short>("CodiceLavorazione")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("CodiceReparto")
+                        .HasColumnType("smallint");
+
+                    b.Property<DateTime>("DataFineValidita")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataFineValidità");
+
+                    b.Property<DateTime>("DataInizioValidita")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataInizioValidità");
+
+                    b.Property<decimal>("Efficienza")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(100m);
+
+                    b.Property<short>("Fase")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<decimal>("PerPezzi")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<decimal>("RigaCiclo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TavoleOraReali")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TavoleOraTeoriche")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("TavolePerStack")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TempoAttrezzaggioCentro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TempoAttrezzaggioManodopera")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TempoEsecuzioneCentro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TempoEsecuzioneManodopera")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceCentro")
+                        .HasDatabaseName("IX_DB_Lavorazioni_CodiceCentro");
+
+                    b.HasIndex("CodiceDistinta")
+                        .HasDatabaseName("IX_DB_Lavorazioni_CodiceDistinta");
+
+                    b.HasIndex("CodiceLavorazione")
+                        .HasDatabaseName("IX_DB_Lavorazioni_CodiceLavorazione");
+
+                    b.HasIndex("CodiceDistinta", "RigaCiclo")
+                        .HasDatabaseName("IX_DB_Lavorazioni_Distinta_RigaCiclo");
+
+                    b.ToTable("DB_Lavorazioni");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.DbMateriale", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("CodMagazzino")
+                        .HasColumnType("smallint")
+                        .HasColumnName("Codmagazzino");
+
+                    b.Property<short>("CodUlterioreMagazzino")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("CodiceDistinta")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue(" ");
+
+                    b.Property<string>("CodiceFiglio")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue(" ");
+
+                    b.Property<DateTime>("DataFineValidita")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataFineValidità");
+
+                    b.Property<DateTime>("DataInizioValidita")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataInizioValidità");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<decimal>("PerPezzi")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<decimal>("Quantita")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("Quantità");
+
+                    b.Property<decimal>("QuantitaUMP")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("QuantitàUMP");
+
+                    b.Property<decimal>("RigaDistinta")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Sfrido")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("UnitaMisura")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasDefaultValue(" ")
+                        .HasColumnName("Unitàmisura");
+
+                    b.Property<string>("UnitaMisuraPrincipale")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasDefaultValue(" ")
+                        .HasColumnName("UnitàMisuraPrincipale");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceDistinta")
+                        .HasDatabaseName("IX_DB_Materiali_CodiceDistinta");
+
+                    b.HasIndex("CodiceFiglio")
+                        .HasDatabaseName("IX_DB_Materiali_CodiceFiglio");
+
+                    b.HasIndex("CodiceDistinta", "RigaDistinta")
+                        .HasDatabaseName("IX_DB_Materiali_Distinta_RigaDistinta");
+
+                    b.ToTable("DB_Materiali");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.DbTestata", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("CodiceDistinta")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue(" ");
+
+                    b.Property<string>("DbFantasma")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasDefaultValue("N")
+                        .HasColumnName("db_fantasma");
+
+                    b.Property<short>("DbFasciaLivello")
+                        .HasColumnType("smallint")
+                        .HasColumnName("db_fascialivello");
+
+                    b.Property<string>("DbGruppo")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasDefaultValue("N")
+                        .HasColumnName("db_gruppo");
+
+                    b.Property<string>("DbVersione")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("000")
+                        .HasColumnName("db_versione");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceDistinta")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DB_Testata_CodiceDistinta");
+
+                    b.ToTable("DB_Testata");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DestinazioniDiverse", b =>
@@ -752,6 +1092,12 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("NumeroOrdine");
 
+                    b.Property<string>("Origine")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("Origine");
+
                     b.Property<int>("RigaOrdine")
                         .HasColumnType("int")
                         .HasColumnName("RigaOrdine");
@@ -808,6 +1154,109 @@ namespace AiDbMaster.Migrations
                         .HasDatabaseName("IX_Lavorazioni_DescrizioneLavorazione");
 
                     b.ToTable("Lavorazioni");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.ListaIP", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<short>("AnnoOrdine")
+                        .HasColumnType("smallint")
+                        .HasColumnName("AnnoOrdine");
+
+                    b.Property<string>("CodiceArticolo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("CodiceArticolo");
+
+                    b.Property<short>("CodiceMagazzino")
+                        .HasColumnType("smallint")
+                        .HasColumnName("CodiceMagazzino");
+
+                    b.Property<decimal>("ColliEvasi")
+                        .HasColumnType("decimal(27,9)")
+                        .HasColumnName("ColliEvasi");
+
+                    b.Property<DateTime>("DataConsegna")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataConsegna");
+
+                    b.Property<string>("DescrizioneArticolo")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("DescrizioneArticolo");
+
+                    b.Property<string>("NoteRiga")
+                        .HasColumnType("varchar(max)")
+                        .HasColumnName("NoteRiga");
+
+                    b.Property<decimal>("NumeroColli")
+                        .HasColumnType("decimal(27,9)")
+                        .HasColumnName("NumeroColli");
+
+                    b.Property<int>("NumeroOrdine")
+                        .HasColumnType("int")
+                        .HasColumnName("NumeroOrdine");
+
+                    b.Property<decimal>("Prezzo")
+                        .HasColumnType("decimal(24,6)")
+                        .HasColumnName("Prezzo");
+
+                    b.Property<decimal>("Quantita")
+                        .HasColumnType("decimal(27,9)")
+                        .HasColumnName("Quantita");
+
+                    b.Property<decimal>("QuantitaEvasa")
+                        .HasColumnType("decimal(27,9)")
+                        .HasColumnName("QuantitaEvasa");
+
+                    b.Property<int>("RigaImpegno")
+                        .HasColumnType("int")
+                        .HasColumnName("RigaImpegno");
+
+                    b.Property<int>("RigaOrdine")
+                        .HasColumnType("int")
+                        .HasColumnName("RigaOrdine");
+
+                    b.Property<string>("SerieOrdine")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("SerieOrdine");
+
+                    b.Property<string>("TipoOrdine")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("TipoOrdine");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UltimoAggiornamento");
+
+                    b.Property<string>("UnitaMisura")
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("UnitaMisura");
+
+                    b.Property<string>("UnitaMisuraColli")
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("UnitaMisuraColli");
+
+                    b.Property<decimal>("ValoreRiga")
+                        .HasColumnType("money")
+                        .HasColumnName("ValoreRiga");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("ListaIP");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ListaOP", b =>
@@ -971,6 +1420,135 @@ namespace AiDbMaster.Migrations
                     b.ToTable("TabellaMarche");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.MezzoTrasporto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Attivo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Attivo");
+
+                    b.Property<int?>("AutistaDefaultId")
+                        .HasColumnType("int")
+                        .HasColumnName("AutistaDefaultId");
+
+                    b.Property<string>("CodiceMezzo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("CodiceMezzo");
+
+                    b.Property<string>("Descrizione")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Descrizione");
+
+                    b.Property<bool>("Gru")
+                        .HasColumnType("bit")
+                        .HasColumnName("Gru");
+
+                    b.Property<decimal>("PortataMaxKg")
+                        .HasColumnType("decimal(18,3)")
+                        .HasColumnName("PortataMaxKg");
+
+                    b.Property<string>("Targa")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)")
+                        .HasColumnName("Targa");
+
+                    b.Property<bool>("Trasbordo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Trasbordo");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Attivo")
+                        .HasDatabaseName("IX_MezziTrasporto_Attivo");
+
+                    b.HasIndex("AutistaDefaultId");
+
+                    b.HasIndex("CodiceMezzo")
+                        .IsUnique()
+                        .HasDatabaseName("IX_MezziTrasporto_CodiceMezzo");
+
+                    b.HasIndex("Targa")
+                        .HasDatabaseName("IX_MezziTrasporto_Targa");
+
+                    b.ToTable("MezziTrasportoInterni");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.MezzoTrasportoEsterno", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comune")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("Comune");
+
+                    b.Property<double>("Costo")
+                        .HasColumnType("float")
+                        .HasColumnName("Costo");
+
+                    b.Property<bool>("Gru")
+                        .HasColumnType("bit")
+                        .HasColumnName("Gru");
+
+                    b.Property<string>("NomeVettore")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("NomeVettore");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("varchar(max)")
+                        .HasColumnName("Note");
+
+                    b.Property<int>("PortataMax")
+                        .HasColumnType("int")
+                        .HasColumnName("PortataMax");
+
+                    b.Property<string>("Provincia")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("Provincia");
+
+                    b.Property<string>("Regione")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("Regione");
+
+                    b.Property<string>("TipoMezzo")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("TipoMezzo");
+
+                    b.Property<bool>("Trasbordo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Trasbordo");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Comune")
+                        .HasDatabaseName("IX_MezziTrasportoEsterni_Comune");
+
+                    b.HasIndex("NomeVettore")
+                        .HasDatabaseName("IX_MezziTrasportoEsterni_NomeVettore");
+
+                    b.ToTable("MezziTrasportoEsterni");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Operatore", b =>
                 {
                     b.Property<int>("IdOperatore")
@@ -1046,7 +1624,6 @@ namespace AiDbMaster.Migrations
                         .HasColumnName("NomeOpzione");
 
                     b.Property<string>("ValoreOpzione")
-                        .IsRequired()
                         .HasColumnType("varchar(max)")
                         .HasColumnName("ValoreOpzione");
 
@@ -1182,6 +1759,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("AnnoOrdine");
 
+                    b.Property<string>("AutotrenoGru")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasColumnName("AutotrenoGru");
+
                     b.Property<short>("CodiceAgente")
                         .HasColumnType("smallint")
                         .HasColumnName("CodiceAgente");
@@ -1202,6 +1784,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DataOrdine");
 
+                    b.Property<string>("MotriceGru")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasColumnName("MotriceGru");
+
                     b.Property<string>("NoteTestata")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NoteTestata");
@@ -1213,6 +1800,11 @@ namespace AiDbMaster.Migrations
                     b.Property<string>("Porto")
                         .HasColumnType("varchar(10)")
                         .HasColumnName("Porto");
+
+                    b.Property<string>("Prenotato")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasColumnName("Prenotato");
 
                     b.Property<string>("RiferimentoOrdine")
                         .HasMaxLength(50)
@@ -1230,6 +1822,11 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("nvarchar(1)")
                         .HasColumnName("TipoOrdine");
+
+                    b.Property<string>("Trasbordo")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasColumnName("Trasbordo");
 
                     b.HasKey("Id");
 
@@ -1315,6 +1912,88 @@ namespace AiDbMaster.Migrations
                     b.ToTable("Permissions");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.PoliticaRiordinoMagazzino", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("CodiceArticolo")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue(" ");
+
+                    b.Property<short>("CodiceMagazzino")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("GiorniRaggruppamento")
+                        .HasColumnType("smallint");
+
+                    b.Property<decimal>("LottoMassimo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("LottoStandardProduzione")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("PeriodoRagruppamento")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("G");
+
+                    b.Property<string>("PoliticaDiRiordino")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("G");
+
+                    b.Property<decimal>("ScortaDiSicurezza")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("ScortaMassima")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("ScortaMinima")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Sottolotto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CodiceArticolo")
+                        .HasDatabaseName("IX_PoliticheRiordino_CodiceArticolo");
+
+                    b.HasIndex("CodiceArticolo", "CodiceMagazzino")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PoliticheRiordino_Articolo_Magazzino");
+
+                    b.ToTable("PoliticheRiordinoMagazzino");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.ProgressiviArticoli", b =>
                 {
                     b.Property<int>("Id")
@@ -1334,6 +2013,22 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("CodiceMagazzino");
 
+                    b.Property<DateTime>("DataUltimoCarico")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime>("DataUltimoScarico")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal>("DurataDelleScorte")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("DurataDelleScorte");
+
                     b.Property<decimal>("Esistenza")
                         .HasColumnType("decimal(27,9)")
                         .HasColumnName("Esistenza");
@@ -1346,9 +2041,20 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("decimal(27,9)")
                         .HasColumnName("OrdinatoFornitoriDataOdierna");
 
+                    b.Property<decimal>("Prenotato")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(27,9)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("Prenotato");
+
                     b.Property<decimal>("Pronto")
                         .HasColumnType("decimal(27,9)")
                         .HasColumnName("Pronto");
+
+                    b.Property<DateTime>("UltimoAggiornamento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.HasKey("Id");
 
@@ -1579,6 +2285,43 @@ namespace AiDbMaster.Migrations
                     b.ToTable("TempiAsciugatura");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.TipoTrasporto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Attivo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Attivo");
+
+                    b.Property<string>("Codice")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Codice");
+
+                    b.Property<string>("Descrizione")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Descrizione");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Attivo")
+                        .HasDatabaseName("IX_TipiTrasporto_Attivo");
+
+                    b.HasIndex("Codice")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TipiTrasporto_Codice");
+
+                    b.ToTable("TipiTrasporto");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.UserDataFilter", b =>
                 {
                     b.Property<int>("Id")
@@ -1617,6 +2360,160 @@ namespace AiDbMaster.Migrations
                         .HasDatabaseName("IX_UserDataFilters_UserId_ResourceName");
 
                     b.ToTable("UserDataFilters");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegna", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AutistaId")
+                        .HasColumnType("int")
+                        .HasColumnName("AutistaId");
+
+                    b.Property<decimal?>("CostoTrasporto")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("CostoTrasporto");
+
+                    b.Property<string>("CreatoDa")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("CreatoDa");
+
+                    b.Property<DateTime>("DataConsegna")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataConsegna");
+
+                    b.Property<DateTime>("DataCreazione")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataCreazione");
+
+                    b.Property<int>("DurataStimataMinuti")
+                        .HasColumnType("int")
+                        .HasColumnName("DurataStimataMinuti");
+
+                    b.Property<bool?>("Gru")
+                        .HasColumnType("bit")
+                        .HasColumnName("Gru");
+
+                    b.Property<int?>("MezzoTrasportoEsternoId")
+                        .HasColumnType("int")
+                        .HasColumnName("MezzoTrasportoEsternoId");
+
+                    b.Property<int?>("MezzoTrasportoId")
+                        .HasColumnType("int")
+                        .HasColumnName("MezzoTrasportoId");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Note");
+
+                    b.Property<TimeSpan?>("OraArrivo")
+                        .HasColumnType("time")
+                        .HasColumnName("OraArrivo");
+
+                    b.Property<TimeSpan>("OraPartenza")
+                        .HasColumnType("time")
+                        .HasColumnName("OraPartenza");
+
+                    b.Property<decimal?>("PrezzoVendita")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("PrezzoVendita");
+
+                    b.Property<string>("Stato")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Stato");
+
+                    b.Property<int?>("TempoPausa")
+                        .HasColumnType("int")
+                        .HasColumnName("TempoPausa");
+
+                    b.Property<int?>("TempoScarico")
+                        .HasColumnType("int")
+                        .HasColumnName("TempoScarico");
+
+                    b.Property<int>("TipoTrasportoId")
+                        .HasColumnType("int")
+                        .HasColumnName("TipoTrasportoId");
+
+                    b.Property<bool?>("Trasbordo")
+                        .HasColumnType("bit")
+                        .HasColumnName("Trasbordo");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutistaId");
+
+                    b.HasIndex("DataConsegna")
+                        .HasDatabaseName("IX_ViaggiConsegna_DataConsegna");
+
+                    b.HasIndex("MezzoTrasportoEsternoId");
+
+                    b.HasIndex("MezzoTrasportoId");
+
+                    b.HasIndex("Stato")
+                        .HasDatabaseName("IX_ViaggiConsegna_Stato");
+
+                    b.HasIndex("TipoTrasportoId");
+
+                    b.HasIndex("DataConsegna", "MezzoTrasportoId")
+                        .HasDatabaseName("IX_ViaggiConsegna_DataConsegna_Mezzo");
+
+                    b.ToTable("ViaggiConsegna");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegnaRiga", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DataCreazione")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DataCreazione");
+
+                    b.Property<string>("NoteRiga")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("NoteRiga");
+
+                    b.Property<int>("OrdineRigaId")
+                        .HasColumnType("int")
+                        .HasColumnName("OrdineRigaId");
+
+                    b.Property<decimal>("PesoTotaleKgSnapshot")
+                        .HasColumnType("decimal(18,3)")
+                        .HasColumnName("PesoTotaleKgSnapshot");
+
+                    b.Property<decimal>("PesoUnitarioKgSnapshot")
+                        .HasColumnType("decimal(18,3)")
+                        .HasColumnName("PesoUnitarioKgSnapshot");
+
+                    b.Property<decimal>("QuantitaAssegnata")
+                        .HasColumnType("decimal(18,4)")
+                        .HasColumnName("QuantitaAssegnata");
+
+                    b.Property<int>("ViaggioConsegnaId")
+                        .HasColumnType("int")
+                        .HasColumnName("ViaggioConsegnaId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdineRigaId");
+
+                    b.HasIndex("ViaggioConsegnaId", "OrdineRigaId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ViaggioConsegnaRighe_Viaggio_OrdineRiga");
+
+                    b.ToTable("ViaggioConsegnaRighe");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1801,6 +2698,17 @@ namespace AiDbMaster.Migrations
                     b.Navigation("CentroLavoro");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.DbLavorazione", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.Lavorazioni", "Lavorazione")
+                        .WithMany()
+                        .HasForeignKey("CodiceLavorazione")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lavorazione");
+                });
+
             modelBuilder.Entity("AiDbMaster.Models.Document", b =>
                 {
                     b.HasOne("AiDbMaster.Models.DocumentCategory", "Category")
@@ -1881,6 +2789,16 @@ namespace AiDbMaster.Migrations
                     b.Navigation("Operatore");
 
                     b.Navigation("Stato");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.MezzoTrasporto", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.Autista", "AutistaDefault")
+                        .WithMany()
+                        .HasForeignKey("AutistaDefaultId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AutistaDefault");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.OrdiniRighe", b =>
@@ -1973,6 +2891,57 @@ namespace AiDbMaster.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegna", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.Autista", "Autista")
+                        .WithMany()
+                        .HasForeignKey("AutistaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AiDbMaster.Models.MezzoTrasportoEsterno", "MezzoTrasportoEsterno")
+                        .WithMany()
+                        .HasForeignKey("MezzoTrasportoEsternoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AiDbMaster.Models.MezzoTrasporto", "MezzoTrasporto")
+                        .WithMany()
+                        .HasForeignKey("MezzoTrasportoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AiDbMaster.Models.TipoTrasporto", "TipoTrasporto")
+                        .WithMany()
+                        .HasForeignKey("TipoTrasportoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Autista");
+
+                    b.Navigation("MezzoTrasporto");
+
+                    b.Navigation("MezzoTrasportoEsterno");
+
+                    b.Navigation("TipoTrasporto");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegnaRiga", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.OrdiniRighe", "OrdineRiga")
+                        .WithMany()
+                        .HasForeignKey("OrdineRigaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AiDbMaster.Models.ViaggioConsegna", "ViaggioConsegna")
+                        .WithMany("Righe")
+                        .HasForeignKey("ViaggioConsegnaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OrdineRiga");
+
+                    b.Navigation("ViaggioConsegna");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -2059,6 +3028,11 @@ namespace AiDbMaster.Migrations
             modelBuilder.Entity("AiDbMaster.Models.StatoOP", b =>
                 {
                     b.Navigation("OrdiniProduzione");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegna", b =>
+                {
+                    b.Navigation("Righe");
                 });
 #pragma warning restore 612, 618
         }

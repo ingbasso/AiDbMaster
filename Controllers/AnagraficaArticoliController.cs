@@ -181,7 +181,8 @@ namespace AiDbMaster.Controllers
                         a.ClasseProvvigione,
                         DescrizioneClasseProvvigione = a.ClasseProvvigioneNavigation != null ? a.ClasseProvvigioneNavigation.DescrizioneClasse : null,
                         a.Outlet,
-                        a.FuoriProduzione
+                        a.FuoriProduzione,
+                        a.PesoUnitarioKg
                     })
                     .ToListAsync();
 

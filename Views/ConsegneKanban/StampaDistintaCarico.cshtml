@@ -1,0 +1,110 @@
+@model AiDbMaster.ViewModels.DistintaCaricoGiornalieraViewModel
+@{
+    Layout = "~/Views/Shared/_PrintLayout.cshtml";
+    ViewData["Title"] = $"Distinta Carico - {Model.DataConsegna:dd/MM/yyyy}";
+}
+
+@section Styles {
+    <style>
+        .viaggio-section { page-break-inside: avoid; margin-bottom: 20px; }
+        .viaggio-header { background: #0d6efd; color: #fff; padding: 6px 12px; border-radius: 6px 6px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .viaggio-header h2 { color: #fff; margin: 0; font-size: 12pt; }
+        .viaggio-meta { display: flex; gap: 20px; font-size: 10pt; padding: 5px 12px; background: #e8f0fe; border-bottom: 1px solid #bcd4f0; }
+        .viaggio-meta .label { font-weight: 600; color: #555; }
+        .check-item { padding: 2px 0; }
+        .check-item::before { content: "☐ "; }
+        .riepilogo-giornata { background: #0d6efd; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 12pt; font-weight: 700; display: flex; justify-content: space-between; }
+    </style>
+}
+
+<div class="print-page">
+    <div class="header-info">
+        <div class="left">
+            <h1>Distinta di Carico Giornaliera</h1>
+            <h2>@Model.DataConsegna.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))</h2>
+        </div>
+        <div class="right">
+            <div>Viaggi: <strong>@Model.Viaggi.Count</strong></div>
+            <div>Articoli: <strong>@Model.TotaleArticoli</strong></div>
+            <div>Peso totale: <strong>@Model.PesoTotaleGiornata.ToString("N0") Kg</strong></div>
+            <div style="margin-top:4px;">Stampato il @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    </div>
+
+    @foreach (var viaggio in Model.Viaggi)
+    {
+        <div class="viaggio-section">
+            <div class="viaggio-header">
+                <h2><i class="bi bi-truck"></i> Viaggio #@viaggio.ViaggioId — @viaggio.Mezzo</h2>
+                <span>@viaggio.OraPartenza.ToString(@"hh\:mm") — @viaggio.PesoTotaleKg.ToString("N0") / @viaggio.PortataMaxKg.ToString("N0") Kg</span>
+            </div>
+            <div class="viaggio-meta">
+                <div><span class="label">Targa:</span> @(viaggio.Targa ?? "—")</div>
+                <div><span class="label">Autista:</span> @(viaggio.Autista ?? "Non assegnato")</div>
+                <div><span class="label">Articoli:</span> @viaggio.Righe.Count</div>
+            </div>
+
+            @{
+                var gruppiCliente = viaggio.Righe.GroupBy(r => r.Cliente).OrderBy(g => g.Key);
+            }
+
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width:30px">#</th>
+                        <th style="width:110px">Codice Art.</th>
+                        <th>Descrizione</th>
+                        <th>Cliente</th>
+                        <th class="text-right" style="width:75px">Qtà</th>
+                        <th class="text-right" style="width:70px">P.U. Kg</th>
+                        <th class="text-right" style="width:85px">Peso Tot. Kg</th>
+                        <th style="width:120px">Rif. Ordine</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in viaggio.Righe.OrderBy(x => x.Cliente).ThenBy(x => x.CodiceArticolo))
+                    {
+                        <tr>
+                            <td class="text-center">@r.Progressivo</td>
+                            <td><strong>@r.CodiceArticolo</strong></td>
+                            <td>@r.DescrizioneArticolo</td>
+                            <td><small>@r.Cliente</small></td>
+                            <td class="text-right">@r.QuantitaAssegnata.ToString("N2") @(r.UnitaMisura ?? "")</td>
+                            <td class="text-right">@r.PesoUnitarioKg.ToString("N3")</td>
+                            <td class="text-right">@r.PesoTotaleKg.ToString("N3")</td>
+                            <td><small>@r.OrdineCompleto R@r.RigaOrdine</small></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight:600; background:#f0f0f0;">
+                        <td colspan="4" class="text-right">Totale viaggio</td>
+                        <td class="text-right">@viaggio.Righe.Count art.</td>
+                        <td></td>
+                        <td class="text-right">@viaggio.PesoTotaleKg.ToString("N3")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="margin-top:4px; font-size:9pt; color:#666;">
+                <strong>Checklist carico viaggio #@viaggio.ViaggioId:</strong>
+                @foreach (var r in viaggio.Righe.OrderBy(x => x.CodiceArticolo))
+                {
+                    <span class="check-item">@r.CodiceArticolo @r.QuantitaAssegnata.ToString("N2") @(r.UnitaMisura ?? "") (@r.Cliente)</span>
+                    if (r != viaggio.Righe.OrderBy(x => x.CodiceArticolo).Last()) { <span> | </span> }
+                }
+            </div>
+        </div>
+    }
+
+    <div class="riepilogo-giornata">
+        <span>RIEPILOGO GIORNATA: @Model.Viaggi.Count viaggi — @Model.TotaleArticoli articoli</span>
+        <span>PESO TOTALE: @Model.PesoTotaleGiornata.ToString("N0") Kg</span>
+    </div>
+
+    <div class="firma-box">
+        <div>Firma Responsabile Magazzino</div>
+        <div>Data e Ora Completamento</div>
+    </div>
+</div>
