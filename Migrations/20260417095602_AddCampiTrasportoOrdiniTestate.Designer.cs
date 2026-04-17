@@ -4,6 +4,7 @@ using AiDbMaster.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AiDbMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260417095602_AddCampiTrasportoOrdiniTestate")]
+    partial class AddCampiTrasportoOrdiniTestate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1693,12 +1696,6 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("PercentualeInclusione");
 
-                    b.Property<decimal>("PesoKg")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(27,9)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("PesoKg");
-
                     b.Property<decimal>("Prezzo")
                         .HasColumnType("decimal(18,4)")
                         .HasColumnName("Prezzo");
@@ -1720,14 +1717,6 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)")
                         .HasColumnName("SerieOrdine");
-
-                    b.Property<string>("StatoEvasione")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("varchar(1)")
-                        .HasDefaultValue("A")
-                        .HasColumnName("StatoEvasione");
 
                     b.Property<string>("TipoOrdine")
                         .IsRequired()
@@ -1856,12 +1845,6 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("NumeroOrdine");
 
-                    b.Property<decimal>("PesoKg")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(27,9)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("PesoKg");
-
                     b.Property<string>("Porto")
                         .HasColumnType("varchar(10)")
                         .HasColumnName("Porto");
@@ -1881,14 +1864,6 @@ namespace AiDbMaster.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)")
                         .HasColumnName("SerieOrdine");
-
-                    b.Property<string>("StatoEvasione")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("varchar(1)")
-                        .HasDefaultValue("A")
-                        .HasColumnName("StatoEvasione");
 
                     b.Property<string>("TipoOrdine")
                         .IsRequired()

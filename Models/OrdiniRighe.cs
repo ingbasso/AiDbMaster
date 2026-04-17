@@ -177,6 +177,23 @@ namespace AiDbMaster.Models
         [Column("ValoreRiga")]
         public decimal ValoreRiga { get; set; }
 
+        /// <summary>
+        /// Peso in Kg della riga
+        /// </summary>
+        [Required]
+        [Display(Name = "Peso Kg")]
+        [Column("PesoKg", TypeName = "decimal(27,9)")]
+        public decimal PesoKg { get; set; } = 0;
+
+        /// <summary>
+        /// Stato evasione riga: "A" = Aperto, "P" = Parzialmente Evaso, "E" = Evaso
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Stato Evasione")]
+        [Column("StatoEvasione")]
+        public string StatoEvasione { get; set; } = "A";
+
         // Proprietà di navigazione per le relazioni
         /// <summary>
         /// Testata dell'ordine associata
@@ -247,39 +264,28 @@ namespace AiDbMaster.Models
 
 
         /// <summary>
-        /// Stato di evasione della riga
+        /// Descrizione dello stato evasione (A/P/E)
         /// </summary>
         [NotMapped]
-        public string StatoEvasione
+        public string DescrizioneStatoEvasione => StatoEvasione switch
         {
-            get
-            {
-                if (QuantitaEvasa <= 0)
-                    return "Da Evadere";
-                else if (QuantitaEvasa < Quantita)
-                    return "Parzialmente Evasa";
-                else
-                    return "Completamente Evasa";
-            }
-        }
+            "A" => "Aperto",
+            "P" => "Parzialmente Evaso",
+            "E" => "Evaso",
+            _ => "Sconosciuto"
+        };
 
         /// <summary>
-        /// Classe CSS per lo stato di evasione
+        /// Classe CSS per il badge dello stato evasione
         /// </summary>
         [NotMapped]
-        public string StatoEvasioneCssClass
+        public string StatoEvasioneCssClass => StatoEvasione switch
         {
-            get
-            {
-                return StatoEvasione switch
-                {
-                    "Da Evadere" => "badge bg-danger",
-                    "Parzialmente Evasa" => "badge bg-warning text-dark",
-                    "Completamente Evasa" => "badge bg-success",
-                    _ => "badge bg-secondary"
-                };
-            }
-        }
+            "A" => "badge bg-primary",
+            "P" => "badge bg-warning text-dark",
+            "E" => "badge bg-success",
+            _ => "badge bg-secondary"
+        };
 
 
 
@@ -392,7 +398,7 @@ namespace AiDbMaster.Models
                 if (!string.IsNullOrEmpty(NoteRiga))
                     testo += $" {NoteRiga}";
                 
-                testo += $" {StatoEvasione}";
+                testo += $" {DescrizioneStatoEvasione}";
                 
                 return testo.ToLower();
             }

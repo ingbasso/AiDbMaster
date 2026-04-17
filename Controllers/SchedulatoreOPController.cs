@@ -257,7 +257,8 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore nel recupero degli ordini di produzione");
-                return StatusCode(500, new { error = true, message = ex.Message });
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { error = true, message = innerMsg });
             }
         }
 
@@ -515,7 +516,8 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Errore nell'aggiornamento resize ordine {request.Id}");
-                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + innerMsg });
             }
         }
 
@@ -615,7 +617,8 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Errore nell'aggiornamento drag&drop ordine {request.Id}");
-                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + innerMsg });
             }
         }
 
@@ -741,7 +744,8 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Errore nell'aggiornamento manuale ordine {request.Id}");
-                return StatusCode(500, new { success = false, message = "❌ Errore server: " + ex.Message });
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { success = false, message = "❌ Errore server: " + innerMsg });
             }
         }
 

@@ -139,6 +139,110 @@ namespace AiDbMaster.Models
         public string? Trasbordo { get; set; }
 
         /// <summary>
+        /// Autotreno abbinato: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Autotreno Abbinato")]
+        [Column("AutotrenoAbbinato")]
+        public string AutotrenoAbbinato { get; set; } = "N";
+
+        /// <summary>
+        /// Autotreno senza gru: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Autotreno No Gru")]
+        [Column("AutotrenoNoGru")]
+        public string AutotrenoNoGru { get; set; } = "N";
+
+        /// <summary>
+        /// Bilico: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Bilico")]
+        [Column("Bilico")]
+        public string Bilico { get; set; } = "N";
+
+        /// <summary>
+        /// Bilico in abbinamento: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Bilico In Abbinamento")]
+        [Column("BilicoInAbbinamento")]
+        public string BilicoInAbbinamento { get; set; } = "N";
+
+        /// <summary>
+        /// Motrice in abbinamento: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Motrice In Abbinamento")]
+        [Column("MotriceInAbbinamento")]
+        public string MotriceInAbbinamento { get; set; } = "N";
+
+        /// <summary>
+        /// Trasporto: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Trasporto")]
+        [Column("Trasporto")]
+        public string Trasporto { get; set; } = "N";
+
+        /// <summary>
+        /// Trasporto e posa: "S" = Sì, "N" = No
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Trasporto Posa")]
+        [Column("TrasportoPosa")]
+        public string TrasportoPosa { get; set; } = "N";
+
+        /// <summary>
+        /// Peso in Kg dell'ordine
+        /// </summary>
+        [Required]
+        [Display(Name = "Peso Kg")]
+        [Column("PesoKg", TypeName = "decimal(27,9)")]
+        public decimal PesoKg { get; set; } = 0;
+
+        /// <summary>
+        /// Stato evasione ordine: "A" = Aperto, "P" = Parzialmente Evaso, "E" = Evaso
+        /// </summary>
+        [Required]
+        [StringLength(1)]
+        [Display(Name = "Stato Evasione")]
+        [Column("StatoEvasione")]
+        public string StatoEvasione { get; set; } = "A";
+
+        /// <summary>
+        /// Descrizione dello stato evasione
+        /// </summary>
+        [NotMapped]
+        public string DescrizioneStatoEvasione => StatoEvasione switch
+        {
+            "A" => "Aperto",
+            "P" => "Parzialmente Evaso",
+            "E" => "Evaso",
+            _ => "Sconosciuto"
+        };
+
+        /// <summary>
+        /// Classe CSS per il badge dello stato evasione
+        /// </summary>
+        [NotMapped]
+        public string StatoEvasioneCssClass => StatoEvasione switch
+        {
+            "A" => "badge bg-primary",
+            "P" => "badge bg-warning text-dark",
+            "E" => "badge bg-success",
+            _ => "badge bg-secondary"
+        };
+
+        /// <summary>
         /// Codice porto: "1" = Porto Franco, "2" = Porto Assegnato.
         /// Nel database è un varchar, non un smallint.
         /// Nullable: potrebbe non essere valorizzato.

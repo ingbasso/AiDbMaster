@@ -170,14 +170,12 @@ main {
 
 /* Footer styling */
 .footer {
-    position: absolute;
-    bottom: 0;
     width: 100%;
-    height: var(--footer-height);
     background: linear-gradient(135deg, var(--orange-medium), var(--orange-light));
     color: #333;
-    padding: 2rem 0;
+    padding: 1rem 0;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
 .footer a {

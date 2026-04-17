@@ -22,11 +22,14 @@
 <body class="feed-theme">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
+        <div class="sidebar-header d-flex justify-content-between align-items-center">
                 <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
                     <i class="bi bi-database-gear me-2"></i>
                     <span class="brand-text">AiDbMaster</span>
                 </a>
+                <button type="button" class="btn btn-link text-light p-0" id="collapseAllMenus" title="Comprimi tutti i menu" style="font-size: 1.2rem; opacity: 0.7; transition: opacity 0.2s;">
+                    <i class="bi bi-arrows-collapse"></i>
+                </button>
         </div>
         
         <div class="sidebar-content">
@@ -226,6 +229,12 @@
                                             <span>Mezzi Esterni</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link" asp-controller="ComposizioneViaggi" asp-action="Index">
+                                            <i class="bi bi-puzzle"></i>
+                                            <span>Composizione Viaggi</span>
+                                        </a>
+                                    </li>
                                     <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
                                             <i class="bi bi-calendar-event"></i>
@@ -237,6 +246,115 @@
                                             <i class="bi bi-graph-up"></i>
                                             <span>Dashboard Consegne</span>
                                         </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <!-- Controllo di Gestione -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#contoEconomicoSubmenu" aria-expanded="false">
+                                <i class="bi bi-calculator"></i>
+                                <span>Controllo di Gestione</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="contoEconomicoSubmenu">
+                                <ul class="sidebar-submenu">
+                                    <!-- Sotto-sezione: Tabelle e Utilità (collassabile) -->
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#ceTabelleSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
+                                            <i class="bi bi-tools"></i>
+                                            <span>Tabelle e Utilità</span>
+                                            <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                                        </a>
+                                        <div class="collapse" id="ceTabelleSub">
+                                            <ul class="sidebar-submenu" style="margin: 0; border-radius: 0;">
+                                                <li class="sidebar-item" permission-required="PstreeStrutturaContoEconomico:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeStrutturaContoEconomico" asp-action="Index">
+                                                        <i class="bi bi-diagram-3"></i>
+                                                        <span>Struttura CE</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeStrutturaContoEconomico:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeStrutturaContoEconomico" asp-action="Tree">
+                                                        <i class="bi bi-diagram-2"></i>
+                                                        <span>Struttura CE (Albero)</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaSaldi:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaSaldi" asp-action="Index">
+                                                        <i class="bi bi-coin"></i>
+                                                        <span>Lista Saldi</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeAssociazioniCE:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeAssociazioniCE" asp-action="Index">
+                                                        <i class="bi bi-link-45deg"></i>
+                                                        <span>Associazioni CE</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaRettifiche:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaRettifiche" asp-action="Index">
+                                                        <i class="bi bi-arrow-left-right"></i>
+                                                        <span>Lista Rettifiche</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaFamiglie:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaFamiglie" asp-action="Index">
+                                                        <i class="bi bi-layers"></i>
+                                                        <span>Famiglie</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeSottoGruppi:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeSottoGruppi" asp-action="Index">
+                                                        <i class="bi bi-diagram-3"></i>
+                                                        <span>Sotto-Gruppi</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaSedi:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaSedi" asp-action="Index">
+                                                        <i class="bi bi-building"></i>
+                                                        <span>Sedi</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaRimanenze:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaRimanenze" asp-action="Index">
+                                                        <i class="bi bi-box-seam"></i>
+                                                        <span>Rimanenze</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreeListaPianoDeiConti:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeListaPianoDeiConti" asp-action="Index">
+                                                        <i class="bi bi-book"></i>
+                                                        <span>Piano dei Conti</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="PstreePercentualiFamiglie:View">
+                                                    <a class="sidebar-link" asp-controller="PstreePercentualiFamiglie" asp-action="Index">
+                                                        <i class="bi bi-percent"></i>
+                                                        <span>Percentuali Famiglie</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <!-- Sotto-sezione: Analisi CE (collassabile) -->
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#ceAnalisiSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
+                                            <i class="bi bi-graph-up-arrow"></i>
+                                            <span>Analisi CE</span>
+                                            <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                                        </a>
+                                        <div class="collapse" id="ceAnalisiSub">
+                                            <ul class="sidebar-submenu" style="margin: 0; border-radius: 0;">
+                                                <li class="sidebar-item" permission-required="PstreeContoEconomico:View">
+                                                    <a class="sidebar-link" asp-controller="PstreeContoEconomico" asp-action="Index">
+                                                        <i class="bi bi-graph-up-arrow"></i>
+                                                        <span>Conto Economico</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
@@ -608,6 +726,23 @@
                 }
             });
             
+            // ===== COMPRIMI TUTTI I MENU =====
+            $('#collapseAllMenus').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('#sidebar .collapse.show').each(function() {
+                    $(this).collapse('hide');
+                    const toggleButton = $(`[data-bs-target="#${$(this).attr('id')}"]`);
+                    toggleButton.find('.toggle-icon').removeClass('rotated');
+                });
+                const savedStates = localStorage.getItem(SUBMENU_STATE_KEY);
+                if (savedStates) {
+                    const states = JSON.parse(savedStates);
+                    Object.keys(states).forEach(k => states[k] = false);
+                    localStorage.setItem(SUBMENU_STATE_KEY, JSON.stringify(states));
+                }
+            });
+            
             // ===== GESTIONE MENU ATTIVO =====
             
             // Imposta menu attivo basato sull'URL corrente
@@ -627,14 +762,13 @@
                             foundActiveItem = true;
                             console.log('Found active menu item:', $(this).text().trim(), 'Path:', linkPath); // Debug
                             
-                            // Se è in un sottomenu, apri il sottomenu padre
-                            const parentCollapse = $(this).closest('.collapse');
-                            if (parentCollapse.length) {
-                                console.log('Opening parent submenu:', parentCollapse.attr('id')); // Debug
-                                parentCollapse.addClass('show');
-                                const toggleButton = $(`[data-bs-target="#${parentCollapse.attr('id')}"]`);
+                            // Se è in un sottomenu, apri tutti i sottomenu padre (anche innestati)
+                            $(this).parents('.collapse').each(function() {
+                                console.log('Opening parent submenu:', $(this).attr('id'));
+                                $(this).addClass('show');
+                                const toggleButton = $(`[data-bs-target="#${$(this).attr('id')}"]`);
                                 toggleButton.find('.toggle-icon').addClass('rotated');
-                            }
+                            });
                         }
                     }
                 });

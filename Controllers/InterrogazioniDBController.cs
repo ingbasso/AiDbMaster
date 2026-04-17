@@ -62,20 +62,36 @@ namespace AiDbMaster.Controllers
         /// GET: Mostra il form per la ricerca disponibilità
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Disponibilita()
+        public async Task<IActionResult> Disponibilita(string? codiceArticolo, DateTime? dataRiferimento)
         {
             ViewBag.UseFluidContainer = true; // Usa larghezza completa
             
-            // Legge i giorni impegno dalla tabella ParametriChiave
             var giorniImpegno = await GetGiorniImpegno();
             var oggi = DateTime.Today;
+            var dataFine = dataRiferimento ?? oggi.AddDays(giorniImpegno);
             
             var model = new DisponibilitaViewModel
             {
                 DataInizio = oggi,
-                DataFine = oggi.AddDays(giorniImpegno),
-                GiorniImpegno = giorniImpegno
+                DataFine = dataFine,
+                GiorniImpegno = (dataFine - oggi).Days
             };
+
+            if (!string.IsNullOrWhiteSpace(codiceArticolo))
+            {
+                model.CodiceArticolo = codiceArticolo.Trim();
+                try
+                {
+                    var risultatiPrincipale = await CalcolaDisponibilitaArticolo(model.CodiceArticolo, dataFine);
+                    model.Risultati = risultatiPrincipale.Risultati;
+                    model.DescrizioneArticolo = risultatiPrincipale.DescrizioneArticolo;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Errore auto-ricerca disponibilità per {CodiceArticolo}", codiceArticolo);
+                }
+            }
+
             return View(model);
         }
 
@@ -1234,6 +1250,51 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore durante il recupero del dettaglio movimenti nota per {CodiceArticolo}", codiceArticolo);
+                return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
+            }
+        }
+
+        /// <summary>
+        /// Restituisce la disponibilità articolo in formato JSON (per popup da altre pagine)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetDisponibilitaArticoloJson(string codiceArticolo, DateTime? dataRiferimento)
+        {
+            try
+            {
+                var giorniImpegno = await GetGiorniImpegno();
+                var oggi = DateTime.Today;
+                var dataFine = dataRiferimento ?? oggi.AddDays(giorniImpegno);
+
+                var (risultati, descrizioneArticolo) = await CalcolaDisponibilitaArticolo(codiceArticolo, dataFine);
+
+                var righeJson = risultati.Select(r => new
+                {
+                    r.CodiceArticolo,
+                    r.DescrizioneArticolo,
+                    r.UnitaMisura,
+                    r.CodiceMagazzino,
+                    r.Esistenza,
+                    r.Pronto,
+                    r.ImpegnatoAttuale,
+                    r.DisponibileAttuale,
+                    r.NotaPrevisione,
+                    r.DisponibilitaDaVerificare,
+                    r.IsSupermarket,
+                    r.IsFuoriProduzione
+                });
+
+                return Json(new
+                {
+                    codiceArticolo,
+                    descrizioneArticolo,
+                    dataRiferimento = dataFine.ToString("dd/MM/yyyy"),
+                    righe = righeJson
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore GetDisponibilitaArticoloJson per {CodiceArticolo}", codiceArticolo);
                 return StatusCode(500, new { error = "Errore durante il recupero dei dati" });
             }
         }

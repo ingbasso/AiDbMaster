@@ -68,6 +68,18 @@ namespace AiDbMaster.Data
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<UserDataFilter> UserDataFilters { get; set; }
 
+        // Tabelle Conto Economico (Pstree)
+        public DbSet<PstreeStrutturaContoEconomico> PstreeStrutturaContoEconomico { get; set; }
+        public DbSet<PstreeListaPianoDeiConti> PstreeListaPianoDeiConti { get; set; }
+        public DbSet<PstreeListaFamiglie> PstreeListaFamiglie { get; set; }
+        public DbSet<PstreeListaSedi> PstreeListaSedi { get; set; }
+        public DbSet<PstreeAssociazioniCE> PstreeAssociazioniCE { get; set; }
+        public DbSet<PstreeListaRettifiche> PstreeListaRettifiche { get; set; }
+        public DbSet<PstreeListaRimanenze> PstreeListaRimanenze { get; set; }
+        public DbSet<PstreeListaSaldi> PstreeListaSaldi { get; set; }
+        public DbSet<PstreePercentualiFamiglie> PstreePercentualiFamiglie { get; set; }
+        public DbSet<PstreeSottoGruppi> PstreeSottoGruppi { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -196,6 +208,16 @@ namespace AiDbMaster.Data
                 .Property(r => r.ValoreRiga)
                 .HasColumnType("money");
 
+            builder.Entity<OrdiniRighe>()
+                .Property(r => r.PesoKg)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<OrdiniRighe>()
+                .Property(r => r.StatoEvasione)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("A");
+
             builder.Entity<Document>()
                 .HasOne(d => d.Category)
                 .WithMany()
@@ -270,6 +292,9 @@ namespace AiDbMaster.Data
                 .HasDatabaseName("IX_CalendarioFermiCentriLavoro_TipoFermo");
 
             // Configurazione ListaOP
+            builder.Entity<ListaOP>()
+                .ToTable(tb => tb.HasTrigger("trg_ListaOP"));
+
             // Indice composito per identificazione ordine
             builder.Entity<ListaOP>()
                 .HasIndex(l => new { l.TipoOrdine, l.AnnoOrdine, l.SerieOrdine, l.NumeroOrdine })
@@ -465,6 +490,52 @@ namespace AiDbMaster.Data
             builder.Entity<OrdiniTestate>()
                 .Property(o => o.Porto)
                 .HasColumnType("varchar(10)");
+
+            // ===== CONFIGURAZIONE CAMPI TRASPORTO (OrdiniTestate) =====
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.AutotrenoAbbinato)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.AutotrenoNoGru)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.Bilico)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.BilicoInAbbinamento)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.MotriceInAbbinamento)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.Trasporto)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.TrasportoPosa)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("N");
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.PesoKg)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.StatoEvasione)
+                .HasColumnType("varchar(1)")
+                .HasDefaultValue("A");
 
             // ===== CONFIGURAZIONI TABELLA OPZIONI =====
 
@@ -986,6 +1057,120 @@ namespace AiDbMaster.Data
 
             // Seed data per Lavorazioni
             // Nota: I dati di seed vengono ora gestiti tramite la migrazione per preservare i dati esistenti
+
+            // ===== CONFIGURAZIONI CONTO ECONOMICO (Pstree) =====
+
+            // Pstree_ListaFamiglie: indice univoco su CodiceFamiglia
+            builder.Entity<PstreeListaFamiglie>()
+                .HasIndex(f => f.CodiceFamiglia)
+                .IsUnique()
+                .HasDatabaseName("IX_Pstree_ListaFamiglie_CodiceFamiglia");
+
+            // Pstree_ListaFamiglie: relazione con StrutturaContoEconomico
+            builder.Entity<PstreeListaFamiglie>()
+                .HasOne(f => f.ContoEconomico)
+                .WithMany()
+                .HasForeignKey(f => f.IdCodiceConto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_ListaFamiglie: auto-referenza per gerarchia famiglie
+            builder.Entity<PstreeListaFamiglie>()
+                .HasOne(f => f.FamigliaPadre)
+                .WithMany()
+                .HasForeignKey(f => f.IdFamigliaPadre)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniCE: relazione con ListaPianoDeiConti
+            builder.Entity<PstreeAssociazioniCE>()
+                .HasOne(a => a.PianoDeiConti)
+                .WithMany()
+                .HasForeignKey(a => a.CodicePdC)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniCE: relazione con StrutturaContoEconomico
+            builder.Entity<PstreeAssociazioniCE>()
+                .HasOne(a => a.ContoEconomico)
+                .WithMany()
+                .HasForeignKey(a => a.IdCodiceConto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_ListaRettifiche: relazioni
+            builder.Entity<PstreeListaRettifiche>()
+                .HasOne(r => r.ContoEconomico)
+                .WithMany()
+                .HasForeignKey(r => r.IdCodiceConto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreeListaRettifiche>()
+                .HasOne(r => r.Famiglia)
+                .WithMany()
+                .HasForeignKey(r => r.IdFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreeListaRettifiche>()
+                .HasOne(r => r.Sede)
+                .WithMany()
+                .HasForeignKey(r => r.IdSede)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_ListaRimanenze: relazioni
+            builder.Entity<PstreeListaRimanenze>()
+                .HasOne(r => r.Famiglia)
+                .WithMany()
+                .HasForeignKey(r => r.IdFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreeListaRimanenze>()
+                .HasOne(r => r.Sede)
+                .WithMany()
+                .HasForeignKey(r => r.IdSede)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_ListaSaldi: relazioni
+            builder.Entity<PstreeListaSaldi>()
+                .HasOne(s => s.PianoDeiConti)
+                .WithMany()
+                .HasForeignKey(s => s.CodicePdC)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreeListaSaldi>()
+                .HasOne(s => s.Famiglia)
+                .WithMany()
+                .HasForeignKey(s => s.IdFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreeListaSaldi>()
+                .HasOne(s => s.Sede)
+                .WithMany()
+                .HasForeignKey(s => s.IdSede)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_PercentualiFamiglie: relazioni
+            builder.Entity<PstreePercentualiFamiglie>()
+                .HasOne(p => p.Famiglia)
+                .WithMany()
+                .HasForeignKey(p => p.IdFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreePercentualiFamiglie>()
+                .HasOne(p => p.Sede)
+                .WithMany()
+                .HasForeignKey(p => p.IdSede)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PstreePercentualiFamiglie>()
+                .HasOne(p => p.ContoEconomico)
+                .WithMany()
+                .HasForeignKey(p => p.IdCodiceConto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_SottoGruppi: FK verso ListaFamiglie.CodiceFamiglia
+            builder.Entity<PstreeSottoGruppi>()
+                .HasOne(s => s.Famiglia)
+                .WithMany()
+                .HasForeignKey(s => s.CodiceFamiglia)
+                .HasPrincipalKey(f => f.CodiceFamiglia)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 } 
