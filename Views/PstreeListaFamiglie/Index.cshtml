@@ -1,0 +1,124 @@
+@model IEnumerable<AiDbMaster.Models.PstreeListaFamiglie>
+
+@{
+    ViewData["Title"] = "Famiglie Prodotti";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-layers text-primary"></i> Famiglie Prodotti/Attività</h2>
+        <a asp-action="Create" asp-controller="PstreeListaFamiglie" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuova Famiglia
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Elenco Famiglie
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;">ID</th>
+                                <th style="width: 100px; border: none; background-color: #5b9bd5 !important; color: white !important;">Codice</th>
+                                <th style="width: 180px; border: none; background-color: #5b9bd5 !important; color: white !important;">Nome Famiglia</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Descrizione</th>
+                                <th style="width: 220px; border: none; background-color: #5b9bd5 !important; color: white !important;">Conto Rimanenza CE</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var contiDescrizioni = (Dictionary<int, string>)ViewBag.ContiDescrizioni;
+                            }
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center"><span class="badge bg-primary">@item.Id</span></td>
+                                    <td><code>@item.CodiceFamiglia</code></td>
+                                    <td class="fw-bold">@item.NomeFamiglia</td>
+                                    <td class="text-muted">@(item.DescrizioneFamiglia ?? "-")</td>
+                                    <td>
+                                        @if (contiDescrizioni.TryGetValue(item.IdCodiceConto, out var descConto))
+                                        {
+                                            <span class="badge bg-info text-white">
+                                                <i class="bi bi-boxes"></i> @descConto
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@item.IdCodiceConto</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-controller="PstreeListaFamiglie" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-controller="PstreeListaFamiglie" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-warning" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-controller="PstreeListaFamiglie" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-layers fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna famiglia presente</h5>
+                    <p class="text-muted">Inizia creando la prima famiglia di prodotti/attività.</p>
+                    <a asp-action="Create" asp-controller="PstreeListaFamiglie" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Crea prima famiglia
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0 text-muted">
+                <i class="bi bi-layers text-primary"></i> 
+                Le <strong>Famiglie</strong> rappresentano le categorie di prodotti o attività dell'azienda.
+                Vengono utilizzate per filtrare e raggruppare i dati nel Controllo di Gestione.
+            </p>
+        </div>
+    </div>
+</div>

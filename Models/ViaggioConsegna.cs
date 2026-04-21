@@ -80,6 +80,15 @@ namespace AiDbMaster.Models
         [Column("Trasbordo")]
         public bool? Trasbordo { get; set; }
 
+        [Display(Name = "Con Rimorchio")]
+        [Column("ConRimorchio")]
+        public bool ConRimorchio { get; set; } = false;
+
+        [Required]
+        [Display(Name = "Spedizione Manuale")]
+        [Column("IsManuale")]
+        public bool IsManuale { get; set; } = false;
+
         [NotMapped]
         public decimal Margine => (PrezzoVendita ?? 0) - (CostoTrasporto ?? 0);
 

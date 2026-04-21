@@ -1,0 +1,458 @@
+@model IEnumerable<AiDbMaster.Models.PstreeAssociazioniCE>
+
+@{
+    ViewData["Title"] = "Associazioni Conto Economico";
+    var contiEconomici = ViewBag.ContiEconomici as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var descrizioniPdC = ViewBag.DescrizioniPdC as Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti> ?? new Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti>();
+    var codiciNonAssociati = ViewBag.CodiciPdCNonAssociati as List<string> ?? new List<string>();
+    var pdcNonAssociatiDict = ViewBag.PdCNonAssociatiDict as Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti> ?? new Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti>();
+    var codiciNonAssociare = ViewBag.CodiciNonAssociare as List<string> ?? new List<string>();
+    var pdcNonAssociareDict = ViewBag.PdCNonAssociareDict as Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti> ?? new Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti>();
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-link-45deg text-primary"></i> Associazioni Conto Economico</h2>
+        <a asp-action="Create" asp-controller="PstreeAssociazioniCE" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuova Associazione
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- CARD RIEPILOGATIVE -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card h-100 border-left-primary shadow-sm">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Conti PdC Economici
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalePdCUnici</div>
+                            <small class="text-muted">Solo tipo "E"</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-book fa-2x text-primary opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card h-100 border-left-success shadow-sm">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Conti Associati
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-success">@ViewBag.PdCAssociati</div>
+                            <small class="text-muted">Collegati a CE</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-success opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 mb-3">
+            <div class="card h-100 border-left-warning shadow-sm @(ViewBag.PdCNonAssociati > 0 ? "bg-warning bg-opacity-10" : "")">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Conti NON Associati
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold @(ViewBag.PdCNonAssociati > 0 ? "text-danger" : "text-success")">
+                                @ViewBag.PdCNonAssociati
+                            </div>
+                            <small class="text-muted">
+                                @if (ViewBag.PdCNonAssociati > 0)
+                                {
+                                    <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Da codificare!</span>
+                                }
+                                else
+                                {
+                                    <span class="text-success"><i class="bi bi-check"></i> Tutto OK!</span>
+                                }
+                            </small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-circle fa-2x text-warning opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card h-100 border-left-secondary shadow-sm">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                Non Associare
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-secondary">@ViewBag.ContiNonAssociare</div>
+                            <small class="text-muted">Esclusi</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-slash-circle fa-2x text-secondary opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 mb-3">
+            <div class="card h-100 border-left-info shadow-sm">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Copertura
+                            </div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h4 mb-0 mr-3 font-weight-bold text-info">@ViewBag.PercentualeCopertura%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2" style="height: 10px;">
+                                        @{
+                                            var progressClass = (double)ViewBag.PercentualeCopertura >= 100 ? "bg-success" :
+                                                               (double)ViewBag.PercentualeCopertura >= 75 ? "bg-info" :
+                                                               (double)ViewBag.PercentualeCopertura >= 50 ? "bg-warning" : "bg-danger";
+                                        }
+                                        <div class="progress-bar @progressClass" role="progressbar" 
+                                             style="width: @ViewBag.PercentualeCopertura%" 
+                                             aria-valuenow="@ViewBag.PercentualeCopertura" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-percent fa-2x text-info opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTI NON ASSOCIATI -->
+    @if (codiciNonAssociati.Any())
+    {
+        <div class="card shadow-sm mb-4 border-warning">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    Conti Economici (E) NON Associati (@codiciNonAssociati.Count)
+                </h6>
+                <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#nonAssociatiCollapse">
+                    <i class="bi bi-chevron-down"></i> Mostra/Nascondi
+                </button>
+            </div>
+            <div class="collapse" id="nonAssociatiCollapse">
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-info-circle"></i> 
+                        Questi conti <strong>Economici (E)</strong> del Piano dei Conti non sono ancora associati a nessun conto del Conto Economico. 
+                        I conti Patrimoniali (P) e quelli con flag "Non Associare" non sono considerati in questa analisi. Clicca su un codice per associarlo.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var codice in codiciNonAssociati)
+                        {
+                            var pdc = pdcNonAssociatiDict.GetValueOrDefault(codice);
+                            var tipoBadge = pdc?.TipoPdC == "P" ? "bg-info" : "bg-success";
+                            <a asp-action="CreateQuick" asp-controller="PstreeAssociazioniCE" asp-route-codicePdC="@codice" 
+                               class="btn btn-outline-danger btn-sm" title="@(pdc?.DescrizionePdC ?? codice)">
+                                <i class="bi bi-plus-circle"></i> @codice
+                                @if (pdc != null)
+                                {
+                                    <span class="badge @tipoBadge ms-1">@pdc.TipoPdC</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- CONTI DA NON ASSOCIARE -->
+    @if (codiciNonAssociare.Any())
+    {
+        <div class="card shadow-sm mb-4 border-secondary">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-slash-circle"></i> 
+                    Conti Economici (E) da NON Associare (@codiciNonAssociare.Count)
+                </h6>
+                <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#nonAssociareCollapse">
+                    <i class="bi bi-chevron-down"></i> Mostra/Nascondi
+                </button>
+            </div>
+            <div class="collapse" id="nonAssociareCollapse">
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-info-circle"></i> 
+                        Questi conti hanno il flag <strong>"Non Associare"</strong> attivo nel Piano dei Conti. 
+                        Non devono essere associati al Conto Economico ma sono qui elencati per controllo.
+                        Per modificare lo stato, vai su <a asp-controller="PstreeListaPianoDeiConti" asp-action="Index" asp-route-nonAssociare="true">Piano dei Conti</a>.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var codice in codiciNonAssociare)
+                        {
+                            var pdc = pdcNonAssociareDict.GetValueOrDefault(codice);
+                            <span class="btn btn-outline-secondary btn-sm disabled" title="@(pdc?.DescrizionePdC ?? codice)">
+                                <i class="bi bi-slash-circle"></i> @codice
+                                @if (pdc != null)
+                                {
+                                    <span class="badge bg-secondary ms-1">E</span>
+                                }
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- FILTRI -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtri</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" asp-controller="PstreeAssociazioniCE">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="searchCodicePdC" class="form-label">Codice PdC</label>
+                        <input type="text" class="form-control" id="searchCodicePdC" name="searchCodicePdC" 
+                               value="@ViewBag.SearchCodicePdC" placeholder="Cerca codice...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterIdCodiceConto" class="form-label">Conto Economico</label>
+                        <select class="form-select" id="filterIdCodiceConto" name="filterIdCodiceConto">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.ContiEconomico)
+                            {
+                                if (!string.IsNullOrEmpty(item.Value))
+                                {
+                                    <option value="@item.Value" selected="@(item.Value == ViewBag.FilterIdCodiceConto?.ToString())">@item.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filtra
+                        </button>
+                        <a asp-action="Index" asp-controller="PstreeAssociazioniCE" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELLA AD ALBERO -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Associazioni
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+            @if (Model.Any())
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExpandAll">
+                        <i class="bi bi-plus-square"></i> Espandi tutto
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnCollapseAll">
+                        <i class="bi bi-dash-square"></i> Comprimi tutto
+                    </button>
+                </div>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                var gruppi = Model.GroupBy(a => a.IdCodiceConto).OrderBy(g => g.Key);
+                
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 40px; border: none; background-color: #5b9bd5 !important;"></th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Conto Economico</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Codice PdC</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Descrizione</th>
+                                <th style="width: 80px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Tipo</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var gruppo in gruppi)
+                            {
+                                var idConto = gruppo.Key;
+                                var descrizioneConto = contiEconomici.GetValueOrDefault(idConto, idConto.ToString());
+                                
+                                <!-- Riga Parent (Conto Economico) -->
+                                <tr class="parent-row" style="background-color: #e3f2fd; cursor: pointer;" onclick="toggleChildren(@idConto)">
+                                    <td class="text-center">
+                                        <i class="bi bi-chevron-right toggle-icon" id="icon-@idConto"></i>
+                                    </td>
+                                    <td colspan="2">
+                                        <span class="badge bg-primary me-2">@idConto</span>
+                                        <strong>@descrizioneConto</strong>
+                                        <span class="badge bg-secondary ms-2">@gruppo.Count() codici</span>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                
+                                <!-- Righe Child (Codici PdC) -->
+                                @foreach (var item in gruppo.OrderBy(a => a.CodicePdC))
+                                {
+                                    var pdc = descrizioniPdC.GetValueOrDefault(item.CodicePdC);
+                                    
+                                    <tr class="child-row child-of-@idConto" style="display: none;">
+                                        <td></td>
+                                        <td></td>
+                                        <td><code class="fw-bold">@item.CodicePdC</code></td>
+                                        <td>@(pdc?.DescrizionePdC ?? "-")</td>
+                                        <td class="text-center">
+                                            @if (pdc?.TipoPdC == "P")
+                                            {
+                                                <span class="badge bg-info" title="Patrimoniale">P</span>
+                                            }
+                                            else if (pdc?.TipoPdC == "E")
+                                            {
+                                                <span class="badge bg-success" title="Economico">E</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a asp-action="Details" asp-controller="PstreeAssociazioniCE" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-info" title="Dettagli">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a asp-action="Edit" asp-controller="PstreeAssociazioniCE" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-warning" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-controller="PstreeAssociazioniCE" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-danger" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-link-45deg fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna associazione trovata</h5>
+                    <p class="text-muted">
+                        @if (!string.IsNullOrEmpty(ViewBag.SearchCodicePdC) || ViewBag.FilterIdCodiceConto != null)
+                        {
+                            <text>Prova a modificare i filtri di ricerca.</text>
+                        }
+                        else
+                        {
+                            <text>Inizia creando la prima associazione tra Piano dei Conti e Conto Economico.</text>
+                        }
+                    </p>
+                    <a asp-action="Create" asp-controller="PstreeAssociazioniCE" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Crea prima associazione
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleChildren(idConto) {
+            const children = document.querySelectorAll('.child-of-' + idConto);
+            const icon = document.getElementById('icon-' + idConto);
+            
+            if (children.length > 0) {
+                const isHidden = children[0].style.display === 'none';
+                children.forEach(child => {
+                    child.style.display = isHidden ? '' : 'none';
+                });
+                icon.classList.toggle('bi-chevron-right', !isHidden);
+                icon.classList.toggle('bi-chevron-down', isHidden);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnExpandAll = document.getElementById('btnExpandAll');
+            if (btnExpandAll) {
+                btnExpandAll.addEventListener('click', function() {
+                    document.querySelectorAll('.child-row').forEach(row => {
+                        row.style.display = '';
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-down');
+                    });
+                });
+            }
+
+            const btnCollapseAll = document.getElementById('btnCollapseAll');
+            if (btnCollapseAll) {
+                btnCollapseAll.addEventListener('click', function() {
+                    document.querySelectorAll('.child-row').forEach(row => {
+                        row.style.display = 'none';
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-right');
+                    });
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+    .border-left-primary { border-left: 4px solid #4e73df !important; }
+    .border-left-success { border-left: 4px solid #1cc88a !important; }
+    .border-left-warning { border-left: 4px solid #f6c23e !important; }
+    .border-left-info { border-left: 4px solid #36b9cc !important; }
+    .border-left-secondary { border-left: 4px solid #6c757d !important; }
+    .opacity-50 { opacity: 0.5; }
+</style>

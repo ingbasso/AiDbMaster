@@ -433,16 +433,20 @@ namespace AiDbMaster.Controllers
 
             // 2. Carica ordini cliente (TipoOrdine = 'R') aperti fino alla data di riferimento
             // Include anche ordini arretrati (DataConsegna < oggi) per mostrare la storia completa
+            // Escludi ordini con testata StatoEvasione = 'E' (completamente evasi)
             var ordiniCliente = await _context.OrdiniRighe
                 .Where(r => r.TipoOrdine == "R")
                 .Where(r => r.CodiceArticolo == codiceArticolo)
                 .Where(r => r.DataConsegna <= dataRiferimento)
                 .Where(r => r.Quantita > r.QuantitaEvasa)
-                .Select(r => new
-                {
-                    r.DataConsegna,
-                    Residuo = (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m
-                })
+                .Join(_context.OrdiniTestate.Where(t => t.StatoEvasione != "E"),
+                    r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine },
+                    t => new { t.TipoOrdine, t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine },
+                    (r, t) => new
+                    {
+                        r.DataConsegna,
+                        Residuo = (r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m
+                    })
                 .ToListAsync();
 
             foreach (var ordine in ordiniCliente)
@@ -950,6 +954,7 @@ namespace AiDbMaster.Controllers
                                    from cliente in clienteGroup.DefaultIfEmpty()  // LEFT JOIN per non perdere ordini senza cliente
                                    where riga.CodiceArticolo == codiceArticolo
                                        && riga.TipoOrdine == "R"
+                                       && testata.StatoEvasione != "E"
                                        && riga.DataConsegna <= dataRif  // Impegnato: fino alla data di riferimento
                                        && (riga.Quantita - riga.QuantitaEvasa) > 0  // Solo quantità da evadere
                                    select new OrdineClienteDettaglioViewModel
@@ -1027,7 +1032,7 @@ namespace AiDbMaster.Controllers
                     .Where(r => r.CodiceArticolo == codiceArticolo)
                     .Where(r => r.DataConsegna <= dataRiferimento)
                     .Where(r => r.Quantita > r.QuantitaEvasa)
-                    .Join(_context.OrdiniTestate,
+                    .Join(_context.OrdiniTestate.Where(t => t.StatoEvasione != "E"),
                         r => new { r.TipoOrdine, r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine },
                         t => new { t.TipoOrdine, t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine },
                         (r, t) => new
@@ -1299,30 +1304,14 @@ namespace AiDbMaster.Controllers
             }
         }
 
-        // ========== CONSEGNE PROGRAMMATE ==========
+        // ========== LISTA ORDINI CLIENTI ==========
 
         /// <summary>
-        /// GET: Mostra il form per le consegne programmate
+        /// GET: Mostra la pagina lista ordini clienti e esegue ricerca automatica con filtro date del mese corrente
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> ConsegneProgrammate()
         {
-            ViewBag.UseFluidContainer = true;
-            
-            var codiceAgente = await GetCodiceAgenteUtenteCorrente();
-            ViewBag.IsAgente = codiceAgente.HasValue;
-            if (codiceAgente.HasValue)
-            {
-                ViewBag.CodiceAgenteUtente = codiceAgente.Value;
-                
-                // Recupera il nome dell'agente
-                var agente = await _context.TabellaAgenti
-                    .FirstOrDefaultAsync(a => a.CodiceAgente == codiceAgente.Value);
-                ViewBag.NomeAgenteUtente = agente?.DescrizioneAgente ?? $"Agente {codiceAgente.Value}";
-                
-                _logger.LogInformation("Utente agente (Codice: {CodiceAgente}). Filtro automatico applicato.", codiceAgente.Value);
-            }
-            
             var oggi = DateTime.Today;
             var model = new ConsegneProgrammateViewModel
             {
@@ -1330,32 +1319,39 @@ namespace AiDbMaster.Controllers
                 DataConsegnaA = new DateTime(oggi.Year, oggi.Month, DateTime.DaysInMonth(oggi.Year, oggi.Month)),
                 OrdinamentoPer = "DataConsegna"
             };
-            return View(model);
+
+            return await EseguiRicercaConsegneProgrammate(model);
         }
 
         /// <summary>
-        /// POST: Esegue la ricerca consegne programmate
+        /// POST: Esegue la ricerca lista ordini clienti
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConsegneProgrammate(ConsegneProgrammateViewModel model)
         {
+            return await EseguiRicercaConsegneProgrammate(model);
+        }
+
+        /// <summary>
+        /// Logica condivisa di ricerca per GET e POST
+        /// </summary>
+        private async Task<IActionResult> EseguiRicercaConsegneProgrammate(ConsegneProgrammateViewModel model)
+        {
             ViewBag.UseFluidContainer = true;
 
-            // Applica filtro agente se necessario
             var codiceAgente = await GetCodiceAgenteUtenteCorrente();
             ViewBag.IsAgente = codiceAgente.HasValue;
             if (codiceAgente.HasValue)
             {
-                model.CodiceAgente = codiceAgente.Value; // Forza filtro
+                model.CodiceAgente = codiceAgente.Value;
                 ViewBag.CodiceAgenteUtente = codiceAgente.Value;
                 
-                // Recupera il nome dell'agente
-                var agente = await _context.TabellaAgenti
+                var agenteUtente = await _context.TabellaAgenti
                     .FirstOrDefaultAsync(a => a.CodiceAgente == codiceAgente.Value);
-                ViewBag.NomeAgenteUtente = agente?.DescrizioneAgente ?? $"Agente {codiceAgente.Value}";
+                ViewBag.NomeAgenteUtente = agenteUtente?.DescrizioneAgente ?? $"Agente {codiceAgente.Value}";
                 
-                _logger.LogInformation("Utente agente (Codice: {CodiceAgente}). Filtro applicato nella ricerca.", codiceAgente.Value);
+                _logger.LogInformation("Utente agente (Codice: {CodiceAgente}). Filtro applicato.", codiceAgente.Value);
             }
 
             try
@@ -1402,7 +1398,6 @@ namespace AiDbMaster.Controllers
                 // Applica filtri geografici DOPO aver caricato i dati, considerando destinazione diversa
                 if (!string.IsNullOrWhiteSpace(model.Provincia) || !string.IsNullOrWhiteSpace(model.Comune))
                 {
-                    // Normalizza i filtri: Trim + case-insensitive
                     var filtroComune = model.Comune?.Trim() ?? "";
                     var filtroProvincia = model.Provincia?.Trim() ?? "";
                     
@@ -1412,7 +1407,6 @@ namespace AiDbMaster.Controllers
                         var provinciaEffettiva = (hasDestDiversa && item.Destinazione != null ? item.Destinazione.Provincia : item.Cliente.Provincia)?.Trim();
                         var comuneEffettivo = (hasDestDiversa && item.Destinazione != null ? item.Destinazione.Localita : item.Cliente.Citta)?.Trim();
                         
-                        // Confronto case-insensitive con Trim
                         bool matchProvincia = string.IsNullOrWhiteSpace(filtroProvincia) || 
                             (provinciaEffettiva != null && provinciaEffettiva.Equals(filtroProvincia, StringComparison.OrdinalIgnoreCase));
                         
@@ -1564,13 +1558,22 @@ namespace AiDbMaster.Controllers
                             PercentualeInclusione = r.PercentualeInclusione,
                             NoteRiga = r.NoteRiga,
                             ValoreRiga = r.ValoreRiga,
-                            // Disponibilità Magazzino 1
                             Esistenza = esistenzaDict.ContainsKey(r.CodiceArticolo) ? esistenzaDict[r.CodiceArticolo] : 0,
                             ImpegnatoAttuale = impegnatoDict.ContainsKey(r.CodiceArticolo) ? impegnatoDict[r.CodiceArticolo] : 0
                         }).ToList()
                     };
 
                     ordiniViewModel.Add(ordineViewModel);
+                }
+
+                // Filtro per Stato Evasione (applicato dopo aver costruito i ViewModel)
+                if (!string.IsNullOrWhiteSpace(model.StatoEvasioneFiltro))
+                {
+                    ordiniViewModel = ordiniViewModel
+                        .Where(o => o.Righe.Any(r => r.StatoEvasione == model.StatoEvasioneFiltro))
+                        .ToList();
+                    
+                    _logger.LogInformation("Dopo filtro Stato Evasione '{Stato}': {Count} ordini", model.StatoEvasioneFiltro, ordiniViewModel.Count);
                 }
 
                 // Pre-carica le email inviate per gli ordini trovati
@@ -1601,7 +1604,7 @@ namespace AiDbMaster.Controllers
                 {
                     "Cliente" => ordiniViewModel.OrderBy(o => o.RagioneSociale).ThenBy(o => o.Righe.Min(r => r.DataConsegna)).ToList(),
                     "Ordine" => ordiniViewModel.OrderBy(o => o.AnnoOrdine).ThenBy(o => o.NumeroOrdine).ToList(),
-                    _ => ordiniViewModel.OrderBy(o => o.Righe.Min(r => r.DataConsegna)).ThenBy(o => o.RagioneSociale).ToList() // DataConsegna
+                    _ => ordiniViewModel.OrderBy(o => o.Righe.Min(r => r.DataConsegna)).ThenBy(o => o.RagioneSociale).ToList()
                 };
 
                 model.Ordini = ordiniViewModel;
@@ -1621,16 +1624,16 @@ namespace AiDbMaster.Controllers
                     model.NomeAgente = agente?.DescrizioneAgente;
                 }
 
-                _logger.LogInformation("Ricerca consegne programmate completata. Trovati {Count} ordini con {RigheCount} righe totali.",
+                _logger.LogInformation("Ricerca lista ordini clienti completata. Trovati {Count} ordini con {RigheCount} righe totali.",
                     model.Ordini.Count, model.Ordini.Sum(o => o.NumeroRighe));
 
-                return View(model);
+                return View("ConsegneProgrammate", model);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante la ricerca delle consegne programmate");
+                _logger.LogError(ex, "Errore durante la ricerca della lista ordini clienti");
                 ModelState.AddModelError("", "Si è verificato un errore durante la ricerca. Riprova più tardi.");
-                return View(model);
+                return View("ConsegneProgrammate", model);
             }
         }
 

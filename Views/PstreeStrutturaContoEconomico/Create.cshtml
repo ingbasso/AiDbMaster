@@ -1,0 +1,159 @@
+@model AiDbMaster.Models.PstreeStrutturaContoEconomico
+
+@{
+    ViewData["Title"] = "Nuovo Conto";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Nuovo Conto
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-controller="PstreeStrutturaContoEconomico" asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="IdCodiceConto" class="form-label">
+                                    <i class="bi bi-hash"></i> Codice Conto <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="IdCodiceConto" class="form-control" type="number" min="1" placeholder="Es: 100" />
+                                <span asp-validation-for="IdCodiceConto" class="text-danger"></span>
+                                <small class="text-muted">Codice numerico univoco del conto.</small>
+                            </div>
+                            
+                            <div class="col-md-9 mb-3">
+                                <label asp-for="DescrizioneConto" class="form-label">
+                                    <i class="bi bi-file-earmark-text"></i> Descrizione Conto <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="DescrizioneConto" class="form-control" placeholder="Es: Ricavi delle vendite" />
+                                <span asp-validation-for="DescrizioneConto" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TipoConto" class="form-label">
+                                    <i class="bi bi-tag"></i> Tipo Conto <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="TipoConto" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.TipoConto)">
+                                    <option value="">-- Seleziona tipo --</option>
+                                </select>
+                                <span asp-validation-for="TipoConto" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ParentId" class="form-label">
+                                    <i class="bi bi-diagram-3"></i> Conto Padre
+                                </label>
+                                <select asp-for="ParentId" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.ParentId)">
+                                </select>
+                                <span asp-validation-for="ParentId" class="text-danger"></span>
+                                <small class="text-muted">Seleziona il conto padre per creare una gerarchia.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Ordine" class="form-label">
+                                    <i class="bi bi-sort-numeric-up"></i> Ordine <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Ordine" class="form-control" type="number" min="0" step="10" />
+                                <span asp-validation-for="Ordine" class="text-danger"></span>
+                                <small class="text-muted">Ordine di visualizzazione (incrementi di 10 consigliati).</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Livello" class="form-label">
+                                    <i class="bi bi-layers"></i> Livello
+                                </label>
+                                <input asp-for="Livello" class="form-control" type="number" min="1" readonly />
+                                <span asp-validation-for="Livello" class="text-danger"></span>
+                                <small class="text-muted">Calcolato automaticamente in base al padre.</small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-gear"></i> Opzioni
+                                </label>
+                                <div class="form-check mt-2">
+                                    <input asp-for="VoceRettifica" class="form-check-input" type="checkbox" />
+                                    <label asp-for="VoceRettifica" class="form-check-label">
+                                        <i class="bi bi-arrow-left-right text-warning"></i> Voce di Rettifica
+                                    </label>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input asp-for="VoceRimanenza" class="form-check-input" type="checkbox" />
+                                    <label asp-for="VoceRimanenza" class="form-check-label">
+                                        <i class="bi bi-box-seam text-info"></i> Voce di Rimanenza
+                                    </label>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input asp-for="CashFlowEconomico" class="form-check-input" type="checkbox" />
+                                    <label asp-for="CashFlowEconomico" class="form-check-label">
+                                        <i class="bi bi-cash-stack text-success"></i> Cash Flow Economico
+                                    </label>
+                                </div>
+                                <small class="text-muted">Spunta le opzioni appropriate per questa voce.</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="CostiFD" class="form-label">
+                                    <i class="bi bi-pie-chart"></i> Costi F/D
+                                </label>
+                                <select asp-for="CostiFD" class="form-select">
+                                    <option value="N">N - Neutro</option>
+                                    <option value="F">F - Fisso</option>
+                                    <option value="D">D - Diretto</option>
+                                </select>
+                                <span asp-validation-for="CostiFD" class="text-danger"></span>
+                                <small class="text-muted">F=Fisso, D=Diretto, N=Neutro</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="GruppoPercentuale" class="form-label">
+                                    <i class="bi bi-percent"></i> Gruppo Percentuale
+                                </label>
+                                <input asp-for="GruppoPercentuale" class="form-control" type="number" min="0" />
+                                <span asp-validation-for="GruppoPercentuale" class="text-danger"></span>
+                                <small class="text-muted">0 = nessun gruppo</small>
+                            </div>
+                        </div>
+                        
+                        <hr />
+                        
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-floppy"></i> Salva Conto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.getElementById('ParentId').addEventListener('change', function() {
+            var parentId = this.value;
+            if (parentId === '0' || parentId === '') {
+                document.getElementById('Livello').value = 1;
+            } else {
+                document.getElementById('Livello').value = '(calcolato)';
+            }
+        });
+    </script>
+}

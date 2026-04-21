@@ -1,0 +1,211 @@
+@model IEnumerable<AiDbMaster.Models.PstreeStrutturaContoEconomico>
+
+@{
+    ViewData["Title"] = "Struttura Conto Economico";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-diagram-3 text-primary"></i> Struttura Conto Economico</h2>
+        <div>
+            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Tree" class="btn btn-outline-info me-2">
+                <i class="bi bi-diagram-2"></i> Vista Albero
+            </a>
+            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nuovo Conto
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 100px; border: none; background-color: #5b9bd5 !important; color: white !important;">IdCodiceConto</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">DescrizioneConto</th>
+                                <th style="width: 100px; border: none; background-color: #5b9bd5 !important; color: white !important;">TipoConto</th>
+                                <th style="width: 100px; border: none; background-color: #5b9bd5 !important; color: white !important;">ParentId</th>
+                                <th style="width: 80px; border: none; background-color: #5b9bd5 !important; color: white !important;">Ordine</th>
+                                <th style="width: 80px; border: none; background-color: #5b9bd5 !important; color: white !important;">Livello</th>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center" title="Voce di Rettifica">Rett.</th>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center" title="Voce di Rimanenza">Rim.</th>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center" title="Costi Fissi/Diretti">F/D</th>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center" title="Cash Flow Economico">CF</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var badgeClass = item.TipoConto switch
+                                {
+                                    "R" => "bg-success",
+                                    "C" => "bg-danger",
+                                    "T" => "bg-primary",
+                                    "S" => "bg-warning text-dark",
+                                    "F" => "bg-info",
+                                    _ => "bg-secondary"
+                                };
+                                
+                                var descUpper = item.DescrizioneConto?.ToUpper() ?? "";
+                                var descClass = "";
+                                
+                                if (descUpper.Contains("RISULTATO ESERCIZIO") || descUpper.Contains("RISULTATO D'ESERCIZIO") || descUpper.Contains("RISULTATO DI ESERCIZIO"))
+                                {
+                                    descClass = "text-primary fw-bold";
+                                }
+                                else if (descUpper.Contains("MARGINE DI CONTRIBUZIONE COMMERCIALE LORDO") ||
+                                         descUpper.Contains("MARGINE DI CONTRIBUZIONE COMMERCIALE NETTO") ||
+                                         descUpper.Contains("EBITDA") ||
+                                         descUpper.Contains("EBIT") ||
+                                         descUpper.Contains("RISULTATO ANTE IMPOSTE"))
+                                {
+                                    descClass = "text-success fw-bold";
+                                }
+                                else if (item.TipoConto == "T")
+                                {
+                                    descClass = "text-danger fw-bold";
+                                }
+                                
+                                <tr>
+                                    <td class="text-center">
+                                        <code>@item.IdCodiceConto</code>
+                                    </td>
+                                    <td class="@descClass">@item.DescrizioneConto</td>
+                                    <td class="text-center">
+                                        <span class="badge @badgeClass">@item.TipoConto</span>
+                                    </td>
+                                    <td class="text-center">@item.ParentId</td>
+                                    <td class="text-center">@item.Ordine</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">@item.Livello</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.VoceRettifica)
+                                        {
+                                            <span class="badge bg-warning text-dark" title="Voce di Rettifica">
+                                                <i class="bi bi-check"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.VoceRimanenza)
+                                        {
+                                            <span class="badge bg-info text-white" title="Voce di Rimanenza">
+                                                <i class="bi bi-check"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.CostiFD == "F")
+                                        {
+                                            <span class="badge bg-primary" title="Costo Fisso">F</span>
+                                        }
+                                        else if (item.CostiFD == "D")
+                                        {
+                                            <span class="badge bg-secondary" title="Costo Diretto">D</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.CashFlowEconomico)
+                                        {
+                                            <span class="badge bg-success" title="Cash Flow Economico">
+                                                <i class="bi bi-check"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Details" asp-route-id="@item.IdCodiceConto" 
+                                               class="btn btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Edit" asp-route-id="@item.IdCodiceConto" 
+                                               class="btn btn-outline-warning" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Delete" asp-route-id="@item.IdCodiceConto" 
+                                               class="btn btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-folder2-open text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Nessun conto presente</h5>
+                    <p class="text-muted">Inizia creando la struttura del tuo conto economico.</p>
+                    <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Crea il primo conto
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda Tipi Conto</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <span class="badge bg-success">R - Ricavo</span>
+                    <small class="text-muted d-block">Voci di ricavo</small>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-danger">C - Costo</span>
+                    <small class="text-muted d-block">Voci di costo</small>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-primary">T - Totale</span>
+                    <small class="text-muted d-block">Righe di totale</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

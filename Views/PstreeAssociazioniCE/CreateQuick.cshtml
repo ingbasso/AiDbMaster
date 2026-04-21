@@ -1,0 +1,87 @@
+@model AiDbMaster.Models.PstreeAssociazioniCE
+
+@{
+    ViewData["Title"] = "Associa Conto";
+    var pdc = ViewBag.PianoDeiConti as AiDbMaster.Models.PstreeListaPianoDeiConti;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle text-success"></i> Associa Conto</h2>
+        <a asp-action="Index" asp-controller="PstreeAssociazioniCE" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-link-45deg"></i> Associa: @Model.CodicePdC
+                        @if (pdc != null)
+                        {
+                            <span class="ms-2">- @pdc.DescrizionePdC</span>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Info sul conto da associare -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-book"></i> Piano dei Conti</h6>
+                        <p class="mb-0">
+                            <strong>Codice:</strong> <code>@Model.CodicePdC</code><br />
+                            @if (pdc != null)
+                            {
+                                <strong>Descrizione:</strong> @pdc.DescrizionePdC<br />
+                                <strong>Tipo:</strong>
+                                @if (pdc.TipoPdC == "P")
+                                {
+                                    <span class="badge bg-info">Patrimoniale</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Economico</span>
+                                }
+                            }
+                        </p>
+                    </div>
+
+                    <form asp-action="CreateQuick" asp-controller="PstreeAssociazioniCE">
+                        <input type="hidden" asp-for="CodicePdC" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="IdCodiceConto" class="form-label">
+                                <i class="bi bi-diagram-3"></i> Seleziona il Conto Economico <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="IdCodiceConto" class="form-select form-select-lg">
+                                @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.ContiEconomico)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="IdCodiceConto" class="text-danger"></span>
+                            <small class="text-muted">Scegli il conto del Conto Economico a cui associare questo codice</small>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-save"></i> Associa
+                            </button>
+                            <a asp-action="Index" asp-controller="PstreeAssociazioniCE" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

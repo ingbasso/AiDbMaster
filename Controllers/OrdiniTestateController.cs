@@ -113,19 +113,10 @@ namespace AiDbMaster.Controllers
                     query = query.Where(o => o.DataOrdine <= dataFine.Value);
                 }
 
-                // Filtro per stato ordine (basato su data consegna)
+                // Filtro per stato evasione (campo StatoEvasione: A=Aperto, P=Parzialmente Evaso, E=Evaso)
                 if (!string.IsNullOrEmpty(statoOrdine))
                 {
-                    var oggi = DateTime.Today;
-                    query = statoOrdine switch
-                    {
-                        "Scaduto" => query.Where(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date < oggi),
-                        "In Scadenza" => query.Where(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date == oggi),
-                        "Prossima Consegna" => query.Where(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date > oggi && o.DataConsegna.Value.Date <= oggi.AddDays(7)),
-                        "Programmato" => query.Where(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date > oggi.AddDays(7)),
-                        "Senza Consegna" => query.Where(o => !o.DataConsegna.HasValue),
-                        _ => query
-                    };
+                    query = query.Where(o => o.StatoEvasione == statoOrdine);
                 }
 
                 // Ordinamento

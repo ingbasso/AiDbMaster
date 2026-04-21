@@ -1,0 +1,90 @@
+@model AiDbMaster.Models.PstreeListaFamiglie
+
+@{
+    ViewData["Title"] = "Modifica Famiglia";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil text-warning"></i> Modifica Famiglia</h2>
+        <a asp-action="Index" asp-controller="PstreeListaFamiglie" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-layers"></i> Modifica Famiglia #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" asp-controller="PstreeListaFamiglie">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-hash"></i> ID
+                                </label>
+                                <input value="@Model.Id" class="form-control" readonly disabled />
+                                <small class="form-text text-muted">L'ID non può essere modificato.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CodiceFamiglia" class="form-label">
+                                    <i class="bi bi-upc-scan"></i> Codice Famiglia <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="CodiceFamiglia" class="form-control" maxlength="10" />
+                                <span asp-validation-for="CodiceFamiglia" class="text-danger"></span>
+                                <small class="form-text text-muted">Codice alfanumerico (max 10 car.)</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NomeFamiglia" class="form-label">
+                                <i class="bi bi-tag"></i> Nome Famiglia <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="NomeFamiglia" class="form-control" />
+                            <span asp-validation-for="NomeFamiglia" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DescrizioneFamiglia" class="form-label">
+                                <i class="bi bi-file-text"></i> Descrizione
+                            </label>
+                            <textarea asp-for="DescrizioneFamiglia" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="DescrizioneFamiglia" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="IdCodiceConto" class="form-label">
+                                <i class="bi bi-boxes text-info"></i> Conto Rimanenza CE <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="IdCodiceConto" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.ContiRimanenza)">
+                                <option value="">-- Seleziona conto rimanenza --</option>
+                            </select>
+                            <span asp-validation-for="IdCodiceConto" class="text-danger"></span>
+                            <small class="form-text text-muted">Seleziona il conto economico associato (solo voci con "Voce Rimanenza" attivo).</small>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-floppy"></i> Salva Modifiche
+                            </button>
+                            <a asp-action="Index" asp-controller="PstreeListaFamiglie" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

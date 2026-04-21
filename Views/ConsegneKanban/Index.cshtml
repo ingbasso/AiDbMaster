@@ -1,7 +1,7 @@
 @model AiDbMaster.ViewModels.ConsegneKanbanViewModel
 
 @{
-    ViewData["Title"] = "Kanban Consegne";
+    ViewData["Title"] = "Calendario Consegne";
     ViewBag.UseFluidContainer = true;
 }
 
@@ -318,7 +318,7 @@
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-1">
-        <h5 class="mb-0"><i class="bi bi-kanban me-2 text-primary"></i>Kanban Consegne</h5>
+        <h5 class="mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>Calendario Consegne</h5>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -489,9 +489,11 @@
                                  data-tempo-pausa="@((viaggio.TempoPausa ?? 0))"
                                  data-tempo-scarico="@((viaggio.TempoScarico ?? 0))"
                                  data-gru="@((viaggio.Gru ?? false).ToString().ToLowerInvariant())"
-                                 data-trasbordo="@((viaggio.Trasbordo ?? false).ToString().ToLowerInvariant())">
+                                 data-trasbordo="@((viaggio.Trasbordo ?? false).ToString().ToLowerInvariant())"
+                                 data-con-rimorchio="@viaggio.ConRimorchio.ToString().ToLowerInvariant()">
                                 <div class="fw-bold d-flex align-items-center gap-1 flex-wrap">
                                     <span>@viaggio.Mezzo</span>
+                                    @if (viaggio.ConRimorchio) { <span class="badge bg-secondary text-white" style="font-size:0.65rem;"><i class="bi bi-truck-flatbed"></i> Rim.</span> }
                                     @if (viaggio.Gru == true) { <span class="badge bg-info text-dark" style="font-size:0.65rem;"><i class="bi bi-arrow-up-circle"></i> Gru</span> }
                                     @if (viaggio.Trasbordo == true) { <span class="badge bg-warning text-dark" style="font-size:0.65rem;"><i class="bi bi-arrow-left-right"></i> Trasb.</span> }
                                 </div>
@@ -661,6 +663,12 @@
                         </div>
                     </div>
                     <div class="row g-2 mt-1">
+                        <div class="col-md-3" id="newConRimorchioWrap" style="display:none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="conRimorchio" value="true" id="newConRimorchio" />
+                                <label class="form-check-label" for="newConRimorchio"><i class="bi bi-truck-flatbed me-1"></i>Con rimorchio</label>
+                            </div>
+                        </div>
                         <div class="col-md-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="gru" value="true" id="newGru" />
@@ -844,6 +852,12 @@
                             </div>
                         </div>
                         <div class="row g-2 mt-1">
+                            <div class="col-md-3" id="dayDropConRimorchioWrap" style="display:none;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="conRimorchio" value="true" id="dayDropConRimorchio" />
+                                    <label class="form-check-label" for="dayDropConRimorchio"><i class="bi bi-truck-flatbed me-1"></i>Con rimorchio</label>
+                                </div>
+                            </div>
                             <div class="col-md-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="gru" value="true" id="dayDropGru" />
@@ -997,6 +1011,12 @@
                         </div>
                     </div>
                     <div class="row g-2 mt-1">
+                        <div class="col-md-3" id="editConRimorchioWrap" style="display:none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="conRimorchio" value="true" id="editConRimorchio" />
+                                <label class="form-check-label" for="editConRimorchio"><i class="bi bi-truck-flatbed me-1"></i>Con rimorchio</label>
+                            </div>
+                        </div>
                         <div class="col-md-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="gru" value="true" id="editGru" />
@@ -1086,6 +1106,19 @@
 
             var mezzoAutistaMap = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MezzoAutistaDefaultMap));
             var mezzoEsternoInfoMap = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MezzoEsternoInfoMap));
+            var mezzoRimorchioMap = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MezzoRimorchioMap));
+
+            function aggiornaRimorchioVisibilita(selectEl, wrapId, checkboxId) {
+                var info = mezzoRimorchioMap[selectEl.value];
+                var wrap = document.getElementById(wrapId);
+                var chk = document.getElementById(checkboxId);
+                if (info && info.RimorchioDisponibile) {
+                    wrap.style.display = '';
+                } else {
+                    wrap.style.display = 'none';
+                    chk.checked = false;
+                }
+            }
 
             // --- Sistema filtro a cascata Mezzi Esterni per Regione/Provincia/Comune ---
             var allMezziEsterni = {};
@@ -1276,6 +1309,7 @@
             newMezzoInt.addEventListener('change', function() {
                 var autistaId = mezzoAutistaMap[newMezzoInt.value];
                 if (autistaId) document.getElementById('newAutista').value = autistaId;
+                aggiornaRimorchioVisibilita(newMezzoInt, 'newConRimorchioWrap', 'newConRimorchio');
             });
             newMezzoEst.addEventListener('change', function() {
                 var info = mezzoEsternoInfoMap[newMezzoEst.value];
@@ -1461,6 +1495,7 @@
             dayDropMezzo.addEventListener('change', function() {
                 var autistaId = mezzoAutistaMap[dayDropMezzo.value];
                 if (autistaId) document.getElementById('dayDropAutista').value = autistaId;
+                aggiornaRimorchioVisibilita(dayDropMezzo, 'dayDropConRimorchioWrap', 'dayDropConRimorchio');
             });
             dayDropMezzoEsterno.addEventListener('change', function() {
                 var info = mezzoEsternoInfoMap[dayDropMezzoEsterno.value];
@@ -1492,6 +1527,8 @@
                     document.getElementById('dayDropTempoScarico').value = '0';
                     document.getElementById('dayDropGru').checked = false;
                     document.getElementById('dayDropTrasbordo').checked = false;
+                    document.getElementById('dayDropConRimorchio').checked = false;
+                    document.getElementById('dayDropConRimorchioWrap').style.display = 'none';
                     if (filtroDayDrop) filtroDayDrop.reset();
                     var h = document.getElementById('dayDropViaggioEsistenteId');
                     if (h) h.remove();
@@ -1665,6 +1702,7 @@
             editMezzoInt.addEventListener('change', function() {
                 var autistaId = mezzoAutistaMap[editMezzoInt.value];
                 if (autistaId) document.getElementById('editAutista').value = autistaId;
+                aggiornaRimorchioVisibilita(editMezzoInt, 'editConRimorchioWrap', 'editConRimorchio');
             });
             editMezzoEst.addEventListener('change', function() {
                 var info = mezzoEsternoInfoMap[editMezzoEst.value];
@@ -1697,6 +1735,8 @@
                     document.getElementById('editTempoScarico').value = d.tempoScarico || '0';
                     document.getElementById('editGru').checked = d.gru === 'true';
                     document.getElementById('editTrasbordo').checked = d.trasbordo === 'true';
+                    aggiornaRimorchioVisibilita(editMezzoInt, 'editConRimorchioWrap', 'editConRimorchio');
+                    document.getElementById('editConRimorchio').checked = d.conRimorchio === 'true';
 
                     editViaggioModal.show();
                 });

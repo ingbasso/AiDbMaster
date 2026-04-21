@@ -1,0 +1,163 @@
+@model AiDbMaster.Models.PstreeListaRettifiche
+
+@{
+    ViewData["Title"] = "Modifica Rettifica";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil text-warning"></i> Modifica Rettifica</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Modifica Rettifica #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" asp-controller="PstreeListaRettifiche">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Conto Economico -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="IdCodiceConto" class="form-label">
+                                    <i class="bi bi-diagram-3"></i> Conto Economico <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdCodiceConto" class="form-select" id="selectConto" 
+                                        asp-items="@((IEnumerable<SelectListItem>)ViewBag.ContiEconomiciRettifica)">
+                                </select>
+                                <span asp-validation-for="IdCodiceConto" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">
+                                    <i class="bi bi-file-text"></i> Descrizione Conto
+                                </label>
+                                <input class="form-control" id="txtDescrizioneConto" readonly value="@ViewBag.DescrizioneConto" />
+                            </div>
+                        </div>
+
+                        <!-- Importi -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Dare" class="form-label">
+                                    <i class="bi bi-arrow-up text-success"></i> Dare <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="Dare" class="form-control text-end" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="Dare" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Avere" class="form-label">
+                                    <i class="bi bi-arrow-down text-danger"></i> Avere <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="Avere" class="form-control text-end" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="Avere" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Periodo -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Mese" class="form-label">
+                                    <i class="bi bi-calendar-month"></i> Mese <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Mese" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Mesi)">
+                                </select>
+                                <span asp-validation-for="Mese" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Anno" class="form-label">
+                                    <i class="bi bi-calendar"></i> Anno <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Anno" class="form-control" type="number" min="2000" max="2100" />
+                                <span asp-validation-for="Anno" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Famiglia e Sede -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="IdFamiglia" class="form-label">
+                                    <i class="bi bi-people"></i> Famiglia <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdFamiglia" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Famiglie)">
+                                </select>
+                                <span asp-validation-for="IdFamiglia" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="IdSede" class="form-label">
+                                    <i class="bi bi-building"></i> Sede <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdSede" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Sedi)">
+                                </select>
+                                <span asp-validation-for="IdSede" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-save"></i> Salva Modifiche
+                            </button>
+                            <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">@Model.Id</dd>
+                        <dt class="col-sm-4">Saldo</dt>
+                        <dd class="col-sm-8">
+                            @{
+                                var saldoClass = Model.Saldo >= 0 ? "text-success" : "text-danger";
+                            }
+                            <span class="@saldoClass fw-bold">@String.Format("{0:C}", Model.Saldo)</span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.getElementById('selectConto').addEventListener('change', function() {
+            var idConto = this.value;
+            if (idConto) {
+                fetch('@Url.Action("GetDescrizioneConto", "PstreeListaRettifiche")?idCodiceConto=' + idConto)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('txtDescrizioneConto').value = data.descrizione;
+                    });
+            } else {
+                document.getElementById('txtDescrizioneConto').value = '';
+            }
+        });
+    </script>
+}

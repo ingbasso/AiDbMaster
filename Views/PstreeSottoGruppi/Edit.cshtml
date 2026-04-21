@@ -1,0 +1,85 @@
+@model AiDbMaster.Models.PstreeSottoGruppi
+@{
+    ViewData["Title"] = "Modifica Sotto-Gruppo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="PstreeSottoGruppi">Sotto-Gruppi</a></li>
+                    <li class="breadcrumb-item active">Modifica</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-pencil text-warning"></i> Modifica Sotto-Gruppo</h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Modifica Sotto-Gruppo #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" asp-controller="PstreeSottoGruppi">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="CodiceFamiglia" class="form-label">
+                                    <i class="bi bi-layers text-primary"></i> Codice Famiglia <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="CodiceFamiglia" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Famiglie)">
+                                    <option value="">-- Seleziona Famiglia --</option>
+                                </select>
+                                <span asp-validation-for="CodiceFamiglia" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="CodiceGruppo" class="form-label">
+                                    <i class="bi bi-upc-scan text-info"></i> Codice Gruppo <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="CodiceGruppo" class="form-control" maxlength="10" />
+                                <span asp-validation-for="CodiceGruppo" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="NomeSottoGruppo" class="form-label">
+                                    <i class="bi bi-tag"></i> Nome Sotto-Gruppo <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="NomeSottoGruppo" class="form-control" />
+                                <span asp-validation-for="NomeSottoGruppo" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="DescrizioneSottoGruppo" class="form-label">
+                                    <i class="bi bi-text-left"></i> Descrizione
+                                </label>
+                                <textarea asp-for="DescrizioneSottoGruppo" class="form-control" rows="3"></textarea>
+                                <span asp-validation-for="DescrizioneSottoGruppo" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" asp-controller="PstreeSottoGruppi" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Annulla
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-floppy"></i> Salva Modifiche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

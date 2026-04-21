@@ -1,0 +1,406 @@
+@model AiDbMaster.ViewModels.Pstree_PercentualiFamiglieEditViewModel
+
+@{
+    ViewData["Title"] = "Modifica Percentuali - " + Model.DescrizioneConto;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-percent text-primary"></i> Modifica Percentuali</h2>
+            <h5 class="text-muted">@Model.DescrizioneConto</h5>
+        </div>
+        <div>
+            <a asp-controller="PstreePercentualiFamiglie" asp-action="Index" asp-route-anno="@Model.Anno" asp-route-sede="@Model.IdSede" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Torna alla lista
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    @if (TempData["DebugMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-bug"></i> @TempData["DebugMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- SELEZIONE VOCE/ANNO/SEDE -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-sliders"></i> Selezione</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-controller="PstreePercentualiFamiglie" asp-action="Edit" id="selectionForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="idCodiceConto" class="form-label">
+                            <i class="bi bi-list-ul"></i> Voce Conto Economico
+                        </label>
+                        <select name="idCodiceConto" id="idCodiceConto" class="form-select" onchange="this.form.submit()">
+                            @foreach (var v in Model.VociCE)
+                            {
+                                <option value="@v.IdCodiceConto" selected="@(v.IdCodiceConto == Model.IdCodiceConto)">
+                                    @v.IdCodiceConto - @v.Descrizione
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="anno" class="form-label">
+                            <i class="bi bi-calendar"></i> Anno
+                        </label>
+                        <select name="anno" id="anno" class="form-select" onchange="this.form.submit()">
+                            @foreach (var a in Model.AnniDisponibili)
+                            {
+                                <option value="@a" selected="@(a == Model.Anno)">@a</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sede" class="form-label">
+                            <i class="bi bi-building"></i> Sede
+                        </label>
+                        <select name="sede" id="sede" class="form-select" onchange="this.form.submit()">
+                            @foreach (var s in Model.Sedi)
+                            {
+                                <option value="@s.Id" selected="@(s.Id == Model.IdSede)">@s.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-info w-100" onclick="distribuisciTutto()">
+                            <i class="bi bi-distribute-vertical"></i> Distribuisci Tutto
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MATRICE PERCENTUALI -->
+    <form asp-controller="PstreePercentualiFamiglie" asp-action="Save" method="post" id="percentualiForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="IdCodiceConto" value="@Model.IdCodiceConto" />
+        <input type="hidden" name="Anno" value="@Model.Anno" />
+        <input type="hidden" name="IdSede" value="@Model.IdSede" />
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table"></i> Matrice Percentuali - @Model.Anno</span>
+                <div>
+                    <button type="submit" class="btn btn-success btn-sm" id="btnSalva">
+                        <i class="bi bi-save"></i> Salva
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm mb-0" id="tblPercentuali">
+                        <thead style="background-color: #5b9bd5;">
+                            <tr>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important;">Mese</th>
+                                @foreach (var fam in Model.Famiglie)
+                                {
+                                    <th style="width: 100px; border: none; background-color: #28a745 !important; color: white !important; text-align: center;">
+                                        @fam.Nome
+                                    </th>
+                                }
+                                <th style="width: 80px; border: none; background-color: #2e75b5 !important; color: white !important; text-align: center;">Totale</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important; text-align: center;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int m = 0; m < Model.RigheMesi.Count; m++)
+                            {
+                                var riga = Model.RigheMesi[m];
+                                <tr class="@riga.RowClass" data-mese="@riga.Mese">
+                                    <td class="fw-bold">@riga.NomeMese</td>
+                                    @foreach (var fam in Model.Famiglie)
+                                    {
+                                        var perc = riga.Percentuali.GetValueOrDefault(fam.Id, 0);
+                                        <td class="p-1">
+                                            <input type="text" inputmode="decimal"
+                                                   class="form-control form-control-sm text-end perc-input"
+                                                   data-mese="@riga.Mese" data-famiglia="@fam.Id"
+                                                   value="@perc.ToString("0.##")"
+                                                   oninput="validaInput(this)" onchange="aggiornaRiga(@riga.Mese)" />
+                                        </td>
+                                    }
+                                    <td class="text-center fw-bold totale-cell" id="totale_@riga.Mese">
+                                        @riga.Totale.ToString("0.##")%
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-info btn-sm" onclick="distribuisciRiga(@riga.Mese)" title="Distribuisci uniformemente">
+                                            <i class="bi bi-distribute-vertical"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="apriCopiaMese(@riga.Mese)" title="Copia da questo mese">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- COPIA MESE Modal -->
+    <div class="modal fade" id="copiaMeseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clipboard"></i> Copia Percentuali</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-controller="PstreePercentualiFamiglie" asp-action="CopyMonth" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idCodiceConto" value="@Model.IdCodiceConto" />
+                    <input type="hidden" name="anno" value="@Model.Anno" />
+                    <input type="hidden" name="sede" value="@Model.IdSede" />
+                    <input type="hidden" name="meseOrigine" id="meseOrigineInput" />
+                    <div class="modal-body">
+                        <p>Copia le percentuali da <strong id="meseOrigineLabel"></strong> a:</p>
+                        <select name="meseDestinazione" class="form-select" id="meseDestinazioneSelect">
+                            @for (int m = 1; m <= 12; m++)
+                            {
+                                <option value="@m">@AiDbMaster.ViewModels.Pstree_PercentualiFamiglieEditViewModel.NomiMesi[m]</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-clipboard"></i> Copia
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info -->
+    <div class="card">
+        <div class="card-body py-2">
+            <small class="text-muted">
+                <strong>Legenda:</strong>
+                <span class="badge bg-success ms-2">100%</span> Mese completo
+                <span class="badge bg-warning text-dark ms-2">≠ 100%</span> Mese incompleto (salvataggio bloccato)
+                <span class="ms-3">|</span>
+                <i class="bi bi-distribute-vertical ms-2"></i> Distribuisci uniformemente
+                <i class="bi bi-clipboard ms-2"></i> Copia da questo mese
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .perc-input {
+        width: 80px;
+    }
+    
+    tr.table-warning {
+        background-color: #fff3cd !important;
+    }
+    
+    tr.table-success {
+        background-color: #d1e7dd !important;
+    }
+    
+    .totale-cell.valid {
+        color: #198754;
+    }
+    
+    .totale-cell.invalid {
+        color: #dc3545;
+        font-weight: bold;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        const nomiMesi = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+        const famiglie = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Famiglie.Select(f => f.Id).ToList()));
+        
+        function parseValore(value) {
+            if (!value || value === '') return 0;
+            const normalizzato = value.toString().replace(',', '.');
+            return parseFloat(normalizzato) || 0;
+        }
+        
+        function validaInput(input) {
+            let valore = input.value.replace(/[^0-9.,]/g, '');
+            valore = valore.replace(/,+/g, ',');
+            valore = valore.replace(/\.+/g, '.');
+            
+            const punti = (valore.match(/\./g) || []).length;
+            const virgole = (valore.match(/,/g) || []).length;
+            if (punti + virgole > 1) {
+                const lastSep = Math.max(valore.lastIndexOf('.'), valore.lastIndexOf(','));
+                const sep = valore[lastSep];
+                valore = valore.replace(/[.,]/g, '');
+                valore = valore.slice(0, lastSep) + sep + valore.slice(lastSep);
+            }
+            
+            input.value = valore;
+        }
+        
+        function aggiornaRiga(mese) {
+            let totale = 0;
+            const inputs = document.querySelectorAll(`input.perc-input[data-mese="${mese}"]`);
+            inputs.forEach(input => {
+                totale += parseValore(input.value);
+            });
+            
+            const totaleCell = document.getElementById(`totale_${mese}`);
+            totaleCell.textContent = totale.toFixed(2) + '%';
+            
+            const row = document.querySelector(`tr[data-mese="${mese}"]`);
+            if (Math.abs(totale - 100) < 0.01) {
+                row.classList.remove('table-warning');
+                row.classList.add('table-success');
+                totaleCell.classList.remove('invalid');
+                totaleCell.classList.add('valid');
+            } else {
+                row.classList.remove('table-success');
+                row.classList.add('table-warning');
+                totaleCell.classList.remove('valid');
+                totaleCell.classList.add('invalid');
+            }
+            
+            verificaSalvataggio();
+        }
+        
+        function verificaSalvataggio() {
+            let tuttoValido = true;
+            for (let m = 1; m <= 12; m++) {
+                const totaleCell = document.getElementById(`totale_${m}`);
+                const totale = parseFloat(totaleCell.textContent);
+                if (Math.abs(totale - 100) >= 0.01) {
+                    tuttoValido = false;
+                    break;
+                }
+            }
+            
+            const btnSalva = document.getElementById('btnSalva');
+            btnSalva.disabled = !tuttoValido;
+            if (!tuttoValido) {
+                btnSalva.classList.remove('btn-success');
+                btnSalva.classList.add('btn-secondary');
+                btnSalva.title = 'Tutti i mesi devono avere somma = 100%';
+            } else {
+                btnSalva.classList.remove('btn-secondary');
+                btnSalva.classList.add('btn-success');
+                btnSalva.title = '';
+            }
+        }
+        
+        function distribuisciRiga(mese) {
+            const numFamiglie = famiglie.length;
+            const percBase = Math.floor((100 / numFamiglie) * 100) / 100;
+            let totaleAssegnato = 0;
+            
+            famiglie.forEach((famId, index) => {
+                const input = document.querySelector(`input.perc-input[data-mese="${mese}"][data-famiglia="${famId}"]`);
+                if (input) {
+                    if (index === numFamiglie - 1) {
+                        const resto = (100 - totaleAssegnato).toFixed(2);
+                        input.value = resto;
+                    } else {
+                        input.value = percBase.toFixed(2);
+                        totaleAssegnato += percBase;
+                    }
+                }
+            });
+            
+            aggiornaRiga(mese);
+        }
+        
+        function distribuisciTutto() {
+            if (!confirm('Vuoi distribuire uniformemente le percentuali per TUTTI i mesi?')) return;
+            
+            for (let m = 1; m <= 12; m++) {
+                distribuisciRiga(m);
+            }
+        }
+        
+        function apriCopiaMese(mese) {
+            document.getElementById('meseOrigineInput').value = mese;
+            document.getElementById('meseOrigineLabel').textContent = nomiMesi[mese];
+            
+            const select = document.getElementById('meseDestinazioneSelect');
+            for (let i = 0; i < select.options.length; i++) {
+                select.options[i].disabled = (parseInt(select.options[i].value) === mese);
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('copiaMeseModal'));
+            modal.show();
+        }
+        
+        document.getElementById('percentualiForm').addEventListener('submit', function(e) {
+            let tuttoValido = true;
+            for (let m = 1; m <= 12; m++) {
+                const totaleCell = document.getElementById(`totale_${m}`);
+                const totale = parseFloat(totaleCell.textContent);
+                if (Math.abs(totale - 100) >= 0.01) {
+                    tuttoValido = false;
+                    break;
+                }
+            }
+            
+            if (!tuttoValido) {
+                e.preventDefault();
+                alert('Tutti i mesi devono avere una somma percentuali pari a 100%.');
+                return false;
+            }
+            
+            const form = this;
+            
+            form.querySelectorAll('input[type="hidden"][name*="Percentuali"]').forEach(el => el.remove());
+            
+            const existing = form.querySelector('#hiddenFieldsContainer');
+            if (existing) existing.remove();
+            
+            const inputs = form.querySelectorAll('input.perc-input');
+            const hiddenContainer = document.createElement('div');
+            hiddenContainer.id = 'hiddenFieldsContainer';
+            
+            inputs.forEach((input, i) => {
+                const mese = input.getAttribute('data-mese');
+                const famiglia = input.getAttribute('data-famiglia');
+                let percentuale = (input.value || '0').replace(',', '.');
+                
+                hiddenContainer.innerHTML += `
+                    <input type="hidden" name="Percentuali[${i}].Mese" value="${mese}" />
+                    <input type="hidden" name="Percentuali[${i}].IdFamiglia" value="${famiglia}" />
+                    <input type="hidden" name="Percentuali[${i}].Percentuale" value="${percentuale}" />
+                `;
+            });
+            
+            form.appendChild(hiddenContainer);
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            for (let m = 1; m <= 12; m++) {
+                aggiornaRiga(m);
+            }
+        });
+    </script>
+}

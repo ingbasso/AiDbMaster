@@ -1,0 +1,131 @@
+USE [SAGA]
+GO
+
+/****** Object:  View [dbo].[V_LeggiLIstaSaldiEasyTree]    Script Date: 16/04/2026 10:55:50 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Basso Marco
+-- Create date: 25/02/2026
+-- Description:	Estrazione Saldi da Contabilità Analitica per EasyTree. Solo consuntivo.
+-- =============================================
+
+
+ALTER View[dbo].[V_LeggiLIstaSaldiEasyTree] as
+SELECT 
+	CONVERT(varchar(10), priana.pa_conto) + CONVERT(varchar(10), priana.pa_codcena) AS CodicePdC,
+		0 AS Dare,
+		(- (1 * priana.pa_importo)) AS Avere,
+		year(Saga.dbo.fnGetDataCompIVA(priana.codditt, priana.pa_progr)) AS Anno,
+		MONTH(Saga.dbo.fnGetDataCompIVA(priana.codditt, priana.pa_progr)) AS Mese, 
+	0 AS IdFamiglia,
+	1 AS IdSede
+FROM  Saga.dbo.priana LEFT OUTER JOIN
+    Saga.dbo.anagra AS anagra_ContoCG ON priana.pa_contocg = anagra_ContoCG.an_conto AND priana.codditt = anagra_ContoCG.codditt LEFT OUTER JOIN
+    Saga.dbo.tabcena ON priana.pa_codcena = tabcena.tb_codcena AND priana.codditt = tabcena.codditt LEFT OUTER JOIN
+    Saga.dbo.anagra RIGHT OUTER JOIN
+    Saga.dbo.prinot ON anagra.codditt = prinot.codditt AND anagra.an_conto = prinot.pn_controp ON priana.pa_datreg = prinot.pn_datreg AND priana.pa_numreg = prinot.pn_numreg AND priana.pa_riga = prinot.pn_riga AND 
+    priana.codditt = prinot.codditt LEFT OUTER JOIN
+    Saga.dbo.tabumisanalitica RIGHT OUTER JOIN
+    Saga.dbo.anagca ON tabumisanalitica.codditt = anagca.codditt AND tabumisanalitica.tb_codumis = anagca.ac_unmis ON priana.pa_conto = anagca.ac_conto AND priana.codditt = anagca.codditt LEFT OUTER JOIN
+    Saga.dbo.XU_tabgrca ON anagca.codditt = XU_tabgrca.codditt AND anagca.ac_qqgruppoca = XU_tabgrca.tb_qqcodgrca
+WHERE	(
+			(   -- Integrative
+				(priana.pa_conto <> 15900010) AND 
+				(prinot.codditt IS NULL) AND  
+				(priana.pa_datreg >= CONVERT(DATETIME, '2025-01-01 00:00:00', 102)) 
+			)
+			OR
+			(
+				(priana.pa_conto <> 15900010) AND 
+				(NOT (prinot.codditt IS NULL)) AND 
+				(priana.pa_datreg >= CONVERT(DATETIME, '2025-01-01 00:00:00', 102)) AND	
+				(prinot.pn_integr = 'N') 
+			)
+		) AND 
+		(
+		  ac_qqgruppoca not in ( '301','302','303','304')  --  Escludo Rimanenze Iniziali e Finali Stampaggio e Attrezzeria
+			
+		)
+GO
+
+
+
+
+USE [EASYTREE]
+GO
+
+/****** Object:  StoredProcedure [dbo].[P_Pstree_ImportListaSaldi]    Script Date: 16/04/2026 10:53:37 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+ALTER PROCEDURE [dbo].[P_Pstree_ImportListaSaldi]
+    @Anno INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @RowCount INT = 0;
+    DECLARE @ErrorMessage NVARCHAR(4000);
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- 1. Svuota la tabella di destinazione (o solo l'anno specificato)
+        IF @Anno IS NULL
+        BEGIN
+            TRUNCATE TABLE Pstree_ListaSaldi;
+        END
+        ELSE
+        BEGIN
+            DELETE FROM Pstree_ListaSaldi WHERE Anno = @Anno;
+        END
+        
+        -- 2. Inserisce i dati dalla vista SAGA
+        IF @Anno IS NULL
+        BEGIN
+            INSERT INTO Pstree_ListaSaldi (CodicePdC, Dare, Avere, Mese, Anno, IdFamiglia, IdSede)
+            SELECT CodicePdC, Dare, Avere, Mese, Anno, IdFamiglia, IdSede
+            FROM [SRV2022ERP].SAGA.dbo.V_LeggiListaSaldiEasyTree;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO Pstree_ListaSaldi (CodicePdC, Dare, Avere, Mese, Anno, IdFamiglia, IdSede)
+            SELECT CodicePdC, Dare, Avere, Mese, Anno, IdFamiglia, IdSede
+            FROM [SRV2022ERP].SAGA.dbo.V_LeggiListaSaldiEasyTree
+            WHERE Anno = @Anno;
+        END
+        
+        SET @RowCount = @@ROWCOUNT;
+        
+        COMMIT TRANSACTION;
+        
+        PRINT 'P_Pstree_ImportListaSaldi completata: ' + CAST(@RowCount AS VARCHAR(10)) + ' record importati.';
+        
+        -- Restituisce il numero di record importati
+        SELECT @RowCount AS RecordImportati, 'OK' AS Esito, NULL AS Errore;
+        
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        SET @ErrorMessage = ERROR_MESSAGE();
+        PRINT 'ERRORE P_Pstree_ImportListaSaldi: ' + @ErrorMessage;
+        
+        SELECT 0 AS RecordImportati, 'ERRORE' AS Esito, @ErrorMessage AS Errore;
+    END CATCH
+END;
+GO
+
+

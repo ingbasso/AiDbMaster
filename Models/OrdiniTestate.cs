@@ -93,6 +93,14 @@ namespace AiDbMaster.Models
         public short CodiceAgente { get; set; }
 
         /// <summary>
+        /// Codice secondo agente associato all'ordine.
+        /// Nullable: il secondo agente potrebbe non essere assegnato.
+        /// </summary>
+        [Display(Name = "Codice Agente 2")]
+        [Column("CodiceAgente2")]
+        public short? CodiceAgente2 { get; set; }
+
+        /// <summary>
         /// Codice destinazione
         /// </summary>
         [Display(Name = "Codice Destinazione")]
@@ -242,6 +250,40 @@ namespace AiDbMaster.Models
             _ => "badge bg-secondary"
         };
 
+        // ── Stato Spedizione Testata (aggregato dalle righe, calcolato dinamicamente) ──
+
+        /// <summary>
+        /// Stato spedizione calcolato aggregando le righe figlie.
+        /// Deve essere popolato dal controller dopo il caricamento.
+        /// NS = Non Spedita, PS = Parzialmente Spedita, SP = Spedita
+        /// </summary>
+        [NotMapped]
+        public string StatoSpedizione { get; set; } = "NS";
+
+        /// <summary>
+        /// Descrizione dello stato spedizione della testata
+        /// </summary>
+        [NotMapped]
+        public string DescrizioneStatoSpedizione => StatoSpedizione switch
+        {
+            "NS" => "Non Spedita",
+            "PS" => "Parz. Spedita",
+            "SP" => "Spedita",
+            _ => "Sconosciuto"
+        };
+
+        /// <summary>
+        /// Classe CSS per il badge dello stato spedizione della testata
+        /// </summary>
+        [NotMapped]
+        public string StatoSpedizioneCssClass => StatoSpedizione switch
+        {
+            "NS" => "badge bg-secondary",
+            "PS" => "badge bg-info text-dark",
+            "SP" => "badge bg-success",
+            _ => "badge bg-light text-dark"
+        };
+
         /// <summary>
         /// Codice porto: "1" = Porto Franco, "2" = Porto Assegnato.
         /// Nel database è un varchar, non un smallint.
@@ -297,6 +339,12 @@ namespace AiDbMaster.Models
         /// </summary>
         [ForeignKey("CodiceAgente")]
         public virtual TabellaAgenti? Agente { get; set; }
+
+        /// <summary>
+        /// Secondo agente associato all'ordine (proprietà di navigazione)
+        /// </summary>
+        [ForeignKey("CodiceAgente2")]
+        public virtual TabellaAgenti? Agente2 { get; set; }
 
         /// <summary>
         /// Righe dell'ordine

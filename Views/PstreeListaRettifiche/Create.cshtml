@@ -1,0 +1,229 @@
+@model AiDbMaster.Models.PstreeListaRettifiche
+
+@{
+    ViewData["Title"] = "Nuova Rettifica";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle text-primary"></i> Nuova Rettifica</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Inserisci Rettifica</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" asp-controller="PstreeListaRettifiche">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Conto Economico -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="IdCodiceConto" class="form-label">
+                                    <i class="bi bi-diagram-3"></i> Conto Economico <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdCodiceConto" class="form-select" id="selectConto" 
+                                        asp-items="@((IEnumerable<SelectListItem>)ViewBag.ContiEconomiciRettifica)">
+                                </select>
+                                <span asp-validation-for="IdCodiceConto" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    Solo conti con "Voce di Rettifica" attiva.
+                                </small>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">
+                                    <i class="bi bi-file-text"></i> Descrizione Conto
+                                </label>
+                                <input class="form-control" id="txtDescrizioneConto" readonly />
+                                <small class="form-text text-muted">Compilata automaticamente.</small>
+                            </div>
+                        </div>
+
+                        <!-- Importi -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Dare" class="form-label">
+                                    <i class="bi bi-arrow-up text-success"></i> Dare <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="Dare" class="form-control text-end" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="Dare" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Avere" class="form-label">
+                                    <i class="bi bi-arrow-down text-danger"></i> Avere <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="Avere" class="form-control text-end" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="Avere" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Periodo -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Mese" class="form-label">
+                                    <i class="bi bi-calendar-month"></i> Mese <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Mese" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Mesi)">
+                                </select>
+                                <span asp-validation-for="Mese" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Anno" class="form-label">
+                                    <i class="bi bi-calendar"></i> Anno <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Anno" class="form-control" type="number" min="2000" max="2100" />
+                                <span asp-validation-for="Anno" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Famiglia e Sede -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="IdFamiglia" class="form-label">
+                                    <i class="bi bi-people"></i> Famiglia <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdFamiglia" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Famiglie)">
+                                </select>
+                                <span asp-validation-for="IdFamiglia" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="IdSede" class="form-label">
+                                    <i class="bi bi-building"></i> Sede <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdSede" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Sedi)">
+                                </select>
+                                <span asp-validation-for="IdSede" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Salva Rettifica
+                                </button>
+                                <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-secondary">
+                                    <i class="bi bi-x"></i> Annulla
+                                </a>
+                            </div>
+                            <button type="button" class="btn btn-warning" id="btnSalvaTuttiMesi"
+                                    title="Salva la stessa rettifica per tutti i 12 mesi dell'anno">
+                                <i class="bi bi-calendar-check"></i> Salva per tutti i mesi
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Form nascosto per salvare tutti i mesi -->
+                    <form id="formTuttiMesi" asp-action="CreateForAllMonths" asp-controller="PstreeListaRettifiche" method="post" style="display: none;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="IdCodiceConto" id="hiddenIdCodiceConto" />
+                        <input type="hidden" name="Dare" id="hiddenDare" />
+                        <input type="hidden" name="Avere" id="hiddenAvere" />
+                        <input type="hidden" name="Anno" id="hiddenAnno" />
+                        <input type="hidden" name="IdFamiglia" id="hiddenIdFamiglia" />
+                        <input type="hidden" name="IdSede" id="hiddenIdSede" />
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Guida</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Cosa sono le rettifiche?</strong></p>
+                    <p class="text-muted mb-3">
+                        Le rettifiche sono movimenti contabili manuali che modificano 
+                        i valori del Conto Economico per il periodo selezionato.
+                    </p>
+                    <p class="mb-2"><strong>Dare vs Avere</strong></p>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-arrow-up text-success"></i> <strong>Dare</strong>: Aumenta il valore<br/>
+                        <i class="bi bi-arrow-down text-danger"></i> <strong>Avere</strong>: Diminuisce il valore
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.getElementById('selectConto').addEventListener('change', function() {
+            var idConto = this.value;
+            if (idConto) {
+                fetch('@Url.Action("GetDescrizioneConto", "PstreeListaRettifiche")?idCodiceConto=' + idConto)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('txtDescrizioneConto').value = data.descrizione;
+                    });
+            } else {
+                document.getElementById('txtDescrizioneConto').value = '';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var select = document.getElementById('selectConto');
+            if (select.value) {
+                select.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        document.getElementById('btnSalvaTuttiMesi').addEventListener('click', function() {
+            var idConto = document.getElementById('selectConto').value;
+            var dare = document.getElementById('Dare').value;
+            var avere = document.getElementById('Avere').value;
+            var anno = document.getElementById('Anno').value;
+            var idFamiglia = document.getElementById('IdFamiglia').value;
+            var idSede = document.getElementById('IdSede').value;
+            
+            if (!idConto || idConto === '') {
+                alert('Seleziona un Conto Economico');
+                return;
+            }
+            if (!anno || anno === '') {
+                alert('Inserisci l\'Anno');
+                return;
+            }
+            
+            var msg = 'Questa operazione:\n\n';
+            msg += '1. ELIMINERÀ tutte le rettifiche esistenti per:\n';
+            msg += '   - Conto: ' + idConto + '\n';
+            msg += '   - Anno: ' + anno + '\n';
+            msg += '   - Famiglia: ' + idFamiglia + '\n';
+            msg += '   - Sede: ' + idSede + '\n\n';
+            msg += '2. CREERÀ 12 nuove rettifiche (una per ogni mese)\n';
+            msg += '   - Dare: ' + (dare || 0) + ' €\n';
+            msg += '   - Avere: ' + (avere || 0) + ' €\n\n';
+            msg += 'Vuoi continuare?';
+            
+            if (confirm(msg)) {
+                document.getElementById('hiddenIdCodiceConto').value = idConto;
+                document.getElementById('hiddenDare').value = dare || 0;
+                document.getElementById('hiddenAvere').value = avere || 0;
+                document.getElementById('hiddenAnno').value = anno;
+                document.getElementById('hiddenIdFamiglia').value = idFamiglia;
+                document.getElementById('hiddenIdSede').value = idSede;
+                
+                document.getElementById('formTuttiMesi').submit();
+            }
+        });
+    </script>
+}

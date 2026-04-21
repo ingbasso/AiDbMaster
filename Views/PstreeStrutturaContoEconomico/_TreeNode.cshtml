@@ -1,0 +1,92 @@
+@model AiDbMaster.Models.PstreeStrutturaContoEconomico
+
+@{
+    var badgeClass = Model.TipoConto switch
+    {
+        "R" => "bg-success",
+        "C" => "bg-danger",
+        "T" => "bg-primary",
+        "S" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+    
+    var hasChildren = Model.Figli?.Any() == true;
+    
+    var descUpper = Model.DescrizioneConto?.ToUpper() ?? "";
+    var descClass = "";
+    
+    if (descUpper.Contains("RISULTATO ESERCIZIO") || descUpper.Contains("RISULTATO D'ESERCIZIO") || descUpper.Contains("RISULTATO DI ESERCIZIO"))
+    {
+        descClass = "text-primary fw-bold";
+    }
+    else if (descUpper.Contains("MARGINE DI CONTRIBUZIONE COMMERCIALE LORDO") ||
+             descUpper.Contains("MARGINE DI CONTRIBUZIONE COMMERCIALE NETTO") ||
+             descUpper.Contains("EBITDA") ||
+             descUpper.Contains("EBIT") ||
+             descUpper.Contains("RISULTATO ANTE IMPOSTE"))
+    {
+        descClass = "text-success fw-bold";
+    }
+    else if (Model.TipoConto == "T")
+    {
+        descClass = "text-danger fw-bold";
+    }
+    
+    var figliTotali = hasChildren ? Model.Figli!.Where(f => f.TipoConto == "T").OrderBy(f => f.IdCodiceConto).ToList() : new List<AiDbMaster.Models.PstreeStrutturaContoEconomico>();
+    var figliAltri = hasChildren ? Model.Figli!.Where(f => f.TipoConto != "T").OrderBy(f => f.IdCodiceConto).ToList() : new List<AiDbMaster.Models.PstreeStrutturaContoEconomico>();
+    var hasCollapsableChildren = figliAltri.Any();
+    
+    var maxLivello = 10;
+    var indentUnit = 25;
+    var marginLeft = Math.Max(0, (maxLivello - Model.Livello) * indentUnit);
+}
+
+<div class="tree-node">
+    @* Figli collassabili (non di tipo T) - di default collassati *@
+    @if (hasCollapsableChildren)
+    {
+        <div class="collapse" id="children-@Model.IdCodiceConto">
+            @foreach (var child in figliAltri)
+            {
+                @await Html.PartialAsync("_TreeNode", child)
+            }
+        </div>
+    }
+    
+    @* Figli di tipo T - sempre visibili *@
+    @foreach (var child in figliTotali)
+    {
+        @await Html.PartialAsync("_TreeNode", child)
+    }
+    
+    @* Nodo corrente (sotto i figli) - margine inversamente proporzionale al livello *@
+    <div class="d-flex align-items-center py-2 border-bottom tree-node-content" style="margin-left: @(marginLeft)px;">
+        @if (hasCollapsableChildren)
+        {
+            <button class="btn btn-sm btn-link text-dark p-0 me-2 toggle-btn collapsed" 
+                    type="button"
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#children-@Model.IdCodiceConto"
+                    aria-expanded="false">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        }
+        else
+        {
+            <span class="me-2" style="width: 24px;"></span>
+        }
+        
+        <span class="flex-grow-1 @descClass">@Model.DescrizioneConto</span>
+        
+        <span class="badge @badgeClass me-2">@Model.TipoContoDescrizione</span>
+        
+        <div class="btn-group btn-group-sm">
+            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Details" asp-route-id="@Model.IdCodiceConto" class="btn btn-outline-info" title="Dettagli">
+                <i class="bi bi-eye"></i>
+            </a>
+            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Edit" asp-route-id="@Model.IdCodiceConto" class="btn btn-outline-warning" title="Modifica">
+                <i class="bi bi-pencil"></i>
+            </a>
+        </div>
+    </div>
+</div>

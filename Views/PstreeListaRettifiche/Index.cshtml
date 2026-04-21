@@ -1,0 +1,271 @@
+@model IEnumerable<AiDbMaster.Models.PstreeListaRettifiche>
+
+@{
+    ViewData["Title"] = "Lista Rettifiche";
+    var nomiFamiglie = ViewBag.NomiFamiglie as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var nomiSedi = ViewBag.NomiSedi as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var descrizioniConti = ViewBag.DescrizioniConti as Dictionary<int, string> ?? new Dictionary<int, string>();
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-arrow-left-right text-primary"></i> Lista Rettifiche</h2>
+        <a asp-action="Create" asp-controller="PstreeListaRettifiche" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuova Rettifica
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- FILTRI -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtri</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" asp-controller="PstreeListaRettifiche">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="filterIdCodiceConto" class="form-label">Conto Economico</label>
+                        <select class="form-select" id="filterIdCodiceConto" name="filterIdCodiceConto">
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.ContiEconomici)
+                            {
+                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterMese" class="form-label">Mese</label>
+                        <select class="form-select" id="filterMese" name="filterMese">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Mesi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.FilterMese?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterAnno" class="form-label">Anno</label>
+                        <select class="form-select" id="filterAnno" name="filterAnno">
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Anni)
+                            {
+                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterIdFamiglia" class="form-label">Famiglia</label>
+                        <select class="form-select" id="filterIdFamiglia" name="filterIdFamiglia">
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Famiglie)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.FilterIdFamiglia?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterIdSede" class="form-label">Sede</label>
+                        <select class="form-select" id="filterIdSede" name="filterIdSede">
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Sedi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.FilterIdSede?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset Filtri
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELLA AD ALBERO -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Rettifiche
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm me-2" id="btnExpandAll">
+                    <i class="bi bi-arrows-fullscreen"></i> Espandi tutto
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCollapseAll">
+                    <i class="bi bi-fullscreen-exit"></i> Comprimi tutto
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                var gruppi = Model.GroupBy(r => r.IdCodiceConto)
+                                  .OrderBy(g => g.Key)
+                                  .ToList();
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="tblRettifiche">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 50px; border: none; background-color: #5b9bd5 !important; color: white !important;"></th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Conto / Mese</th>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Dare</th>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Avere</th>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Saldo</th>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var gruppo in gruppi)
+                            {
+                                var idConto = gruppo.Key;
+                                var descConto = descrizioniConti.GetValueOrDefault(idConto, "N/D");
+                                var totaleDare = gruppo.Sum(r => r.Dare);
+                                var totaleAvere = gruppo.Sum(r => r.Avere);
+                                var totaleSaldo = gruppo.Sum(r => r.Saldo);
+                                var saldoClass = totaleSaldo >= 0 ? "text-success" : "text-danger";
+                                var righeOrdinati = gruppo.OrderBy(r => r.Mese).ToList();
+                                
+                                <tr class="parent-row" data-conto="@idConto" style="background-color: #e3f2fd; cursor: pointer;" onclick="toggleChildren(@idConto)">
+                                    <td class="text-center">
+                                        <i class="bi bi-chevron-right toggle-icon" id="icon_@idConto"></i>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary me-2">@idConto</span>
+                                        <strong>@descConto</strong>
+                                        <span class="badge bg-secondary ms-2">@righeOrdinati.Count mesi</span>
+                                    </td>
+                                    <td class="text-end fw-bold">@String.Format("{0:N2}", totaleDare)</td>
+                                    <td class="text-end fw-bold">@String.Format("{0:N2}", totaleAvere)</td>
+                                    <td class="text-end fw-bold @saldoClass">@String.Format("{0:N2}", totaleSaldo)</td>
+                                    <td></td>
+                                </tr>
+                                
+                                @foreach (var item in righeOrdinati)
+                                {
+                                    var saldoMeseClass = item.Saldo >= 0 ? "text-success" : "text-danger";
+                                    
+                                    <tr class="child-row child-of-@idConto" style="display: none;">
+                                        <td></td>
+                                        <td style="padding-left: 50px;">
+                                            <i class="bi bi-calendar-day text-muted me-2"></i>
+                                            <span class="badge bg-info">@item.NomeMese</span>
+                                        </td>
+                                        <td class="text-end">@String.Format("{0:N2}", item.Dare)</td>
+                                        <td class="text-end">@String.Format("{0:N2}", item.Avere)</td>
+                                        <td class="text-end @saldoMeseClass">@String.Format("{0:N2}", item.Saldo)</td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a asp-action="Edit" asp-controller="PstreeListaRettifiche" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-warning btn-sm" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-controller="PstreeListaRettifiche" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-danger btn-sm" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-arrow-left-right fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna rettifica trovata</h5>
+                    <p class="text-muted">
+                        @if (ViewBag.FilterIdCodiceConto != null || ViewBag.FilterMese != null || 
+                             ViewBag.FilterAnno != null || ViewBag.FilterIdFamiglia != null || ViewBag.FilterIdSede != null)
+                        {
+                            <text>Prova a modificare i filtri di ricerca.</text>
+                        }
+                        else
+                        {
+                            <text>Inizia creando la prima rettifica.</text>
+                        }
+                    </p>
+                    <a asp-action="Create" asp-controller="PstreeListaRettifiche" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Crea rettifica
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+    
+    <script>
+        function toggleChildren(idConto) {
+            var children = document.querySelectorAll('.child-of-' + idConto);
+            var icon = document.getElementById('icon_' + idConto);
+            var isExpanded = icon.classList.contains('bi-chevron-down');
+            
+            children.forEach(function(child) {
+                child.style.display = isExpanded ? 'none' : 'table-row';
+            });
+            
+            icon.classList.toggle('bi-chevron-right', isExpanded);
+            icon.classList.toggle('bi-chevron-down', !isExpanded);
+        }
+        
+        document.getElementById('btnExpandAll')?.addEventListener('click', function() {
+            document.querySelectorAll('.child-row').forEach(function(row) {
+                row.style.display = 'table-row';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-down');
+            });
+        });
+        
+        document.getElementById('btnCollapseAll')?.addEventListener('click', function() {
+            document.querySelectorAll('.child-row').forEach(function(row) {
+                row.style.display = 'none';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-right');
+            });
+        });
+    </script>
+
+    <!-- INFO -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0 text-muted">
+                <i class="bi bi-arrow-left-right text-warning"></i> 
+                Le rettifiche alimentano le voci del Conto Economico che hanno il flag <strong>"Voce di Rettifica"</strong> attivo.
+                <br/>
+                <i class="bi bi-info-circle text-info"></i>
+                Le rettifiche vengono sommate ai valori provenienti dalla ListaSaldi per calcolare il Conto Economico finale.
+            </p>
+        </div>
+    </div>
+</div>

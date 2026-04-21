@@ -1,0 +1,89 @@
+@model AiDbMaster.Models.PstreeStrutturaContoEconomico
+
+@{
+    ViewData["Title"] = "Elimina Conto";
+    
+    var badgeClass = Model.TipoConto switch
+    {
+        "R" => "bg-success",
+        "C" => "bg-danger",
+        "T" => "bg-primary",
+        "S" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Attenzione!</strong> Stai per eliminare il seguente conto. Questa azione non può essere annullata.
+                    </div>
+                    
+                    @if (Model.Figli?.Any() == true)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-slash-circle"></i>
+                            <strong>Impossibile eliminare!</strong> Questo conto ha @Model.Figli.Count sotto-conti collegati.
+                            Devi prima eliminare o spostare i sotto-conti.
+                        </div>
+                    }
+                    
+                    <dl class="row">
+                        <dt class="col-sm-4">Codice Conto</dt>
+                        <dd class="col-sm-8"><code>@Model.IdCodiceConto</code></dd>
+                        
+                        <dt class="col-sm-4">Descrizione</dt>
+                        <dd class="col-sm-8"><strong>@Model.DescrizioneConto</strong></dd>
+                        
+                        <dt class="col-sm-4">Tipo Conto</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @badgeClass">@Model.TipoContoDescrizione</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Conto Padre</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Parent != null)
+                            {
+                                <span>@Model.Parent.DescrizioneCompleta</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-- Conto Radice --</span>
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-4">Livello</dt>
+                        <dd class="col-sm-8">@Model.Livello</dd>
+                    </dl>
+                    
+                    <hr />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Annulla
+                        </a>
+                        
+                        @if (Model.Figli?.Any() != true)
+                        {
+                            <form asp-controller="PstreeStrutturaContoEconomico" asp-action="Delete">
+                                <input type="hidden" asp-for="IdCodiceConto" />
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Conferma Eliminazione
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

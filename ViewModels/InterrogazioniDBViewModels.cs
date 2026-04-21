@@ -322,11 +322,11 @@ namespace AiDbMaster.ViewModels
     }
 
     // =====================================================
-    // ViewModels per Consegne Programmate
+    // ViewModels per Lista Ordini Clienti
     // =====================================================
 
     /// <summary>
-    /// ViewModel per la pagina Consegne Programmate (filtri e risultati)
+    /// ViewModel per la pagina Lista Ordini Clienti (filtri e risultati)
     /// </summary>
     public class ConsegneProgrammateViewModel
     {
@@ -353,6 +353,9 @@ namespace AiDbMaster.ViewModels
 
         [Display(Name = "Agente")]
         public short? CodiceAgente { get; set; }
+
+        [Display(Name = "Stato Evasione")]
+        public string? StatoEvasioneFiltro { get; set; }
 
         [Display(Name = "Ordina Per")]
         public string OrdinamentoPer { get; set; } = "DataConsegna"; // DataConsegna, Cliente, Ordine
@@ -423,6 +426,17 @@ namespace AiDbMaster.ViewModels
         public decimal TotaleOrdine => Righe.Sum(r => r.ValoreRiga);
         public decimal TotaleQuantita => Righe.Sum(r => r.Quantita);
         public decimal TotaleQuantitaDaEvadere => Righe.Sum(r => r.QuantitaRimanente);
+
+        public string StatoEvasione => Righe.All(r => r.StatoEvasione == "Completamente Evasa") ? "Completamente Evaso"
+            : Righe.All(r => r.StatoEvasione == "Da Evadere") ? "Da Evadere"
+            : "Parzialmente Evaso";
+        public string StatoEvasioneCssClass => StatoEvasione switch
+        {
+            "Da Evadere" => "bg-danger",
+            "Parzialmente Evaso" => "bg-warning text-dark",
+            "Completamente Evaso" => "bg-success",
+            _ => "bg-secondary"
+        };
 
         private static string FormattaIndirizzo(string? indirizzo, string? cap, string? citta, string? provincia)
         {

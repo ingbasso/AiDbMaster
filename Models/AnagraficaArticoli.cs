@@ -195,6 +195,15 @@ namespace AiDbMaster.Models
         [Column("TavolePerPallet", TypeName = "decimal(27,9)")]
         public decimal TavolePerPallet { get; set; }
 
+        /// <summary>
+        /// Stato dell'articolo (codice di 1 carattere).
+        /// Nullable: se non valorizzato, l'articolo non ha uno stato specifico.
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Stato Articolo")]
+        [Column("StatoArticolo", TypeName = "varchar(1)")]
+        public string? StatoArticolo { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

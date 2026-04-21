@@ -1,0 +1,87 @@
+@model AiDbMaster.Models.PstreeListaRettifiche
+
+@{
+    ViewData["Title"] = "Elimina Rettifica";
+    var famiglia = ViewBag.Famiglia as AiDbMaster.Models.PstreeListaFamiglie;
+    var sede = ViewBag.Sede as AiDbMaster.Models.PstreeListaSedi;
+    var descrizioneConto = ViewBag.DescrizioneConto as string ?? "N/D";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-trash text-danger"></i> Elimina Rettifica</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="alert alert-danger" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione
+                </h5>
+                <p class="mb-0">
+                    Sei sicuro di voler eliminare questa rettifica? L'operazione non può essere annullata.
+                </p>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Rettifica da eliminare</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Conto Economico</label>
+                            <div>
+                                <span class="badge bg-primary">@Model.IdCodiceConto</span>
+                                <span class="ms-2">@descrizioneConto</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Periodo</label>
+                            <div class="fw-bold">@Model.Periodo</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Famiglia / Sede</label>
+                            <div>@(famiglia?.NomeFamiglia ?? Model.IdFamiglia.ToString()) / @(sede?.Sede ?? Model.IdSede.ToString())</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Dare</label>
+                            <div class="fs-5 text-success fw-bold">@String.Format("{0:C}", Model.Dare)</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Avere</label>
+                            <div class="fs-5 text-danger fw-bold">@String.Format("{0:C}", Model.Avere)</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Saldo</label>
+                            @{
+                                var saldoClass = Model.Saldo >= 0 ? "text-success" : "text-danger";
+                            }
+                            <div class="fs-5 @saldoClass fw-bold">@String.Format("{0:C}", Model.Saldo)</div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <form asp-action="Delete" asp-controller="PstreeListaRettifiche">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Conferma Eliminazione
+                            </button>
+                            <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

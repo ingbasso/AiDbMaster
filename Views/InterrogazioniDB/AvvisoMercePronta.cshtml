@@ -290,6 +290,14 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselezionaTutte">
                     <i class="bi bi-x-lg"></i> Deseleziona tutte
                 </button>
+                <span class="border-start ms-2 ps-2">
+                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnSelezionaTuttiAgenti" title="Seleziona CC per tutti gli agenti">
+                        <i class="bi bi-person-check"></i> Seleziona Tutti Agenti
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnDeselezionaTuttiAgenti" title="Deseleziona CC per tutti gli agenti">
+                        <i class="bi bi-person-x"></i> Deseleziona Tutti Agenti
+                    </button>
+                </span>
             </div>
             <div>
                 <span id="contatoreSelezionate" class="badge bg-dark badge-custom me-2">0 selezionate</span>
@@ -587,6 +595,21 @@ else
                     checkboxes.forEach(function (cb) { cb.checked = false; });
                     document.querySelectorAll('.select-all-ordine').forEach(function (cb) { cb.checked = false; });
                     aggiornaContatore();
+                });
+            }
+
+            var btnSelAgenti = document.getElementById('btnSelezionaTuttiAgenti');
+            var btnDeselAgenti = document.getElementById('btnDeselezionaTuttiAgenti');
+
+            if (btnSelAgenti) {
+                btnSelAgenti.addEventListener('click', function () {
+                    document.querySelectorAll('.cc-agente-checkbox').forEach(function (cb) { cb.checked = true; });
+                });
+            }
+
+            if (btnDeselAgenti) {
+                btnDeselAgenti.addEventListener('click', function () {
+                    document.querySelectorAll('.cc-agente-checkbox').forEach(function (cb) { cb.checked = false; });
                 });
             }
 

@@ -1,0 +1,96 @@
+@model AiDbMaster.Models.PstreeListaRimanenze
+
+@{
+    ViewData["Title"] = "Dettagli Rimanenza";
+    var famiglia = ViewBag.Famiglia as AiDbMaster.Models.PstreeListaFamiglie;
+    var sede = ViewBag.Sede as AiDbMaster.Models.PstreeListaSedi;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-eye text-info"></i> Dettagli Rimanenza</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> Rimanenza #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Famiglia</label>
+                            <div>
+                                @if (famiglia != null)
+                                {
+                                    <span class="badge bg-info text-white fs-6">
+                                        <i class="bi bi-layers"></i> @famiglia.Id - @famiglia.NomeFamiglia
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">ID: @Model.IdFamiglia</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Sede</label>
+                            <div>
+                                @if (sede != null)
+                                {
+                                    <span class="badge bg-primary fs-6">
+                                        <i class="bi bi-building"></i> @sede.Id - @sede.Sede
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@Model.IdSede</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Periodo</label>
+                            <div class="fs-4">
+                                <span class="badge bg-secondary fs-5">@Model.NomeMese @Model.Anno</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Valore Rimanenza</label>
+                            <div class="fs-3 fw-bold text-success">
+                                € @Model.Valore.ToString("N2")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> Azioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Edit" asp-controller="PstreeListaRimanenze" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <a asp-action="Delete" asp-controller="PstreeListaRimanenze" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Elimina
+                        </a>
+                        <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

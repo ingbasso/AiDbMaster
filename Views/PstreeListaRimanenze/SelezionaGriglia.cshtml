@@ -1,0 +1,80 @@
+@model AiDbMaster.ViewModels.Pstree_RimanenzeSelezionaViewModel
+
+@{
+    ViewData["Title"] = "Gestione Rimanenze - Selezione";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box-seam text-primary"></i> Gestione Rimanenze</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna alla lista
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-month"></i> Seleziona Periodo e Sede</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" method="get">
+                        <div class="mb-3">
+                            <label for="anno" class="form-label">
+                                <i class="bi bi-calendar"></i> Anno
+                            </label>
+                            <select name="anno" id="anno" class="form-select" required>
+                                @foreach (var a in Model.AnniDisponibili)
+                                {
+                                    <option value="@a" selected="@(a == Model.Anno)">@a</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="mese" class="form-label">
+                                <i class="bi bi-calendar-day"></i> Mese
+                            </label>
+                            <select name="mese" id="mese" class="form-select" required>
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m" selected="@(m == Model.Mese)">@AiDbMaster.ViewModels.Pstree_RimanenzeSelezionaViewModel.NomiMesi[m]</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="sede" class="form-label">
+                                <i class="bi bi-building"></i> Sede
+                            </label>
+                            <select name="sede" id="sede" class="form-select" required>
+                                <option value="">-- Seleziona Sede --</option>
+                                @foreach (var s in Model.Sedi)
+                                {
+                                    <option value="@s.Id" selected="@(s.Id == Model.IdSede)">@s.Nome</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-right"></i> Vai alla Griglia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body py-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Seleziona il periodo e la sede per gestire le rimanenze di magazzino.
+                        Se non esistono record per quel periodo, verranno creati automaticamente per tutte le famiglie prodotto.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

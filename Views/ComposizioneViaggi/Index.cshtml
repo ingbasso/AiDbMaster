@@ -30,7 +30,40 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        transition: width 0.3s ease, min-width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
     }
+    .panel-right.collapsed {
+        width: 0;
+        min-width: 0;
+        padding: 0;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .btn-toggle-panel {
+        position: fixed;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1030;
+        width: 32px;
+        height: 64px;
+        border: 1px solid #dee2e6;
+        background: #5bc0de;
+        color: #fff;
+        border-radius: 8px 0 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+        transition: right 0.3s ease, background 0.3s ease;
+        padding: 0;
+    }
+    .btn-toggle-panel:hover { background: #3daed1; }
+    .btn-toggle-panel.panel-hidden { right: 0; }
+    .btn-toggle-panel i { transition: transform 0.3s ease; }
+    .btn-toggle-panel.panel-hidden i { transform: rotate(180deg); }
     .filtri-bar {
         background: #fff;
         border: 1px solid #dee2e6;
@@ -115,11 +148,46 @@
         overflow-x: auto;
         overflow-y: hidden;
     }
-    .tab-badge {
-        font-size: 0.7rem;
-        padding: 2px 6px;
-        margin-left: 4px;
+    #tabTipiMezzo .nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 8px 3px;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        color: #6c757d;
+        border: 1px solid transparent;
+        transition: background .15s, box-shadow .15s, border-color .15s;
     }
+    #tabTipiMezzo .nav-link.active {
+        background: linear-gradient(135deg, #e8f0fe 0%, #d0e2ff 100%);
+        color: #0d47a1;
+        font-weight: 700;
+        border-color: #90b4f0 #90b4f0 #fff;
+        box-shadow: 0 -2px 6px rgba(13,71,161,.12);
+    }
+    #tabTipiMezzo .nav-link.tab-has-ordini {
+        color: #333;
+        font-weight: 600;
+        background: #fffbf0;
+        border-color: #ffe0b2 #ffe0b2 transparent;
+    }
+    #tabTipiMezzo .nav-link.tab-has-ordini.active {
+        background: linear-gradient(135deg, #e8f0fe 0%, #d0e2ff 100%);
+        color: #0d47a1;
+        border-color: #90b4f0 #90b4f0 #fff;
+    }
+    #tabTipiMezzo .nav-link.tab-vuoto {
+        opacity: 0.55;
+    }
+    .tab-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        line-height: 1.3;
+        vertical-align: middle;
+    }
+    .badge-da-spedire { background-color: #fd7e14 !important; color: #fff !important; }
     .table-righe {
         font-size: 0.82rem;
         margin-bottom: 0;
@@ -199,6 +267,16 @@
         font-size: 1.1rem;
         font-weight: 600;
     }
+    .me-tabella-mezzi { font-size: 0.8rem; }
+    .me-tabella-mezzi tbody tr { cursor: pointer; }
+    .me-tabella-mezzi tbody tr:hover { background-color: #cfe2ff !important; }
+    .me-tabella-mezzi .btn-seleziona-mezzo { padding: 1px 8px; font-size: 0.72rem; }
+    .me-gru-ok, .me-trasbordo-ok { color: #198754; }
+    .me-gru-no, .me-trasbordo-no { color: #dc3545; opacity: 0.4; }
+    .me-chip-province { display: flex; flex-wrap: wrap; gap: 4px; }
+    #viaggioMezzoEsternoDisplay { cursor: pointer; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .me-vettore-link { color: #0d6efd; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+    .me-vettore-link:hover { color: #0a58ca; text-decoration-style: solid; }
     .empty-state {
         display: flex;
         flex-direction: column;
@@ -231,6 +309,70 @@
         box-shadow: 0 0 0 2px rgba(255,193,7,.3);
     }
     .qta-static { display: inline; }
+    .qta-cell-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        font-size: 0.78rem;
+        line-height: 1.3;
+    }
+    .qta-cell-detail .qta-main {
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+    .qta-cell-detail .qta-sub {
+        font-size: 0.68rem;
+        color: #6c757d;
+    }
+    .qta-cell-detail .qta-sub .label { font-weight: 600; }
+    .qta-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 2px;
+    }
+    .qta-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.65rem;
+    }
+    .qta-bar-row .bar-label {
+        width: 32px;
+        text-align: right;
+        font-weight: 600;
+        color: #6c757d;
+        flex-shrink: 0;
+    }
+    .qta-bar-track {
+        flex: 1;
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .qta-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s;
+    }
+    .qta-bar-fill.bar-evasione { background: #0d6efd; }
+    .qta-bar-fill.bar-spedizione { background: #20c997; }
+    .qta-bar-fill.bar-spedizione-manuale { background: #ffc107; }
+    .qta-bar-row .bar-value {
+        width: 42px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    .qta-desync {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 0.65rem;
+        color: #e67e22;
+        font-weight: 600;
+        margin-top: 1px;
+    }
     .link-articolo {
         color: #0d6efd;
         text-decoration: none;
@@ -239,6 +381,75 @@
     .link-articolo:hover {
         text-decoration: underline;
         color: #0a58ca;
+    }
+    #popupDettaglioMovimentiNotaCV.modal { z-index: 1090 !important; }
+    #popupDettaglioMovimentiNotaCV .modal-dialog { z-index: 1091 !important; }
+    .cv-modal-header {
+        background: linear-gradient(135deg, #5bc0de 0%, #3daed1 100%) !important;
+        color: #fff !important;
+        padding: 6px 12px !important;
+        min-height: 0 !important;
+    }
+    .cv-modal-header .modal-title {
+        font-size: 0.92rem;
+        color: #fff !important;
+    }
+    .cv-modal-header .btn-close { filter: brightness(0) invert(1); }
+    .nota-previsione-link {
+        cursor: pointer;
+        text-decoration: underline;
+    }
+    .nota-previsione-link:hover {
+        opacity: 0.75;
+    }
+    .sqta-info-box {
+        background: #f0f7ff;
+        border: 1px solid #b8daff;
+        border-radius: 6px;
+        padding: 8px 10px;
+    }
+    .sqta-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: 0.5px;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .sqta-plt-btn { width: 34px; height: 34px; padding: 0; }
+    .sqta-plt-quick {
+        font-size: 0.75rem;
+        padding: 2px 10px;
+        border-radius: 12px;
+    }
+    .sqta-plt-quick.active { font-weight: 700; }
+    .sqta-resto-info {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: #fff3cd;
+        color: #856404;
+    }
+    .sqta-pallet-warning {
+        font-size: 0.72rem;
+        color: #e67e22;
+        font-weight: 600;
+    }
+    .sqta-peso-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+    .sqta-peso-box > div { padding: 2px 0; }
+    .sqta-peso-totale {
+        border-top: 1px solid #dee2e6;
+        padding-top: 4px !important;
+        margin-top: 2px;
+        font-size: 0.88rem;
+        color: #0d6efd;
     }
     .form-section { margin-bottom: 0; }
     .form-section label {
@@ -272,6 +483,19 @@
                         Porto Franco
                     </label>
                 </div>
+                <div class="form-check ms-3" style="white-space:nowrap;">
+                    <input class="form-check-input" type="checkbox" id="filtroOrdiniEvasi" checked />
+                    <label class="form-check-label" for="filtroOrdiniEvasi" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                        Ordini Evasi
+                        <div style="font-size:0.62rem; font-weight:400; line-height:1; margin-top:1px;">(Evasi da 7 giorni)</div>
+                    </label>
+                </div>
+                <div class="form-check ms-3" style="white-space:nowrap;">
+                    <input class="form-check-input" type="checkbox" id="filtroOrdiniSpediti" checked />
+                    <label class="form-check-label" for="filtroOrdiniSpediti" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                        Ordini Spediti
+                    </label>
+                </div>
             </div>
             <div id="alertContainer" class="ms-auto"></div>
         </div>
@@ -292,52 +516,52 @@
                 <ul class="nav nav-tabs" id="tabTipiMezzo" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" data-tipo="MotriceGru" data-bs-toggle="tab" type="button" role="tab">
-                            Motrice Gru <span class="badge bg-secondary tab-badge" id="badge-MotriceGru">0</span>
+                            <span>Motrice Gru</span> <span class="badge tab-badge badge-da-spedire" id="badge-MotriceGru">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="AutotrenoGru" data-bs-toggle="tab" type="button" role="tab">
-                            Autotreno Gru <span class="badge bg-secondary tab-badge" id="badge-AutotrenoGru">0</span>
+                            <span>Autotreno Gru</span> <span class="badge tab-badge badge-da-spedire" id="badge-AutotrenoGru">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="AutotrenoAbbinato" data-bs-toggle="tab" type="button" role="tab">
-                            Autotr. Abb. <span class="badge bg-secondary tab-badge" id="badge-AutotrenoAbbinato">0</span>
+                            <span>Autotr. Abb.</span> <span class="badge tab-badge badge-da-spedire" id="badge-AutotrenoAbbinato">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="AutotrenoNoGru" data-bs-toggle="tab" type="button" role="tab">
-                            Autotr. No Gru <span class="badge bg-secondary tab-badge" id="badge-AutotrenoNoGru">0</span>
+                            <span>Autotr. No Gru</span> <span class="badge tab-badge badge-da-spedire" id="badge-AutotrenoNoGru">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="Bilico" data-bs-toggle="tab" type="button" role="tab">
-                            Bilico <span class="badge bg-secondary tab-badge" id="badge-Bilico">0</span>
+                            <span>Bilico</span> <span class="badge tab-badge badge-da-spedire" id="badge-Bilico">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="BilicoInAbbinamento" data-bs-toggle="tab" type="button" role="tab">
-                            Bilico Abb. <span class="badge bg-secondary tab-badge" id="badge-BilicoInAbbinamento">0</span>
+                            <span>Bilico Abb.</span> <span class="badge tab-badge badge-da-spedire" id="badge-BilicoInAbbinamento">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="MotriceInAbbinamento" data-bs-toggle="tab" type="button" role="tab">
-                            Motrice Abb. <span class="badge bg-secondary tab-badge" id="badge-MotriceInAbbinamento">0</span>
+                            <span>Motrice Abb.</span> <span class="badge tab-badge badge-da-spedire" id="badge-MotriceInAbbinamento">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="Trasporto" data-bs-toggle="tab" type="button" role="tab">
-                            Trasporto <span class="badge bg-secondary tab-badge" id="badge-Trasporto">0</span>
+                            <span>Trasporto</span> <span class="badge tab-badge badge-da-spedire" id="badge-Trasporto">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="TrasportoPosa" data-bs-toggle="tab" type="button" role="tab">
-                            Trasp. Posa <span class="badge bg-secondary tab-badge" id="badge-TrasportoPosa">0</span>
+                            <span>Trasp. Posa</span> <span class="badge tab-badge badge-da-spedire" id="badge-TrasportoPosa">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-tipo="NessunMezzo" data-bs-toggle="tab" type="button" role="tab">
-                            <i class="bi bi-question-circle me-1"></i>Nessun Mezzo <span class="badge bg-warning text-dark tab-badge" id="badge-NessunMezzo">0</span>
+                            <span><i class="bi bi-question-circle me-1"></i>Nessun Mezzo</span> <span class="badge tab-badge badge-da-spedire" id="badge-NessunMezzo">0</span>
                         </button>
                     </li>
                 </ul>
@@ -351,11 +575,16 @@
         </div>
     </div>
 
+    <!-- Bottone toggle pannello viaggio -->
+    <button class="btn-toggle-panel" id="btnTogglePanel" title="Nascondi/Mostra pannello viaggio">
+        <i class="bi bi-chevron-right"></i>
+    </button>
+
     <!-- ===== COLONNA DESTRA (CARRELLO) — parte dall'alto ===== -->
-    <div class="panel-right">
+    <div class="panel-right" id="panelRight">
         <div class="carrello-panel">
             <div class="carrello-header">
-                <h6 class="mb-1"><i class="bi bi-cart3 me-2"></i>Viaggio in composizione</h6>
+                <h6 class="mb-1"><i class="bi bi-truck me-2"></i>Viaggio in composizione</h6>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted" style="font-size:0.82rem;">
                         Righe: <strong id="carrelloCount">0</strong>
@@ -364,11 +593,18 @@
                         <i class="bi bi-box-seam me-1"></i><span id="carrelloPesoTotale">0.00</span> Kg
                     </span>
                 </div>
+                <div id="indicatoreCarico" style="display:none; margin-top:4px; font-size:0.72rem;">
+                    <div id="indicatoreCaricoLabel" class="text-muted"></div>
+                    <div id="indicatoreCaricoPerc" class="fw-bold"></div>
+                    <div class="progress" style="height:6px; margin-top:2px;">
+                        <div id="indicatoreCaricoBar" class="progress-bar" role="progressbar" style="width:0%;"></div>
+                    </div>
+                </div>
             </div>
             <div class="carrello-scroll">
                 <div class="carrello-body" id="carrelloBody">
                     <div class="empty-state" style="padding:20px;">
-                        <i class="bi bi-cart-plus" style="font-size:2rem;"></i>
+                        <i class="bi bi-truck me-2" style="font-size:2rem;"></i>
                         <p class="mb-0" style="font-size:0.85rem;">Seleziona righe dalla griglia</p>
                     </div>
                 </div>
@@ -392,23 +628,46 @@
                                 <option value="">-- Seleziona --</option>
                             </select>
                         </div>
-                        <div class="form-section">
+                        <div class="form-section span-full">
                             <label>Mezzo Interno</label>
                             <select id="viaggioMezzoInterno" class="form-select form-select-sm">
                                 <option value="">-- Nessuno --</option>
                             </select>
                         </div>
-                        <div class="form-section">
-                            <label>Mezzo Esterno</label>
-                            <select id="viaggioMezzoEsterno" class="form-select form-select-sm">
-                                <option value="">-- Nessuno --</option>
-                            </select>
+                        <div class="form-section span-full" id="viaggioConRimorchioWrap" style="display:none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="viaggioConRimorchio" />
+                                <label class="form-check-label" for="viaggioConRimorchio">
+                                    <i class="bi bi-truck-flatbed me-1"></i>Con rimorchio
+                                </label>
+                            </div>
                         </div>
                         <div class="form-section span-full">
                             <label>Autista</label>
                             <select id="viaggioAutista" class="form-select form-select-sm">
                                 <option value="">-- Nessuno --</option>
                             </select>
+                        </div>
+                        <div class="form-section span-full">
+                            <label>Mezzo Esterno</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="viaggioMezzoEsternoDisplay" class="form-control form-control-sm"
+                                       readonly placeholder="-- Nessuno --" style="background:#fff;" />
+                                <button class="btn btn-outline-secondary" type="button" id="btnSceltaMezzoEsterno" disabled
+                                        title="Cerca mezzo esterno">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" type="button" id="btnClearMezzoEsterno"
+                                        style="display:none;" title="Rimuovi selezione">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="viaggioMezzoEsterno" value="" />
+                        </div>
+                        <div class="form-section span-full" id="viaggioCostoTrasportoWrap" style="display:none;">
+                            <label>Costo Trasporto (€)</label>
+                            <input type="number" id="viaggioCostoTrasporto" class="form-control form-control-sm"
+                                   step="0.01" min="0" placeholder="0.00" />
                         </div>
                         <div class="form-section span-full">
                             <label>Note</label>
@@ -430,11 +689,11 @@
 <div class="modal fade" id="popupDisponibilita" tabindex="-1" aria-labelledby="popupDisponibilitaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:95%; width:95%;">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white" id="headerDisponibilita" style="cursor: move;">
+            <div class="modal-header cv-modal-header" id="headerDisponibilita" style="cursor: move;">
                 <h5 class="modal-title" id="popupDisponibilitaLabel">
                     <i class="bi bi-boxes me-2"></i>Disponibilità Articolo
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="loadingDisponibilita" class="text-center py-5">
@@ -494,6 +753,334 @@
     </div>
 </div>
 
+<!-- Popup Viaggi dell'Ordine -->
+<div class="modal fade" id="popupViaggiOrdine" tabindex="-1" aria-labelledby="popupViaggiOrdineLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:80%; width:80%;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header" id="headerViaggiOrdine" style="cursor: move;">
+                <h5 class="modal-title" id="popupViaggiOrdineLabel">
+                    <i class="bi bi-truck me-2"></i>Viaggi dell'Ordine
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingViaggiOrdine" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Caricamento viaggi...</p>
+                </div>
+                <div id="contenutoViaggiOrdine" style="display:none;">
+                    <div class="alert alert-light border mb-3 py-2">
+                        <strong><i class="bi bi-file-earmark-text me-1"></i>Ordine:</strong>
+                        <span id="viaggiOrdineInfo" class="fw-bold"></span>
+                        <span class="text-muted mx-2">|</span>
+                        <strong><i class="bi bi-person me-1"></i></strong>
+                        <span id="viaggiOrdineCliente"></span>
+                    </div>
+                    <div id="viaggiOrdineListaContainer"></div>
+                </div>
+                <div id="erroreViaggiOrdine" style="display:none;" class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span id="msgErroreViaggiOrdine"></span>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Spedizione Manuale -->
+<div class="modal fade" id="popupSpedizioneManuale" tabindex="-1" aria-labelledby="popupSpedizioneManualeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header" id="headerSpedizioneManuale" style="cursor: move;">
+                <h5 class="modal-title" id="popupSpedizioneManualeLabel">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Spedizione Manuale
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="font-size:0.82rem;">
+                    Registra una spedizione senza viaggio (ritiro cliente, corriere esterno, ecc.)
+                </p>
+                <div id="spedManRigheContainer"></div>
+                <div class="mb-2 mt-3">
+                    <label class="form-label" style="font-size:0.78rem; font-weight:600;">Data Spedizione</label>
+                    <input type="date" id="spedManData" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:0.78rem; font-weight:600;">Note</label>
+                    <textarea id="spedManNote" class="form-control form-control-sm" rows="2" placeholder="es. Ritirato dal cliente, Corriere BRT..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-warning btn-sm" id="btnConfermaSpedManuale">
+                    <i class="bi bi-check-circle me-1"></i>Conferma Spedizione
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Seleziona Quantità Spedizione -->
+<div class="modal fade" id="popupSelezionaQta" tabindex="-1" aria-labelledby="popupSelezionaQtaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header" id="headerSelezionaQta" style="cursor: move;">
+                <h5 class="modal-title" id="popupSelezionaQtaLabel">
+                    <i class="bi bi-box-seam me-2"></i>Quantità Spedizione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-2">
+                <!-- Info articolo -->
+                <div class="sqta-info-box mb-2">
+                    <div class="fw-bold" id="sqtaArticolo" style="font-size:0.85rem;"></div>
+                    <div class="d-flex gap-3 mt-1" style="font-size:0.78rem;">
+                        <span><i class="bi bi-arrow-right-circle me-1 text-primary"></i>Da spedire: <strong id="sqtaMaxDisp">0</strong></span>
+                        <span><i class="bi bi-grid-3x3 me-1 text-info"></i>Pallet: <strong id="sqtaPalletInfo">-</strong></span>
+                    </div>
+                </div>
+
+                <!-- Selettore pallet -->
+                <div id="sqtaPalletSection">
+                    <label class="sqta-label">Pallet</label>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <button class="btn btn-outline-secondary btn-sm sqta-plt-btn" id="sqtaPltMinus"><i class="bi bi-dash-lg"></i></button>
+                        <input type="number" class="form-control form-control-sm text-center fw-bold" id="sqtaPltCount" style="width:70px;" min="0" value="0" />
+                        <button class="btn btn-outline-secondary btn-sm sqta-plt-btn" id="sqtaPltPlus"><i class="bi bi-plus-lg"></i></button>
+                        <span class="text-muted" style="font-size:0.75rem;" id="sqtaPltLabel">pallet</span>
+                    </div>
+                    <!-- Bottoni rapidi pallet -->
+                    <div class="d-flex flex-wrap gap-1 mb-2" id="sqtaPltQuickBtns"></div>
+                    <!-- Indicazione resto -->
+                    <div id="sqtaRestoInfo" class="sqta-resto-info" style="display:none;"></div>
+                </div>
+
+                <!-- Separatore -->
+                <hr class="my-2">
+
+                <!-- Quantità manuale -->
+                <label class="sqta-label">Quantità</label>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <input type="number" class="form-control form-control-sm fw-bold" id="sqtaQtaManuale" step="0.01" min="0" style="width:130px;" />
+                    <span class="text-muted" style="font-size:0.78rem;" id="sqtaUM">pz</span>
+                    <span id="sqtaPalletWarning" class="sqta-pallet-warning" style="display:none;"></span>
+                </div>
+
+                <!-- Riepilogo peso -->
+                <div class="sqta-peso-box mt-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Peso unitario</span>
+                        <span id="sqtaPesoUnit">0.000 Kg</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Peso 1 pallet</span>
+                        <span id="sqtaPesoPallet">0.000 Kg</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold sqta-peso-totale">
+                        <span><i class="bi bi-truck me-1"></i>PESO TOTALE</span>
+                        <span id="sqtaPesoTotale">0.000 Kg</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnConfermaQta" onclick="confermaQtaSpedizione()">
+                    <i class="bi bi-check-circle me-1"></i>Conferma
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Dettaglio Previsione Disponibilità (sopra a tutto) -->
+<div class="modal fade" id="popupDettaglioMovimentiNotaCV" tabindex="-1" aria-labelledby="popupDettaglioMovimentiNotaCVLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:90%; width:90%;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header" id="headerDettaglioMovimentiNotaCV" style="cursor: move;">
+                <h5 class="modal-title" id="popupDettaglioMovimentiNotaCVLabel">
+                    <i class="bi bi-graph-up me-2"></i>Dettaglio Previsione Disponibilità
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingMovimentiNotaCV" class="text-center py-5">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Caricamento timeline in corso...</p>
+                </div>
+                <div id="contenutoMovimentiNotaCV" style="display: none;">
+                    <div class="alert alert-light border mb-3 py-2">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong><i class="bi bi-box-seam me-2"></i>Articolo:</strong>
+                                <span id="cvArticoloMovimentiNota"></span>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <strong><i class="bi bi-calendar-range me-2"></i>Periodo:</strong>
+                                <span id="cvPeriodoMovimentiNota"></span>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <strong><i class="bi bi-info-circle me-2"></i>Nota:</strong>
+                                <span id="cvNotaGenerata" class="fw-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 120px;">Data</th>
+                                    <th style="width: 150px;">Tipo</th>
+                                    <th>Descrizione</th>
+                                    <th class="text-end" style="width: 130px;">Quantità</th>
+                                    <th class="text-end" style="width: 130px;">Progressivo</th>
+                                    <th class="text-center" style="width: 80px;">Email</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabellaMovimentiNotaCV"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="erroreMovimentiNotaCV" style="display: none;" class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span id="msgErroreMovimentiNotaCV"></span>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Scelta Mezzo Esterno -->
+<div class="modal fade" id="popupSceltaMezzoEsterno" tabindex="-1" aria-labelledby="popupSceltaMezzoEsternoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:95%; width:95%;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header" id="headerSceltaMezzoEsterno" style="cursor: move;">
+                <h5 class="modal-title" id="popupSceltaMezzoEsternoLabel">
+                    <i class="bi bi-truck me-2"></i>Scelta Mezzo Esterno
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtri Province (chip) -->
+                <div class="mb-2">
+                    <label class="form-label fw-bold" style="font-size:0.78rem;">
+                        <i class="bi bi-geo-alt me-1"></i>Province
+                    </label>
+                    <div id="meChipProvinceContainer" class="d-flex flex-wrap gap-1"></div>
+                </div>
+                <!-- Filtri aggiuntivi -->
+                <div class="row g-2 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label" style="font-size:0.75rem;">Regione</label>
+                        <select id="meFiltroRegione" class="form-select form-select-sm">
+                            <option value="">-- Tutte --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" style="font-size:0.75rem;">Nome Vettore</label>
+                        <select id="meFiltroVettore" class="form-select form-select-sm">
+                            <option value="">-- Tutti --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" style="font-size:0.75rem;">Tipo Mezzo</label>
+                        <select id="meFiltroTipoMezzo" class="form-select form-select-sm">
+                            <option value="">-- Tutti --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary btn-sm w-100" id="meResetFiltri">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filtri
+                        </button>
+                    </div>
+                </div>
+                <!-- Contatore risultati -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span id="meContatoreRisultati" class="text-muted" style="font-size:0.78rem;"></span>
+                </div>
+                <!-- Tabella mezzi -->
+                <div class="table-responsive" style="max-height:55vh;">
+                    <table class="table table-striped table-hover table-sm mb-0 me-tabella-mezzi">
+                        <thead class="table-dark" style="position:sticky; top:0; z-index:1;">
+                            <tr>
+                                <th style="width:40px;"></th>
+                                <th>Vettore</th>
+                                <th>Comune</th>
+                                <th>Prov.</th>
+                                <th>Regione</th>
+                                <th>Tipo Mezzo</th>
+                                <th class="text-end">Costo</th>
+                                <th class="text-end">Portata Max</th>
+                                <th class="text-center">Gru</th>
+                                <th class="text-center">Trasbordo</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meTabellaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup Modifica Costo Mezzo Esterno -->
+<div class="modal fade" id="popupEditCostoME" tabindex="-1" aria-labelledby="popupEditCostoMELabel" aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content">
+            <div class="modal-header cv-modal-header py-2" id="headerEditCostoME" style="cursor: move;">
+                <h6 class="modal-title" id="popupEditCostoMELabel">
+                    <i class="bi bi-pencil-square me-2"></i>Modifica Costo Vettore
+                </h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="alert alert-light border py-2 mb-3" style="font-size:0.82rem;">
+                    <div><strong><i class="bi bi-truck me-1"></i>Vettore:</strong> <span id="editMeVettore"></span></div>
+                    <div><strong><i class="bi bi-geo-alt me-1"></i>Località:</strong> <span id="editMeLocalita"></span></div>
+                    <div><strong><i class="bi bi-box-seam me-1"></i>Tipo Mezzo:</strong> <span id="editMeTipoMezzo"></span></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-bold" style="font-size:0.8rem;">Costo (€)</label>
+                    <input type="number" id="editMeCosto" class="form-control form-control-sm" step="0.01" min="0" />
+                </div>
+                <div id="editMeAlert" style="display:none;" class="mt-2"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="btnSalvaCostoME">
+                    <i class="bi bi-check-circle me-1"></i>Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
@@ -510,13 +1097,19 @@ $(function () {
     const urlGetDatiViaggio = '@Url.Action("GetDatiViaggio", "ComposizioneViaggi")';
     const urlCreaViaggio = '@Url.Action("CreaViaggio", "ComposizioneViaggi")';
     const urlDisponibilita = '@Url.Action("GetDisponibilitaArticoloJson", "InterrogazioniDB")';
+    const urlViaggiOrdine = '@Url.Action("GetViaggiPerOrdine", "ComposizioneViaggi")';
+    const urlSpedizioneManuale = '@Url.Action("CreaSpedizioneManuale", "ComposizioneViaggi")';
+    const urlDettaglioMovimentiNota = '@Url.Action("GetDettaglioMovimentiNota", "InterrogazioniDB")';
+    const urlGetMezziEsterni = '@Url.Action("GetMezziEsterni", "ComposizioneViaggi")';
+    const urlUpdateCostoME = '@Url.Action("UpdateCostoMezzoEsterno", "ComposizioneViaggi")';
 
     // ===== INIZIALIZZAZIONE =====
+    const oggi = new Date();
     caricaProvince();
     caricaDatiViaggio();
 
     // Imposta data consegna viaggio a oggi
-    $('#viaggioDataConsegna').val(new Date().toISOString().split('T')[0]);
+    $('#viaggioDataConsegna').val(oggi.toISOString().split('T')[0]);
 
     // Event: click su tab
     $('#tabTipiMezzo .nav-link').on('click', function () {
@@ -525,7 +1118,7 @@ $(function () {
     });
 
     // Event: cambio filtro date e porto
-    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco').on('change', function () {
+    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco, #filtroOrdiniEvasi, #filtroOrdiniSpediti').on('change', function () {
         caricaRighe();
         caricaConteggi();
     });
@@ -585,12 +1178,25 @@ $(function () {
     function caricaConteggi() {
         const params = new URLSearchParams();
         provinceSelezionate.forEach(p => params.append('province', p));
+        const dataDa = $('#dataConsegnaDa').val();
+        const dataA = $('#dataConsegnaA').val();
+        if (dataDa) params.append('dataConsegnaDa', dataDa);
+        if (dataA) params.append('dataConsegnaA', dataA);
+        if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
+        if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
+        if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
 
         $.getJSON(urlGetConteggi + '?' + params.toString(), function (data) {
             Object.keys(data).forEach(function (tipo) {
-                const badge = $(`#badge-${tipo}`);
-                badge.text(data[tipo]);
-                badge.toggleClass('bg-primary', data[tipo] > 0).toggleClass('bg-secondary', data[tipo] === 0);
+                var count = data[tipo] || 0;
+
+                var badge = $(`#badge-${tipo}`);
+                badge.text(count);
+                badge.css('opacity', count > 0 ? '1' : '0.35');
+
+                var tabBtn = $(`#tabTipiMezzo button[data-tipo="${tipo}"]`);
+                tabBtn.toggleClass('tab-has-ordini', count > 0);
+                tabBtn.toggleClass('tab-vuoto', count === 0);
             });
         });
     }
@@ -617,6 +1223,8 @@ $(function () {
         if (dataDa) params.append('dataConsegnaDa', dataDa);
         if (dataA) params.append('dataConsegnaA', dataA);
         if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
+        if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
+        if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
 
         $.getJSON(urlGetRighe + '?' + params.toString(), function (data) {
             if (!data || data.length === 0) {
@@ -655,11 +1263,11 @@ $(function () {
                         <th style="width:35px;"><input type="checkbox" id="checkAll" title="Seleziona tutte" /></th>
                         <th>Articolo</th>
                         <th>Descrizione</th>
-                        <th class="text-end">Qta Rim.</th>
+                        <th style="min-width:180px;">Quantità</th>
                         <th>UM</th>
                         <th class="text-end">Peso Kg</th>
                         <th>Consegna</th>
-                        <th>Stato</th>
+                        <th style="width:40px;"></th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -669,21 +1277,41 @@ $(function () {
                     ? `${testata.localita} - ${testata.indirizzoDestinazione}`
                     : testata.localita;
 
-                const tutteAssegnate = testata.righe.length > 0 && testata.righe.every(r => r.giaAssegnata);
-                const testataClasses = 'testata-header' + (tutteAssegnate ? ' testata-completa' : '');
+                const tutteSpedite = testata.righe.length > 0 && testata.righe.every(r => r.completamenteSpedita);
+                const almenoUnaParziale = testata.righe.some(r => r.statoSpedizione === 'PS' || r.statoSpedizione === 'SP');
+                const testataClasses = 'testata-header' + (tutteSpedite ? ' testata-completa' : '');
+
+                // Verifica se la testata ha righe spedite solo manualmente
+                const tutteManuale = tutteSpedite && testata.righe.every(r => r.soloManuale);
+                const qualcunaManuale = testata.righe.some(r => r.hasManuali);
+
+                let statoSpedTestata = 'NS';
+                if (tutteSpedite) statoSpedTestata = 'SP';
+                else if (almenoUnaParziale) statoSpedTestata = 'PS';
+
+                let badgeSpedTestata = '';
+                if (statoSpedTestata === 'SP' && tutteManuale) {
+                    badgeSpedTestata = '<span class="badge bg-warning text-dark ms-1"><i class="bi bi-box-arrow-up-right me-1"></i>Spedita Manualmente</span>';
+                } else if (statoSpedTestata === 'SP') {
+                    badgeSpedTestata = '<span class="badge bg-success ms-1"><i class="bi bi-check2-all me-1"></i>Spedita</span>';
+                } else if (statoSpedTestata === 'PS' && qualcunaManuale) {
+                    badgeSpedTestata = '<span class="badge bg-info text-dark ms-1"><i class="bi bi-truck me-1"></i>Parz. Spedita</span><span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-box-arrow-up-right me-1"></i>+ Man.</span>';
+                } else if (statoSpedTestata === 'PS') {
+                    badgeSpedTestata = '<span class="badge bg-info text-dark ms-1"><i class="bi bi-truck me-1"></i>Parz. Spedita</span>';
+                }
 
                 let infoHtml = `<span class="ti-value"><i class="bi bi-file-earmark-text me-1"></i>${testata.numeroOrdine}</span>`;
                 infoHtml += `<span class="ti-value"><i class="bi bi-person me-1"></i>${testata.cliente}</span>`;
                 infoHtml += `<span><span class="badge bg-info text-dark">${testata.provincia}</span> ${dest}</span>`;
                 if (testata.agente) infoHtml += `<span><span class="ti-label">Agente:</span> ${testata.agente}</span>`;
                 if (testata.riferimentoOrdine) infoHtml += `<span><span class="ti-label">Rif:</span> ${testata.riferimentoOrdine}</span>`;
-                if (tutteAssegnate) infoHtml += `<span class="badge bg-success ms-1"><i class="bi bi-check2-all me-1"></i>In viaggio</span>`;
+                infoHtml += badgeSpedTestata;
 
                 let noteHtml = '';
                 if (testata.noteTestata) noteHtml = `<div class="testata-note"><i class="bi bi-sticky me-1"></i>${testata.noteTestata}</div>`;
 
                 html += `<tr class="${testataClasses}" data-ordine-id="${testata.ordineId}">
-                    <td><input type="checkbox" class="testata-check" data-ordine-id="${testata.ordineId}" title="Seleziona tutte le righe di questo ordine" ${tutteAssegnate ? 'disabled' : ''} /></td>
+                    <td><input type="checkbox" class="testata-check" data-ordine-id="${testata.ordineId}" title="Seleziona tutte le righe di questo ordine" ${tutteSpedite ? 'disabled' : ''} /></td>
                     <td colspan="${numCols - 1}">
                         <div class="testata-info">${infoHtml}</div>
                         ${noteHtml}
@@ -693,14 +1321,55 @@ $(function () {
                 testata.righe.forEach(function (r) {
                     const inCarrello = righeCarrello.some(c => c.rigaId === r.rigaId);
                     const carrelloItem = inCarrello ? righeCarrello.find(c => c.rigaId === r.rigaId) : null;
-                    const trClass = r.giaAssegnata ? 'gia-assegnata' : (inCarrello ? 'selezionata' : '');
-                    const disabled = r.giaAssegnata ? 'disabled' : '';
+                    const isSpedita = r.completamenteSpedita;
+                    const trClass = isSpedita ? 'gia-assegnata' : (inCarrello ? 'selezionata' : '');
+                    const disabled = isSpedita ? 'disabled' : '';
                     const checked = inCarrello ? 'checked' : '';
-                    const qtaRim = (r.quantita - r.quantitaEvasa);
-                    const qtaAttuale = carrelloItem ? carrelloItem.quantita : qtaRim;
+                    const qtaDaSpedire = r.qtaDaSpedire;
+                    const qtaAttuale = carrelloItem ? carrelloItem.quantita : qtaDaSpedire;
                     const pesoTotRiga = (r.pesoKgUnitario * qtaAttuale);
-                    const showInput = inCarrello && !r.giaAssegnata;
-                    const isWarning = qtaAttuale > qtaRim;
+                    const showInput = inCarrello && !isSpedita;
+                    const isWarning = qtaAttuale > qtaDaSpedire;
+
+                    // Percentuali per le barre
+                    const qtaOrd = r.quantita || 1;
+                    const pctEvasa = Math.min(100, (r.quantitaEvasa / qtaOrd) * 100);
+                    const pctSpedita = Math.min(100, (r.qtaGiaAssegnataViaggi / qtaOrd) * 100);
+
+                    // Disallineamento: evasa != spedita
+                    const desync = Math.abs(r.quantitaEvasa - r.qtaGiaAssegnataViaggi) > 0.001;
+                    let desyncHtml = '';
+                    if (desync) {
+                        const diff = r.quantitaEvasa - r.qtaGiaAssegnataViaggi;
+                        if (diff > 0) {
+                            desyncHtml = `<div class="qta-desync"><i class="bi bi-exclamation-triangle-fill"></i> ${diff.toFixed(2)} evasi non spediti</div>`;
+                        } else {
+                            desyncHtml = `<div class="qta-desync"><i class="bi bi-exclamation-triangle-fill"></i> ${Math.abs(diff).toFixed(2)} spediti non evasi</div>`;
+                        }
+                    }
+
+                    const barSpedClass = r.soloManuale ? 'bar-spedizione-manuale' : 'bar-spedizione';
+                    const spedLabel = r.soloManuale ? 'Man.' : (r.hasManuali ? 'Sped*' : 'Sped');
+
+                    const qtaCellHtml = `<div class="qta-cell-detail">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="qta-main">${qtaDaSpedire.toFixed(2)}</span>
+                            <span class="qta-sub">da sped. su ${qtaOrd.toFixed(2)}</span>
+                        </div>
+                        <div class="qta-bars">
+                            <div class="qta-bar-row">
+                                <span class="bar-label">DDT</span>
+                                <div class="qta-bar-track"><div class="qta-bar-fill bar-evasione" style="width:${pctEvasa}%"></div></div>
+                                <span class="bar-value">${r.quantitaEvasa.toFixed(2)}</span>
+                            </div>
+                            <div class="qta-bar-row">
+                                <span class="bar-label">${spedLabel}</span>
+                                <div class="qta-bar-track"><div class="qta-bar-fill ${barSpedClass}" style="width:${pctSpedita}%"></div></div>
+                                <span class="bar-value">${r.qtaGiaAssegnataViaggi.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        ${desyncHtml}
+                    </div>`;
 
                     html += `<tr class="${trClass}" data-riga-id="${r.rigaId}" data-ordine-id="${testata.ordineId}">
                         <td><input type="checkbox" class="riga-check" value="${r.rigaId}" ${disabled} ${checked}
@@ -708,24 +1377,26 @@ $(function () {
                             data-cliente="${r.cliente}"
                             data-articolo="${r.codiceArticolo}"
                             data-descrizione="${r.descrizioneArticolo}"
-                            data-quantita="${qtaRim}"
+                            data-quantita="${qtaDaSpedire}"
                             data-peso="${r.pesoKgUnitario}"
                             data-peso-totale="${pesoTotRiga}"
                             data-provincia="${r.provincia}"
-                            data-localita="${r.localita}" /></td>
+                            data-localita="${r.localita}"
+                            data-qta-per-pallet="${r.qtaPerPallet}"
+                            data-um="${r.unitaMisura}" /></td>
                         <td><a href="#" class="link-articolo" data-codice="${r.codiceArticolo}" title="Apri Disponibilità"><strong>${r.codiceArticolo}</strong></a></td>
                         <td title="${r.descrizioneArticolo}">${r.descrizioneArticolo}</td>
-                        <td class="text-end">
-                            <span class="qta-static" ${showInput ? 'style="display:none"' : ''}>${qtaRim.toFixed(2)}</span>
+                        <td>
+                            <div class="qta-static" ${showInput ? 'style="display:none"' : ''}>${qtaCellHtml}</div>
                             <input type="number" class="qta-input ${isWarning ? 'qta-warning' : ''}" value="${qtaAttuale.toFixed(2)}"
-                                step="0.01" min="0" data-max="${qtaRim}" data-riga-id="${r.rigaId}"
+                                step="0.01" min="0" data-max="${qtaDaSpedire}" data-riga-id="${r.rigaId}"
                                 data-peso-unitario="${r.pesoKgUnitario}"
                                 ${showInput ? '' : 'style="display:none"'} />
                         </td>
                         <td>${r.unitaMisura}</td>
                         <td class="text-end peso-cell" data-riga-id="${r.rigaId}">${pesoTotRiga.toFixed(2)}</td>
                         <td>${r.dataConsegna}</td>
-                        <td><span class="${r.statoEvasione === 'A' ? 'badge bg-primary' : 'badge bg-warning text-dark'}">${r.descrizioneStatoEvasione}</span></td>
+                        <td>${isSpedita ? '' : `<button class="btn btn-outline-warning btn-sm px-1 py-0 btn-sped-manuale" data-riga-id="${r.rigaId}" data-articolo="${r.codiceArticolo}" data-descrizione="${r.descrizioneArticolo}" data-qta-da-spedire="${qtaDaSpedire}" data-peso="${r.pesoKgUnitario}" title="Spedizione Manuale"><i class="bi bi-box-arrow-up-right" style="font-size:0.75rem;"></i></button>`}</td>
                     </tr>`;
                 });
             });
@@ -733,23 +1404,22 @@ $(function () {
             html += '</tbody></table>';
             $('#grigliaRighe').html(html);
 
-            // Event: checkbox singola riga
+            // Event: checkbox singola riga → apre popup quantità
             $('.riga-check').on('change', function () {
-                const rigaId = parseInt($(this).val());
-                const $tr = $(this).closest('tr');
-                if ($(this).is(':checked')) {
-                    $tr.find('.qta-static').hide();
-                    $tr.find('.qta-input').show().focus().select();
-                    aggiungiAlCarrello($(this));
+                const $cb = $(this);
+                const rigaId = parseInt($cb.val());
+                const $tr = $cb.closest('tr');
+                if ($cb.is(':checked')) {
+                    apriPopupSelezionaQta($cb);
                 } else {
                     $tr.find('.qta-input').hide();
                     $tr.find('.qta-static').show();
                     rimuoviDalCarrello(rigaId);
+                    aggiornaCheckTestata($tr.data('ordine-id'));
                 }
-                aggiornaCheckTestata($tr.data('ordine-id'));
             });
 
-            // Event: modifica quantita' inline
+            // Event: modifica quantita' inline (dopo conferma popup, l'input resta visibile)
             $('.qta-input').on('input', function () {
                 const $input = $(this);
                 const rigaId = parseInt($input.data('riga-id'));
@@ -810,13 +1480,13 @@ $(function () {
             });
 
             // Sincronizza stato checkbox testata con le righe
-            function aggiornaCheckTestata(ordineId) {
+            window.aggiornaCheckTestata = function(ordineId) {
                 const righeOrdine = $(`.riga-check`).filter(function() {
                     return $(this).closest('tr').data('ordine-id') === ordineId && !$(this).is(':disabled');
                 });
                 const tutteChecked = righeOrdine.length > 0 && righeOrdine.filter(':checked').length === righeOrdine.length;
                 $(`.testata-check[data-ordine-id="${ordineId}"]`).prop('checked', tutteChecked);
-            }
+            };
 
             // Event: click su codice articolo → apre popup Disponibilità
             $('.link-articolo').on('click', function (e) {
@@ -824,11 +1494,261 @@ $(function () {
                 const codice = $(this).data('codice');
                 apriPopupDisponibilita(codice);
             });
+
+            // Event: click sulla testata ordine → apre popup Viaggi Ordine
+            $('.testata-header').on('click', function (e) {
+                if ($(e.target).is('input[type="checkbox"]') || $(e.target).closest('input[type="checkbox"]').length) return;
+                const ordineId = $(this).data('ordine-id');
+                apriPopupViaggiOrdine(ordineId);
+            });
+
+            // Event: click su bottone spedizione manuale
+            $('.btn-sped-manuale').on('click', function (e) {
+                e.stopPropagation();
+                apriPopupSpedizioneManuale($(this));
+            });
         }).fail(function (xhr) {
             const msg = xhr.responseJSON?.message || 'Errore nel caricamento';
             $('#grigliaRighe').html(`<div class="empty-state"><i class="bi bi-exclamation-triangle text-danger"></i><p>${msg}</p></div>`);
         });
     }
+
+    // ===== POPUP SELEZIONA QUANTITÀ =====
+    let sqtaCheckbox = null;
+    let sqtaModalInstance = null;
+    let sqtaQtaPerPallet = 0;
+    let sqtaPesoUnit = 0;
+    let sqtaMaxQta = 0;
+
+    function apriPopupSelezionaQta($cb) {
+        sqtaCheckbox = $cb;
+        const articolo = $cb.data('articolo');
+        const descrizione = $cb.data('descrizione');
+        sqtaMaxQta = parseFloat($cb.data('quantita')) || 0;
+        sqtaPesoUnit = parseFloat($cb.data('peso')) || 0;
+        sqtaQtaPerPallet = parseFloat($cb.data('qta-per-pallet')) || 0;
+        const um = $cb.data('um') || 'pz';
+
+        // Popola info
+        $('#sqtaArticolo').text(articolo + ' - ' + descrizione);
+        $('#sqtaMaxDisp').text(sqtaMaxQta.toFixed(2) + ' ' + um);
+        $('#sqtaUM').text(um);
+
+        if (sqtaQtaPerPallet > 0) {
+            $('#sqtaPalletInfo').text(sqtaQtaPerPallet.toFixed(2) + ' ' + um + '/pallet');
+            $('#sqtaPalletSection').show();
+            $('#sqtaPesoPallet').text((sqtaQtaPerPallet * sqtaPesoUnit).toFixed(2) + ' Kg');
+        } else {
+            $('#sqtaPalletInfo').text('N/D');
+            $('#sqtaPalletSection').hide();
+            $('#sqtaPesoPallet').text('-');
+        }
+
+        $('#sqtaPesoUnit').text(sqtaPesoUnit.toFixed(3) + ' Kg');
+
+        // Bottoni rapidi pallet
+        const container = $('#sqtaPltQuickBtns');
+        container.empty();
+        if (sqtaQtaPerPallet > 0) {
+            const maxPlt = Math.floor(sqtaMaxQta / sqtaQtaPerPallet);
+            const resto = sqtaMaxQta - (maxPlt * sqtaQtaPerPallet);
+            for (let i = 1; i <= Math.min(maxPlt, 10); i++) {
+                const isMax = (i === maxPlt && resto < 0.001);
+                container.append(`<button class="btn btn-outline-primary btn-sm sqta-plt-quick" data-plt="${i}">${i} plt${isMax ? ' <small>(MAX)</small>' : ''}</button>`);
+            }
+            if (resto > 0.001) {
+                container.append(`<button class="btn btn-outline-success btn-sm sqta-plt-quick" data-plt="-1" title="Tutta la quantità disponibile"><i class="bi bi-check2-all me-1"></i>Tutto (${sqtaMaxQta.toFixed(2)})</button>`);
+            }
+        }
+
+        // Default: se c'è pallet, imposta 1 pallet; altrimenti tutta la quantità
+        if (sqtaQtaPerPallet > 0 && sqtaMaxQta >= sqtaQtaPerPallet) {
+            const defaultPlt = Math.floor(sqtaMaxQta / sqtaQtaPerPallet);
+            $('#sqtaPltCount').val(defaultPlt);
+            sqtaAggiornaDaPallet(defaultPlt);
+        } else {
+            $('#sqtaPltCount').val(0);
+            $('#sqtaQtaManuale').val(sqtaMaxQta.toFixed(2));
+            sqtaAggiornaCalcoli(sqtaMaxQta);
+        }
+
+        const modalEl = document.getElementById('popupSelezionaQta');
+        sqtaModalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, {
+            backdrop: false,
+            keyboard: true
+        });
+        sqtaModalInstance.show();
+    }
+
+    function sqtaAggiornaDaPallet(nPallet) {
+        const qta = nPallet * sqtaQtaPerPallet;
+        $('#sqtaQtaManuale').val(qta.toFixed(2));
+        sqtaAggiornaCalcoli(qta);
+
+        // Evidenzia bottone rapido attivo
+        $('.sqta-plt-quick').removeClass('active btn-primary').addClass('btn-outline-primary');
+        $(`.sqta-plt-quick[data-plt="${nPallet}"]`).removeClass('btn-outline-primary').addClass('active btn-primary');
+
+        // Resto / Eccedenza
+        const diff = sqtaMaxQta - qta;
+        if (diff > 0.001) {
+            $('#sqtaRestoInfo').html(`<i class="bi bi-info-circle me-1"></i>Residuo: <strong>${diff.toFixed(2)}</strong> rimangono da spedire`)
+                .removeClass('text-warning').show();
+        } else if (diff < -0.001) {
+            $('#sqtaRestoInfo').html(`<i class="bi bi-exclamation-triangle me-1"></i>Eccedenza: <strong>${Math.abs(diff).toFixed(2)}</strong> in più rispetto alla qta da spedire`)
+                .addClass('text-warning').show();
+        } else {
+            $('#sqtaRestoInfo').hide();
+        }
+    }
+
+    function sqtaAggiornaCalcoli(qta) {
+        const pesoTot = qta * sqtaPesoUnit;
+        $('#sqtaPesoTotale').text(pesoTot.toFixed(2) + ' Kg');
+
+        // Controlla se è multiplo pallet
+        if (sqtaQtaPerPallet > 0) {
+            const numPlt = qta / sqtaQtaPerPallet;
+            const isIntero = Math.abs(numPlt - Math.round(numPlt)) < 0.001;
+            if (isIntero || qta === 0) {
+                $('#sqtaPalletWarning').hide();
+            } else {
+                $('#sqtaPalletWarning').html(`<i class="bi bi-exclamation-triangle me-1"></i>${numPlt.toFixed(2)} pallet (non intero)`).show();
+            }
+        } else {
+            $('#sqtaPalletWarning').hide();
+        }
+    }
+
+    // Eventi del popup
+    $(document).on('click', '#sqtaPltMinus', function () {
+        let val = parseInt($('#sqtaPltCount').val()) || 0;
+        if (val > 0) {
+            val--;
+            $('#sqtaPltCount').val(val);
+            sqtaAggiornaDaPallet(val);
+        }
+    });
+
+    $(document).on('click', '#sqtaPltPlus', function () {
+        let val = parseInt($('#sqtaPltCount').val()) || 0;
+        val++;
+        $('#sqtaPltCount').val(val);
+        sqtaAggiornaDaPallet(val);
+    });
+
+    $(document).on('input', '#sqtaPltCount', function () {
+        let val = parseInt($(this).val()) || 0;
+        if (val < 0) val = 0;
+        sqtaAggiornaDaPallet(val);
+    });
+
+    $(document).on('click', '.sqta-plt-quick', function () {
+        const plt = parseInt($(this).data('plt'));
+        if (plt === -1) {
+            // "Tutto": imposta la quantità massima
+            $('#sqtaPltCount').val(Math.floor(sqtaMaxQta / sqtaQtaPerPallet));
+            $('#sqtaQtaManuale').val(sqtaMaxQta.toFixed(2));
+            sqtaAggiornaCalcoli(sqtaMaxQta);
+            $('.sqta-plt-quick').removeClass('active btn-primary btn-success').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary btn-outline-success').addClass('active btn-success');
+            const resto = 0;
+            $('#sqtaRestoInfo').hide();
+        } else {
+            $('#sqtaPltCount').val(plt);
+            sqtaAggiornaDaPallet(plt);
+        }
+    });
+
+    $(document).on('input', '#sqtaQtaManuale', function () {
+        let qta = parseFloat($(this).val()) || 0;
+        sqtaAggiornaCalcoli(qta);
+        // Aggiorna conteggio pallet se possibile
+        if (sqtaQtaPerPallet > 0) {
+            const pltCalc = Math.floor(qta / sqtaQtaPerPallet);
+            $('#sqtaPltCount').val(pltCalc);
+            // Aggiorna evidenziazione bottoni rapidi
+            $('.sqta-plt-quick').removeClass('active btn-primary btn-success').addClass('btn-outline-primary');
+            if (Math.abs(qta - (pltCalc * sqtaQtaPerPallet)) < 0.001) {
+                $(`.sqta-plt-quick[data-plt="${pltCalc}"]`).removeClass('btn-outline-primary').addClass('active btn-primary');
+            }
+            // Resto
+            const resto = sqtaMaxQta - qta;
+            if (resto > 0.001 && qta < sqtaMaxQta) {
+                $('#sqtaRestoInfo').html(`<i class="bi bi-info-circle me-1"></i>Residuo: <strong>${resto.toFixed(2)}</strong> rimangono da spedire`).show();
+            } else {
+                $('#sqtaRestoInfo').hide();
+            }
+        }
+    });
+
+    function chiudiPopupQta() {
+        if (sqtaModalInstance) sqtaModalInstance.hide();
+    }
+
+    // Conferma: aggiunge al carrello con la quantità scelta
+    window.confermaQtaSpedizione = function () {
+        if (!sqtaCheckbox) {
+            chiudiPopupQta();
+            return;
+        }
+
+        var qta = parseFloat(document.getElementById('sqtaQtaManuale').value) || 0;
+
+        if (qta <= 0) {
+            sqtaCheckbox.prop('checked', false);
+            sqtaCheckbox = null;
+            chiudiPopupQta();
+            return;
+        }
+
+        var $cb = sqtaCheckbox;
+        var rigaId = parseInt($cb.val());
+        var $tr = $cb.closest('tr');
+
+        var $qtaInput = $tr.find('.qta-input');
+        $qtaInput.val(qta.toFixed(2));
+        $tr.find('.qta-static').hide();
+        $qtaInput.show();
+
+        var nuovoPeso = qta * sqtaPesoUnit;
+        $(`.peso-cell[data-riga-id="${rigaId}"]`).text(nuovoPeso.toFixed(2));
+
+        if (!righeCarrello.some(function(c) { return c.rigaId === rigaId; })) {
+            righeCarrello.push({
+                rigaId: rigaId,
+                ordine: $cb.data('ordine'),
+                cliente: $cb.data('cliente'),
+                articolo: $cb.data('articolo'),
+                descrizione: $cb.data('descrizione'),
+                quantita: qta,
+                qtaMax: sqtaMaxQta,
+                pesoKgUnitario: sqtaPesoUnit,
+                pesoKgTotale: nuovoPeso,
+                provincia: $cb.data('provincia'),
+                localita: $cb.data('localita')
+            });
+        } else {
+            var item = righeCarrello.find(function(c) { return c.rigaId === rigaId; });
+            item.quantita = qta;
+            item.pesoKgTotale = nuovoPeso;
+        }
+
+        $tr.addClass('selezionata');
+        aggiornaCarrello();
+        aggiornaCheckTestata($tr.data('ordine-id'));
+
+        sqtaCheckbox = null;
+        chiudiPopupQta();
+    };
+
+    // Annulla / chiusura X: deseleziona la checkbox
+    document.getElementById('popupSelezionaQta').addEventListener('hidden.bs.modal', function () {
+        if (sqtaCheckbox && !righeCarrello.some(function(c) { return c.rigaId === parseInt(sqtaCheckbox.val()); })) {
+            sqtaCheckbox.prop('checked', false);
+        }
+        sqtaCheckbox = null;
+    });
 
     // ===== CARRELLO =====
     function aggiungiAlCarrello($checkbox) {
@@ -889,6 +1809,8 @@ $(function () {
                 <i class="bi bi-cart-plus" style="font-size:2rem;"></i>
                 <p class="mb-0" style="font-size:0.85rem;">Seleziona righe dalla griglia</p>
             </div>`);
+            $('#pesoWarning').remove();
+            $('#indicatoreCarico').hide();
             return;
         }
 
@@ -921,8 +1843,8 @@ $(function () {
 
     // ===== DATI VIAGGIO (DROPDOWN) =====
     function caricaDatiViaggio() {
-        // Stato iniziale: disabilita campi mezzo/autista
-        $('#viaggioMezzoInterno, #viaggioMezzoEsterno, #viaggioAutista').prop('disabled', true);
+        $('#viaggioMezzoInterno, #viaggioAutista').prop('disabled', true);
+        $('#btnSceltaMezzoEsterno').prop('disabled', true);
 
         $.getJSON(urlGetDatiViaggio, function (data) {
             datiViaggio = data;
@@ -931,10 +1853,7 @@ $(function () {
             data.tipiTrasporto.forEach(t => selTipo.append(`<option value="${t.id}" data-codice="${t.codice}">${t.descrizione}</option>`));
 
             const selMI = $('#viaggioMezzoInterno');
-            data.mezziInterni.forEach(m => selMI.append(`<option value="${m.id}" data-portata="${m.portataMaxKg}">${m.descrizione}</option>`));
-
-            const selME = $('#viaggioMezzoEsterno');
-            data.mezziEsterni.forEach(m => selME.append(`<option value="${m.id}">${m.descrizione}</option>`));
+            data.mezziInterni.forEach(m => selMI.append(`<option value="${m.id}" data-portata="${m.portataMaxKg}" data-rimorchio="${m.rimorchioDisponibile}" data-portata-rimorchio="${m.portataMaxConRimorchioKg || 0}">${m.descrizione}</option>`));
 
             const selAut = $('#viaggioAutista');
             data.autisti.forEach(a => selAut.append(`<option value="${a.id}">${a.nome}</option>`));
@@ -955,20 +1874,295 @@ $(function () {
         const desc = $opt.text() || '';
 
         if (!$(this).val()) {
-            $('#viaggioMezzoInterno, #viaggioMezzoEsterno, #viaggioAutista').prop('disabled', true).val('');
+            $('#viaggioMezzoInterno, #viaggioAutista').prop('disabled', true).val('');
+            clearMezzoEsterno();
+            $('#btnSceltaMezzoEsterno').prop('disabled', true);
             return;
         }
 
         if (isEsterno(codice, desc)) {
-            $('#viaggioMezzoEsterno').prop('disabled', false);
+            $('#btnSceltaMezzoEsterno').prop('disabled', false);
             $('#viaggioMezzoInterno').prop('disabled', true).val('');
             $('#viaggioAutista').prop('disabled', true).val('');
         } else {
             $('#viaggioMezzoInterno').prop('disabled', false);
             $('#viaggioAutista').prop('disabled', false);
-            $('#viaggioMezzoEsterno').prop('disabled', true).val('');
+            clearMezzoEsterno();
+            $('#btnSceltaMezzoEsterno').prop('disabled', true);
         }
         controllaPesoMax();
+    });
+
+    // ===== POPUP MEZZO ESTERNO =====
+    let mezziEsterniData = [];
+    let meProvinceAttive = [];
+
+    function clearMezzoEsterno() {
+        $('#viaggioMezzoEsterno').val('');
+        $('#viaggioMezzoEsternoDisplay').val('').attr('placeholder', '-- Nessuno --');
+        $('#btnClearMezzoEsterno').hide();
+        $('#viaggioCostoTrasporto').val('');
+        $('#viaggioCostoTrasportoWrap').hide();
+        controllaPesoMax();
+    }
+
+    function selezionaMezzoEsterno(mezzo) {
+        $('#viaggioMezzoEsterno').val(mezzo.id);
+        $('#viaggioMezzoEsternoDisplay').val(`${mezzo.nomeVettore} - ${mezzo.comune} (${mezzo.provincia})`);
+        $('#btnClearMezzoEsterno').show();
+        $('#viaggioCostoTrasporto').val(mezzo.costo > 0 ? mezzo.costo.toFixed(2) : '');
+        $('#viaggioCostoTrasportoWrap').show();
+        bootstrap.Modal.getInstance(document.getElementById('popupSceltaMezzoEsterno'))?.hide();
+        controllaPesoMax();
+    }
+
+    $('#btnClearMezzoEsterno').on('click', clearMezzoEsterno);
+
+    $('#btnSceltaMezzoEsterno, #viaggioMezzoEsternoDisplay').on('click', function () {
+        if ($('#btnSceltaMezzoEsterno').prop('disabled')) return;
+        apriPopupMezzoEsterno();
+    });
+
+    function apriPopupMezzoEsterno() {
+        const body = $('#meTabellaBody');
+        body.html('<tr><td colspan="11" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...</td></tr>');
+        $('#meChipProvinceContainer').empty();
+        $('#meFiltroRegione').html('<option value="">-- Tutte --</option>');
+        $('#meFiltroVettore').html('<option value="">-- Tutti --</option>');
+        $('#meFiltroTipoMezzo').html('<option value="">-- Tutti --</option>');
+
+        var modal = new bootstrap.Modal(document.getElementById('popupSceltaMezzoEsterno'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+
+        $.getJSON(urlGetMezziEsterni, function (data) {
+            mezziEsterniData = data;
+            inizializzaFiltriME();
+            applicaFiltriME();
+        }).fail(function () {
+            body.html('<tr><td colspan="11" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Errore nel caricamento</td></tr>');
+        });
+    }
+
+    function inizializzaFiltriME() {
+        const container = $('#meChipProvinceContainer');
+        container.empty();
+
+        const province = [...new Set(mezziEsterniData.map(m => m.provincia).filter(p => p))].sort();
+
+        meProvinceAttive = provinceSelezionate.length > 0
+            ? provinceSelezionate.filter(p => province.includes(p))
+            : [];
+
+        const chipTutte = $('<span class="province-chip me-chip-prov" data-sigla="__ALL__">Tutte</span>');
+        chipTutte.on('click', function () {
+            if ($(this).hasClass('active')) {
+                $('.me-chip-prov').removeClass('active');
+                meProvinceAttive = [];
+            } else {
+                $('.me-chip-prov').addClass('active');
+                meProvinceAttive = province.slice();
+            }
+            applicaFiltriME();
+        });
+        container.append(chipTutte);
+
+        province.forEach(function (prov) {
+            const chip = $(`<span class="province-chip me-chip-prov" data-sigla="${prov}">${prov}</span>`);
+            if (meProvinceAttive.includes(prov)) chip.addClass('active');
+            chip.on('click', function () {
+                $(this).toggleClass('active');
+                meProvinceAttive = [];
+                $('.me-chip-prov.active:not([data-sigla="__ALL__"])').each(function () {
+                    meProvinceAttive.push($(this).data('sigla'));
+                });
+                const tutteActive = $('.me-chip-prov:not([data-sigla="__ALL__"])').length ===
+                                    $('.me-chip-prov.active:not([data-sigla="__ALL__"])').length;
+                $('.me-chip-prov[data-sigla="__ALL__"]').toggleClass('active', tutteActive);
+                applicaFiltriME();
+            });
+            container.append(chip);
+        });
+
+        if (meProvinceAttive.length > 0 && meProvinceAttive.length === province.length) {
+            chipTutte.addClass('active');
+        }
+
+        aggiornaCascadeME();
+    }
+
+    function aggiornaCascadeME() {
+        const filtrati = getFiltratiByCascade(true);
+
+        const regioni = [...new Set(filtrati.map(m => m.regione).filter(r => r))].sort();
+        const selR = $('#meFiltroRegione');
+        const prevR = selR.val();
+        selR.html('<option value="">-- Tutte --</option>');
+        regioni.forEach(r => selR.append(`<option value="${r}">${r}</option>`));
+        if (prevR && regioni.includes(prevR)) selR.val(prevR);
+
+        const vettori = [...new Set(filtrati.map(m => m.nomeVettore).filter(v => v))].sort();
+        const selV = $('#meFiltroVettore');
+        const prevV = selV.val();
+        selV.html('<option value="">-- Tutti --</option>');
+        vettori.forEach(v => selV.append(`<option value="${v}">${v}</option>`));
+        if (prevV && vettori.includes(prevV)) selV.val(prevV);
+
+        const tipi = [...new Set(filtrati.map(m => m.tipoMezzo).filter(t => t))].sort();
+        const selT = $('#meFiltroTipoMezzo');
+        const prevT = selT.val();
+        selT.html('<option value="">-- Tutti --</option>');
+        tipi.forEach(t => selT.append(`<option value="${t}">${t}</option>`));
+        if (prevT && tipi.includes(prevT)) selT.val(prevT);
+    }
+
+    function getFiltratiByCascade(soloProvince) {
+        let filtrati = mezziEsterniData;
+        if (meProvinceAttive.length > 0) {
+            filtrati = filtrati.filter(m => meProvinceAttive.includes(m.provincia));
+        }
+        if (soloProvince) return filtrati;
+
+        const reg = $('#meFiltroRegione').val();
+        const vet = $('#meFiltroVettore').val();
+        const tipo = $('#meFiltroTipoMezzo').val();
+        if (reg) filtrati = filtrati.filter(m => m.regione === reg);
+        if (vet) filtrati = filtrati.filter(m => m.nomeVettore === vet);
+        if (tipo) filtrati = filtrati.filter(m => m.tipoMezzo === tipo);
+        return filtrati;
+    }
+
+    function applicaFiltriME() {
+        aggiornaCascadeME();
+        const filtrati = getFiltratiByCascade(false);
+        renderTabelaME(filtrati);
+    }
+
+    function renderTabelaME(mezzi) {
+        const body = $('#meTabellaBody');
+        body.empty();
+
+        $('#meContatoreRisultati').text(`${mezzi.length} mezz${mezzi.length === 1 ? 'o' : 'i'} trovat${mezzi.length === 1 ? 'o' : 'i'} su ${mezziEsterniData.length} totali`);
+
+        if (mezzi.length === 0) {
+            body.html('<tr><td colspan="11" class="text-center py-4 text-muted"><i class="bi bi-search me-1"></i>Nessun mezzo trovato con i filtri selezionati</td></tr>');
+            return;
+        }
+
+        const selId = $('#viaggioMezzoEsterno').val();
+
+        mezzi.forEach(function (m) {
+            const isSelected = selId && parseInt(selId) === m.id;
+            const gruIcon = m.gru
+                ? '<i class="bi bi-check-circle-fill me-gru-ok"></i>'
+                : '<i class="bi bi-x-circle me-gru-no"></i>';
+            const trasbordoIcon = m.trasbordo
+                ? '<i class="bi bi-check-circle-fill me-trasbordo-ok"></i>'
+                : '<i class="bi bi-x-circle me-trasbordo-no"></i>';
+            const rowClass = isSelected ? 'table-success' : '';
+
+            body.append(`<tr class="${rowClass}" data-mezzo-id="${m.id}">
+                <td><button class="btn btn-primary btn-sm btn-seleziona-mezzo" title="Seleziona">
+                    <i class="bi bi-check-lg"></i></button></td>
+                <td><strong class="me-vettore-link" data-mezzo-id="${m.id}" title="Clicca per modificare il costo">${m.nomeVettore}</strong></td>
+                <td>${m.comune}</td>
+                <td><span class="badge bg-info text-dark">${m.provincia}</span></td>
+                <td>${m.regione}</td>
+                <td>${m.tipoMezzo}</td>
+                <td class="text-end">${m.costo > 0 ? '€ ' + m.costo.toFixed(2) : '-'}</td>
+                <td class="text-end">${m.portataMax > 0 ? m.portataMax.toLocaleString('it-IT') + ' Kg' : '-'}</td>
+                <td class="text-center">${gruIcon}</td>
+                <td class="text-center">${trasbordoIcon}</td>
+                <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${(m.note || '').replace(/"/g, '&quot;')}">${m.note || ''}</td>
+            </tr>`);
+        });
+
+        body.find('.btn-seleziona-mezzo').on('click', function () {
+            const id = $(this).closest('tr').data('mezzo-id');
+            const mezzo = mezziEsterniData.find(m => m.id === id);
+            if (mezzo) selezionaMezzoEsterno(mezzo);
+        });
+
+        body.find('.me-vettore-link').on('click', function (e) {
+            e.stopPropagation();
+            const id = $(this).data('mezzo-id');
+            const mezzo = mezziEsterniData.find(m => m.id === id);
+            if (mezzo) apriPopupEditCostoME(mezzo);
+        });
+
+        body.find('tr').on('dblclick', function () {
+            const id = $(this).data('mezzo-id');
+            const mezzo = mezziEsterniData.find(m => m.id === id);
+            if (mezzo) selezionaMezzoEsterno(mezzo);
+        });
+    }
+
+    $('#meFiltroRegione, #meFiltroVettore, #meFiltroTipoMezzo').on('change', applicaFiltriME);
+
+    $('#meResetFiltri').on('click', function () {
+        meProvinceAttive = [];
+        $('.me-chip-prov').removeClass('active');
+        $('#meFiltroRegione').val('');
+        $('#meFiltroVettore').val('');
+        $('#meFiltroTipoMezzo').val('');
+        applicaFiltriME();
+    });
+
+    // ===== POPUP MODIFICA COSTO MEZZO ESTERNO =====
+    let editMeIdCorrente = null;
+
+    function apriPopupEditCostoME(mezzo) {
+        editMeIdCorrente = mezzo.id;
+        $('#editMeVettore').text(mezzo.nomeVettore);
+        $('#editMeLocalita').text(`${mezzo.comune} (${mezzo.provincia}) - ${mezzo.regione}`);
+        $('#editMeTipoMezzo').text(mezzo.tipoMezzo || '-');
+        $('#editMeCosto').val(mezzo.costo.toFixed(2));
+        $('#editMeAlert').hide();
+
+        var modal = new bootstrap.Modal(document.getElementById('popupEditCostoME'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    $('#btnSalvaCostoME').on('click', function () {
+        const $btn = $(this);
+        const nuovoCosto = parseFloat($('#editMeCosto').val());
+
+        if (isNaN(nuovoCosto) || nuovoCosto < 0) {
+            $('#editMeAlert').html('<div class="alert alert-warning py-1" style="font-size:0.8rem;"><i class="bi bi-exclamation-triangle me-1"></i>Inserire un costo valido</div>').show();
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Salvataggio...');
+
+        $.ajax({
+            url: urlUpdateCostoME,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: editMeIdCorrente, costo: nuovoCosto }),
+            success: function (result) {
+                if (result.success) {
+                    const mezzo = mezziEsterniData.find(m => m.id === editMeIdCorrente);
+                    if (mezzo) mezzo.costo = nuovoCosto;
+                    applicaFiltriME();
+                    bootstrap.Modal.getInstance(document.getElementById('popupEditCostoME'))?.hide();
+                    $('#editMeAlert').hide();
+                } else {
+                    $('#editMeAlert').html(`<div class="alert alert-danger py-1" style="font-size:0.8rem;"><i class="bi bi-x-circle me-1"></i>${result.message}</div>`).show();
+                }
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.message || 'Errore nel salvataggio';
+                $('#editMeAlert').html(`<div class="alert alert-danger py-1" style="font-size:0.8rem;"><i class="bi bi-x-circle me-1"></i>${msg}</div>`).show();
+            },
+            complete: function () {
+                $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Salva');
+            }
+        });
     });
 
     // Auto-calcolo ora arrivo quando cambia ora partenza e il campo è vuoto
@@ -986,21 +2180,89 @@ $(function () {
     $('#viaggioOraPartenza').on('change', calcolaPlaceholderOraArrivo);
     calcolaPlaceholderOraArrivo();
 
-    // Warning peso max del mezzo selezionato
-    $('#viaggioMezzoInterno').on('change', function () { controllaPesoMax(); });
+    // Toggle checkbox rimorchio quando cambia mezzo interno
+    $('#viaggioMezzoInterno').on('change', function () {
+        const $opt = $(this).find(':selected');
+        const haRimorchio = $opt.data('rimorchio') === true || $opt.data('rimorchio') === 'true' || $opt.data('rimorchio') === 'True';
+        if (haRimorchio) {
+            $('#viaggioConRimorchioWrap').show();
+        } else {
+            $('#viaggioConRimorchioWrap').hide();
+            $('#viaggioConRimorchio').prop('checked', false);
+        }
+        controllaPesoMax();
+    });
+
+    $('#viaggioConRimorchio').on('change', function () { controllaPesoMax(); });
 
     function controllaPesoMax() {
-        const $opt = $('#viaggioMezzoInterno').find(':selected');
-        const portata = parseFloat($opt.data('portata')) || 0;
-        if (portata <= 0) { $('#pesoWarning').remove(); return; }
+        let portata = 0;
+        let labelMezzo = '';
+
+        const $optInt = $('#viaggioMezzoInterno').find(':selected');
+        const conRimorchio = $('#viaggioConRimorchio').is(':checked');
+        const portataInt = parseFloat($optInt.data('portata')) || 0;
+
+        if (portataInt > 0) {
+            portata = portataInt;
+            labelMezzo = $optInt.text();
+            if (conRimorchio) {
+                const portataRim = parseFloat($optInt.data('portata-rimorchio')) || 0;
+                if (portataRim > 0) { portata = portataRim; labelMezzo += ' (rim.)'; }
+            }
+        }
+
+        const mezzoEstId = $('#viaggioMezzoEsterno').val();
+        if (!portata && mezzoEstId && mezziEsterniData.length > 0) {
+            const me = mezziEsterniData.find(m => m.id === parseInt(mezzoEstId));
+            if (me && me.portataMax > 0) {
+                portata = me.portataMax;
+                labelMezzo = me.nomeVettore;
+            }
+        }
 
         const pesoTotale = righeCarrello.reduce((sum, r) => sum + r.pesoKgTotale, 0);
+
+        if (portata <= 0) {
+            $('#pesoWarning').remove();
+            $('#indicatoreCarico').hide();
+            return;
+        }
+
+        const perc = Math.round((pesoTotale / portata) * 100);
+        const manca = portata - pesoTotale;
+
+        $('#indicatoreCaricoLabel').text(`${labelMezzo} — Portata: ${portata.toLocaleString('it-IT')} Kg`);
+
+        let barClass = 'bg-info';
+        let percText = '';
+        if (perc <= 50) { barClass = 'bg-info'; }
+        else if (perc <= 80) { barClass = 'bg-success'; }
+        else if (perc <= 100) { barClass = 'bg-warning'; }
+        else { barClass = 'bg-danger'; }
+
+        if (manca > 0) {
+            percText = `${perc}% — mancano ${manca.toFixed(0)} Kg`;
+        } else if (manca < 0) {
+            percText = `${perc}% — eccedenza ${Math.abs(manca).toFixed(0)} Kg`;
+        } else {
+            percText = `100% — carico completo`;
+        }
+
+        $('#indicatoreCaricoPerc').text(percText)
+            .removeClass('text-info text-success text-warning text-danger')
+            .addClass(barClass === 'bg-info' ? 'text-info' : barClass === 'bg-success' ? 'text-success' : barClass === 'bg-warning' ? 'text-warning' : 'text-danger');
+        $('#indicatoreCaricoBar').css('width', Math.min(perc, 100) + '%')
+            .removeClass('bg-info bg-success bg-warning bg-danger').addClass(barClass);
+        $('#indicatoreCarico').show();
+
         if (pesoTotale > portata) {
+            const label = conRimorchio && portataInt > 0 ? 'portata max con rimorchio' : 'portata max';
             if ($('#pesoWarning').length === 0) {
                 $('#carrelloPesoTotale').closest('.peso-totale-badge')
-                    .after(`<div id="pesoWarning" class="text-warning" style="font-size:0.72rem;"><i class="bi bi-exclamation-triangle me-1"></i>Supera portata max ${portata.toFixed(0)} Kg</div>`);
+                    .after(`<div id="pesoWarning" class="text-warning" style="font-size:0.72rem;"><i class="bi bi-exclamation-triangle me-1"></i>Supera ${label} ${portata.toFixed(0)} Kg</div>`);
             } else {
-                $('#pesoWarning').html(`<i class="bi bi-exclamation-triangle me-1"></i>Supera portata max ${portata.toFixed(0)} Kg`);
+                $('#pesoWarning').html(`<i class="bi bi-exclamation-triangle me-1"></i>Supera ${label} ${portata.toFixed(0)} Kg`);
             }
         } else {
             $('#pesoWarning').remove();
@@ -1008,7 +2270,7 @@ $(function () {
     }
 
     // ===== CREA VIAGGIO =====
-    function creaViaggio() {
+    function creaViaggio(forzaQuantita) {
         if (righeCarrello.length === 0) return;
 
         const tipoTrasportoId = parseInt($('#viaggioTipoTrasporto').val());
@@ -1036,7 +2298,10 @@ $(function () {
             oraPartenza: oraPartenza + ':00',
             oraArrivo: oraArrivo ? oraArrivo + ':00' : null,
             durataStimataMinuti: 240,
-            note: $('#viaggioNote').val() || null
+            note: $('#viaggioNote').val() || null,
+            conRimorchio: $('#viaggioConRimorchio').is(':checked'),
+            costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null,
+            forzaQuantita: forzaQuantita === true
         };
 
         $('#btnCreaViaggio').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creazione...');
@@ -1053,15 +2318,26 @@ $(function () {
                     aggiornaCarrello();
                     caricaRighe();
                     caricaConteggi();
-                    // Reset form
                     $('#viaggioNote').val('');
+                    $('#viaggioConRimorchio').prop('checked', false);
+                    $('#viaggioConRimorchioWrap').hide();
+                    clearMezzoEsterno();
                 } else {
                     showAlert(result.message, 'danger');
                 }
             },
             error: function (xhr) {
-                const msg = xhr.responseJSON?.message || 'Errore nella creazione del viaggio';
-                showAlert(msg, 'danger');
+                const resp = xhr.responseJSON;
+                if (resp && resp.quantitaEccedente) {
+                    const dettaglio = (resp.message || '').replace(/\n/g, '<br>');
+                    if (confirm('ATTENZIONE - Quantità eccedenti:\n\n' + (resp.message || '') + '\n\nVuoi procedere comunque con la creazione del viaggio?')) {
+                        creaViaggio(true);
+                        return;
+                    }
+                } else {
+                    const msg = resp?.message || 'Errore nella creazione del viaggio';
+                    showAlert(msg, 'danger');
+                }
             },
             complete: function () {
                 $('#btnCreaViaggio').prop('disabled', righeCarrello.length === 0)
@@ -1071,6 +2347,8 @@ $(function () {
     }
 
     // ===== POPUP DISPONIBILITÀ =====
+    let dispDataIso = '';
+
     function apriPopupDisponibilita(codiceArticolo) {
         $('#loadingDisponibilita').show();
         $('#contenutoDisponibilita').hide();
@@ -1087,6 +2365,7 @@ $(function () {
         const dataRif = new Date(ieri);
         dataRif.setDate(dataRif.getDate() + 60);
         const dataStr = dataRif.toISOString().split('T')[0];
+        dispDataIso = dataStr;
 
         $.ajax({
             url: urlDisponibilita,
@@ -1110,8 +2389,8 @@ $(function () {
                         if (r.notaPrevisione) {
                             const notaIcon = r.disponibilitaDaVerificare
                                 ? '<i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i>'
-                                : '<i class="bi bi-check-circle-fill me-1 text-success"></i>';
-                            notaHtml = `${notaIcon}${r.notaPrevisione}`;
+                                : '<i class="bi bi-search me-1"></i>';
+                            notaHtml = `<span class="nota-previsione-link" onclick="mostraDettaglioMovimentiNotaCV('${r.codiceArticolo}', ${r.esistenza}, '${dispDataIso}')" title="Clicca per dettaglio previsione">${notaIcon}${r.notaPrevisione}</span>`;
                         }
 
                         const smBadge = r.isSupermarket ? ' <span class="badge bg-info ms-1">SM</span>' : '';
@@ -1144,6 +2423,454 @@ $(function () {
         });
     }
 
+    // ===== POPUP DETTAGLIO PREVISIONE DISPONIBILITÀ =====
+    window.mostraDettaglioMovimentiNotaCV = function(codiceArticolo, esistenza, dataRiferimento) {
+        $('#loadingMovimentiNotaCV').show();
+        $('#contenutoMovimentiNotaCV').hide();
+        $('#erroreMovimentiNotaCV').hide();
+
+        var modal = new bootstrap.Modal(document.getElementById('popupDettaglioMovimentiNotaCV'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+
+        $.ajax({
+            url: urlDettaglioMovimentiNota,
+            type: 'GET',
+            data: {
+                codiceArticolo: codiceArticolo,
+                esistenza: esistenza,
+                dataRiferimento: dataRiferimento
+            },
+            success: function(data) {
+                var articoloText = data.codiceArticolo;
+                if (data.descrizioneArticolo) articoloText += ' - ' + data.descrizioneArticolo;
+                $('#cvArticoloMovimentiNota').text(articoloText);
+
+                var dataInizioFmt = new Date(data.dataInizio).toLocaleDateString('it-IT');
+                var dataFineFmt = new Date(data.dataFine).toLocaleDateString('it-IT');
+                $('#cvPeriodoMovimentiNota').text(dataInizioFmt + ' → ' + dataFineFmt);
+                $('#cvNotaGenerata').text(data.notaGenerata);
+
+                var um = data.unitaMisura || 'pz';
+                var tbody = $('#tabellaMovimentiNotaCV');
+                tbody.empty();
+
+                if (data.movimenti && data.movimenti.length > 0) {
+                    data.movimenti.forEach(function(mov) {
+                        var dataFmt = new Date(mov.data).toLocaleDateString('it-IT');
+
+                        var qtaText = '';
+                        if (mov.tipo === 'Esistenza') {
+                            qtaText = mov.quantita.toFixed(2) + ' ' + um;
+                        } else if (mov.quantita >= 0) {
+                            qtaText = '<span class="text-success fw-bold">+' + mov.quantita.toFixed(2) + ' ' + um + '</span>';
+                        } else {
+                            qtaText = '<span class="text-danger fw-bold">' + mov.quantita.toFixed(2) + ' ' + um + '</span>';
+                        }
+
+                        var progClass = mov.progressivo >= 0 ? 'text-success' : 'text-danger';
+                        var progText = '<span class="' + progClass + ' fw-bold">' + mov.progressivo.toFixed(2) + ' ' + um + '</span>';
+
+                        var tipoBadge = 'bg-light text-dark';
+                        var tipoIcon = 'bi-question';
+                        switch(mov.tipo) {
+                            case 'Esistenza': tipoBadge = 'bg-secondary'; tipoIcon = 'bi-box-seam'; break;
+                            case 'Ordine Cliente': tipoBadge = 'bg-danger'; tipoIcon = 'bi-cart-dash'; break;
+                            case 'Ordine Produzione': tipoBadge = 'bg-success'; tipoIcon = 'bi-gear'; break;
+                            case 'Ordine Fornitore': tipoBadge = 'bg-info'; tipoIcon = 'bi-truck'; break;
+                        }
+
+                        var rowClass = mov.tipo === 'Esistenza' ? 'fw-bold' : '';
+
+                        var emailHtml = '';
+                        if (mov.tipo === 'Ordine Cliente') {
+                            if (mov.emailInviata) {
+                                var dataEmailFmt = mov.dataInvioEmail ? new Date(mov.dataInvioEmail).toLocaleDateString('it-IT') : '';
+                                emailHtml = '<span class="text-success" title="Email inviata il ' + dataEmailFmt + '"><i class="bi bi-envelope-check-fill fs-5"></i></span>';
+                            } else {
+                                emailHtml = '<span class="text-muted" title="Email non inviata"><i class="bi bi-envelope-x fs-5"></i></span>';
+                            }
+                        }
+
+                        tbody.append('<tr class="' + rowClass + '">' +
+                            '<td class="text-center">' + dataFmt + '</td>' +
+                            '<td><span class="badge ' + tipoBadge + '"><i class="bi ' + tipoIcon + ' me-1"></i>' + mov.tipo + '</span></td>' +
+                            '<td>' + mov.descrizione + '</td>' +
+                            '<td class="text-end">' + qtaText + '</td>' +
+                            '<td class="text-end">' + progText + '</td>' +
+                            '<td class="text-center">' + emailHtml + '</td>' +
+                            '</tr>');
+                    });
+                } else {
+                    tbody.append('<tr><td colspan="6" class="text-center text-muted">Nessun movimento trovato nel periodo</td></tr>');
+                }
+
+                $('#loadingMovimentiNotaCV').hide();
+                $('#contenutoMovimentiNotaCV').show();
+            },
+            error: function(xhr) {
+                $('#loadingMovimentiNotaCV').hide();
+                var msg = xhr.responseJSON?.error || 'Errore durante il caricamento';
+                $('#msgErroreMovimentiNotaCV').text(msg);
+                $('#erroreMovimentiNotaCV').show();
+            }
+        });
+    };
+
+    // ===== POPUP VIAGGI ORDINE =====
+    function apriPopupViaggiOrdine(ordineTestataId) {
+        $('#loadingViaggiOrdine').show();
+        $('#contenutoViaggiOrdine').hide();
+        $('#erroreViaggiOrdine').hide();
+
+        var modal = new bootstrap.Modal(document.getElementById('popupViaggiOrdine'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+
+        $.ajax({
+            url: urlViaggiOrdine,
+            type: 'GET',
+            data: { ordineTestataId: ordineTestataId },
+            success: function (data) {
+                if (!data.success) {
+                    $('#loadingViaggiOrdine').hide();
+                    $('#msgErroreViaggiOrdine').text(data.message || 'Errore');
+                    $('#erroreViaggiOrdine').show();
+                    return;
+                }
+
+                $('#viaggiOrdineInfo').text(data.ordine.numeroOrdine);
+                $('#viaggiOrdineCliente').text(data.ordine.clienteRagioneSociale);
+
+                const container = $('#viaggiOrdineListaContainer');
+                container.empty();
+
+                // === TABELLA RIEPILOGO RIGHE CON 4 QUANTITÀ ===
+                if (data.righeRiepilogo && data.righeRiepilogo.length > 0) {
+                    let riepilogoHtml = `<div class="mb-3">
+                        <h6 class="mb-2" style="font-size:0.85rem;"><i class="bi bi-list-check me-1"></i>Riepilogo Righe Ordine</h6>
+                        <table class="table table-sm table-bordered mb-0" style="font-size:0.78rem;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="align-middle">Riga</th>
+                                    <th rowspan="2" class="align-middle">Articolo</th>
+                                    <th rowspan="2" class="align-middle">Descrizione</th>
+                                    <th rowspan="2" class="align-middle">UM</th>
+                                    <th colspan="2" class="text-center bg-light"><i class="bi bi-file-earmark-text me-1"></i>Gestionale</th>
+                                    <th colspan="2" class="text-center" style="background:#e8f5e9;"><i class="bi bi-truck me-1"></i>Viaggi</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width:30px;"></th>
+                                </tr>
+                                <tr>
+                                    <th class="text-end bg-light">Ordine</th>
+                                    <th class="text-end bg-light">Residua</th>
+                                    <th class="text-end" style="background:#e8f5e9;">Spedita</th>
+                                    <th class="text-end" style="background:#e8f5e9;">Da Sped.</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    data.righeRiepilogo.forEach(function (rig) {
+                        const desyncIcon = rig.desync
+                            ? '<i class="bi bi-exclamation-triangle-fill text-warning" title="Disallineamento tra evaso e spedito"></i>'
+                            : '<i class="bi bi-check-circle-fill text-success" title="In sincronia"></i>';
+
+                        const rowClass = rig.desync ? 'table-warning' : '';
+
+                        riepilogoHtml += `<tr class="${rowClass}">
+                            <td class="text-center">${rig.rigaOrdine}</td>
+                            <td><strong>${rig.codiceArticolo}</strong></td>
+                            <td>${rig.descrizioneArticolo}</td>
+                            <td>${rig.unitaMisura}</td>
+                            <td class="text-end">${rig.quantitaOrdine.toFixed(2)}</td>
+                            <td class="text-end">${rig.quantitaResidua.toFixed(2)}</td>
+                            <td class="text-end">${rig.quantitaSpedita.toFixed(2)}</td>
+                            <td class="text-end fw-bold">${rig.quantitaDaSpedire.toFixed(2)}</td>
+                            <td class="text-center">${desyncIcon}</td>
+                        </tr>`;
+                    });
+
+                    riepilogoHtml += `</tbody></table></div>`;
+                    container.append(riepilogoHtml);
+
+                    // Legenda sotto la tabella
+                    const hasDesync = data.righeRiepilogo.some(r => r.desync);
+                    if (hasDesync) {
+                        container.append(`<div class="alert alert-warning py-1 px-2 mb-3" style="font-size:0.75rem;">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Disallineamento rilevato:</strong> la quantità evasa (DDT) e la quantità spedita (Viaggi) non coincidono su alcune righe.
+                            Questo è normale se DDT e viaggi non sono ancora stati allineati.
+                        </div>`);
+                    }
+                }
+
+                // === SEZIONE VIAGGI ===
+                if (!data.viaggi || data.viaggi.length === 0) {
+                    container.append(`<div class="text-center py-4 text-muted">
+                        <i class="bi bi-truck" style="font-size:2.5rem;"></i>
+                        <p class="mt-2 mb-0">Nessun viaggio associato a questo ordine</p>
+                    </div>`);
+                } else {
+                    container.append(`<h6 class="mb-2" style="font-size:0.85rem;"><i class="bi bi-truck me-1"></i>Viaggi (${data.viaggi.length})</h6>`);
+
+                    data.viaggi.forEach(function (v) {
+                        const statoBadge = {
+                            'Pianificato': 'badge bg-info text-dark',
+                            'In Corso':    'badge bg-warning text-dark',
+                            'Completato':  'badge bg-success',
+                            'Annullato':   'badge bg-danger'
+                        }[v.stato] || 'badge bg-secondary';
+
+                        const manualeBadge = v.isManuale
+                            ? '<span class="badge bg-warning text-dark ms-1"><i class="bi bi-box-arrow-up-right me-1"></i>Manuale</span>'
+                            : '';
+                        const headerBg = v.isManuale ? 'background:#fff8e1;' : 'background:#f0f4ff;';
+                        const iconViaggio = v.isManuale ? 'bi-box-arrow-up-right' : 'bi-truck';
+
+                        let cardHtml = `<div class="card mb-3 border">
+                            <div class="card-header py-2 d-flex justify-content-between align-items-center" style="${headerBg}">
+                                <div>
+                                    <strong><i class="bi ${iconViaggio} me-1"></i>${v.isManuale ? 'Sped. Manuale' : 'Viaggio'} #${v.viaggioId}</strong>
+                                    <span class="${statoBadge} ms-2">${v.stato}</span>${manualeBadge}
+                                </div>
+                                <div style="font-size:0.82rem;">
+                                    <i class="bi bi-calendar-event me-1"></i>${v.dataConsegna}
+                                    <span class="ms-2"><i class="bi bi-clock me-1"></i>${v.oraPartenza} - ${v.oraArrivo}</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="d-flex flex-wrap gap-3 mb-2" style="font-size:0.8rem;">`;
+
+                        if (v.tipoTrasporto) cardHtml += `<span><i class="bi bi-signpost-2 me-1 text-muted"></i><strong>Tipo:</strong> ${v.tipoTrasporto}</span>`;
+                        if (v.mezzo)         cardHtml += `<span><i class="bi bi-truck me-1 text-muted"></i><strong>Mezzo:</strong> ${v.mezzo}</span>`;
+                        if (v.autista)       cardHtml += `<span><i class="bi bi-person me-1 text-muted"></i><strong>Autista:</strong> ${v.autista}</span>`;
+                        if (v.note)          cardHtml += `<span><i class="bi bi-sticky me-1 text-muted"></i>${v.note}</span>`;
+
+                        cardHtml += `</div>
+                                <table class="table table-sm table-striped mb-0" style="font-size:0.8rem;">
+                                    <thead>
+                                        <tr class="table-dark">
+                                            <th>Articolo</th>
+                                            <th>Descrizione</th>
+                                            <th class="text-end">Qta Assegnata</th>
+                                            <th>UM</th>
+                                            <th class="text-end">Peso Kg</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+
+                        let pesoTotViaggio = 0;
+                        v.righe.forEach(function (rig) {
+                            pesoTotViaggio += rig.pesoTotaleKg;
+                            cardHtml += `<tr>
+                                <td><strong>${rig.codiceArticolo}</strong></td>
+                                <td>${rig.descrizioneArticolo}</td>
+                                <td class="text-end">${rig.quantitaAssegnata.toFixed(2)}</td>
+                                <td>${rig.unitaMisura}</td>
+                                <td class="text-end">${rig.pesoTotaleKg.toFixed(2)}</td>
+                            </tr>`;
+                        });
+
+                        cardHtml += `</tbody>
+                                    <tfoot>
+                                        <tr class="table-secondary fw-bold">
+                                            <td colspan="3"></td>
+                                            <td class="text-end">Totale:</td>
+                                            <td class="text-end">${pesoTotViaggio.toFixed(2)} Kg</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>`;
+                        container.append(cardHtml);
+                    });
+                }
+
+                $('#loadingViaggiOrdine').hide();
+                $('#contenutoViaggiOrdine').show();
+            },
+            error: function (xhr) {
+                $('#loadingViaggiOrdine').hide();
+                const msg = xhr.responseJSON?.message || 'Errore durante il caricamento';
+                $('#msgErroreViaggiOrdine').text(msg);
+                $('#erroreViaggiOrdine').show();
+            }
+        });
+    }
+
+    // ===== SPEDIZIONE MANUALE =====
+    let spedManualeRighe = [];
+
+    function apriPopupSpedizioneManuale($btn) {
+        const rigaId = parseInt($btn.data('riga-id'));
+        const articolo = $btn.data('articolo');
+        const descrizione = $btn.data('descrizione');
+        const qtaDaSpedire = parseFloat($btn.data('qta-da-spedire'));
+        const peso = parseFloat($btn.data('peso'));
+
+        spedManualeRighe = [{ rigaId, articolo, descrizione, qtaDaSpedire, peso }];
+
+        let html = `<table class="table table-sm mb-0" style="font-size:0.8rem;">
+            <thead><tr class="table-dark"><th>Articolo</th><th>Descrizione</th><th class="text-end">Qta da Spedire</th><th class="text-end">Qta</th></tr></thead>
+            <tbody>`;
+
+        spedManualeRighe.forEach((r, i) => {
+            html += `<tr>
+                <td><strong>${r.articolo}</strong></td>
+                <td>${r.descrizione}</td>
+                <td class="text-end">${r.qtaDaSpedire.toFixed(2)}</td>
+                <td><input type="number" class="form-control form-control-sm text-end sped-man-qta" data-idx="${i}" value="${r.qtaDaSpedire.toFixed(2)}" step="0.01" min="0.01" max="${r.qtaDaSpedire}" style="width:90px;" /></td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        $('#spedManRigheContainer').html(html);
+        $('#spedManData').val(new Date().toISOString().split('T')[0]);
+        $('#spedManNote').val('');
+
+        var modal = new bootstrap.Modal(document.getElementById('popupSpedizioneManuale'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    // Supporto per spedizione manuale da carrello (più righe)
+    window.apriSpedManualeDaCarrello = function() {
+        if (righeCarrello.length === 0) return;
+
+        spedManualeRighe = righeCarrello.map(r => ({
+            rigaId: r.rigaId,
+            articolo: r.articolo,
+            descrizione: r.descrizione,
+            qtaDaSpedire: r.quantita,
+            peso: r.pesoKgUnitario
+        }));
+
+        let html = `<table class="table table-sm mb-0" style="font-size:0.8rem;">
+            <thead><tr class="table-dark"><th>Articolo</th><th>Descrizione</th><th class="text-end">Qta</th></tr></thead>
+            <tbody>`;
+
+        spedManualeRighe.forEach(r => {
+            html += `<tr>
+                <td><strong>${r.articolo}</strong></td>
+                <td>${r.descrizione}</td>
+                <td class="text-end">${r.qtaDaSpedire.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        $('#spedManRigheContainer').html(html);
+        $('#spedManData').val(new Date().toISOString().split('T')[0]);
+        $('#spedManNote').val('');
+
+        var modal = new bootstrap.Modal(document.getElementById('popupSpedizioneManuale'), {
+            backdrop: false,
+            keyboard: true
+        });
+        modal.show();
+    };
+
+    $('#btnConfermaSpedManuale').on('click', function () {
+        inviaSpedizioneManuale(false);
+    });
+
+    function inviaSpedizioneManuale(forzaQuantita) {
+        const $btn = $('#btnConfermaSpedManuale');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Invio...');
+
+        // Aggiorna quantità dagli input se presenti
+        $('.sped-man-qta').each(function () {
+            const idx = parseInt($(this).data('idx'));
+            const val = parseFloat($(this).val()) || 0;
+            if (spedManualeRighe[idx]) spedManualeRighe[idx].qtaDaSpedire = val;
+        });
+
+        const payload = {
+            righe: spedManualeRighe.map(r => ({ rigaId: r.rigaId, quantita: r.qtaDaSpedire })),
+            dataSpedizione: $('#spedManData').val() || null,
+            note: $('#spedManNote').val() || null,
+            forzaQuantita: forzaQuantita === true
+        };
+
+        $.ajax({
+            url: urlSpedizioneManuale,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (result) {
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('popupSpedizioneManuale'))?.hide();
+                    showAlert(result.message, 'success');
+                    righeCarrello = [];
+                    aggiornaCarrello();
+                    caricaRighe();
+                    caricaConteggi();
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            },
+            error: function (xhr) {
+                const resp = xhr.responseJSON;
+                if (resp && resp.quantitaEccedente) {
+                    if (confirm('ATTENZIONE - Quantità eccedenti:\n\n' + (resp.message || '') + '\n\nVuoi procedere comunque con la spedizione manuale?')) {
+                        inviaSpedizioneManuale(true);
+                        return;
+                    }
+                } else {
+                    const msg = resp?.message || 'Errore nella registrazione';
+                    showAlert(msg, 'danger');
+                }
+            },
+            complete: function () {
+                $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Conferma Spedizione');
+            }
+        });
+    }
+
+    // ===== MODAL DRAGGABLE =====
+    function makeModalDraggable(modalEl) {
+        var dialog = modalEl.querySelector('.modal-dialog');
+        var header = modalEl.querySelector('.modal-header');
+        var dragging = false;
+        var startX = 0, startY = 0;
+        var currentX = 0, currentY = 0;
+
+        header.style.cursor = 'move';
+        header.addEventListener('mousedown', function(e) {
+            if (e.target.closest('.btn-close') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+            startX = e.clientX - currentX;
+            startY = e.clientY - currentY;
+            dragging = true;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            currentX = e.clientX - startX;
+            currentY = e.clientY - startY;
+            dialog.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+        });
+
+        document.addEventListener('mouseup', function() { dragging = false; });
+        modalEl.addEventListener('show.bs.modal', function() {
+            currentX = 0;
+            currentY = 0;
+            dialog.style.transform = '';
+        });
+    }
+
+    makeModalDraggable(document.getElementById('popupDisponibilita'));
+    makeModalDraggable(document.getElementById('popupViaggiOrdine'));
+    makeModalDraggable(document.getElementById('popupSpedizioneManuale'));
+    makeModalDraggable(document.getElementById('popupSelezionaQta'));
+    makeModalDraggable(document.getElementById('popupDettaglioMovimentiNotaCV'));
+    makeModalDraggable(document.getElementById('popupSceltaMezzoEsterno'));
+    makeModalDraggable(document.getElementById('popupEditCostoME'));
+
     // ===== UTILITY =====
     function showAlert(message, type) {
         const alert = $(`<div class="alert alert-${type} alert-dismissible fade show" role="alert" style="font-size:0.85rem;">
@@ -1154,6 +2881,14 @@ $(function () {
         $('#alertContainer').html(alert);
         setTimeout(() => alert.alert('close'), 5000);
     }
+
+    // ===== TOGGLE PANNELLO VIAGGIO =====
+    $('#btnTogglePanel').on('click', function () {
+        const panel = $('#panelRight');
+        const btn = $(this);
+        panel.toggleClass('collapsed');
+        btn.toggleClass('panel-hidden');
+    });
 });
 </script>
 }

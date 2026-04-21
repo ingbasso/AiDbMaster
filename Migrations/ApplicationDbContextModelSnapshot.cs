@@ -120,6 +120,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(3)")
                         .HasColumnName("SecondaUnitàMisura");
 
+                    b.Property<string>("StatoArticolo")
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("StatoArticolo");
+
                     b.Property<string>("Supermarket")
                         .IsRequired()
                         .HasMaxLength(1)
@@ -182,6 +187,10 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("CodiceAgente");
 
+                    b.Property<short?>("CodiceAgente2")
+                        .HasColumnType("smallint")
+                        .HasColumnName("CodiceAgente2");
+
                     b.Property<int>("CodiceCliente")
                         .HasColumnType("int")
                         .HasColumnName("CodiceCliente");
@@ -236,6 +245,8 @@ namespace AiDbMaster.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CodiceAgente");
+
+                    b.HasIndex("CodiceAgente2");
 
                     b.ToTable("AnagraficaClienti");
                 });
@@ -877,6 +888,10 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("Cap");
 
+                    b.Property<short?>("CodiceAgente2")
+                        .HasColumnType("smallint")
+                        .HasColumnName("CodiceAgente2");
+
                     b.Property<short?>("CodiceZona")
                         .HasColumnType("smallint")
                         .HasColumnName("CodiceZona");
@@ -911,6 +926,8 @@ namespace AiDbMaster.Migrations
                         .HasColumnName("UltimoAggiornamento");
 
                     b.HasKey("CodiceConto", "CodiceDestinazione");
+
+                    b.HasIndex("CodiceAgente2");
 
                     b.ToTable("DestinazioniDiverse");
                 });
@@ -1458,9 +1475,17 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("Gru");
 
+                    b.Property<decimal?>("PortataMaxConRimorchioKg")
+                        .HasColumnType("decimal(18,3)")
+                        .HasColumnName("PortataMaxConRimorchioKg");
+
                     b.Property<decimal>("PortataMaxKg")
                         .HasColumnType("decimal(18,3)")
                         .HasColumnName("PortataMaxKg");
+
+                    b.Property<bool>("RimorchioDisponibile")
+                        .HasColumnType("bit")
+                        .HasColumnName("RimorchioDisponibile");
 
                     b.Property<string>("Targa")
                         .HasMaxLength(15)
@@ -1819,6 +1844,10 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("CodiceAgente");
 
+                    b.Property<short?>("CodiceAgente2")
+                        .HasColumnType("smallint")
+                        .HasColumnName("CodiceAgente2");
+
                     b.Property<int>("CodiceCliente")
                         .HasColumnType("int")
                         .HasColumnName("CodiceCliente");
@@ -1920,6 +1949,8 @@ namespace AiDbMaster.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CodiceAgente");
+
+                    b.HasIndex("CodiceAgente2");
 
                     b.HasIndex("CodiceCliente")
                         .HasDatabaseName("IX_OrdiniTestate_CodiceCliente");
@@ -2808,6 +2839,10 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("int")
                         .HasColumnName("AutistaId");
 
+                    b.Property<bool>("ConRimorchio")
+                        .HasColumnType("bit")
+                        .HasColumnName("ConRimorchio");
+
                     b.Property<decimal?>("CostoTrasporto")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("CostoTrasporto");
@@ -2832,6 +2867,10 @@ namespace AiDbMaster.Migrations
                     b.Property<bool?>("Gru")
                         .HasColumnType("bit")
                         .HasColumnName("Gru");
+
+                    b.Property<bool>("IsManuale")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsManuale");
 
                     b.Property<int?>("MezzoTrasportoEsternoId")
                         .HasColumnType("int")
@@ -3117,7 +3156,14 @@ namespace AiDbMaster.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("AiDbMaster.Models.TabellaAgenti", "Agente2")
+                        .WithMany()
+                        .HasForeignKey("CodiceAgente2")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Agente");
+
+                    b.Navigation("Agente2");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.CalendarioFermiCentriLavoro", b =>
@@ -3140,6 +3186,16 @@ namespace AiDbMaster.Migrations
                         .IsRequired();
 
                     b.Navigation("Lavorazione");
+                });
+
+            modelBuilder.Entity("AiDbMaster.Models.DestinazioniDiverse", b =>
+                {
+                    b.HasOne("AiDbMaster.Models.TabellaAgenti", "Agente2")
+                        .WithMany()
+                        .HasForeignKey("CodiceAgente2")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Agente2");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Document", b =>
@@ -3272,6 +3328,11 @@ namespace AiDbMaster.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("AiDbMaster.Models.TabellaAgenti", "Agente2")
+                        .WithMany()
+                        .HasForeignKey("CodiceAgente2")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("AiDbMaster.Models.AnagraficaClienti", "Cliente")
                         .WithMany()
                         .HasForeignKey("CodiceCliente")
@@ -3280,6 +3341,8 @@ namespace AiDbMaster.Migrations
                         .IsRequired();
 
                     b.Navigation("Agente");
+
+                    b.Navigation("Agente2");
 
                     b.Navigation("Cliente");
                 });

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AiDbMaster.Controllers
 {
     [Authorize]
-    [RegisterResource("ViaggiConsegna", "Viaggi Consegna", Description = "Elenco viaggi pianificati", MenuIcon = "bi-calendar-event", MenuOrder = 2)]
+    [RegisterResource("ViaggiConsegna", "Lista Viaggi Consegna", Description = "Elenco viaggi pianificati", MenuIcon = "bi-calendar-event", MenuOrder = 2)]
     [RequirePermission("ViaggiConsegna", "View")]
     public class ViaggiConsegnaController : Controller
     {

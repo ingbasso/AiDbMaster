@@ -1,0 +1,169 @@
+@model AiDbMaster.Models.PstreeStrutturaContoEconomico
+
+@{
+    ViewData["Title"] = "Dettagli Conto";
+    
+    var badgeClass = Model.TipoConto switch
+    {
+        "R" => "bg-success",
+        "C" => "bg-danger",
+        "T" => "bg-primary",
+        "S" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Dettagli Conto
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Codice Conto</dt>
+                        <dd class="col-sm-8"><code>@Model.IdCodiceConto</code></dd>
+                        
+                        <dt class="col-sm-4">Descrizione</dt>
+                        <dd class="col-sm-8"><strong>@Model.DescrizioneConto</strong></dd>
+                        
+                        <dt class="col-sm-4">Tipo Conto</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @badgeClass">@Model.TipoContoDescrizione</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Conto Padre</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Parent != null)
+                            {
+                                <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Details" asp-route-id="@Model.Parent.IdCodiceConto">
+                                    <i class="bi bi-arrow-up"></i> @Model.Parent.DescrizioneCompleta
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-- Conto Radice --</span>
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-4">Livello</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary">Livello @Model.Livello</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Ordine</dt>
+                        <dd class="col-sm-8">@Model.Ordine</dd>
+                        
+                        <dt class="col-sm-4">Opzioni</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.VoceRettifica)
+                            {
+                                <span class="badge bg-warning text-dark me-1"><i class="bi bi-arrow-left-right"></i> Rettifica</span>
+                            }
+                            @if (Model.VoceRimanenza)
+                            {
+                                <span class="badge bg-info text-white me-1"><i class="bi bi-box-seam"></i> Rimanenza</span>
+                            }
+                            @if (Model.CashFlowEconomico)
+                            {
+                                <span class="badge bg-success text-white me-1"><i class="bi bi-cash-stack"></i> Cash Flow</span>
+                            }
+                            @if (!Model.VoceRettifica && !Model.VoceRimanenza && !Model.CashFlowEconomico)
+                            {
+                                <span class="text-muted">Nessuna</span>
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-4">Costi F/D</dt>
+                        <dd class="col-sm-8">
+                            @switch (Model.CostiFD)
+                            {
+                                case "F":
+                                    <span class="badge bg-primary">F - Fisso</span>
+                                    break;
+                                case "D":
+                                    <span class="badge bg-secondary">D - Diretto</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-light text-dark">N - Neutro</span>
+                                    break;
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-4">Gruppo Percentuale</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.GruppoPercentuale > 0)
+                            {
+                                <span class="badge bg-info">Gruppo @Model.GruppoPercentuale</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Nessun gruppo</span>
+                            }
+                        </dd>
+                    </dl>
+                    
+                    @if (Model.Figli?.Any() == true)
+                    {
+                        <hr />
+                        <h5><i class="bi bi-diagram-3"></i> Sotto-conti (@Model.Figli.Count)</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>Descrizione</th>
+                                        <th>Tipo</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var figlio in Model.Figli.OrderBy(f => f.Ordine))
+                                    {
+                                        var figlioBadgeClass = figlio.TipoConto switch
+                                        {
+                                            "R" => "bg-success",
+                                            "C" => "bg-danger",
+                                            "T" => "bg-primary",
+                                            "S" => "bg-warning text-dark",
+                                            _ => "bg-secondary"
+                                        };
+                                        <tr>
+                                            <td><code>@figlio.IdCodiceConto</code></td>
+                                            <td>@figlio.DescrizioneConto</td>
+                                            <td><span class="badge @figlioBadgeClass">@figlio.TipoContoDescrizione</span></td>
+                                            <td>
+                                                <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Details" asp-route-id="@figlio.IdCodiceConto" class="btn btn-sm btn-outline-info">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    
+                    <hr />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                        <div>
+                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Edit" asp-route-id="@Model.IdCodiceConto" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Modifica
+                            </a>
+                            <a asp-controller="PstreeStrutturaContoEconomico" asp-action="Delete" asp-route-id="@Model.IdCodiceConto" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Elimina
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

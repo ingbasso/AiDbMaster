@@ -1,0 +1,84 @@
+@model AiDbMaster.Models.PstreeListaSedi
+
+@{
+    ViewData["Title"] = "Dettagli Sede";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-eye text-info"></i> Dettagli Sede</h2>
+        <a asp-action="Index" asp-controller="PstreeListaSedi" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-building"></i> @Model.Sede</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">ID</label>
+                            <div><span class="badge bg-primary fs-5">@Model.Id</span></div>
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label text-muted small">Nome Sede</label>
+                            <div class="fs-4 fw-bold">@Model.Sede</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Descrizione</label>
+                        <div>@(Model.DescrizioneSede ?? "<em class='text-muted'>Nessuna descrizione</em>")</div>
+                    </div>
+
+                    <hr />
+
+                    <h6><i class="bi bi-bar-chart"></i> Utilizzo</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-primary">@ViewBag.CountSaldi</h3>
+                                    <small class="text-muted">Saldi con questa sede</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-warning">@ViewBag.CountRettifiche</h3>
+                                    <small class="text-muted">Rettifiche con questa sede</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> Azioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Edit" asp-controller="PstreeListaSedi" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <a asp-action="Delete" asp-controller="PstreeListaSedi" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Elimina
+                        </a>
+                        <a asp-action="Index" asp-controller="PstreeListaSedi" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

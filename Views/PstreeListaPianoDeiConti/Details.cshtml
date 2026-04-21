@@ -1,0 +1,110 @@
+@model AiDbMaster.Models.PstreeListaPianoDeiConti
+
+@{
+    ViewData["Title"] = "Dettagli Conto";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-eye text-info"></i> Dettagli Conto</h2>
+        <a asp-controller="PstreeListaPianoDeiConti" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-book"></i> @Model.DescrizioneCompleta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Codice</label>
+                            <div>
+                                <code class="fs-4 fw-bold">@Model.CodicePdC</code>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label text-muted small">Descrizione</label>
+                            <div class="fs-4 fw-bold">@Model.DescrizionePdC</div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Tipo Conto</label>
+                            <div>
+                                @if (Model.TipoPdC == "P")
+                                {
+                                    <span class="badge bg-info fs-5">
+                                        <i class="bi bi-calculator"></i> Patrimoniale
+                                    </span>
+                                    <p class="mt-2 text-muted small">
+                                        Confluisce nello Stato Patrimoniale
+                                    </p>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success fs-5">
+                                        <i class="bi bi-graph-up"></i> Economico
+                                    </span>
+                                    <p class="mt-2 text-muted small">
+                                        Confluisce nel Conto Economico
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Non Associare</label>
+                            <div>
+                                @if (Model.NonAssociare)
+                                {
+                                    <span class="badge bg-warning text-dark fs-5">
+                                        <i class="bi bi-slash-circle"></i> Sì
+                                    </span>
+                                    <p class="mt-2 text-muted small">
+                                        Questo conto non viene usato nelle associazioni CE
+                                    </p>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary fs-5">
+                                        <i class="bi bi-check"></i> No
+                                    </span>
+                                    <p class="mt-2 text-muted small">
+                                        Questo conto può essere associato normalmente
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> Azioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-controller="PstreeListaPianoDeiConti" asp-action="Edit" asp-route-id="@Model.CodicePdC" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <a asp-controller="PstreeListaPianoDeiConti" asp-action="Delete" asp-route-id="@Model.CodicePdC" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Elimina
+                        </a>
+                        <a asp-controller="PstreeListaPianoDeiConti" asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

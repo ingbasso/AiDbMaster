@@ -28,7 +28,7 @@
     <div class="content-container">
         <!-- Header con Switch Tipo Ordine -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-clipboard-check me-2 text-primary"></i>Gestione Ordini CF</h2>
+            <h2><i class="bi bi-clipboard-check me-2 text-primary"></i>Gestione Ordini Clienti Fornitori</h2>
             <div class="d-flex gap-2 align-items-center">
                 <!-- Switch Tipo Ordine -->
                 <div class="btn-group" role="group" aria-label="Tipo Ordine">
@@ -166,11 +166,9 @@
                             <label for="statoOrdine" class="form-label">Stato</label>
                             <select class="form-select" id="statoOrdine" name="statoOrdine">
                                 <option value="">Tutti gli stati</option>
-                                <option value="Scaduto" selected="@(statoOrdine == "Scaduto")">Scaduto</option>
-                                <option value="In Scadenza" selected="@(statoOrdine == "In Scadenza")">In Scadenza</option>
-                                <option value="Prossima Consegna" selected="@(statoOrdine == "Prossima Consegna")">Prossima Consegna</option>
-                                <option value="Programmato" selected="@(statoOrdine == "Programmato")">Programmato</option>
-                                <option value="Senza Consegna" selected="@(statoOrdine == "Senza Consegna")">Senza Consegna</option>
+                                <option value="A" selected="@(statoOrdine == "A")">Aperto</option>
+                                <option value="P" selected="@(statoOrdine == "P")">Parzialmente Evaso</option>
+                                <option value="E" selected="@(statoOrdine == "E")">Evaso</option>
                             </select>
                         </div>
                     </div>
@@ -420,7 +418,7 @@
                                             }
                                         </td>
                                         <td>
-                                            <span class="@ordine.StatoOrdineCssClass">@ordine.StatoOrdine</span>
+                                            <span class="@ordine.StatoEvasioneCssClass">@ordine.DescrizioneStatoEvasione</span>
                                         </td>
                                         <td class="text-center">
                                             @{

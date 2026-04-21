@@ -1,0 +1,117 @@
+@model IEnumerable<AiDbMaster.Models.PstreeSottoGruppi>
+@{
+    ViewData["Title"] = "Sotto-Gruppi";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-diagram-3 text-primary"></i> Sotto-Gruppi</h2>
+            <p class="text-muted">Gestione sotto-gruppi di prodotti per famiglia</p>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Create" asp-controller="PstreeSottoGruppi" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Nuovo Sotto-Gruppo
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filtri -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Famiglia</label>
+                    <select name="codiceFamiglia" class="form-select">
+                        <option value="">-- Tutte le famiglie --</option>
+                        @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Famiglie)
+                        {
+                            <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cerca</label>
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Codice, nome o descrizione..." value="@ViewBag.SearchTerm" />
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Filtra
+                    </button>
+                    <a asp-action="Index" asp-controller="PstreeSottoGruppi" class="btn btn-outline-secondary">
+                        <i class="bi bi-x"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabella -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <span><i class="bi bi-list"></i> Elenco Sotto-Gruppi (@Model.Count())</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead style="background-color: #0d6efd !important;">
+                            <tr>
+                                <th style="width: 150px; background-color: #0d6efd !important; color: white !important; border: none;">Cod. Famiglia</th>
+                                <th style="width: 150px; background-color: #0d6efd !important; color: white !important; border: none;">Cod. Gruppo</th>
+                                <th style="background-color: #0d6efd !important; color: white !important; border: none;">Nome Sotto-Gruppo</th>
+                                <th style="width: 200px; background-color: #0d6efd !important; color: white !important; border: none;">Famiglia</th>
+                                <th style="width: 300px; background-color: #0d6efd !important; color: white !important; border: none;">Descrizione</th>
+                                <th style="width: 120px; background-color: #0d6efd !important; color: white !important; border: none;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td><code>@item.CodiceFamiglia</code></td>
+                                    <td><code class="text-primary">@item.CodiceGruppo</code></td>
+                                    <td class="fw-bold">@item.NomeSottoGruppo</td>
+                                    <td class="text-muted small">@item.Famiglia?.NomeFamiglia</td>
+                                    <td class="text-muted small text-truncate" style="max-width: 200px;">@(item.DescrizioneSottoGruppo ?? "-")</td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Details" asp-controller="PstreeSottoGruppi" asp-route-id="@item.Id" class="btn btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-controller="PstreeSottoGruppi" asp-route-id="@item.Id" class="btn btn-outline-warning" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-controller="PstreeSottoGruppi" asp-route-id="@item.Id" class="btn btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-folder2-open fs-1 text-muted mb-3"></i>
+                    <p class="text-muted">Nessun sotto-gruppo trovato</p>
+                    <a asp-action="Create" asp-controller="PstreeSottoGruppi" class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> Crea il primo Sotto-Gruppo
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

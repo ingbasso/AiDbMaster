@@ -1,0 +1,143 @@
+@model AiDbMaster.Models.PstreeListaRimanenze
+
+@{
+    ViewData["Title"] = "Nuova Rimanenza";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle text-primary"></i> Nuova Rimanenza</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> Inserisci Rimanenza Magazzino</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" asp-controller="PstreeListaRimanenze">
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="IdFamiglia" class="form-label">
+                                    <i class="bi bi-layers text-info"></i> Famiglia <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdFamiglia" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Famiglie)">
+                                    <option value="">-- Seleziona famiglia --</option>
+                                </select>
+                                <span asp-validation-for="IdFamiglia" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="IdSede" class="form-label">
+                                    <i class="bi bi-building text-info"></i> Sede <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="IdSede" class="form-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.Sedi)">
+                                    <option value="">-- Seleziona sede --</option>
+                                </select>
+                                <span asp-validation-for="IdSede" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Mese" class="form-label">
+                                    <i class="bi bi-calendar-month"></i> Mese <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Mese" class="form-select">
+                                    @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Mesi)
+                                    {
+                                        <option value="@item.Value" selected="@(item.Value == Model.Mese.ToString())">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Mese" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Anno" class="form-label">
+                                    <i class="bi bi-calendar"></i> Anno <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Anno" class="form-control" type="number" min="2000" max="2100" />
+                                <span asp-validation-for="Anno" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Valore" class="form-label">
+                                    <i class="bi bi-currency-euro text-success"></i> Valore Rimanenza <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="Valore" class="form-control" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="Valore" class="text-danger"></span>
+                                <small class="form-text text-muted">Valore delle rimanenze finali del mese.</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="RettificaValore" class="form-label">
+                                    <i class="bi bi-plus-slash-minus text-warning"></i> Rettifica (+/-)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input asp-for="RettificaValore" class="form-control" type="number" step="0.01" value="0" />
+                                </div>
+                                <small class="text-muted">Valore positivo o negativo per correggere il valore base</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NoteRettifica" class="form-label">
+                                <i class="bi bi-sticky text-info"></i> Note Rettifica
+                            </label>
+                            <textarea asp-for="NoteRettifica" class="form-control" rows="2" placeholder="Motivo della rettifica (opzionale)..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-calculator"></i> <strong>Valore Effettivo:</strong> 
+                            € <span id="valoreEffettivo">0,00</span>
+                            <small class="text-muted">(Valore + Rettifica)</small>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Salva
+                            </button>
+                            <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function aggiornaValoreEffettivo() {
+            const valore = parseFloat(document.getElementById('Valore').value) || 0;
+            const rettifica = parseFloat(document.getElementById('RettificaValore').value) || 0;
+            const effettivo = valore + rettifica;
+            document.getElementById('valoreEffettivo').textContent = effettivo.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        document.getElementById('Valore').addEventListener('input', aggiornaValoreEffettivo);
+        document.getElementById('RettificaValore').addEventListener('input', aggiornaValoreEffettivo);
+        
+        document.addEventListener('DOMContentLoaded', aggiornaValoreEffettivo);
+    </script>
+}

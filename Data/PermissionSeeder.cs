@@ -162,15 +162,15 @@ namespace AiDbMaster.Data
                     new Resource { Name = "ProductionCalc", DisplayName = "Production Calc", Description = "Calcolo produzione articoli", MenuIcon = "bi-calculator", MenuOrder = 5, ParentResourceId = produzioneRes.Id, IsMenuGroup = false, IsConfigured = true },
 
                     // ==== CONSEGNE (5 pagine) ====
-                    new Resource { Name = "ConsegneKanban", DisplayName = "Kanban Consegne", Description = "Kanban pianificazione consegne", MenuIcon = "bi-kanban", MenuOrder = 1, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
-                    new Resource { Name = "ViaggiConsegna", DisplayName = "Viaggi Consegna", Description = "Elenco viaggi consegna", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ConsegneKanban", DisplayName = "Calendario Consegne", Description = "Calendario pianificazione consegne", MenuIcon = "bi-calendar3", MenuOrder = 1, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ViaggiConsegna", DisplayName = "Lista Viaggi Consegna", Description = "Elenco viaggi consegna", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "Mezzi", DisplayName = "Mezzi", Description = "Anagrafica mezzi di trasporto", MenuIcon = "bi-truck-front", MenuOrder = 3, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "TipiTrasporto", DisplayName = "Tipi Trasporto", Description = "Anagrafica tipi trasporto", MenuIcon = "bi-signpost-split", MenuOrder = 4, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "MezziTrasportoEsterni", DisplayName = "Mezzi Esterni", Description = "Anagrafica mezzi di trasporto esterni", MenuIcon = "bi-truck-flatbed", MenuOrder = 5, ParentResourceId = consegneRes.Id, IsMenuGroup = false, IsConfigured = true },
 
                     // ==== INTERROGAZIONI DB (5 pagine) ====
                     new Resource { Name = "Disponibilita", DisplayName = "Disponibilità", Description = "Verifica disponibilità articoli", MenuIcon = "bi-boxes", MenuOrder = 1, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
-                    new Resource { Name = "ConsegneProgrammate", DisplayName = "Consegne Programmate", Description = "Gestione consegne programmate", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
+                    new Resource { Name = "ConsegneProgrammate", DisplayName = "Lista Ordini Clienti", Description = "Gestione lista ordini clienti", MenuIcon = "bi-calendar-event", MenuOrder = 2, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "DashboardConsegne", DisplayName = "Dashboard Consegne", Description = "Dashboard analisi consegne", MenuIcon = "bi-graph-up", MenuOrder = 3, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "Grafici", DisplayName = "Grafici", Description = "Grafici e statistiche avanzate", MenuIcon = "bi-graph-up", MenuOrder = 4, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
                     new Resource { Name = "InterrogazioniAI", DisplayName = "Interrogazioni AI", Description = "Interrogazioni con intelligenza artificiale", MenuIcon = "bi-robot", MenuOrder = 5, ParentResourceId = interrogazioniDBRes.Id, IsMenuGroup = false, IsConfigured = true },
@@ -271,7 +271,7 @@ namespace AiDbMaster.Data
                         });
                     }
 
-                    // Agenti: Consegne Programmate (view)
+                    // Agenti: Lista Ordini Clienti (view)
                     var consegneResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "ConsegneProgrammate");
                     if (consegneResource != null)
                     {
@@ -301,7 +301,7 @@ namespace AiDbMaster.Data
                         });
                     }
 
-                    // Agenti: Kanban Consegne (view)
+                    // Agenti: Calendario Consegne (view)
                     var kanbanConsegneResource = await context.Resources.FirstOrDefaultAsync(r => r.Name == "ConsegneKanban");
                     if (kanbanConsegneResource != null)
                     {

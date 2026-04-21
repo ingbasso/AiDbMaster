@@ -82,6 +82,8 @@ namespace AiDbMaster.Controllers
             existing.Targa = model.Targa;
             existing.Descrizione = model.Descrizione;
             existing.PortataMaxKg = model.PortataMaxKg;
+            existing.RimorchioDisponibile = model.RimorchioDisponibile;
+            existing.PortataMaxConRimorchioKg = model.RimorchioDisponibile ? model.PortataMaxConRimorchioKg : null;
             existing.Attivo = model.Attivo;
             existing.Gru = model.Gru;
             existing.Trasbordo = model.Trasbordo;

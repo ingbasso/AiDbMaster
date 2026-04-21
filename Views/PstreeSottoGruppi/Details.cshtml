@@ -1,0 +1,68 @@
+@model AiDbMaster.Models.PstreeSottoGruppi
+@{
+    ViewData["Title"] = "Dettagli Sotto-Gruppo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="PstreeSottoGruppi">Sotto-Gruppi</a></li>
+                    <li class="breadcrumb-item active">Dettagli</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-eye text-info"></i> Dettagli Sotto-Gruppo</h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i> @Model.NomeSottoGruppo</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary fs-6">@Model.Id</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Codice Famiglia</dt>
+                        <dd class="col-sm-8">
+                            <code class="fs-6">@Model.CodiceFamiglia</code>
+                            - @Model.Famiglia?.NomeFamiglia
+                        </dd>
+
+                        <dt class="col-sm-4">Codice Gruppo</dt>
+                        <dd class="col-sm-8">
+                            <code class="fs-6 text-primary">@Model.CodiceGruppo</code>
+                        </dd>
+
+                        <dt class="col-sm-4">Nome Sotto-Gruppo</dt>
+                        <dd class="col-sm-8 fw-bold">@Model.NomeSottoGruppo</dd>
+
+                        <dt class="col-sm-4">Descrizione</dt>
+                        <dd class="col-sm-8">@(Model.DescrizioneSottoGruppo ?? "-")</dd>
+                    </dl>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" asp-controller="PstreeSottoGruppi" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                        <div>
+                            <a asp-action="Edit" asp-controller="PstreeSottoGruppi" asp-route-id="@Model.Id" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Modifica
+                            </a>
+                            <a asp-action="Delete" asp-controller="PstreeSottoGruppi" asp-route-id="@Model.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Elimina
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

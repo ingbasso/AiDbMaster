@@ -1,0 +1,106 @@
+@model IEnumerable<AiDbMaster.Models.PstreeListaSedi>
+
+@{
+    ViewData["Title"] = "Sedi Aziendali";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-building text-primary"></i> Sedi Aziendali</h2>
+        <a asp-action="Create" asp-controller="PstreeListaSedi" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuova Sede
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Elenco Sedi
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 80px; border: none; background-color: #5b9bd5 !important; color: white !important;">ID</th>
+                                <th style="width: 200px; border: none; background-color: #5b9bd5 !important; color: white !important;">Sede</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Descrizione</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center"><span class="badge bg-primary">@item.Id</span></td>
+                                    <td class="fw-bold">@item.Sede</td>
+                                    <td class="text-muted">@(item.DescrizioneSede ?? "-")</td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-controller="PstreeListaSedi" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-controller="PstreeListaSedi" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-warning" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-controller="PstreeListaSedi" asp-route-id="@item.Id" 
+                                               class="btn btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-building fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna sede presente</h5>
+                    <p class="text-muted">Inizia creando la prima sede aziendale.</p>
+                    <a asp-action="Create" asp-controller="PstreeListaSedi" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Crea prima sede
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0 text-muted">
+                <i class="bi bi-building text-primary"></i> 
+                Le <strong>Sedi</strong> rappresentano le ubicazioni fisiche dell'azienda.
+                Vengono utilizzate per filtrare e raggruppare i dati nel Controllo di Gestione.
+            </p>
+        </div>
+    </div>
+</div>

@@ -114,9 +114,25 @@ namespace AiDbMaster.Data
             builder.Entity<ArticoliSostitutivi>()
                 .HasKey(a => new { a.CodiceArticolo, a.CodiceArticoloSostitutivo });
 
+            // Configurazione FK AnagraficaClienti.CodiceAgente2 --> TabellaAgenti.CodiceAgente
+            builder.Entity<AnagraficaClienti>()
+                .HasOne(c => c.Agente2)
+                .WithMany()
+                .HasForeignKey(c => c.CodiceAgente2)
+                .HasPrincipalKey(a => a.CodiceAgente)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Configurazione chiave composta per DestinazioniDiverse
             builder.Entity<DestinazioniDiverse>()
                 .HasKey(d => new { d.CodiceConto, d.CodiceDestinazione });
+
+            // Configurazione FK DestinazioniDiverse.CodiceAgente2 --> TabellaAgenti.CodiceAgente
+            builder.Entity<DestinazioniDiverse>()
+                .HasOne(d => d.Agente2)
+                .WithMany()
+                .HasForeignKey(d => d.CodiceAgente2)
+                .HasPrincipalKey(a => a.CodiceAgente)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Configurazione delle relazioni per OrdiniTestate
             builder.Entity<OrdiniTestate>()
@@ -130,6 +146,13 @@ namespace AiDbMaster.Data
                 .HasOne(o => o.Agente)
                 .WithMany()
                 .HasForeignKey(o => o.CodiceAgente)
+                .HasPrincipalKey(a => a.CodiceAgente)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<OrdiniTestate>()
+                .HasOne(o => o.Agente2)
+                .WithMany()
+                .HasForeignKey(o => o.CodiceAgente2)
                 .HasPrincipalKey(a => a.CodiceAgente)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -388,6 +411,10 @@ namespace AiDbMaster.Data
 
             // ===== CONFIGURAZIONI ANAGRAFICA ARTICOLI - NUOVI CAMPI =====
 
+            builder.Entity<AnagraficaArticoli>()
+                .Property(a => a.StatoArticolo)
+                .HasColumnType("varchar(1)");
+
             // Configurazione tipi di dato per i nuovi campi
             builder.Entity<AnagraficaArticoli>()
                 .Property(a => a.Famiglia)
@@ -599,6 +626,10 @@ namespace AiDbMaster.Data
 
             builder.Entity<MezzoTrasporto>()
                 .Property(m => m.PortataMaxKg)
+                .HasColumnType("decimal(18,3)");
+
+            builder.Entity<MezzoTrasporto>()
+                .Property(m => m.PortataMaxConRimorchioKg)
                 .HasColumnType("decimal(18,3)");
 
             builder.Entity<MezzoTrasporto>()

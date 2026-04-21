@@ -15,6 +15,7 @@ namespace AiDbMaster.ViewModels
         public List<LookupItemDto> MezziEsterni { get; set; } = new();
         public List<LookupItemDto> Autisti { get; set; } = new();
         public Dictionary<int, int?> MezzoAutistaDefaultMap { get; set; } = new();
+        public Dictionary<int, MezzoRimorchioInfoDto> MezzoRimorchioMap { get; set; } = new();
         public Dictionary<int, MezzoEsternoInfoDto> MezzoEsternoInfoMap { get; set; } = new();
     }
 
@@ -34,6 +35,7 @@ namespace AiDbMaster.ViewModels
         public int? MezzoTrasportoId { get; set; }
         public int? MezzoTrasportoEsternoId { get; set; }
         public string Mezzo { get; set; } = string.Empty;
+        public bool ConRimorchio { get; set; }
         public decimal PortataMaxKg { get; set; }
         public decimal PesoTotaleKg { get; set; }
         public decimal PercentualeCarico => PortataMaxKg <= 0 ? 0 : Math.Round((PesoTotaleKg / PortataMaxKg) * 100, 1);
@@ -94,6 +96,12 @@ namespace AiDbMaster.ViewModels
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
+    }
+
+    public class MezzoRimorchioInfoDto
+    {
+        public bool RimorchioDisponibile { get; set; }
+        public decimal? PortataMaxConRimorchioKg { get; set; }
     }
 
     public class MezzoEsternoInfoDto

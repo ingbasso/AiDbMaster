@@ -1,0 +1,71 @@
+@model AiDbMaster.Models.PstreeSottoGruppi
+@{
+    ViewData["Title"] = "Elimina Sotto-Gruppo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="PstreeSottoGruppi">Sotto-Gruppi</a></li>
+                    <li class="breadcrumb-item active">Elimina</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-trash text-danger"></i> Elimina Sotto-Gruppo</h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Attenzione!</strong> Stai per eliminare il seguente sotto-gruppo. Questa operazione è irreversibile.
+            </div>
+
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Sotto-Gruppo da eliminare</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary fs-6">@Model.Id</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Codice Famiglia</dt>
+                        <dd class="col-sm-8">
+                            <code>@Model.CodiceFamiglia</code>
+                            - @Model.Famiglia?.NomeFamiglia
+                        </dd>
+
+                        <dt class="col-sm-4">Codice Gruppo</dt>
+                        <dd class="col-sm-8">
+                            <code class="text-primary">@Model.CodiceGruppo</code>
+                        </dd>
+
+                        <dt class="col-sm-4">Nome</dt>
+                        <dd class="col-sm-8 fw-bold">@Model.NomeSottoGruppo</dd>
+
+                        <dt class="col-sm-4">Descrizione</dt>
+                        <dd class="col-sm-8">@(Model.DescrizioneSottoGruppo ?? "-")</dd>
+                    </dl>
+                </div>
+                <div class="card-footer">
+                    <form asp-action="Delete" asp-controller="PstreeSottoGruppi">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" asp-controller="PstreeSottoGruppi" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Annulla
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Conferma Eliminazione
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

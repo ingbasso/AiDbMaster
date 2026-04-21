@@ -44,97 +44,49 @@
                     
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- Tabelle -->
+                        <!-- Interrogazioni DB -->
                         <li class="sidebar-item">
-                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
-                                <i class="bi bi-table"></i>
-                                <span>Tabelle</span>
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#interrogazioniDBSubmenu" aria-expanded="false">
+                                <i class="bi bi-search"></i>
+                                <span>Interrogazioni DB</span>
                                 <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
                             </a>
-                            <div class="collapse" id="tabelleSubmenu">
+                            <div class="collapse" id="interrogazioniDBSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item" permission-required="AnagraficaArticoli:View">
-                                        <a class="sidebar-link" asp-controller="AnagraficaArticoli" asp-action="Index">
-                                            <i class="bi bi-table"></i>
-                                            <span>Anagrafica Articoli</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="AnagraficaClienti:View">
-                                        <a class="sidebar-link" asp-controller="AnagraficaClienti" asp-action="Index">
-                                            <i class="bi bi-people"></i>
-                                            <span>Anagrafica Clienti</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="AnagraficaFornitori:View">
-                                        <a class="sidebar-link" asp-controller="AnagraficaFornitori" asp-action="Index">
-                                            <i class="bi bi-truck"></i>
-                                            <span>Anagrafica Fornitori</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="ArticoliSostitutivi:View">
-                                        <a class="sidebar-link" asp-controller="ArticoliSostitutivi" asp-action="Index">
-                                            <i class="bi bi-arrow-left-right"></i>
-                                            <span>Articoli Sostitutivi</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="ProgressiviArticoli:View">
-                                        <a class="sidebar-link" asp-controller="ProgressiviArticoli" asp-action="Index">
+                                    <li class="sidebar-item" permission-required="Disponibilita:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="Disponibilita">
                                             <i class="bi bi-boxes"></i>
-                                            <span>Progressivi Articoli</span>
+                                            <span>Disponibilità</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="TabellaAgenti:View">
-                                        <a class="sidebar-link" asp-controller="TabellaAgenti" asp-action="Index">
-                                            <i class="bi bi-person-workspace"></i>
-                                            <span>Agenti</span>
+                                    <li class="sidebar-item" permission-required="AvvisoMercePronta:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="AvvisoMercePronta">
+                                            <i class="bi bi-envelope-paper"></i>
+                                            <span>Avviso Merce Pronta</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="TabellaMagazzini:View">
-                                        <a class="sidebar-link" asp-controller="TabellaMagazzini" asp-action="Index">
-                                            <i class="bi bi-building"></i>
-                                            <span>Magazzini</span>
+                                    <li class="sidebar-item" permission-required="ListaEmailInviate:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ListaEmailInviate">
+                                            <i class="bi bi-envelope-open"></i>
+                                            <span>Lista Email Inviate</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="Lavorazioni:View">
-                                        <a class="sidebar-link" asp-controller="Lavorazioni" asp-action="Index">
-                                            <i class="bi bi-gear-wide"></i>
-                                            <span>Lavorazioni</span>
+                                    <li class="sidebar-item" permission-required="Grafici:View">
+                                        <a class="sidebar-link" asp-controller="Grafici" asp-action="Index">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Grafici</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="CentriLavoro:View">
-                                        <a class="sidebar-link" asp-controller="CentriLavoro" asp-action="Index">
-                                            <i class="bi bi-building-gear"></i>
-                                            <span>Centri di Lavoro</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="Operatori:View">
-                                        <a class="sidebar-link" asp-controller="Operatori" asp-action="Index">
-                                            <i class="bi bi-people"></i>
-                                            <span>Operatori</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="StatiOP:View">
-                                        <a class="sidebar-link" asp-controller="StatiOP" asp-action="Index">
-                                            <i class="bi bi-flag"></i>
-                                            <span>Stati OP</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="OrdiniTestate:View">
-                                        <a class="sidebar-link" asp-controller="OrdiniTestate" asp-action="Index">
-                                            <i class="bi bi-clipboard-check"></i>
-                                            <span>Gestione Ordini CF</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="TempiAsciugatura:View">
-                                        <a class="sidebar-link" asp-controller="TempiAsciugatura" asp-action="Index">
-                                            <i class="bi bi-calendar-day"></i>
-                                            <span>Tempi di Asciugatura</span>
+                                    <li class="sidebar-item" permission-required="InterrogazioniAI:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniAI" asp-action="Index">
+                                            <i class="bi bi-robot"></i>
+                                            <span>Interrogazioni AI</span>
                                         </a>
                                     </li>
                                 </ul>
                             </div>
                         </li>
-                        
+
                         <!-- Produzione -->
                         <li class="sidebar-item">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#produzioneSubmenu" aria-expanded="false">
@@ -193,52 +145,28 @@
                             </a>
                             <div class="collapse" id="consegneSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item" permission-required="ConsegneKanban:View">
-                                        <a class="sidebar-link" asp-controller="ConsegneKanban" asp-action="Index">
-                                            <i class="bi bi-kanban"></i>
-                                            <span>Kanban Consegne</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="ViaggiConsegna:View">
-                                        <a class="sidebar-link" asp-controller="ViaggiConsegna" asp-action="Index">
-                                            <i class="bi bi-calendar-event"></i>
-                                            <span>Viaggi Consegna</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="Mezzi:View">
-                                        <a class="sidebar-link" asp-controller="Mezzi" asp-action="Index">
-                                            <i class="bi bi-truck-front"></i>
-                                            <span>Mezzi Interni</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="Autisti:View">
-                                        <a class="sidebar-link" asp-controller="Autisti" asp-action="Index">
-                                            <i class="bi bi-person-badge"></i>
-                                            <span>Autisti</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="TipiTrasporto:View">
-                                        <a class="sidebar-link" asp-controller="TipiTrasporto" asp-action="Index">
-                                            <i class="bi bi-signpost-split"></i>
-                                            <span>Tipi Trasporto</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="MezziTrasportoEsterni:View">
-                                        <a class="sidebar-link" asp-controller="MezziTrasportoEsterni" asp-action="Index">
-                                            <i class="bi bi-truck-flatbed"></i>
-                                            <span>Mezzi Esterni</span>
-                                        </a>
-                                    </li>
                                     <li class="sidebar-item">
                                         <a class="sidebar-link" asp-controller="ComposizioneViaggi" asp-action="Index">
                                             <i class="bi bi-puzzle"></i>
                                             <span>Composizione Viaggi</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item" permission-required="ConsegneKanban:View">
+                                        <a class="sidebar-link" asp-controller="ConsegneKanban" asp-action="Index">
+                                            <i class="bi bi-calendar3"></i>
+                                            <span>Calendario Consegne</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ViaggiConsegna:View">
+                                        <a class="sidebar-link" asp-controller="ViaggiConsegna" asp-action="Index">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <span>Lista Viaggi Consegna</span>
+                                        </a>
+                                    </li>
                                     <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
                                         <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
                                             <i class="bi bi-calendar-event"></i>
-                                            <span>Consegne Programmate</span>
+                                            <span>Lista Ordini Clienti</span>
                                         </a>
                                     </li>
                                     <li class="sidebar-item" permission-required="DashboardConsegne:View">
@@ -246,6 +174,42 @@
                                             <i class="bi bi-graph-up"></i>
                                             <span>Dashboard Consegne</span>
                                         </a>
+                                    </li>
+                                    <!-- Sotto-sezione: Tabelle e Utilità (collassabile) -->
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#consegneTabelleSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
+                                            <i class="bi bi-tools"></i>
+                                            <span>Tabelle e Utilità</span>
+                                            <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                                        </a>
+                                        <div class="collapse" id="consegneTabelleSub">
+                                            <ul class="sidebar-submenu" style="margin: 0; border-radius: 0;">
+                                                <li class="sidebar-item" permission-required="Mezzi:View">
+                                                    <a class="sidebar-link" asp-controller="Mezzi" asp-action="Index">
+                                                        <i class="bi bi-truck-front"></i>
+                                                        <span>Mezzi Interni</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="MezziTrasportoEsterni:View">
+                                                    <a class="sidebar-link" asp-controller="MezziTrasportoEsterni" asp-action="Index">
+                                                        <i class="bi bi-truck-flatbed"></i>
+                                                        <span>Mezzi Esterni</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="TipiTrasporto:View">
+                                                    <a class="sidebar-link" asp-controller="TipiTrasporto" asp-action="Index">
+                                                        <i class="bi bi-signpost-split"></i>
+                                                        <span>Tipi Trasporto</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="Autisti:View">
+                                                    <a class="sidebar-link" asp-controller="Autisti" asp-action="Index">
+                                                        <i class="bi bi-person-badge"></i>
+                                                        <span>Autisti</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
@@ -260,6 +224,12 @@
                             </a>
                             <div class="collapse" id="contoEconomicoSubmenu">
                                 <ul class="sidebar-submenu">
+                                    <li class="sidebar-item" permission-required="PstreeContoEconomico:View">
+                                        <a class="sidebar-link" asp-controller="PstreeContoEconomico" asp-action="Index">
+                                            <i class="bi bi-graph-up-arrow"></i>
+                                            <span>Conto Economico</span>
+                                        </a>
+                                    </li>
                                     <!-- Sotto-sezione: Tabelle e Utilità (collassabile) -->
                                     <li class="sidebar-item">
                                         <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#ceTabelleSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
@@ -338,66 +308,120 @@
                                             </ul>
                                         </div>
                                     </li>
-                                    <!-- Sotto-sezione: Analisi CE (collassabile) -->
+                                </ul>
+                            </div>
+                        </li>
+
+                        <!-- Tabelle -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleSubmenu" aria-expanded="false">
+                                <i class="bi bi-table"></i>
+                                <span>Tabelle</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="tabelleSubmenu">
+                                <ul class="sidebar-submenu">
+                                    <!-- Sotto-sezione: Anagrafiche (collassabile) -->
                                     <li class="sidebar-item">
-                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#ceAnalisiSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
-                                            <i class="bi bi-graph-up-arrow"></i>
-                                            <span>Analisi CE</span>
+                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleAnagraficheSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
+                                            <i class="bi bi-person-vcard"></i>
+                                            <span>Anagrafiche</span>
                                             <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
                                         </a>
-                                        <div class="collapse" id="ceAnalisiSub">
+                                        <div class="collapse" id="tabelleAnagraficheSub">
                                             <ul class="sidebar-submenu" style="margin: 0; border-radius: 0;">
-                                                <li class="sidebar-item" permission-required="PstreeContoEconomico:View">
-                                                    <a class="sidebar-link" asp-controller="PstreeContoEconomico" asp-action="Index">
-                                                        <i class="bi bi-graph-up-arrow"></i>
-                                                        <span>Conto Economico</span>
+                                                <li class="sidebar-item" permission-required="AnagraficaArticoli:View">
+                                                    <a class="sidebar-link" asp-controller="AnagraficaArticoli" asp-action="Index">
+                                                        <i class="bi bi-table"></i>
+                                                        <span>Anagrafica Articoli</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="AnagraficaClienti:View">
+                                                    <a class="sidebar-link" asp-controller="AnagraficaClienti" asp-action="Index">
+                                                        <i class="bi bi-people"></i>
+                                                        <span>Anagrafica Clienti</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="AnagraficaFornitori:View">
+                                                    <a class="sidebar-link" asp-controller="AnagraficaFornitori" asp-action="Index">
+                                                        <i class="bi bi-truck"></i>
+                                                        <span>Anagrafica Fornitori</span>
                                                     </a>
                                                 </li>
                                             </ul>
                                         </div>
                                     </li>
-                                </ul>
-                            </div>
-                        </li>
-
-                        <!-- Interrogazioni DB -->
-                        <li class="sidebar-item">
-                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#interrogazioniDBSubmenu" aria-expanded="false">
-                                <i class="bi bi-search"></i>
-                                <span>Interrogazioni DB</span>
-                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
-                            </a>
-                            <div class="collapse" id="interrogazioniDBSubmenu">
-                                <ul class="sidebar-submenu">
-                                    <li class="sidebar-item" permission-required="Disponibilita:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="Disponibilita">
-                                            <i class="bi bi-boxes"></i>
-                                            <span>Disponibilità</span>
+                                    <!-- Sotto-sezione: Tabelle e Utilità (collassabile) -->
+                                    <li class="sidebar-item">
+                                        <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#tabelleUtilitaSub" aria-expanded="false" style="color: #dc3545 !important; font-weight: 600;">
+                                            <i class="bi bi-tools"></i>
+                                            <span>Tabelle e Utilità</span>
+                                            <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
                                         </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="AvvisoMercePronta:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="AvvisoMercePronta">
-                                            <i class="bi bi-envelope-paper"></i>
-                                            <span>Avviso Merce Pronta</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="ListaEmailInviate:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ListaEmailInviate">
-                                            <i class="bi bi-envelope-open"></i>
-                                            <span>Lista Email Inviate</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="Grafici:View">
-                                        <a class="sidebar-link" asp-controller="Grafici" asp-action="Index">
-                                            <i class="bi bi-graph-up"></i>
-                                            <span>Grafici</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item" permission-required="InterrogazioniAI:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniAI" asp-action="Index">
-                                            <i class="bi bi-robot"></i>
-                                            <span>Interrogazioni AI</span>
-                                        </a>
+                                        <div class="collapse" id="tabelleUtilitaSub">
+                                            <ul class="sidebar-submenu" style="margin: 0; border-radius: 0;">
+                                                <li class="sidebar-item" permission-required="ArticoliSostitutivi:View">
+                                                    <a class="sidebar-link" asp-controller="ArticoliSostitutivi" asp-action="Index">
+                                                        <i class="bi bi-arrow-left-right"></i>
+                                                        <span>Articoli Sostitutivi</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="ProgressiviArticoli:View">
+                                                    <a class="sidebar-link" asp-controller="ProgressiviArticoli" asp-action="Index">
+                                                        <i class="bi bi-boxes"></i>
+                                                        <span>Progressivi Articoli</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="TabellaAgenti:View">
+                                                    <a class="sidebar-link" asp-controller="TabellaAgenti" asp-action="Index">
+                                                        <i class="bi bi-person-workspace"></i>
+                                                        <span>Agenti</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="TabellaMagazzini:View">
+                                                    <a class="sidebar-link" asp-controller="TabellaMagazzini" asp-action="Index">
+                                                        <i class="bi bi-building"></i>
+                                                        <span>Magazzini</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="Lavorazioni:View">
+                                                    <a class="sidebar-link" asp-controller="Lavorazioni" asp-action="Index">
+                                                        <i class="bi bi-gear-wide"></i>
+                                                        <span>Lavorazioni</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="CentriLavoro:View">
+                                                    <a class="sidebar-link" asp-controller="CentriLavoro" asp-action="Index">
+                                                        <i class="bi bi-building-gear"></i>
+                                                        <span>Centri di Lavoro</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="Operatori:View">
+                                                    <a class="sidebar-link" asp-controller="Operatori" asp-action="Index">
+                                                        <i class="bi bi-people"></i>
+                                                        <span>Operatori</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="StatiOP:View">
+                                                    <a class="sidebar-link" asp-controller="StatiOP" asp-action="Index">
+                                                        <i class="bi bi-flag"></i>
+                                                        <span>Stati OP</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="OrdiniTestate:View">
+                                                    <a class="sidebar-link" asp-controller="OrdiniTestate" asp-action="Index">
+                                                        <i class="bi bi-clipboard-check"></i>
+                                                        <span>Gestione Ordini CF</span>
+                                                    </a>
+                                                </li>
+                                                <li class="sidebar-item" permission-required="TempiAsciugatura:View">
+                                                    <a class="sidebar-link" asp-controller="TempiAsciugatura" asp-action="Index">
+                                                        <i class="bi bi-calendar-day"></i>
+                                                        <span>Tempi di Asciugatura</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
@@ -543,7 +567,7 @@
 
         <footer class="footer py-4">
             <div class="container">
-                <p class="mb-0">AiDbMaster - Sistema AI di gestione richieste - &copy; 2025 - Tutti i diritti riservati</p>
+                <p class="mb-0">AiDbMaster - Sistema AI di gestione richieste - &copy; @DateTime.Now.Year - Tutti i diritti riservati</p>
             </div>
         </footer>
     </div>
@@ -775,6 +799,22 @@
                 
                 if (!foundActiveItem) {
                     console.log('No active menu item found for current path'); // Debug
+                } else {
+                    // Scrolla la sidebar mostrando il sottomenu padre del link attivo
+                    setTimeout(function() {
+                        const $activeLink = $('.sidebar-nav .sidebar-link.active').first();
+                        if ($activeLink.length) {
+                            var $parentCollapse = $activeLink.closest('.collapse');
+                            if ($parentCollapse.length) {
+                                var $parentToggle = $('[data-bs-target="#' + $parentCollapse.attr('id') + '"]');
+                                if ($parentToggle.length) {
+                                    scrollSidebarToSubmenu($parentToggle);
+                                    return;
+                                }
+                            }
+                            $activeLink[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 500);
                 }
             }
             
@@ -802,6 +842,31 @@
                 localStorage.setItem(SUBMENU_STATE_KEY, JSON.stringify(states));
             }
             
+            // Scrolla un singolo elemento nella vista (usato per link normali)
+            function scrollSidebarToElement(element) {
+                if (!element || !element.length) return;
+                setTimeout(function() {
+                    element[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 350);
+            }
+            
+            // Scrolla mostrando l'intero sottomenu: porta il toggle in alto
+            // così tutte le voci del menu aperto sono visibili sotto
+            function scrollSidebarToSubmenu(toggleElement) {
+                if (!toggleElement || !toggleElement.length) return;
+                var container = $('.sidebar-content')[0];
+                if (!container) return;
+                setTimeout(function() {
+                    var toggleTop = toggleElement[0].offsetTop;
+                    var parent = toggleElement[0].offsetParent;
+                    while (parent && parent !== container) {
+                        toggleTop += parent.offsetTop;
+                        parent = parent.offsetParent;
+                    }
+                    container.scrollTo({ top: toggleTop - 8, behavior: 'smooth' });
+                }, 350);
+            }
+            
             // Gestione click sui toggle dei sottomenu (con prevenzione event listener duplicati)
             $('.sidebar-toggle').off('click').on('click', function(e) {
                 e.preventDefault();
@@ -812,6 +877,7 @@
                 const submenuId = target.replace('#', '');
                 const $submenu = $(target);
                 const $icon = $(this).find('.toggle-icon');
+                const $toggleLink = $(this);
                 
                 $submenu.collapse('toggle');
                 
@@ -822,6 +888,7 @@
                 $submenu.on('shown.bs.collapse', function() {
                     $icon.addClass('rotated');
                     saveSubmenuState(submenuId, true);
+                    scrollSidebarToSubmenu($toggleLink);
                 });
                 
                 $submenu.on('hidden.bs.collapse', function() {
@@ -843,10 +910,10 @@
                     console.log('Mobile detected, will close sidebar'); // Debug
                     setTimeout(() => {
                         closeSidebar();
-                    }, 150); // Piccolo delay per permettere la navigazione
+                    }, 150);
                 } else {
-                    // Su desktop, mantieni la sidebar aperta
                     console.log('Desktop detected, keeping sidebar open'); // Debug
+                    scrollSidebarToElement($(this));
                 }
             });
             

@@ -1,0 +1,769 @@
+@model AiDbMaster.ViewModels.Pstree_ContoEconomicoViewModel
+
+@{
+    ViewData["Title"] = "Conto Economico";
+    ViewBag.UseFluidContainer = true;
+    var hasAnaliticaValues = Model.IsVistaFamiglie && Model.Righe.Any(r => Math.Abs(r.ValoreAnalitica) > 0.01m);
+}
+
+<div class="px-2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-graph-up text-primary"></i> Conto Economico @Model.Anno</h2>
+        <div>
+            <button type="button" class="btn btn-outline-secondary me-2" id="btnExpandAll">
+                <i class="bi bi-arrows-fullscreen"></i> Espandi tutto
+            </button>
+            <button type="button" class="btn btn-outline-secondary me-2" id="btnCollapseAll">
+                <i class="bi bi-fullscreen-exit"></i> Comprimi tutto
+            </button>
+            @{
+                var exportParams = new List<string> { $"anno={Model.Anno}" };
+                foreach (var m in Model.MesiSelezionati)
+                {
+                    exportParams.Add($"mesi={m}");
+                }
+                foreach (var f in Model.FamiglieSelezionate)
+                {
+                    exportParams.Add($"famiglie={f}");
+                }
+                if (Model.SedeSelezionata.HasValue)
+                {
+                    exportParams.Add($"sede={Model.SedeSelezionata}");
+                }
+                exportParams.Add($"vista={Model.TipoVista}");
+                if (Model.EscludiRimanenze)
+                {
+                    exportParams.Add("escludiRimanenze=true");
+                }
+                var exportUrl = Url.Action("ExportExcel") + "?" + string.Join("&", exportParams);
+            }
+            <a href="@exportUrl" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Esporta Excel
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle"></i> @TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    
+    @if (ViewBag.ContiNonAssociati > 0)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> 
+            <strong>Attenzione:</strong> Ci sono <strong>@ViewBag.ContiNonAssociati</strong> conti del Piano dei Conti non ancora associati alla struttura del Conto Economico.
+            <a href="@Url.Action("Index", "PstreeAssociazioniCE")" class="alert-link">Vai alle Associazioni</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    
+    <!-- FILTRI -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtri</h6>
+            <!-- Switch Vista Mesi/Famiglie -->
+            <div class="btn-group" role="group" aria-label="Tipo Vista">
+                <input type="radio" class="btn-check" name="vistaBtnRadio" id="btnVistaMesi" autocomplete="off" 
+                       @(Model.IsVistaMesi ? "checked" : "") onclick="switchVista('mesi')">
+                <label class="btn btn-outline-primary btn-sm" for="btnVistaMesi">
+                    <i class="bi bi-calendar"></i> Vista Mesi
+                </label>
+                <input type="radio" class="btn-check" name="vistaBtnRadio" id="btnVistaFamiglie" autocomplete="off"
+                       @(Model.IsVistaFamiglie ? "checked" : "") onclick="switchVista('famiglie')">
+                <label class="btn btn-outline-success btn-sm" for="btnVistaFamiglie">
+                    <i class="bi bi-people"></i> Vista Famiglie
+                </label>
+            </div>
+        </div>
+        <div class="card-body py-2">
+            <form method="get" asp-controller="PstreeContoEconomico" asp-action="Index" id="filterForm">
+                <input type="hidden" name="vista" id="vistaInput" value="@Model.TipoVista" />
+                
+                @{
+                    var mesiAbbr = new[] { "", "Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic" };
+                }
+                
+                <!-- RIGA UNICA: Anno, Opzioni, Mesi, Famiglie, Aggiorna -->
+                <div class="d-flex flex-wrap align-items-end gap-3">
+                    <!-- Anno -->
+                    <div style="min-width: 80px;">
+                        <label for="anno" class="form-label small mb-1">
+                            <i class="bi bi-calendar"></i> Anno
+                        </label>
+                        <select name="anno" id="anno" class="form-select form-select-sm" onchange="resetMesiESubmit();">
+                            @foreach (var a in Model.AnniDisponibili)
+                            {
+                                <option value="@a" selected="@(a == Model.Anno)">@a</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Opzioni (Rimanenze e Codici) -->
+                    <div>
+                        <label class="form-label small mb-1">
+                            <i class="bi bi-gear"></i> Opzioni
+                        </label>
+                        <div class="d-flex gap-3 p-1 px-2 border rounded bg-white" style="height: 31px; align-items: center;">
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox"
+                                       name="escludiRimanenze" id="escludiRimanenze" value="true"
+                                       @(Model.EscludiRimanenze ? "checked" : "")
+                                       onchange="document.getElementById('filterForm').submit();">
+                                <label class="form-check-label small" for="escludiRimanenze">Escludi Rim.</label>
+                            </div>
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox"
+                                       name="mostraCodici" id="mostraCodici" value="true"
+                                       @(Model.MostraCodici ? "checked" : "")
+                                       onchange="document.getElementById('filterForm').submit();">
+                                <label class="form-check-label small" for="mostraCodici">Codici</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mesi (Checkbox compatti) -->
+                    <div style="flex: 1; min-width: 280px;">
+                        <label class="form-label small mb-1">
+                            <i class="bi bi-calendar"></i> Mesi
+                        </label>
+                        <div class="d-flex p-1 px-2 border rounded bg-white" style="height: 31px; align-items: center; gap: 0;">
+                            @foreach (var mese in Model.Mesi)
+                            {
+                                <div class="form-check form-check-inline mb-0" style="margin-right: 0; margin-left: 0;">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="mesi" value="@mese.Numero" id="mese_@mese.Numero"
+                                           checked="@mese.Selezionato"
+                                           onchange="document.getElementById('filterForm').submit();"
+                                           style="margin-right: 1px; width: 14px; height: 14px;">
+                                    <label class="form-check-label" for="mese_@mese.Numero" style="margin-right: 4px; font-size: 0.75rem;">@mesiAbbr[mese.Numero]</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Famiglie (nella stessa riga) -->
+                    <div>
+                        <label class="form-label small mb-1">
+                            <i class="bi bi-layers"></i> Famiglie
+                        </label>
+                        <div class="d-flex gap-2 p-1 px-2 border rounded bg-white" style="height: 31px; align-items: center;">
+                            @foreach (var fam in Model.Famiglie)
+                            {
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input famiglia-check" type="checkbox" 
+                                           name="famiglie" value="@fam.Id" id="fam_@fam.Id"
+                                           checked="@fam.Selezionato"
+                                           onchange="document.getElementById('filterForm').submit();">
+                                    <label class="form-check-label small" for="fam_@fam.Id">@fam.Nome</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Pulsante Aggiorna -->
+                    <div>
+                        <label class="form-label small mb-1">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-sm d-block">
+                            <i class="bi bi-arrow-clockwise"></i> Aggiorna
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELLA CONTO ECONOMICO -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0" id="tblContoEconomico" style="font-size: 0.85rem;">
+                    <thead class="sticky-top" style="background-color: #5b9bd5 !important;">
+                        <tr>
+                            <th style="width: 350px; max-width: 350px; border: none; background-color: #5b9bd5 !important; color: white !important; position: sticky; left: 0; z-index: 2;">Descrizione</th>
+                            <th style="width: 100px; border: none; background-color: #2e75b5 !important; color: white !important; text-align: center;">TOTALE</th>
+                            
+                            @if (Model.IsVistaMesi)
+                            {
+                                @foreach (var mese in Model.Mesi.Where(m => m.Selezionato).OrderBy(m => m.Numero))
+                                {
+                                    <th style="width: 80px; border: none; background-color: #5b9bd5 !important; color: white !important; text-align: center;">
+                                        @mese.Nome
+                                    </th>
+                                }
+                            }
+                            else
+                            {
+                                @if (hasAnaliticaValues)
+                                {
+                                    <th style="width: 120px; border: none; background-color: #ffc107 !important; color: #212529 !important; text-align: center;" title="Valori non assegnati (percentuali mancanti o incomplete)">
+                                        ⚠️ Analitica
+                                    </th>
+                                }
+                                @foreach (var fam in Model.Famiglie.Where(f => f.Selezionato).OrderBy(f => f.Id))
+                                {
+                                    <th style="width: 100px; border: none; background-color: #28a745 !important; color: white !important; text-align: center;">
+                                        @fam.Nome
+                                    </th>
+                                }
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var riga in Model.Righe)
+                        {
+                            var hasChildren = riga.HasFigli;
+                            var hasOnlyTotalChildren = riga.HasOnlyTotalChildren;
+                            var isExpandable = hasChildren && !hasOnlyTotalChildren;
+                            var rowClass = riga.CssClass;
+                            
+                            var descUpper = riga.DescrizioneConto.ToUpper().Trim();
+                            var isGreen = descUpper == "MARGINE DI CONTRIBUZIONE COMMERCIALE LORDO" ||
+                                          descUpper == "MARGINE DI CONTRIBUZIONE COMMERCIALE NETTO" ||
+                                          descUpper == "EBIT" ||
+                                          descUpper == "EBITDA" ||
+                                          descUpper == "RISULTATO ANTE IMPOSTE";
+                            var isBlue = descUpper == "RISULTATO ESERCIZIO";
+                            var isRed = hasOnlyTotalChildren;
+                            
+                            <tr class="ce-row @rowClass @(isGreen ? "row-green" : "") @(isBlue ? "row-blue" : "") @(isRed ? "row-red" : "")" 
+                                data-id="@riga.IdCodiceConto" 
+                                data-parent="@riga.ParentId" 
+                                data-level="@riga.Livello"
+                                data-type="@riga.TipoConto"
+                                data-has-children="@hasChildren.ToString().ToLower()"
+                                data-expandable="@isExpandable.ToString().ToLower()">
+                                
+                                <td style="position: sticky; left: 0; background-color: inherit; z-index: 1;">
+                                    <div class="d-flex align-items-center" style="padding-left: @(riga.Livello * 16)px;">
+                                        @if (isExpandable)
+                                        {
+                                            <span class="toggle-icon me-2" style="cursor: pointer; width: 16px; display: inline-block;" onclick="toggleRow(@riga.IdCodiceConto)">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="width: 16px; display: inline-block; margin-right: 0.5rem;"></span>
+                                        }
+                                        @if (Model.MostraCodici)
+                                        {
+                                            <span class="badge bg-secondary me-1" style="font-size: 0.7rem;">@riga.IdCodiceConto</span>
+                                        }
+                                        <span class="@(isGreen ? "text-success fw-bold" : "") @(isBlue ? "text-primary fw-bold" : "") @(isRed ? "text-danger fw-bold" : "")">@riga.DescrizioneConto</span>
+                                        @if (riga.VoceRettifica)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2" title="Voce di Rettifica">R</span>
+                                        }
+                                        @if (riga.VoceRimanenza)
+                                        {
+                                            <span class="badge bg-info text-white ms-2" title="Voce di Rimanenza">M</span>
+                                        }
+                                    </div>
+                                </td>
+                                
+                                @{
+                                    var mesiSelezionatiList = Model.MesiSelezionati;
+                                    var totaleMesiSelezionati = mesiSelezionatiList.Sum(m => riga.ValoriMensili[m]);
+                                    var totaleClass = totaleMesiSelezionati < 0 ? "text-danger" : "";
+                                }
+                                <td class="text-end fw-bold @totaleClass" style="background-color: #e8f4fd;">
+                                    @totaleMesiSelezionati.ToString("N0")
+                                </td>
+                                
+                                @if (Model.IsVistaMesi)
+                                {
+                                    @foreach (var mese in Model.Mesi.Where(m => m.Selezionato).OrderBy(m => m.Numero))
+                                    {
+                                        var val = riga.ValoriMensili[mese.Numero];
+                                        var valClass = val < 0 ? "text-danger" : "";
+                                        <td class="text-end @valClass">
+                                            @if (val != 0)
+                                            {
+                                                @val.ToString("N0")
+                                            }
+                                        </td>
+                                    }
+                                }
+                                else
+                                {
+                                    @if (hasAnaliticaValues)
+                                    {
+                                        <td class="text-end @(riga.ValoreAnalitica < 0 ? "text-danger" : "") @(riga.HasPercentualeWarning ? "bg-warning-subtle" : "")" title="@(riga.HasPercentualeWarning ? "Percentuali incomplete o mancanti" : "")">
+                                            @if (riga.ValoreAnalitica != 0)
+                                            {
+                                                @riga.ValoreAnalitica.ToString("N0")
+                                                @if (riga.HasPercentualeWarning)
+                                                {
+                                                    <i class="bi bi-exclamation-triangle text-warning ms-1" title="Percentuali non fanno 100%"></i>
+                                                }
+                                            }
+                                        </td>
+                                    }
+                                    @foreach (var fam in Model.Famiglie.Where(f => f.Selezionato).OrderBy(f => f.Id))
+                                    {
+                                        var valFam = riga.ValoriFamiglia.GetValueOrDefault(fam.Id, 0);
+                                        var valFamClass = valFam < 0 ? "text-danger" : "";
+                                        <td class="text-end @valFamClass">
+                                            @if (valFam != 0)
+                                            {
+                                                @valFam.ToString("N0")
+                                            }
+                                        </td>
+                                    }
+                                }
+                            </tr>
+                        }
+                        
+                        <!-- === RIGHE TOTALI COSTI FISSI/DIRETTI === -->
+                        <tr style="height: 20px; background-color: #f8f9fa;">
+                            <td colspan="@(Model.IsVistaMesi ? Model.MesiSelezionati.Count + 2 : Model.Famiglie.Count(f => f.Selezionato) + (hasAnaliticaValues ? 2 : 1))"></td>
+                        </tr>
+                        
+                        @{
+                            var mesiSelezionatiNumeri = Model.Mesi.Where(m => m.Selezionato).Select(m => m.Numero).ToList();
+                            var totaleCostiDirettiMesiSelezionati = mesiSelezionatiNumeri.Sum(m => Model.TotaleCostiDiretti[m]);
+                            var totaleCostiFissiMesiSelezionati = mesiSelezionatiNumeri.Sum(m => Model.TotaleCostiFissi[m]);
+                            var percFissiDirettiMesiSelezionati = totaleCostiDirettiMesiSelezionati != 0 
+                                ? Math.Round(totaleCostiFissiMesiSelezionati / totaleCostiDirettiMesiSelezionati * 100, 2) : 0;
+                        }
+                        
+                        <!-- Totale Costi Diretti -->
+                        <tr class="fw-bold" style="background-color: #e7f3ff;">
+                            <td style="position: sticky; left: 0; background-color: #e7f3ff; z-index: 1;">
+                                <i class="bi bi-arrow-right text-primary"></i> Totale Costi Diretti
+                            </td>
+                            <td class="text-end fw-bold" style="background-color: #d4e9ff;">
+                                @totaleCostiDirettiMesiSelezionati.ToString("N0")
+                            </td>
+                            @if (Model.IsVistaMesi)
+                            {
+                                @foreach (var mese in Model.Mesi.Where(m => m.Selezionato).OrderBy(m => m.Numero))
+                                {
+                                    var val = Model.TotaleCostiDiretti[mese.Numero];
+                                    <td class="text-end">
+                                        @val.ToString("N0")
+                                    </td>
+                                }
+                            }
+                            else
+                            {
+                                @if (hasAnaliticaValues)
+                                {
+                                    <td class="text-end">0</td>
+                                }
+                                @foreach (var fam in Model.Famiglie.Where(f => f.Selezionato).OrderBy(f => f.Id))
+                                {
+                                    var val = Model.TotaleCostiDirettiFamiglia.GetValueOrDefault(fam.Id, 0);
+                                    <td class="text-end">
+                                        @val.ToString("N0")
+                                    </td>
+                                }
+                            }
+                        </tr>
+                        
+                        <!-- Totale Costi Fissi -->
+                        <tr class="fw-bold" style="background-color: #fff3e0;">
+                            <td style="position: sticky; left: 0; background-color: #fff3e0; z-index: 1;">
+                                <i class="bi bi-lock text-warning"></i> Totale Costi Fissi
+                            </td>
+                            <td class="text-end fw-bold" style="background-color: #ffe4c4;">
+                                @totaleCostiFissiMesiSelezionati.ToString("N0")
+                            </td>
+                            @if (Model.IsVistaMesi)
+                            {
+                                @foreach (var mese in Model.Mesi.Where(m => m.Selezionato).OrderBy(m => m.Numero))
+                                {
+                                    var val = Model.TotaleCostiFissi[mese.Numero];
+                                    <td class="text-end">
+                                        @val.ToString("N0")
+                                    </td>
+                                }
+                            }
+                            else
+                            {
+                                @if (hasAnaliticaValues)
+                                {
+                                    <td class="text-end">0</td>
+                                }
+                                @foreach (var fam in Model.Famiglie.Where(f => f.Selezionato).OrderBy(f => f.Id))
+                                {
+                                    var val = Model.TotaleCostiFissiFamiglia.GetValueOrDefault(fam.Id, 0);
+                                    <td class="text-end">
+                                        @val.ToString("N0")
+                                    </td>
+                                }
+                            }
+                        </tr>
+                        
+                        <!-- Percentuale Fissi/Diretti -->
+                        <tr class="fw-bold" style="background-color: #e8f5e9;">
+                            <td style="position: sticky; left: 0; background-color: #e8f5e9; z-index: 1;">
+                                <i class="bi bi-percent text-success"></i> % Fissi / Diretti
+                            </td>
+                            <td class="text-end fw-bold" style="background-color: #c8e6c9;">
+                                @percFissiDirettiMesiSelezionati.ToString("N2")%
+                            </td>
+                            @if (Model.IsVistaMesi)
+                            {
+                                @foreach (var mese in Model.Mesi.Where(m => m.Selezionato).OrderBy(m => m.Numero))
+                                {
+                                    var val = Model.PercentualeFissiDiretti[mese.Numero];
+                                    <td class="text-end">
+                                        @val.ToString("N2")%
+                                    </td>
+                                }
+                            }
+                            else
+                            {
+                                @if (hasAnaliticaValues)
+                                {
+                                    <td class="text-end">0,00%</td>
+                                }
+                                @foreach (var fam in Model.Famiglie.Where(f => f.Selezionato).OrderBy(f => f.Id))
+                                {
+                                    var costiD = Model.TotaleCostiDirettiFamiglia.GetValueOrDefault(fam.Id, 0);
+                                    var costiF = Model.TotaleCostiFissiFamiglia.GetValueOrDefault(fam.Id, 0);
+                                    var perc = costiD != 0 ? Math.Round(costiF / costiD * 100, 2) : 0;
+                                    <td class="text-end">
+                                        @perc.ToString("N2")%
+                                    </td>
+                                }
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="card mt-3">
+        <div class="card-body py-2">
+            <small class="text-muted">
+                <strong>Legenda:</strong>
+                <span class="badge bg-warning text-dark ms-2">R</span> Voce di Rettifica
+                <span class="badge bg-info text-white ms-2">M</span> Voce di Rimanenza (Magazzino)
+                @if (Model.IsVistaFamiglie)
+                {
+                    <span class="ms-3">|</span>
+                    <i class="bi bi-exclamation-triangle text-warning ms-2"></i> <span>Percentuali incomplete o mancanti</span>
+                }
+            </small>
+        </div>
+    </div>
+    
+    <!-- Grafico Andamento -->
+    <div class="card mt-3">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-graph-up text-primary"></i> Andamento Ultimi 12 Mesi</h6>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoAndamento" style="width: 100%; height: 350px;"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+    #tblContoEconomico tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    #tblContoEconomico tbody tr:hover {
+        background-color: #f0f7ff !important;
+    }
+    
+    #tblContoEconomico tbody tr.hidden {
+        display: none;
+    }
+    
+    .toggle-icon i {
+        transition: transform 0.2s ease;
+    }
+    
+    .toggle-icon.collapsed i {
+        transform: rotate(-90deg);
+    }
+    
+    tr.text-success td {
+        color: #198754 !important;
+    }
+    
+    tr.text-danger td {
+        color: #dc3545 !important;
+    }
+    
+    tr.fw-bold td {
+        font-weight: 600 !important;
+    }
+    
+    tr.bg-light td {
+        background-color: #f8f9fa !important;
+    }
+    
+    tr.row-green td:first-child {
+        background-color: #d4edda !important;
+    }
+    
+    tr.row-blue td:first-child {
+        background-color: #cce5ff !important;
+    }
+    
+    tr.row-blue td {
+        background-color: #e7f1ff !important;
+    }
+    
+    tr.row-red td:first-child {
+        background-color: #f8d7da !important;
+    }
+    
+    tr.row-red td {
+        background-color: #fdf2f2 !important;
+    }
+    
+    #tblContoEconomico th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        padding-left: 8px !important;
+    }
+    
+    #tblContoEconomico td:nth-child(1) {
+        background-color: white;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        text-align: left !important;
+    }
+    
+    tr.bg-light td:nth-child(1) {
+        background-color: #f8f9fa !important;
+    }
+    
+    #tblContoEconomico td:first-child > div {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+</style>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script>
+        // === GRAFICO ANDAMENTO ===
+        (function() {
+            const ctx = document.getElementById('graficoAndamento').getContext('2d');
+            
+            const labels = @Html.Raw(ViewBag.GraficoLabels ?? "[]");
+            const dataFatturato = @Html.Raw(ViewBag.GraficoFatturato ?? "[]");
+            const dataRisultato = @Html.Raw(ViewBag.GraficoRisultato ?? "[]");
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Fatturato',
+                            data: dataFatturato,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: 'Risultato Esercizio',
+                            data: dataRisultato,
+                            borderColor: '#fd7e14',
+                            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 13 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed.y;
+                                    return context.dataset.label + ': ' + new Intl.NumberFormat('it-IT', { 
+                                        style: 'currency', 
+                                        currency: 'EUR',
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    }).format(value);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 12 } }
+                        },
+                        y: {
+                            grid: {
+                                color: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return 'rgba(0, 0, 0, 0.8)';
+                                    }
+                                    return 'rgba(0, 0, 0, 0.05)';
+                                },
+                                lineWidth: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                }
+                            },
+                            ticks: {
+                                font: { size: 12 },
+                                callback: function(value) {
+                                    if (Math.abs(value) >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    } else if (Math.abs(value) >= 1000) {
+                                        return (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+        
+        function resetMesiESubmit() {
+            document.querySelectorAll('.mese-check').forEach(cb => cb.checked = false);
+            document.getElementById('filterForm').submit();
+        }
+        
+        function switchVista(tipoVista) {
+            document.getElementById('vistaInput').value = tipoVista;
+            document.getElementById('filterForm').submit();
+        }
+        
+        function toggleRow(parentId) {
+            const parentRow = document.querySelector(`tr[data-id="${parentId}"]`);
+            const toggleIcon = parentRow.querySelector('.toggle-icon');
+            const icon = toggleIcon.querySelector('i');
+            const isCollapsed = toggleIcon.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                toggleIcon.classList.remove('collapsed');
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-down');
+                showChildren(parentId);
+            } else {
+                toggleIcon.classList.add('collapsed');
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-right');
+                hideChildren(parentId);
+            }
+        }
+        
+        function showChildren(parentId) {
+            const children = document.querySelectorAll(`tr[data-parent="${parentId}"]`);
+            children.forEach(child => {
+                child.classList.remove('hidden');
+                const childId = child.getAttribute('data-id');
+                const hasChildren = child.getAttribute('data-has-children') === 'true';
+                const toggleIcon = child.querySelector('.toggle-icon');
+                
+                if (hasChildren && toggleIcon && !toggleIcon.classList.contains('collapsed')) {
+                    showChildren(childId);
+                }
+            });
+        }
+        
+        function hideChildren(parentId) {
+            const children = document.querySelectorAll(`tr[data-parent="${parentId}"]`);
+            children.forEach(child => {
+                child.classList.add('hidden');
+                const childId = child.getAttribute('data-id');
+                hideChildren(childId);
+            });
+        }
+        
+        document.getElementById('btnExpandAll').addEventListener('click', function() {
+            document.querySelectorAll('.ce-row').forEach(row => {
+                row.classList.remove('hidden');
+            });
+            document.querySelectorAll('.toggle-icon').forEach(toggleIcon => {
+                toggleIcon.classList.remove('collapsed');
+                const icon = toggleIcon.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('bi-chevron-right');
+                    icon.classList.add('bi-chevron-down');
+                }
+            });
+        });
+
+        document.getElementById('btnCollapseAll').addEventListener('click', function() {
+            document.querySelectorAll('.ce-row').forEach(row => {
+                const tipo = row.getAttribute('data-type');
+                if (tipo !== 'T') {
+                    row.classList.add('hidden');
+                } else {
+                    row.classList.remove('hidden');
+                }
+            });
+            document.querySelectorAll('.toggle-icon').forEach(toggleIcon => {
+                toggleIcon.classList.add('collapsed');
+                const icon = toggleIcon.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-right');
+                }
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.famiglia-check');
+            
+            const allUnchecked = Array.from(checkboxes).every(cb => !cb.checked);
+            if (allUnchecked) {
+                checkboxes.forEach(cb => cb.checked = true);
+            }
+            
+            document.querySelectorAll('.ce-row').forEach(row => {
+                const tipo = row.getAttribute('data-type');
+                if (tipo !== 'T') {
+                    row.classList.add('hidden');
+                }
+            });
+            
+            document.querySelectorAll('.toggle-icon').forEach(icon => {
+                icon.classList.add('collapsed');
+            });
+        });
+    </script>
+}

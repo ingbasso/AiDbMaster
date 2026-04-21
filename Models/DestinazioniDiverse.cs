@@ -82,6 +82,20 @@ namespace AiDbMaster.Models
         public short? CodiceZona { get; set; }
 
         /// <summary>
+        /// Codice secondo agente associato alla destinazione.
+        /// Nullable: il secondo agente potrebbe non essere assegnato.
+        /// </summary>
+        [Display(Name = "Codice Agente 2")]
+        [Column("CodiceAgente2")]
+        public short? CodiceAgente2 { get; set; }
+
+        /// <summary>
+        /// Secondo agente associato alla destinazione (proprietà di navigazione)
+        /// </summary>
+        [ForeignKey("CodiceAgente2")]
+        public virtual TabellaAgenti? Agente2 { get; set; }
+
+        /// <summary>
         /// Data e ora dell'ultimo aggiornamento del record
         /// </summary>
         [Display(Name = "Ultimo Aggiornamento")]

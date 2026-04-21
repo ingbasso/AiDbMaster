@@ -1,0 +1,294 @@
+@model IEnumerable<AiDbMaster.Models.PstreeListaRimanenze>
+
+@{
+    ViewData["Title"] = "Rimanenze Magazzino";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box-seam text-primary"></i> Rimanenze Magazzino</h2>
+        <div class="btn-group">
+            <a asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" class="btn btn-success">
+                <i class="bi bi-grid-3x3"></i> Gestione Griglia
+            </a>
+            <a asp-action="Create" asp-controller="PstreeListaRimanenze" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg"></i> Singola Rimanenza
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- Card Filtri -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtri</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" asp-controller="PstreeListaRimanenze">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Famiglia</label>
+                        <select name="idFamiglia" class="form-select form-select-sm">
+                            <option value="">-- Tutte --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Famiglie)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentFamiglia?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Sede</label>
+                        <select name="idSede" class="form-select form-select-sm">
+                            <option value="">-- Tutte --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Sedi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentSede?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small">Mese</label>
+                        <select name="mese" class="form-select form-select-sm">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Mesi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentMese?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small">Anno</label>
+                        <select name="anno" class="form-select form-select-sm">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Anni)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentAnno?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm me-2">
+                            <i class="bi bi-search"></i> Filtra
+                        </button>
+                        <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Warning Rimanenze Mancanti -->
+    @{
+        var warnings = ViewBag.Warnings as List<AiDbMaster.ViewModels.Pstree_RimanenzeWarning>;
+    }
+    @if (warnings != null && warnings.Any())
+    {
+        var warningDanger = warnings.Where(w => w.Tipo == "danger").ToList();
+        var warningWarning = warnings.Where(w => w.Tipo == "warning").ToList();
+        
+        <div class="alert alert-warning mb-4">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-exclamation-triangle fa-2x me-3 text-warning"></i>
+                <div class="flex-grow-1">
+                    <strong>Rimanenze da completare</strong>
+                    <div class="mt-2 small">
+                        @if (warningDanger.Any())
+                        {
+                            <div class="text-danger mb-1">
+                                <i class="bi bi-x-circle"></i> 
+                                <strong>Mesi mancanti:</strong>
+                                @string.Join(", ", warningDanger.Select(w => w.Messaggio))
+                            </div>
+                        }
+                        @if (warningWarning.Any())
+                        {
+                            <div class="text-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Mesi incompleti:</strong>
+                                @string.Join(", ", warningWarning.Select(w => w.Messaggio))
+                            </div>
+                        }
+                    </div>
+                </div>
+                <a asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" asp-route-anno="@ViewBag.CurrentAnno" asp-route-sede="@ViewBag.CurrentSede" class="btn btn-warning btn-sm">
+                    <i class="bi bi-grid-3x3"></i> Compila
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-check-circle"></i> <strong>Tutto OK!</strong> Nessuna rimanenza mancante.
+        </div>
+    }
+
+    <!-- Tabella ad Albero per Mese -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Rimanenze
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm me-2" id="btnExpandAll">
+                    <i class="bi bi-arrows-fullscreen"></i> Espandi tutto
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCollapseAll">
+                    <i class="bi bi-fullscreen-exit"></i> Comprimi tutto
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                var famiglieDesc = (Dictionary<int, string>)ViewBag.FamiglieDescrizioni;
+                var gruppiMese = Model.GroupBy(r => r.Mese).OrderBy(g => g.Key).ToList();
+                
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="tblRimanenze">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 50px; border: none; background-color: #5b9bd5 !important; color: white !important;"></th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Mese / Famiglia</th>
+                                <th style="width: 150px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-end">Valore</th>
+                                <th style="width: 120px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var gruppo in gruppiMese)
+                            {
+                                var meseNum = gruppo.Key;
+                                var nomeMese = gruppo.First().NomeMese;
+                                var anno = gruppo.First().Anno;
+                                var totaleEffettivo = gruppo.Sum(r => r.ValoreEffettivo);
+                                var totaleRettifiche = gruppo.Sum(r => r.RettificaValore);
+                                var hasRettifiche = gruppo.Any(r => r.HasRettifica);
+                                var righeOrdinati = gruppo.OrderBy(r => r.IdFamiglia).ToList();
+                                
+                                <tr class="parent-row" data-mese="@meseNum" style="background-color: #e3f2fd; cursor: pointer;" onclick="toggleChildren(@meseNum)">
+                                    <td class="text-center">
+                                        <i class="bi bi-chevron-right toggle-icon" id="icon_@meseNum"></i>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary me-2">@nomeMese @anno</span>
+                                        <strong>@righeOrdinati.Count famiglie</strong>
+                                        @if (hasRettifiche)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1" title="Totale rettifiche: @totaleRettifiche.ToString("N2")">
+                                                <i class="bi bi-plus-slash-minus"></i> Rettifiche
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-bold text-success">€ @totaleEffettivo.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <a asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" asp-route-anno="@anno" asp-route-mese="@meseNum" asp-route-sede="@ViewBag.CurrentSede"
+                                           class="btn btn-outline-primary btn-sm" title="Modifica griglia">
+                                            <i class="bi bi-grid-3x3"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                
+                                @foreach (var item in righeOrdinati)
+                                {
+                                    var nomeFam = famiglieDesc.GetValueOrDefault(item.IdFamiglia, item.IdFamiglia.ToString());
+                                    
+                                    <tr class="child-row child-of-@meseNum" style="display: none;">
+                                        <td></td>
+                                        <td style="padding-left: 50px;">
+                                            <i class="bi bi-box text-muted me-2"></i>
+                                            <span class="badge bg-info">@item.IdFamiglia</span>
+                                            @nomeFam
+                                            @if (item.HasRettifica)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1" title="Rettifica: @item.RettificaValore.ToString("N2") - @(item.NoteRettifica ?? "")">
+                                                    <i class="bi bi-plus-slash-minus"></i>
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-end text-success">
+                                            € @item.ValoreEffettivo.ToString("N2")
+                                            @if (item.HasRettifica)
+                                            {
+                                                <small class="text-muted d-block" style="font-size: 0.7em;">
+                                                    (base: @item.Valore.ToString("N2") @(item.RettificaValore >= 0 ? "+" : "")@item.RettificaValore.ToString("N2"))
+                                                </small>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a asp-action="Edit" asp-controller="PstreeListaRimanenze" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-warning btn-sm" title="Modifica">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-controller="PstreeListaRimanenze" asp-route-id="@item.Id" 
+                                                   class="btn btn-outline-danger btn-sm" title="Elimina">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-box-seam fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna rimanenza presente</h5>
+                    <p class="text-muted">Inizia inserendo la prima rimanenza di magazzino.</p>
+                    <a asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" class="btn btn-primary">
+                        <i class="bi bi-grid-3x3"></i> Gestione Griglia
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+    
+    <script>
+        function toggleChildren(meseNum) {
+            var children = document.querySelectorAll('.child-of-' + meseNum);
+            var icon = document.getElementById('icon_' + meseNum);
+            var isExpanded = icon.classList.contains('bi-chevron-down');
+            
+            children.forEach(function(child) {
+                child.style.display = isExpanded ? 'none' : 'table-row';
+            });
+            
+            icon.classList.toggle('bi-chevron-right', isExpanded);
+            icon.classList.toggle('bi-chevron-down', !isExpanded);
+        }
+        
+        document.getElementById('btnExpandAll')?.addEventListener('click', function() {
+            document.querySelectorAll('.child-row').forEach(function(row) {
+                row.style.display = 'table-row';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-down');
+            });
+        });
+        
+        document.getElementById('btnCollapseAll')?.addEventListener('click', function() {
+            document.querySelectorAll('.child-row').forEach(function(row) {
+                row.style.display = 'none';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-right');
+            });
+        });
+    </script>
+</div>

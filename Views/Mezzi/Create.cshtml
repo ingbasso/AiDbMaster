@@ -38,7 +38,7 @@
 
                 <div class="row g-3 mt-1">
                     <div class="col-md-3">
-                        <label class="form-label">Portata max Kg</label>
+                        <label class="form-label">Portata max solo motrice (Kg)</label>
                         <input asp-for="PortataMaxKg" class="form-control" type="number" min="0" step="0.001" />
                     </div>
                     <div class="col-md-3">
@@ -67,6 +67,21 @@
                     </div>
                 </div>
 
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <div class="form-check mt-2">
+                            <input asp-for="RimorchioDisponibile" class="form-check-input" id="chkRimorchio" />
+                            <label class="form-check-label" asp-for="RimorchioDisponibile">
+                                <i class="bi bi-truck-flatbed me-1"></i>Rimorchio disponibile
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="portataRimorchioWrap" style="display:none;">
+                        <label class="form-label">Portata max con rimorchio (Kg)</label>
+                        <input asp-for="PortataMaxConRimorchioKg" class="form-control" type="number" min="0" step="0.001" />
+                    </div>
+                </div>
+
                 <hr />
                 <div class="d-flex justify-content-end gap-2">
                     <a asp-action="Index" class="btn btn-secondary">
@@ -80,3 +95,12 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('chkRimorchio').addEventListener('change', function () {
+            document.getElementById('portataRimorchioWrap').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) document.getElementById('PortataMaxConRimorchioKg').value = '';
+        });
+    </script>
+}

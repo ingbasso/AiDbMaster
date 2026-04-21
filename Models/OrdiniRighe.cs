@@ -287,6 +287,53 @@ namespace AiDbMaster.Models
             _ => "badge bg-secondary"
         };
 
+        // ── Stato Spedizione (calcolato dinamicamente dai viaggi) ──
+
+        /// <summary>
+        /// Quantità totale già assegnata ai viaggi non annullati.
+        /// Deve essere popolata dal controller dopo il caricamento.
+        /// </summary>
+        [NotMapped]
+        public decimal QuantitaAssegnataViaggi { get; set; }
+
+        /// <summary>
+        /// Quantità ancora da spedire: totale ordine meno quella già assegnata ai viaggi
+        /// </summary>
+        [NotMapped]
+        public decimal QuantitaRimanenteSpedizione => Quantita - QuantitaAssegnataViaggi;
+
+        /// <summary>
+        /// Stato spedizione calcolato: NS = Non Spedita, PS = Parzialmente Spedita, SP = Spedita
+        /// </summary>
+        [NotMapped]
+        public string StatoSpedizione =>
+            QuantitaAssegnataViaggi <= 0 ? "NS" :
+            QuantitaAssegnataViaggi >= Quantita ? "SP" : "PS";
+
+        /// <summary>
+        /// Descrizione dello stato spedizione
+        /// </summary>
+        [NotMapped]
+        public string DescrizioneStatoSpedizione => StatoSpedizione switch
+        {
+            "NS" => "Non Spedita",
+            "PS" => "Parz. Spedita",
+            "SP" => "Spedita",
+            _ => "Sconosciuto"
+        };
+
+        /// <summary>
+        /// Classe CSS per il badge dello stato spedizione
+        /// </summary>
+        [NotMapped]
+        public string StatoSpedizioneCssClass => StatoSpedizione switch
+        {
+            "NS" => "badge bg-secondary",
+            "PS" => "badge bg-info text-dark",
+            "SP" => "badge bg-success",
+            _ => "badge bg-light text-dark"
+        };
+
 
 
         /// <summary>

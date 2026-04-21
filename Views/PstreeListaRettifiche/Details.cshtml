@@ -1,0 +1,170 @@
+@model AiDbMaster.Models.PstreeListaRettifiche
+
+@{
+    ViewData["Title"] = "Dettagli Rettifica";
+    var contoEconomico = ViewBag.ContoEconomico as AiDbMaster.Models.PstreeStrutturaContoEconomico;
+    var famiglia = ViewBag.Famiglia as AiDbMaster.Models.PstreeListaFamiglie;
+    var sede = ViewBag.Sede as AiDbMaster.Models.PstreeListaSedi;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-eye text-info"></i> Dettagli Rettifica</h2>
+        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Rettifica #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Conto Economico -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Conto Economico</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label text-muted small">Codice</label>
+                                            <div><span class="badge bg-primary fs-5">@Model.IdCodiceConto</span></div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <label class="form-label text-muted small">Descrizione</label>
+                                            <div class="fs-5 fw-bold">@(contoEconomico?.DescrizioneConto ?? "N/D")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Importi -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title"><i class="bi bi-arrow-up"></i> Dare</h6>
+                                    <h3 class="mb-0">@String.Format("{0:C}", Model.Dare)</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-danger text-white h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title"><i class="bi bi-arrow-down"></i> Avere</h6>
+                                    <h3 class="mb-0">@String.Format("{0:C}", Model.Avere)</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            @{
+                                var saldoBgClass = Model.Saldo >= 0 ? "bg-primary" : "bg-warning text-dark";
+                            }
+                            <div class="card @saldoBgClass h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title"><i class="bi bi-dash-lg"></i> Saldo</h6>
+                                    <h3 class="mb-0">@String.Format("{0:C}", Model.Saldo)</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Periodo e Dettagli -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Periodo</label>
+                            <div>
+                                <span class="badge bg-info fs-6">@Model.Periodo</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Mese</label>
+                            <div class="fw-bold">@Model.NomeMese (@Model.Mese)</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Famiglia</label>
+                            <div>
+                                <span class="badge bg-secondary fs-6">@(famiglia?.NomeFamiglia ?? Model.IdFamiglia.ToString())</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Sede</label>
+                            <div>
+                                <span class="badge bg-secondary fs-6">@(sede?.Sede ?? Model.IdSede.ToString())</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> Azioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Edit" asp-controller="PstreeListaRettifiche" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <a asp-action="Delete" asp-controller="PstreeListaRettifiche" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Elimina
+                        </a>
+                        <a asp-action="Index" asp-controller="PstreeListaRettifiche" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna all'elenco
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if (contoEconomico != null)
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Info Conto CE</h6>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Tipo</dt>
+                            <dd class="col-sm-7">
+                                @{
+                                    var badgeClass = contoEconomico.TipoConto switch
+                                    {
+                                        "R" => "bg-success",
+                                        "C" => "bg-danger",
+                                        "T" => "bg-primary",
+                                        "S" => "bg-warning text-dark",
+                                        "F" => "bg-info",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @badgeClass">@contoEconomico.TipoContoDescrizione</span>
+                            </dd>
+                            <dt class="col-sm-5">Livello</dt>
+                            <dd class="col-sm-7">@contoEconomico.Livello</dd>
+                            <dt class="col-sm-5">Rettifica</dt>
+                            <dd class="col-sm-7">
+                                @if (contoEconomico.VoceRettifica)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-check"></i> Sì</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -31,6 +31,14 @@ namespace AiDbMaster.Models
         [Column("PortataMaxKg")]
         public decimal PortataMaxKg { get; set; }
 
+        [Display(Name = "Rimorchio disponibile")]
+        [Column("RimorchioDisponibile")]
+        public bool RimorchioDisponibile { get; set; } = false;
+
+        [Display(Name = "Portata max con rimorchio (Kg)")]
+        [Column("PortataMaxConRimorchioKg")]
+        public decimal? PortataMaxConRimorchioKg { get; set; }
+
         [Display(Name = "Attivo")]
         [Column("Attivo")]
         public bool Attivo { get; set; } = true;

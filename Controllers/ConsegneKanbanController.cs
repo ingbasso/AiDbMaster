@@ -12,7 +12,7 @@ using System.Drawing;
 namespace AiDbMaster.Controllers
 {
     [Authorize]
-    [RegisterResource("ConsegneKanban", "Kanban Consegne", Description = "Kanban pianificazione consegne", MenuIcon = "bi-kanban", MenuOrder = 1)]
+    [RegisterResource("ConsegneKanban", "Calendario Consegne", Description = "Calendario pianificazione consegne", MenuIcon = "bi-calendar3", MenuOrder = 1)]
     [RequirePermission("ConsegneKanban", "View")]
     public class ConsegneKanbanController : Controller
     {
@@ -179,8 +179,7 @@ namespace AiDbMaster.Controllers
                                 ?? (v.MezzoTrasportoEsterno != null
                                     ? $"{v.MezzoTrasportoEsterno.NomeVettore} - {v.MezzoTrasportoEsterno.TipoMezzo}"
                                     : "N/D");
-                            var portataMaxKg = v.MezzoTrasporto?.PortataMaxKg
-                                ?? (v.MezzoTrasportoEsterno != null ? (decimal)v.MezzoTrasportoEsterno.PortataMax : 0);
+                            var portataMaxKg = GetPortataEffettiva(v);
                             return new ViaggioKanbanDto
                             {
                                 Id = v.Id,
@@ -190,6 +189,7 @@ namespace AiDbMaster.Controllers
                                 MezzoTrasportoId = v.MezzoTrasportoId,
                                 MezzoTrasportoEsternoId = v.MezzoTrasportoEsternoId,
                                 Mezzo = mezzoDescrizione,
+                                ConRimorchio = v.ConRimorchio,
                                 PortataMaxKg = portataMaxKg,
                                 PesoTotaleKg = pesoTotale,
                                 OraPartenza = v.OraPartenza,
@@ -258,6 +258,13 @@ namespace AiDbMaster.Controllers
                 MezzoAutistaDefaultMap = await _context.MezziTrasporto.AsNoTracking()
                     .Where(m => m.Attivo && m.AutistaDefaultId.HasValue)
                     .ToDictionaryAsync(m => m.Id, m => m.AutistaDefaultId),
+                MezzoRimorchioMap = await _context.MezziTrasporto.AsNoTracking()
+                    .Where(m => m.Attivo && m.RimorchioDisponibile)
+                    .ToDictionaryAsync(m => m.Id, m => new MezzoRimorchioInfoDto
+                    {
+                        RimorchioDisponibile = m.RimorchioDisponibile,
+                        PortataMaxConRimorchioKg = m.PortataMaxConRimorchioKg
+                    }),
                 MezzoEsternoInfoMap = await _context.MezziTrasportoEsterni.AsNoTracking()
                     .ToDictionaryAsync(m => m.Id, m => new MezzoEsternoInfoDto
                     {
@@ -277,7 +284,7 @@ namespace AiDbMaster.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequirePermission("ConsegneKanban", "Create")]
-        public async Task<IActionResult> CreaViaggio(DateTime dataConsegna, int tipoTrasportoId, int? mezzoTrasportoId, int? mezzoTrasportoEsternoId, TimeSpan oraPartenza, TimeSpan? oraArrivo, string? note, int? autistaId, decimal? costoTrasporto, decimal? prezzoVendita, int? tempoPausa, int? tempoScarico, bool? gru, bool? trasbordo, bool nascondiWeekend = false)
+        public async Task<IActionResult> CreaViaggio(DateTime dataConsegna, int tipoTrasportoId, int? mezzoTrasportoId, int? mezzoTrasportoEsternoId, TimeSpan oraPartenza, TimeSpan? oraArrivo, string? note, int? autistaId, decimal? costoTrasporto, decimal? prezzoVendita, int? tempoPausa, int? tempoScarico, bool? gru, bool? trasbordo, bool conRimorchio = false, bool nascondiWeekend = false)
         {
             if (dataConsegna.Date < DateTime.Today)
             {
@@ -323,6 +330,7 @@ namespace AiDbMaster.Controllers
                 TempoScarico = tempoScarico ?? 0,
                 Gru = gru ?? false,
                 Trasbordo = trasbordo ?? false,
+                ConRimorchio = conRimorchio,
                 CreatoDa = userName
             };
 
@@ -387,8 +395,7 @@ namespace AiDbMaster.Controllers
             var pesoTotaleNuovaAssegnazione = Math.Round(quantitaAssegnata * pesoReale, 3);
             var pesoGiaCaricato = viaggio.Righe.Sum(r => r.PesoTotaleKgSnapshot);
             var nuovoTotale = pesoGiaCaricato + pesoTotaleNuovaAssegnazione;
-            var portataMax = viaggio.MezzoTrasporto?.PortataMaxKg
-                ?? (viaggio.MezzoTrasportoEsterno != null ? (decimal)viaggio.MezzoTrasportoEsterno.PortataMax : 0);
+            var portataMax = GetPortataEffettiva(viaggio);
 
             if (!pesoMancante && portataMax > 0 && nuovoTotale > portataMax)
             {
@@ -509,8 +516,7 @@ namespace AiDbMaster.Controllers
                     .Where(x => x.ViaggioConsegnaId == destinazioneId && x.Id != rigaViaggio.Id)
                     .SumAsync(x => x.PesoTotaleKgSnapshot);
                 var nuovoPesoDest = pesoDestCorrente + pesoTotaleNuovo;
-                var portataDest = viaggioDest.MezzoTrasporto?.PortataMaxKg
-                    ?? (viaggioDest.MezzoTrasportoEsterno != null ? (decimal)viaggioDest.MezzoTrasportoEsterno.PortataMax : 0);
+                var portataDest = GetPortataEffettiva(viaggioDest);
 
                 if (!pesoMancante && portataDest > 0 && nuovoPesoDest > portataDest)
                 {
@@ -556,8 +562,7 @@ namespace AiDbMaster.Controllers
 
                 var pesoGiaCaricato = viaggioDest.Righe.Sum(r => r.PesoTotaleKgSnapshot);
                 var nuovoTotale = pesoGiaCaricato + pesoTotaleNuovo;
-                var portataMax = viaggioDest.MezzoTrasporto?.PortataMaxKg
-                    ?? (viaggioDest.MezzoTrasportoEsterno != null ? (decimal)viaggioDest.MezzoTrasportoEsterno.PortataMax : 0);
+                var portataMax = GetPortataEffettiva(viaggioDest);
 
                 if (!pesoMancante && portataMax > 0 && nuovoTotale > portataMax)
                 {
@@ -797,6 +802,7 @@ namespace AiDbMaster.Controllers
             int? tempoScarico,
             bool? gru,
             bool? trasbordo,
+            bool conRimorchio = false,
             bool nascondiWeekend = false)
         {
             var viaggio = await _context.ViaggiConsegna.FirstOrDefaultAsync(v => v.Id == viaggioId);
@@ -846,11 +852,25 @@ namespace AiDbMaster.Controllers
             viaggio.TempoScarico = tempoScarico ?? 0;
             viaggio.Gru = gru ?? false;
             viaggio.Trasbordo = trasbordo ?? false;
+            viaggio.ConRimorchio = conRimorchio;
 
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Viaggio modificato con successo.";
             return RedirectToAction(nameof(Index), new { nascondiWeekend });
+        }
+
+        private static decimal GetPortataEffettiva(ViaggioConsegna v)
+        {
+            if (v.MezzoTrasporto != null)
+            {
+                if (v.ConRimorchio && v.MezzoTrasporto.PortataMaxConRimorchioKg.HasValue)
+                    return v.MezzoTrasporto.PortataMaxConRimorchioKg.Value;
+                return v.MezzoTrasporto.PortataMaxKg;
+            }
+            if (v.MezzoTrasportoEsterno != null)
+                return (decimal)v.MezzoTrasportoEsterno.PortataMax;
+            return 0;
         }
 
         private async Task<int> GetDurataDefaultMinutiAsync()
@@ -937,8 +957,7 @@ namespace AiDbMaster.Controllers
                 Mezzo = viaggio.MezzoTrasporto?.Descrizione
                     ?? (viaggio.MezzoTrasportoEsterno != null ? $"{viaggio.MezzoTrasportoEsterno.NomeVettore} - {viaggio.MezzoTrasportoEsterno.TipoMezzo}" : "N/D"),
                 Targa = viaggio.MezzoTrasporto?.Targa,
-                PortataMaxKg = viaggio.MezzoTrasporto?.PortataMaxKg
-                    ?? (viaggio.MezzoTrasportoEsterno != null ? (decimal)viaggio.MezzoTrasportoEsterno.PortataMax : 0),
+                PortataMaxKg = GetPortataEffettiva(viaggio),
                 Autista = viaggio.Autista != null ? $"{viaggio.Autista.Cognome} {viaggio.Autista.Nome}" : null,
                 TelefonoAutista = viaggio.Autista?.Telefono,
                 OraPartenza = viaggio.OraPartenza,
@@ -1001,8 +1020,7 @@ namespace AiDbMaster.Controllers
                     Autista = v.Autista != null ? $"{v.Autista.Cognome} {v.Autista.Nome}" : null,
                     OraPartenza = v.OraPartenza,
                     PesoTotaleKg = v.Righe.Sum(r => r.PesoTotaleKgSnapshot),
-                    PortataMaxKg = v.MezzoTrasporto?.PortataMaxKg
-                        ?? (v.MezzoTrasportoEsterno != null ? (decimal)v.MezzoTrasportoEsterno.PortataMax : 0),
+                    PortataMaxKg = GetPortataEffettiva(v),
                     Righe = righeInfo.Select(r => new DistintaCaricoRigaViewModel
                     {
                         Progressivo = ++progGlobale,
@@ -1076,7 +1094,7 @@ namespace AiDbMaster.Controllers
             foreach (var v in viaggi)
             {
                 var pesoTot = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
-                var portata = v.MezzoTrasporto?.PortataMaxKg ?? (v.MezzoTrasportoEsterno != null ? (decimal)v.MezzoTrasportoEsterno.PortataMax : 0);
+                var portata = GetPortataEffettiva(v);
                 var percCarico = portata > 0 ? Math.Round((pesoTot / portata) * 100, 1) : 0;
                 var oraArr = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
 
@@ -1289,7 +1307,7 @@ namespace AiDbMaster.Controllers
                     var partenza = v.OraPartenza;
                     var arrivo = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
                     var pesoTot = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
-                    var portata = v.MezzoTrasporto?.PortataMaxKg ?? (v.MezzoTrasportoEsterno != null ? (decimal)v.MezzoTrasportoEsterno.PortataMax : 0);
+                    var portata = GetPortataEffettiva(v);
 
                     var barColor = isInterno ? colorBarInt : colorBarEst;
                     if (portata > 0 && pesoTot > portata)

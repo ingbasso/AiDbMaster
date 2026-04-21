@@ -1,0 +1,465 @@
+@model IEnumerable<AiDbMaster.Models.PstreeListaSaldi>
+
+@{
+    ViewData["Title"] = "Lista Saldi";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-coin text-primary"></i> Lista Saldi</h2>
+        <div>
+            <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Filtri
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- SEZIONE FILTRI -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtri</h6>
+        </div>
+        <div class="card-body py-2">
+            <form id="filterForm" method="get" asp-controller="PstreeListaSaldi" asp-action="Index">
+                <div class="row g-2 align-items-end">
+                    <div class="col">
+                        <label for="codicePdC" class="form-label small mb-1">Codice PdC</label>
+                        <select id="codicePdC" name="codicePdC" class="form-select form-select-sm filter-dropdown">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.CodiciPdC)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentCodicePdC)">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto" style="width: 120px;">
+                        <label for="mese" class="form-label small mb-1">Mese</label>
+                        <select id="mese" name="mese" class="form-select form-select-sm filter-dropdown">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Mesi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentMese?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto" style="width: 100px;">
+                        <label for="anno" class="form-label small mb-1">Anno</label>
+                        <select id="anno" name="anno" class="form-select form-select-sm filter-dropdown">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var item in (SelectList)ViewBag.Anni)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentAnno?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto" style="width: 150px;">
+                        <label for="idSede" class="form-label small mb-1">Sede</label>
+                        <select id="idSede" name="idSede" class="form-select form-select-sm filter-dropdown">
+                            @foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Sedi)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == ViewBag.CurrentIdSede?.ToString())">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <span id="loadingIndicator" class="ms-1 d-none">
+                            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                        </span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELLA AD ALBERO -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-table"></i> Risultati
+                <span class="badge bg-secondary ms-2">@Model.Count() record</span>
+            </span>
+            @if (Model.Any())
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExpandAll">
+                        <i class="bi bi-plus-square"></i> Espandi tutto
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnCollapseAll">
+                        <i class="bi bi-dash-square"></i> Comprimi tutto
+                    </button>
+                </div>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                var pdcDict = (Dictionary<string, AiDbMaster.Models.PstreeListaPianoDeiConti>)ViewBag.PianoDeiContiDict;
+                var sediDesc = (Dictionary<int, string>)ViewBag.SediDescrizioni;
+                
+                Func<string, string> getTipoConto = (codice) => 
+                    (codice.StartsWith("01") || codice.StartsWith("02")) ? "P" : "E";
+                
+                var gruppiPerTipo = Model
+                    .GroupBy(s => getTipoConto(s.CodicePdC))
+                    .OrderBy(g => g.Key);
+                
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+                        <thead style="background-color: #5b9bd5 !important;">
+                            <tr>
+                                <th style="width: 40px; border: none; background-color: #5b9bd5 !important;"></th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Codice PdC</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Descrizione</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Mese</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Anno</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Dare</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Avere</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important; text-align: right;">Saldo</th>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;" class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var gruppoTipo in gruppiPerTipo)
+                            {
+                                var tipoConto = gruppoTipo.Key;
+                                var nomeTipo = tipoConto == "P" ? "Stato Patrimoniale" : "Conto Economico";
+                                var iconaTipo = tipoConto == "P" ? "bi-building" : "bi-graph-up";
+                                var coloreTipo = tipoConto == "P" ? "#d4edda" : "#fff3cd";
+                                
+                                <tr class="tipo-row" style="background-color: @coloreTipo; cursor: pointer; font-weight: bold;" onclick="toggleTipo('@tipoConto')">
+                                    <td class="text-center">
+                                        <i class="bi bi-chevron-right toggle-icon" id="icon-tipo-@tipoConto"></i>
+                                    </td>
+                                    <td colspan="2">
+                                        <i class="bi @iconaTipo me-2"></i>
+                                        <strong>@nomeTipo</strong>
+                                        <span class="badge bg-secondary ms-2">@gruppoTipo.Select(s => s.CodicePdC).Distinct().Count() conti</span>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                
+                                var gruppiConto = gruppoTipo.GroupBy(s => s.CodicePdC).OrderBy(g => g.Key);
+                                
+                                @foreach (var gruppo in gruppiConto)
+                                {
+                                    var codicePdC = gruppo.Key;
+                                    var pdc = pdcDict.GetValueOrDefault(codicePdC);
+                                    var totDare = gruppo.Sum(s => s.Dare ?? 0);
+                                    var totAvere = gruppo.Sum(s => s.Avere ?? 0);
+                                    var totSaldo = gruppo.Sum(s => s.Saldo);
+                                    var saldoClass = totSaldo >= 0 ? "text-success" : "text-danger";
+                                    var safeId = codicePdC.Replace(".", "_").Replace("-", "_");
+                                    
+                                    <tr class="parent-row child-tipo-@tipoConto" style="background-color: #e3f2fd; cursor: pointer; display: none;" onclick="toggleChildren('@safeId'); event.stopPropagation();">
+                                        <td class="text-center ps-3">
+                                            <i class="bi bi-chevron-right toggle-icon" id="icon-@safeId"></i>
+                                        </td>
+                                        <td><code class="fw-bold">@codicePdC</code></td>
+                                        <td>
+                                            @if (pdc != null)
+                                            {
+                                                <strong>@pdc.DescrizionePdC</strong>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted"><em>Non trovato</em></span>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-secondary">@gruppo.Count() mesi</span></td>
+                                        <td></td>
+                                        <td class="text-end fw-bold">@String.Format("{0:N2}", totDare)</td>
+                                        <td class="text-end fw-bold">@String.Format("{0:N2}", totAvere)</td>
+                                        <td class="text-end fw-bold @saldoClass">@String.Format("{0:N2}", totSaldo)</td>
+                                        <td></td>
+                                    </tr>
+                                    
+                                    @foreach (var item in gruppo.OrderByDescending(s => s.Anno).ThenBy(s => s.Mese))
+                                    {
+                                        var itemSaldoClass = item.Saldo >= 0 ? "text-success" : "text-danger";
+                                        
+                                        <tr class="child-row child-of-@safeId child-tipo-@tipoConto" style="display: none;">
+                                            <td></td>
+                                            <td></td>
+                                            <td class="ps-4 text-muted">
+                                                @if (item.IdSede.HasValue && sediDesc.TryGetValue(item.IdSede.Value, out var nomeSede))
+                                                {
+                                                    <small>Sede: @nomeSede</small>
+                                                }
+                                            </td>
+                                        <td>@item.NomeMese</td>
+                                        <td>@item.Anno</td>
+                                        <td class="text-end">@String.Format("{0:N2}", item.Dare ?? 0)</td>
+                                        <td class="text-end">@String.Format("{0:N2}", item.Avere ?? 0)</td>
+                                        <td class="text-end fw-bold @itemSaldoClass">@String.Format("{0:N2}", item.Saldo)</td>
+                                        <td class="text-center">
+                                            <a asp-controller="PstreeListaSaldi" asp-action="Details" asp-route-id="@item.Id" 
+                                               class="btn btn-sm btn-outline-info" title="Dettagli">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    }
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-search fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun saldo trovato</h5>
+                    <p class="text-muted">
+                        @if (ViewBag.CurrentCodicePdC != null || ViewBag.CurrentMese != null || 
+                             ViewBag.CurrentAnno != null || ViewBag.CurrentIdSede != null)
+                        {
+                            <text>Prova a modificare i filtri di ricerca.</text>
+                        }
+                        else
+                        {
+                            <text>La tabella ListaSaldi non contiene ancora dati.</text>
+                        }
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0 text-muted">
+                <i class="bi bi-database"></i> 
+                Questa tabella è alimentata da fonti esterne. I dati sono in sola lettura.
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.filter-dropdown');
+            
+            dropdowns.forEach(function(dropdown) {
+                dropdown.addEventListener('change', function() {
+                    updateFilterOptions();
+                });
+            });
+        });
+
+        function updateFilterOptions() {
+            document.getElementById('loadingIndicator').classList.remove('d-none');
+
+            const params = new URLSearchParams();
+            
+            const codicePdC = document.getElementById('codicePdC').value;
+            const mese = document.getElementById('mese').value;
+            const anno = document.getElementById('anno').value;
+            const idSede = document.getElementById('idSede').value;
+
+            if (codicePdC) params.append('codicePdC', codicePdC);
+            if (mese) params.append('mese', mese);
+            if (anno) params.append('anno', anno);
+            if (idSede) params.append('idSede', idSede);
+
+            fetch('@Url.Action("GetFilterOptions", "PstreeListaSaldi")?' + params.toString())
+                .then(response => response.json())
+                .then(data => {
+                    updateDropdownPdC('codicePdC', data.codiciPdC, codicePdC);
+                    updateDropdownMesi('mese', data.mesi, mese);
+                    updateDropdownNumeric('anno', data.anni, anno);
+                    updateDropdownObject('idSede', data.sedi, idSede);
+
+                    document.getElementById('loadingIndicator').classList.add('d-none');
+                })
+                .catch(error => {
+                    console.error('Errore durante l\'aggiornamento dei filtri:', error);
+                    document.getElementById('loadingIndicator').classList.add('d-none');
+                });
+        }
+
+        function updateDropdownMesi(dropdownId, options, currentValue) {
+            const dropdown = document.getElementById(dropdownId);
+            const currentSelection = currentValue || dropdown.value;
+            const firstOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            dropdown.appendChild(firstOption);
+            
+            options.forEach(function(option) {
+                const opt = document.createElement('option');
+                opt.value = option.id.toString();
+                opt.text = option.id + ' - ' + option.nome;
+                if (option.id.toString() === currentSelection) {
+                    opt.selected = true;
+                }
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function updateDropdownPdC(dropdownId, options, currentValue) {
+            const dropdown = document.getElementById(dropdownId);
+            const currentSelection = currentValue || dropdown.value;
+            const firstOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            dropdown.appendChild(firstOption);
+            
+            options.forEach(function(option) {
+                const opt = document.createElement('option');
+                opt.value = option.codicePdC;
+                opt.text = option.codicePdC + ' - ' + option.descrizionePdC;
+                if (option.codicePdC === currentSelection) {
+                    opt.selected = true;
+                }
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function updateDropdownNumeric(dropdownId, options, currentValue) {
+            const dropdown = document.getElementById(dropdownId);
+            const currentSelection = currentValue || dropdown.value;
+            const firstOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            dropdown.appendChild(firstOption);
+            
+            options.forEach(function(option) {
+                const opt = document.createElement('option');
+                opt.value = option.toString();
+                opt.text = option.toString();
+                if (option.toString() === currentSelection) {
+                    opt.selected = true;
+                }
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function updateDropdownObject(dropdownId, options, currentValue) {
+            const dropdown = document.getElementById(dropdownId);
+            const currentSelection = currentValue || dropdown.value;
+            const firstOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            dropdown.appendChild(firstOption);
+            
+            options.forEach(function(option) {
+                const opt = document.createElement('option');
+                opt.value = option.id.toString();
+                opt.text = option.id + ' - ' + option.nome;
+                if (option.id.toString() === currentSelection) {
+                    opt.selected = true;
+                }
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('codicePdC').value = '';
+            document.getElementById('mese').value = '';
+            document.getElementById('anno').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        function toggleTipo(tipoConto) {
+            const children = document.querySelectorAll('.child-tipo-' + tipoConto + '.parent-row');
+            const icon = document.getElementById('icon-tipo-' + tipoConto);
+            
+            if (children.length > 0) {
+                const isHidden = children[0].style.display === 'none';
+                
+                if (isHidden) {
+                    children.forEach(child => {
+                        if (child.classList.contains('parent-row')) {
+                            child.style.display = '';
+                        }
+                    });
+                } else {
+                    document.querySelectorAll('.child-tipo-' + tipoConto).forEach(child => {
+                        child.style.display = 'none';
+                    });
+                    document.querySelectorAll('.child-tipo-' + tipoConto + '.parent-row .toggle-icon').forEach(ico => {
+                        ico.classList.remove('bi-chevron-down');
+                        ico.classList.add('bi-chevron-right');
+                    });
+                }
+                
+                icon.classList.toggle('bi-chevron-right', !isHidden);
+                icon.classList.toggle('bi-chevron-down', isHidden);
+            }
+        }
+        
+        function toggleChildren(safeId) {
+            const children = document.querySelectorAll('.child-of-' + safeId);
+            const icon = document.getElementById('icon-' + safeId);
+            
+            if (children.length > 0) {
+                const isHidden = children[0].style.display === 'none';
+                children.forEach(child => {
+                    child.style.display = isHidden ? '' : 'none';
+                });
+                icon.classList.toggle('bi-chevron-right', !isHidden);
+                icon.classList.toggle('bi-chevron-down', isHidden);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnExpandAll = document.getElementById('btnExpandAll');
+            if (btnExpandAll) {
+                btnExpandAll.addEventListener('click', function() {
+                    document.querySelectorAll('.parent-row').forEach(row => {
+                        row.style.display = '';
+                    });
+                    document.querySelectorAll('.child-row').forEach(row => {
+                        row.style.display = '';
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-down');
+                    });
+                });
+            }
+
+            const btnCollapseAll = document.getElementById('btnCollapseAll');
+            if (btnCollapseAll) {
+                btnCollapseAll.addEventListener('click', function() {
+                    document.querySelectorAll('.parent-row').forEach(row => {
+                        row.style.display = 'none';
+                    });
+                    document.querySelectorAll('.child-row').forEach(row => {
+                        row.style.display = 'none';
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-right');
+                    });
+                });
+            }
+        });
+    </script>
+}

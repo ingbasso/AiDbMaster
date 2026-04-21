@@ -1,0 +1,82 @@
+@model AiDbMaster.Models.PstreeListaPianoDeiConti
+
+@{
+    ViewData["Title"] = "Elimina Conto";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-trash text-danger"></i> Elimina Conto</h2>
+        <a asp-controller="PstreeListaPianoDeiConti" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Conferma Eliminazione</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Sei sicuro di voler eliminare questo conto? L'operazione non può essere annullata.
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Codice</dt>
+                        <dd class="col-sm-8"><code class="fs-5">@Model.CodicePdC</code></dd>
+
+                        <dt class="col-sm-4">Descrizione</dt>
+                        <dd class="col-sm-8">@Model.DescrizionePdC</dd>
+
+                        <dt class="col-sm-4">Tipo</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.TipoPdC == "P")
+                            {
+                                <span class="badge bg-info">
+                                    <i class="bi bi-calculator"></i> Patrimoniale
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-graph-up"></i> Economico
+                                </span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Non Associare</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.NonAssociare)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-slash-circle"></i> Sì
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <hr />
+
+                    <form asp-controller="PstreeListaPianoDeiConti" asp-action="Delete">
+                        <input type="hidden" asp-for="CodicePdC" />
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Conferma Eliminazione
+                            </button>
+                            <a asp-controller="PstreeListaPianoDeiConti" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

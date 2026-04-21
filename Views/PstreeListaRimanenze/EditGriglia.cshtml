@@ -1,0 +1,376 @@
+@model AiDbMaster.ViewModels.Pstree_RimanenzeGrigliaViewModel
+
+@{
+    ViewData["Title"] = $"Rimanenze {Model.NomeMese} {Model.Anno} - {Model.NomeSede}";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-box-seam text-primary"></i> Rimanenze di Magazzino</h2>
+            <h5 class="text-muted">@Model.NomeMese @Model.Anno - Sede: @Model.NomeSede</h5>
+        </div>
+        <div>
+            <a asp-action="EditGriglia" asp-controller="PstreeListaRimanenze" class="btn btn-outline-primary">
+                <i class="bi bi-calendar-month"></i> Cambia Periodo
+            </a>
+            <a asp-action="Index" asp-controller="PstreeListaRimanenze" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Torna alla lista
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["WarningMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    }
+
+    <!-- AZIONI RAPIDE -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-lightning"></i> Azioni Rapide</span>
+            <div class="btn-group">
+                <form asp-action="CopyFromPreviousMonth" asp-controller="PstreeListaRimanenze" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="anno" value="@Model.Anno" />
+                    <input type="hidden" name="mese" value="@Model.Mese" />
+                    <input type="hidden" name="sede" value="@Model.IdSede" />
+                    <button type="submit" class="btn btn-outline-info" 
+                            onclick="return confirm('Vuoi copiare i valori dal mese precedente? I valori attuali verranno sovrascritti.');">
+                        <i class="bi bi-clipboard"></i> Copia da mese precedente
+                    </button>
+                </form>
+                
+                @if (Model.RecordEsistenti)
+                {
+                    <form asp-action="DeleteAllGriglia" asp-controller="PstreeListaRimanenze" method="post" style="display: inline; margin-left: 5px;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="anno" value="@Model.Anno" />
+                        <input type="hidden" name="mese" value="@Model.Mese" />
+                        <input type="hidden" name="sede" value="@Model.IdSede" />
+                        <button type="submit" class="btn btn-outline-danger" 
+                                onclick="return confirm('Sei sicuro di voler ELIMINARE TUTTE le rimanenze per questo periodo? Questa azione non può essere annullata.');">
+                            <i class="bi bi-trash"></i> Elimina tutto
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- AVVISO GENNAIO SENZA DICEMBRE -->
+    @if (Model.IsGennaioSenzaDicembre)
+    {
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Attenzione!</strong> @Model.MessaggioRimanenzaIniziale
+        </div>
+    }
+
+    <!-- GRIGLIA RIMANENZE -->
+    <form asp-action="SaveGriglia" asp-controller="PstreeListaRimanenze" method="post" id="grigliaForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Anno" value="@Model.Anno" />
+        <input type="hidden" name="Mese" value="@Model.Mese" />
+        <input type="hidden" name="IdSede" value="@Model.IdSede" />
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table"></i> Rimanenze per Famiglia</span>
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-save"></i> Salva Tutto
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" id="tblRimanenze">
+                        <thead style="background-color: #5b9bd5;">
+                            <tr>
+                                <th style="width: 60px; border: none; background-color: #5b9bd5 !important; color: white !important;">ID</th>
+                                <th style="border: none; background-color: #5b9bd5 !important; color: white !important;">Famiglia</th>
+                                @if (Model.IsGennaioSenzaDicembre)
+                                {
+                                    <th style="width: 130px; border: none; background-color: #ffc107 !important; color: black !important; text-align: center;">
+                                        Rim. Iniziale <i class="bi bi-pencil" title="Editabile - diventerà Dicembre @(Model.Anno-1)"></i>
+                                    </th>
+                                }
+                                else
+                                {
+                                    <th style="width: 130px; border: none; background-color: #6c757d !important; color: white !important; text-align: right;">Rim. Iniziale</th>
+                                }
+                                <th style="width: 130px; border: none; background-color: #28a745 !important; color: white !important; text-align: center;">Rim. Finale</th>
+                                <th style="width: 120px; border: none; background-color: #dc3545 !important; color: white !important; text-align: center;" title="Rettifica (+ o -)">
+                                    <i class="bi bi-plus-slash-minus"></i> Rettifica
+                                </th>
+                                <th style="width: 130px; border: none; background-color: #6f42c1 !important; color: white !important; text-align: right;" title="Valore Effettivo = Finale + Rettifica">
+                                    Val. Effettivo
+                                </th>
+                                <th style="width: 130px; border: none; background-color: #17a2b8 !important; color: white !important; text-align: right;">Variazione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Righe.Count; i++)
+                            {
+                                var riga = Model.Righe[i];
+                                <tr>
+                                    <td><code>@riga.IdFamiglia</code></td>
+                                    <td>@riga.NomeFamiglia</td>
+                                    @if (Model.IsGennaioSenzaDicembre)
+                                    {
+                                        <td class="p-1">
+                                            <input type="text" inputmode="decimal"
+                                                   name="Rimanenze[@i].RimanenzaIniziale"
+                                                   class="form-control form-control-sm text-end rim-iniziale-input"
+                                                   data-index="@i"
+                                                   value="@riga.RimanenzaIniziale.ToString("0.##")"
+                                                   oninput="validaInput(this); aggiornaVariazioneIniziale(@i);" />
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-end text-muted">
+                                            @riga.RimanenzaIniziale.ToString("N2")
+                                            <input type="hidden" name="Rimanenze[@i].RimanenzaIniziale" value="@riga.RimanenzaIniziale.ToString("0.##")" />
+                                        </td>
+                                    }
+                                    <td class="p-1">
+                                        <input type="hidden" name="Rimanenze[@i].Id" value="@riga.Id" />
+                                        <input type="hidden" name="Rimanenze[@i].IdFamiglia" value="@riga.IdFamiglia" />
+                                        <input type="text" inputmode="decimal"
+                                               name="Rimanenze[@i].RimanenzaFinale"
+                                               class="form-control form-control-sm text-end rim-input"
+                                               data-index="@i"
+                                               data-iniziale="@riga.RimanenzaIniziale"
+                                               value="@riga.RimanenzaFinale.ToString("0.##")"
+                                               oninput="validaInput(this); aggiornaCalcoli(@i);" />
+                                    </td>
+                                    <td class="p-1">
+                                        <input type="text" inputmode="decimal"
+                                               name="Rimanenze[@i].RettificaValore"
+                                               class="form-control form-control-sm text-end rettifica-input @(riga.HasRettifica ? "bg-warning-subtle" : "")"
+                                               data-index="@i"
+                                               value="@(riga.RettificaValore != 0 ? riga.RettificaValore.ToString("0.##") : "")"
+                                               placeholder="0"
+                                               title="@(riga.NoteRettifica ?? "Inserisci rettifica (+/-)")"
+                                               oninput="validaInputRettifica(this); aggiornaCalcoli(@i);" />
+                                        <input type="hidden" name="Rimanenze[@i].NoteRettifica" value="@riga.NoteRettifica" class="note-rettifica" data-index="@i" />
+                                    </td>
+                                    <td class="text-end effettivo-cell fw-bold" id="effettivo_@i" title="@riga.ValoreEffettivo.ToString("N2")">
+                                        @riga.ValoreEffettivo.ToString("N2")
+                                    </td>
+                                    <td class="text-end variazione-cell @riga.VariazioneClass" id="variazione_@i">
+                                        @riga.Variazione.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot style="background-color: #f8f9fa; font-weight: bold;">
+                            <tr>
+                                <td colspan="2" class="text-end">TOTALE</td>
+                                <td class="text-end" id="totaleIniziale">@Model.TotaleRimanenzaIniziale.ToString("N2")</td>
+                                <td class="text-end" id="totaleFinale">@Model.TotaleRimanenzaFinale.ToString("N2")</td>
+                                <td class="text-end" id="totaleRettifica">@Model.Righe.Sum(r => r.RettificaValore).ToString("N2")</td>
+                                <td class="text-end fw-bold" id="totaleEffettivo">@Model.Righe.Sum(r => r.ValoreEffettivo).ToString("N2")</td>
+                                <td class="text-end" id="totaleVariazione">@Model.TotaleVariazione.ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- LEGENDA -->
+    <div class="card">
+        <div class="card-body py-2">
+            <small class="text-muted">
+                <strong>Legenda:</strong>
+                <span class="text-muted ms-2">Rim. Iniziale</span> = Rimanenza effettiva del mese precedente
+                <span class="ms-3">|</span>
+                <span class="text-success ms-2">Variazione positiva</span> = Aumento stock
+                <span class="ms-3">|</span>
+                <span class="text-danger ms-2">Variazione negativa</span> = Diminuzione stock
+                <span class="ms-3">|</span>
+                <span class="bg-warning-subtle px-1 ms-2">Rettifica</span> = Valore aggiunto/sottratto al finale per correzioni
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rim-input, .rim-iniziale-input {
+        width: 110px;
+    }
+    
+    .rettifica-input {
+        width: 100px;
+    }
+    
+    .variazione-cell {
+        font-weight: 500;
+    }
+    
+    .effettivo-cell {
+        color: #6f42c1;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        const isGennaioSenzaDicembre = @Model.IsGennaioSenzaDicembre.ToString().ToLower();
+        
+        function validaInput(input) {
+            let valore = input.value.replace(/[^0-9.,-]/g, '');
+            valore = valore.replace(/,+/g, ',');
+            valore = valore.replace(/\.+/g, '.');
+            
+            const punti = (valore.match(/\./g) || []).length;
+            const virgole = (valore.match(/,/g) || []).length;
+            if (punti + virgole > 1) {
+                const lastSep = Math.max(valore.lastIndexOf('.'), valore.lastIndexOf(','));
+                const sep = valore[lastSep];
+                valore = valore.replace(/[.,]/g, '');
+                valore = valore.slice(0, lastSep) + sep + valore.slice(lastSep);
+            }
+            
+            input.value = valore;
+        }
+        
+        function validaInputRettifica(input) {
+            let valore = input.value.replace(/[^0-9.,-]/g, '');
+            if (valore.indexOf('-') > 0) {
+                valore = valore.replace(/-/g, '');
+            }
+            valore = valore.replace(/,+/g, ',');
+            valore = valore.replace(/\.+/g, '.');
+            
+            const punti = (valore.match(/\./g) || []).length;
+            const virgole = (valore.match(/,/g) || []).length;
+            if (punti + virgole > 1) {
+                const lastSep = Math.max(valore.lastIndexOf('.'), valore.lastIndexOf(','));
+                const sep = valore[lastSep];
+                const prefix = valore.startsWith('-') ? '-' : '';
+                valore = valore.replace(/[.,-]/g, '');
+                valore = prefix + valore.slice(0, lastSep - (prefix.length)) + sep + valore.slice(lastSep - (prefix.length));
+            }
+            
+            input.value = valore;
+            
+            const hasRettifica = parseValore(valore) !== 0;
+            input.classList.toggle('bg-warning-subtle', hasRettifica);
+        }
+        
+        function parseValore(value) {
+            if (!value || value === '') return 0;
+            const normalizzato = value.toString().replace(',', '.');
+            return parseFloat(normalizzato) || 0;
+        }
+        
+        function getInizialeValue(index) {
+            const inizialeInput = document.querySelector(`.rim-iniziale-input[data-index="${index}"]`);
+            if (inizialeInput) {
+                return parseValore(inizialeInput.value);
+            }
+            const finaleInput = document.querySelector(`.rim-input[data-index="${index}"]`);
+            return parseFloat(finaleInput?.getAttribute('data-iniziale')) || 0;
+        }
+        
+        function getRettificaValue(index) {
+            const rettificaInput = document.querySelector(`.rettifica-input[data-index="${index}"]`);
+            return parseValore(rettificaInput?.value);
+        }
+        
+        function aggiornaCalcoli(index) {
+            const iniziale = getInizialeValue(index);
+            const finaleInput = document.querySelector(`.rim-input[data-index="${index}"]`);
+            const finale = parseValore(finaleInput.value);
+            const rettifica = getRettificaValue(index);
+            const effettivo = finale + rettifica;
+            const variazione = effettivo - iniziale;
+            
+            const effettivoCell = document.getElementById(`effettivo_${index}`);
+            effettivoCell.textContent = effettivo.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            effettivoCell.title = effettivo.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            const variazioneCell = document.getElementById(`variazione_${index}`);
+            variazioneCell.textContent = variazione.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            variazioneCell.classList.remove('text-success', 'text-danger');
+            if (variazione > 0) {
+                variazioneCell.classList.add('text-success');
+            } else if (variazione < 0) {
+                variazioneCell.classList.add('text-danger');
+            }
+            
+            aggiornaTotali();
+        }
+        
+        function aggiornaVariazioneIniziale(index) {
+            const inizialeInput = document.querySelector(`.rim-iniziale-input[data-index="${index}"]`);
+            const finaleInput = document.querySelector(`.rim-input[data-index="${index}"]`);
+            
+            const iniziale = parseValore(inizialeInput.value);
+            finaleInput.setAttribute('data-iniziale', iniziale);
+            
+            aggiornaCalcoli(index);
+        }
+        
+        function aggiornaTotali() {
+            let totaleIniziale = 0;
+            let totaleFinale = 0;
+            let totaleRettifica = 0;
+            let totaleEffettivo = 0;
+            let totaleVariazione = 0;
+            
+            document.querySelectorAll('.rim-input').forEach(input => {
+                const index = input.getAttribute('data-index');
+                const iniziale = getInizialeValue(index);
+                const finale = parseValore(input.value);
+                const rettifica = getRettificaValue(index);
+                const effettivo = finale + rettifica;
+                
+                totaleIniziale += iniziale;
+                totaleFinale += finale;
+                totaleRettifica += rettifica;
+                totaleEffettivo += effettivo;
+                totaleVariazione += (effettivo - iniziale);
+            });
+            
+            const format = (val) => val.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            document.getElementById('totaleIniziale').textContent = format(totaleIniziale);
+            document.getElementById('totaleFinale').textContent = format(totaleFinale);
+            document.getElementById('totaleRettifica').textContent = format(totaleRettifica);
+            document.getElementById('totaleEffettivo').textContent = format(totaleEffettivo);
+            
+            const totVarCell = document.getElementById('totaleVariazione');
+            totVarCell.textContent = format(totaleVariazione);
+            totVarCell.classList.remove('text-success', 'text-danger');
+            if (totaleVariazione > 0) {
+                totVarCell.classList.add('text-success');
+            } else if (totaleVariazione < 0) {
+                totVarCell.classList.add('text-danger');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            aggiornaTotali();
+        });
+    </script>
+}
