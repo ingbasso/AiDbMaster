@@ -9,12 +9,13 @@ using Microsoft.Extensions.Logging;
 namespace AiDbMaster.Services
 {
     /// <summary>
-    /// Servizio in background che alle 14:00 di ogni giorno invia automaticamente
+    /// Servizio in background che ogni giorno all'ora configurata invia automaticamente
     /// le email "Avviso Merce Pronta" per gli ordini con DataConsegna = prossimo giorno feriale,
     /// se l'opzione EmailAutomatiche è attivata (= 1) in TabellaOpzioni.
     /// 
     /// Opzioni TabellaOpzioni utilizzate:
     /// - EmailAutomatiche: 0 = disattivato, 1 = attivato
+    /// - OraInvioEmail: orario invio automatico in formato HH:mm (default 14:00)
     /// - EmailProva: se valorizzata, invia tutto agli indirizzi di prova
     /// - ClienteEscluso: codice cliente da escludere (default 9060650)
     /// - GiorniScadenzaMerce: giorni per calcolo scadenza (default 21)
@@ -24,12 +25,33 @@ namespace AiDbMaster.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EmailAutomaticoService> _logger;
-        private static readonly TimeSpan OraInvio = new(14, 0, 0);
+        private static readonly TimeSpan OraInvioDefault = new(14, 0, 0);
 
         public EmailAutomaticoService(IServiceProvider serviceProvider, ILogger<EmailAutomaticoService> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Legge l'orario di invio dalla TabellaOpzioni (formato "HH:mm").
+        /// Se non configurato o formato errato, usa il default 14:00.
+        /// </summary>
+        private async Task<TimeSpan> GetOraInvioAsync()
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+            var valore = await emailService.GetOpzioneAsync("OraInvioEmail");
+
+            if (!string.IsNullOrEmpty(valore) && TimeSpan.TryParse(valore, out var orario))
+            {
+                _logger.LogInformation("EmailAutomaticoService: orario invio letto da TabellaOpzioni = {Orario}", valore);
+                return orario;
+            }
+
+            _logger.LogInformation("EmailAutomaticoService: OraInvioEmail non configurata o formato errato, uso default {Default}",
+                OraInvioDefault.ToString(@"hh\:mm"));
+            return OraInvioDefault;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,8 +60,9 @@ namespace AiDbMaster.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                var oraInvio = await GetOraInvioAsync();
                 var ora = DateTime.Now;
-                var prossimoInvio = DateTime.Today.Add(OraInvio);
+                var prossimoInvio = DateTime.Today.Add(oraInvio);
 
                 if (ora >= prossimoInvio)
                     prossimoInvio = prossimoInvio.AddDays(1);
@@ -63,6 +86,35 @@ namespace AiDbMaster.Services
             _logger.LogInformation("EmailAutomaticoService arrestato.");
         }
 
+        private async Task ScriviLogAsync(ApplicationDbContext context, string tipo, string esito, string? motivo,
+            short? annoOrdine = null, string? serieOrdine = null, int? numeroOrdine = null, int? rigaOrdine = null,
+            int? codiceCliente = null, string? ragioneSociale = null, string? emailDestinatario = null, string? dettagli = null)
+        {
+            try
+            {
+                context.LogEmailAutomatico.Add(new Models.LogEmailAutomatico
+                {
+                    DataOra = DateTime.Now,
+                    Tipo = tipo,
+                    Esito = esito,
+                    Motivo = motivo,
+                    AnnoOrdine = annoOrdine,
+                    SerieOrdine = serieOrdine,
+                    NumeroOrdine = numeroOrdine,
+                    RigaOrdine = rigaOrdine,
+                    CodiceCliente = codiceCliente,
+                    RagioneSociale = ragioneSociale,
+                    EmailDestinatario = emailDestinatario,
+                    Dettagli = dettagli
+                });
+                await context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "EmailAutomaticoService: errore scrittura log su tabella.");
+            }
+        }
+
         private async Task EseguiInvioAutomatico(CancellationToken stoppingToken)
         {
             _logger.LogInformation("EmailAutomaticoService: inizio elaborazione automatica ore {Ora}", DateTime.Now.ToString("HH:mm:ss"));
@@ -78,6 +130,7 @@ namespace AiDbMaster.Services
                 {
                     _logger.LogInformation("EmailAutomaticoService: EmailAutomatiche = {Val}, invio disattivato. Skip.",
                         emailAutomatiche);
+                    await ScriviLogAsync(context, "Info", "-", $"Invio automatico disattivato (EmailAutomatiche = {emailAutomatiche})");
                     return;
                 }
 
@@ -85,6 +138,8 @@ namespace AiDbMaster.Services
                 var dataConsegnaDomani = CalendarioFeriale.ProssimoGiornoFeriale(oggi);
 
                 _logger.LogInformation("EmailAutomaticoService: invio per DataConsegna = {Data}", dataConsegnaDomani.ToString("dd/MM/yyyy"));
+                await ScriviLogAsync(context, "Info", "-",
+                    $"Elaborazione avviata per DataConsegna = {dataConsegnaDomani:dd/MM/yyyy}");
 
                 var clienteEsclusoStr = await emailService.GetOpzioneAsync("ClienteEscluso");
                 var clienteEscluso = int.TryParse(clienteEsclusoStr, out var ce) ? ce : 9060650;
@@ -99,6 +154,8 @@ namespace AiDbMaster.Services
                 if (!righeOrdine.Any())
                 {
                     _logger.LogInformation("EmailAutomaticoService: nessuna riga trovata per data {Data}.", dataConsegnaDomani.ToString("dd/MM/yyyy"));
+                    await ScriviLogAsync(context, "Info", "-",
+                        $"Nessuna riga ordine trovata per DataConsegna = {dataConsegnaDomani:dd/MM/yyyy}");
                     return;
                 }
 
@@ -117,6 +174,8 @@ namespace AiDbMaster.Services
                 {
                     _logger.LogInformation("EmailAutomaticoService: tutte le righe per data {Data} sono già state inviate.",
                         dataConsegnaDomani.ToString("dd/MM/yyyy"));
+                    await ScriviLogAsync(context, "Info", "-",
+                        $"Tutte le {righeOrdine.Count} righe per {dataConsegnaDomani:dd/MM/yyyy} già inviate in precedenza");
                     return;
                 }
 
@@ -140,17 +199,31 @@ namespace AiDbMaster.Services
 
                     if (testata == null) continue;
 
-                    if (testata.Prenotato == "S" || testata.CodiceCliente == clienteEscluso)
+                    var cliente = await context.AnagraficaClienti
+                        .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente, stoppingToken);
+                    var ragSociale = cliente?.RagioneSociale ?? "N/D";
+
+                    if (testata.Prenotato == "S")
                     {
                         ordiniSaltati++;
+                        await ScriviLogAsync(context, "Saltato", "Saltato", "Ordine prenotato",
+                            gruppo.Key.AnnoOrdine, gruppo.Key.SerieOrdine, gruppo.Key.NumeroOrdine,
+                            codiceCliente: testata.CodiceCliente, ragioneSociale: ragSociale);
                         continue;
                     }
 
-                    var cliente = await context.AnagraficaClienti
-                        .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente, stoppingToken);
-                    var agente = cliente != null
+                    if (testata.CodiceCliente == clienteEscluso)
+                    {
+                        ordiniSaltati++;
+                        await ScriviLogAsync(context, "Saltato", "Saltato", $"Cliente escluso (codice {clienteEscluso})",
+                            gruppo.Key.AnnoOrdine, gruppo.Key.SerieOrdine, gruppo.Key.NumeroOrdine,
+                            codiceCliente: testata.CodiceCliente, ragioneSociale: ragSociale);
+                        continue;
+                    }
+
+                    var agente = testata.CodiceAgente.HasValue
                         ? await context.TabellaAgenti
-                            .FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente, stoppingToken)
+                            .FirstOrDefaultAsync(a => a.CodiceAgente == testata.CodiceAgente.Value, stoppingToken)
                         : null;
 
                     var emailCliente = cliente?.Email;
@@ -161,6 +234,9 @@ namespace AiDbMaster.Services
                         ordiniSaltati++;
                         _logger.LogWarning("EmailAutomaticoService: ordine {Anno}/{Numero} - cliente senza email, saltato.",
                             gruppo.Key.AnnoOrdine, gruppo.Key.NumeroOrdine);
+                        await ScriviLogAsync(context, "Saltato", "Saltato", "Cliente senza indirizzo email",
+                            gruppo.Key.AnnoOrdine, gruppo.Key.SerieOrdine, gruppo.Key.NumeroOrdine,
+                            codiceCliente: testata.CodiceCliente, ragioneSociale: ragSociale);
                         continue;
                     }
 
@@ -171,9 +247,9 @@ namespace AiDbMaster.Services
                         SerieOrdine = testata.SerieOrdine,
                         NumeroOrdine = testata.NumeroOrdine,
                         CodiceCliente = testata.CodiceCliente,
-                        RagioneSociale = cliente?.RagioneSociale ?? "N/D",
+                        RagioneSociale = ragSociale,
                         EmailCliente = emailCliente,
-                        CodiceAgente = cliente?.CodiceAgente ?? 0,
+                        CodiceAgente = testata.CodiceAgente ?? 0,
                         NomeAgente = agente?.DescrizioneAgente,
                         EmailAgente = agente?.Email,
                         DataOrdine = testata.DataOrdine,
@@ -208,20 +284,33 @@ namespace AiDbMaster.Services
                         {
                             await emailService.RegistraInvioAsync(riga, "Automatico");
                         }
+                        await ScriviLogAsync(context, "Invio", "OK", $"Email inviata ({righeEmail.Count} righe)",
+                            gruppo.Key.AnnoOrdine, gruppo.Key.SerieOrdine, gruppo.Key.NumeroOrdine,
+                            codiceCliente: testata.CodiceCliente, ragioneSociale: ragSociale,
+                            emailDestinatario: isTest ? $"[TEST] {await emailService.GetOpzioneAsync("EmailProva")}" : emailCliente);
                     }
                     else
                     {
                         emailFallite++;
+                        await ScriviLogAsync(context, "Errore", "Fallito", "Invio email fallito (errore SMTP)",
+                            gruppo.Key.AnnoOrdine, gruppo.Key.SerieOrdine, gruppo.Key.NumeroOrdine,
+                            codiceCliente: testata.CodiceCliente, ragioneSociale: ragSociale,
+                            emailDestinatario: emailCliente);
                     }
                 }
 
                 _logger.LogInformation(
                     "EmailAutomaticoService: elaborazione completata. Inviate: {Inviate}, Fallite: {Fallite}, Saltate: {Saltate}",
                     emailInviate, emailFallite, ordiniSaltati);
+
+                await ScriviLogAsync(context, "Info", "-",
+                    $"Elaborazione completata. Inviate: {emailInviate}, Fallite: {emailFallite}, Saltate: {ordiniSaltati}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EmailAutomaticoService: errore durante l'elaborazione automatica.");
+                await ScriviLogAsync(context, "Errore", "Fallito",
+                    "Errore critico durante l'elaborazione", dettagli: ex.Message);
             }
         }
     }

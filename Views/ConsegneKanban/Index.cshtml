@@ -195,6 +195,12 @@
             color: #0d6efd;
         }
 
+        .trip-print-buttons .btn-cancella-viaggio:hover {
+            background: #dc3545 !important;
+            border-color: #dc3545 !important;
+            color: #fff !important;
+        }
+
         .badge-parziale {
             font-size: 0.7rem;
             padding: 1px 6px;
@@ -375,68 +381,8 @@
     </div>
 
     <div class="kanban-scroll" id="kanbanScroll">
-    <div class="kanban-wrap" style="grid-template-columns: repeat(@(Model.Giorni.Count + 1), 360px);">
-        <div class="kanban-column kanban-column-sticky">
-            <div class="kanban-column-header bg-success text-white">
-                <strong>Da pianificare</strong>
-                <div><small class="text-white-50">@Model.RigheDaPianificare.Count righe residue nel range</small></div>
-            </div>
-            <div class="kanban-column-body" id="pendingList">
-                @foreach (var gruppo in Model.RigheDaPianificare
-                   .GroupBy(x => x.OrdineCompleto)
-                   .OrderBy(g => g.Min(x => x.DataConsegna))
-                   .ThenBy(g => g.Key))
-                {
-                    var primaRiga = gruppo.First();
-                    <div class="pending-group-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold">@gruppo.Key</span>
-                            <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>@primaRiga.DataConsegna.ToString("dd/MM/yyyy")</small>
-                        </div>
-                        <div><small class="text-muted">@primaRiga.Cliente | @gruppo.Count() righe</small></div>
-                        @if (!string.IsNullOrEmpty(primaRiga.Destinazione))
-                        {
-                            <div><small class="text-muted"><i class="bi bi-geo-alt"></i> @primaRiga.Destinazione</small></div>
-                        }
-                    </div>
-
-                    @foreach (var r in gruppo.OrderBy(x => x.RigaOrdine))
-                    {
-                        var noWeight = !(r.PesoUnitarioKg.HasValue && r.PesoUnitarioKg > 0);
-                        var cardClass = (r.IsParzialmenteAssegnata ? "parziale" : "") + (noWeight ? " no-weight" : "");
-                        <div class="pending-card @cardClass"
-                             data-source-type="pending"
-                             data-ordine-riga-id="@r.OrdineRigaId"
-                             data-qta-residua="@r.QuantitaResidua.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                             data-codice-articolo="@r.CodiceArticolo"
-                             data-provincia-dest="@(r.ProvinciaDest ?? "")"
-                             data-comune-dest="@(r.ComuneDest ?? "")">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold">@r.OrdineCompleto - R @r.RigaOrdine <small class="fw-normal text-muted ms-1"><i class="bi bi-calendar-event"></i> @r.DataConsegna.ToString("dd/MM")</small></span>
-                                @if (r.IsParzialmenteAssegnata)
-                                {
-                                    <span class="badge-parziale" title="Già assegnati @r.QuantitaGiaAssegnata.ToString("N2") su @r.QuantitaOriginale.ToString("N2")"><i class="bi bi-diagram-2 me-1"></i>Parziale</span>
-                                }
-                            </div>
-                            <div>@r.Cliente</div>
-                            <div><small>@r.CodiceArticolo - @r.DescrizioneArticolo</small></div>
-                            @if (r.IsParzialmenteAssegnata)
-                            {
-                                <div class="d-flex justify-content-between">
-                                    <small>Tot: <strong>@r.QuantitaOriginale.ToString("N2")</strong></small>
-                                    <small>Assegn: <strong>@r.QuantitaGiaAssegnata.ToString("N2")</strong></small>
-                                    <small>Res: <strong class="text-warning">@r.QuantitaResidua.ToString("N2") @(r.UnitaMisura ?? "")</strong></small>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="d-flex justify-content-between"><small>Res: <strong>@r.QuantitaResidua.ToString("N2") @(r.UnitaMisura ?? "")</strong></small><small>P.U: <strong>@(r.PesoUnitarioKg?.ToString("N0") ?? "N/D") Kg</strong></small></div>
-                            }
-                        </div>
-                    }
-                }
-            </div>
-        </div>
+    <div class="kanban-wrap" style="grid-template-columns: repeat(@Model.Giorni.Count, 360px);">
+        @* Colonna "Da pianificare" nascosta temporaneamente *@
 
         @foreach (var giorno in Model.Giorni)
         {
@@ -512,6 +458,14 @@
                                     <a href="@Url.Action("StampaFoglioViaggio", new { id = viaggio.Id })" target="_blank" class="btn btn-sm" title="Foglio viaggio (autista)" onclick="event.stopPropagation();">
                                         <i class="bi bi-file-earmark-text"></i> Viaggio
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-cancella-viaggio"
+                                            data-viaggio-id="@viaggio.Id"
+                                            data-viaggio-desc="@viaggio.Mezzo — @viaggio.DataConsegna.ToString("dd/MM/yyyy") @viaggio.OraPartenza.ToString(@"hh\:mm")"
+                                            title="Cancella intero viaggio"
+                                            onclick="event.stopPropagation();"
+                                            style="border-color:#dc3545; color:#dc3545;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div class="trip-dropzone" data-viaggio-id="@viaggio.Id" data-righe-count="@viaggio.Righe.Count">
@@ -1087,6 +1041,32 @@
     </div>
 </div>
 
+<div class="modal fade" id="cancellaViaggioModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="false" data-bs-keyboard="true" style="z-index: 1070;">
+    <div class="modal-dialog" style="box-shadow: 0 8px 32px rgba(0,0,0,0.3); margin-top: 120px !important;">
+        <div class="modal-content">
+            <form id="cancellaViaggioForm" asp-action="CancellaViaggio" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="nascondiWeekend" value="@Model.NascondiWeekend.ToString().ToLowerInvariant()" />
+                <input type="hidden" name="viaggioId" id="cancellaViaggioId" />
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Cancella viaggio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1"><strong>Sei sicuro di voler cancellare questo viaggio?</strong></p>
+                    <div id="cancellaViaggioDesc" class="alert alert-warning py-2 mb-2"></div>
+                    <p class="text-danger mb-0"><i class="bi bi-exclamation-circle me-1"></i>Tutte le righe assegnate verranno liberate. L'operazione non è reversibile.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Cancella viaggio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
@@ -1269,8 +1249,7 @@
             function scrollToToday(smooth) {
                 var todayCol = document.querySelector('.kanban-column[data-is-today]');
                 if (!todayCol) return;
-                var stickyCol = document.querySelector('.kanban-column-sticky');
-                var stickyWidth = stickyCol ? stickyCol.offsetWidth + 12 : 0;
+                var stickyWidth = 0;
                 var colLeft = todayCol.offsetLeft;
                 var colWidth = todayCol.offsetWidth;
                 var visibleWidth = scrollEl.clientWidth - stickyWidth;
@@ -1598,16 +1577,18 @@
 
             // --- SortableJS: Pending list (backlog) ---
             var pending = document.getElementById('pendingList');
-            Sortable.create(pending, {
-                group: { name: 'righeKanban', pull: 'clone', put: false },
-                sort: false,
-                draggable: '.pending-card',
-                animation: 150,
-                scroll: scrollEl,
-                scrollSensitivity: 150,
-                scrollSpeed: 20,
-                bubbleScroll: true
-            });
+            if (pending) {
+                Sortable.create(pending, {
+                    group: { name: 'righeKanban', pull: 'clone', put: false },
+                    sort: false,
+                    draggable: '.pending-card',
+                    animation: 150,
+                    scroll: scrollEl,
+                    scrollSensitivity: 150,
+                    scrollSpeed: 20,
+                    bubbleScroll: true
+                });
+            }
 
             // --- SortableJS: Trip dropzones (within trips, solo giorni non passati) ---
             document.querySelectorAll('.kanban-column:not([data-past]) .trip-dropzone').forEach(function(zone) {
@@ -1716,29 +1697,10 @@
             document.querySelectorAll('.trip-card-header').forEach(function(header) {
                 header.addEventListener('click', function(e) {
                     if (e.defaultPrevented) return;
-                    var d = header.dataset;
-                    document.getElementById('editViaggioId').value = d.viaggioId;
-                    document.getElementById('editDataConsegna').value = d.dataConsegna;
-                    editTipoSel.value = d.tipoTrasportoId;
-                    document.getElementById('editOraPartenza').value = d.oraPartenza;
-                    document.getElementById('editOraArrivo').value = d.oraArrivo || '';
-                    document.getElementById('editNote').value = d.note || '';
-
-                    aggiornaStatoMezziEdit();
-                    if (d.mezzoTrasportoId) editMezzoInt.value = d.mezzoTrasportoId;
-                    if (d.mezzoEsternoId) editMezzoEst.value = d.mezzoEsternoId;
-                    document.getElementById('editAutista').value = d.autistaId || '';
-
-                    document.getElementById('editCostoTrasporto').value = d.costoTrasporto || '0';
-                    document.getElementById('editPrezzoVendita').value = d.prezzoVendita || '0';
-                    document.getElementById('editTempoPausa').value = d.tempoPausa || '0';
-                    document.getElementById('editTempoScarico').value = d.tempoScarico || '0';
-                    document.getElementById('editGru').checked = d.gru === 'true';
-                    document.getElementById('editTrasbordo').checked = d.trasbordo === 'true';
-                    aggiornaRimorchioVisibilita(editMezzoInt, 'editConRimorchioWrap', 'editConRimorchio');
-                    document.getElementById('editConRimorchio').checked = d.conRimorchio === 'true';
-
-                    editViaggioModal.show();
+                    var viaggioId = header.dataset.viaggioId;
+                    if (viaggioId) {
+                        window.location.href = '@Url.Action("Index", "ComposizioneViaggi")' + '?viaggioId=' + viaggioId;
+                    }
                 });
             });
 
@@ -1782,6 +1744,20 @@
                     e.stopPropagation();
                     var codice = card.dataset.codiceArticolo;
                     if (codice) openDisponibilita(codice);
+                });
+            });
+
+            // --- Cancella viaggio ---
+            var cancellaModalEl = document.getElementById('cancellaViaggioModal');
+            var cancellaModal = new bootstrap.Modal(cancellaModalEl);
+            makeModalDraggable(cancellaModalEl);
+
+            document.querySelectorAll('.btn-cancella-viaggio').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    document.getElementById('cancellaViaggioId').value = btn.dataset.viaggioId;
+                    document.getElementById('cancellaViaggioDesc').innerText = btn.dataset.viaggioDesc;
+                    cancellaModal.show();
                 });
             });
 

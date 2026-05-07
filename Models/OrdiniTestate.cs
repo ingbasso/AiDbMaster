@@ -87,10 +87,9 @@ namespace AiDbMaster.Models
         /// <summary>
         /// Codice agente (relazione con TabellaAgenti)
         /// </summary>
-        [Required(ErrorMessage = "Il codice agente è obbligatorio")]
         [Display(Name = "Codice Agente")]
         [Column("CodiceAgente")]
-        public short CodiceAgente { get; set; }
+        public short? CodiceAgente { get; set; }
 
         /// <summary>
         /// Codice secondo agente associato all'ordine.

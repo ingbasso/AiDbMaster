@@ -60,11 +60,10 @@ namespace AiDbMaster.Controllers
             {
                 _logger.LogInformation("Caricamento testate ordini - Pagina: {Page}, Ricerca: {Search}", page, search);
 
-                // Query base con include delle relazioni
+                // Query base - Include solo Cliente (necessario per filtro ricerca su RagioneSociale)
+                // Agente caricato separatamente per evitare INNER JOIN che esclude ordini con agente inesistente
                 var query = _context.OrdiniTestate
                     .Include(o => o.Cliente)
-                    .Include(o => o.Agente)
-                    .Include(o => o.Righe)
                     .AsQueryable();
 
                 // Filtro per ricerca testuale
@@ -132,8 +131,12 @@ namespace AiDbMaster.Controllers
                     "tipo_desc" => query.OrderByDescending(o => o.TipoOrdine),
                     "consegna" => query.OrderBy(o => o.DataConsegna),
                     "consegna_desc" => query.OrderByDescending(o => o.DataConsegna),
-                    "valore" => query.OrderBy(o => o.Righe.Sum(r => r.ValoreRiga)),
-                    "valore_desc" => query.OrderByDescending(o => o.Righe.Sum(r => r.ValoreRiga)),
+                    "valore" => query.OrderBy(o => _context.OrdiniRighe
+                        .Where(r => r.TipoOrdine == o.TipoOrdine && r.AnnoOrdine == o.AnnoOrdine && r.SerieOrdine == o.SerieOrdine && r.NumeroOrdine == o.NumeroOrdine)
+                        .Sum(r => r.ValoreRiga)),
+                    "valore_desc" => query.OrderByDescending(o => _context.OrdiniRighe
+                        .Where(r => r.TipoOrdine == o.TipoOrdine && r.AnnoOrdine == o.AnnoOrdine && r.SerieOrdine == o.SerieOrdine && r.NumeroOrdine == o.NumeroOrdine)
+                        .Sum(r => r.ValoreRiga)),
                     _ => query.OrderByDescending(o => o.DataOrdine)
                 };
 
@@ -145,6 +148,17 @@ namespace AiDbMaster.Controllers
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
+
+                // Carica agenti separatamente (LEFT JOIN manuale per evitare perdita dati)
+                var codiciAgente = ordini.Where(o => o.CodiceAgente.HasValue).Select(o => o.CodiceAgente!.Value).Distinct().ToList();
+                var agentiDict = await _context.TabellaAgenti
+                    .Where(a => codiciAgente.Contains(a.CodiceAgente))
+                    .ToDictionaryAsync(a => a.CodiceAgente);
+                foreach (var ordine in ordini)
+                {
+                    if (ordine.CodiceAgente.HasValue && agentiDict.TryGetValue(ordine.CodiceAgente.Value, out var agente))
+                        ordine.Agente = agente;
+                }
 
                 // Preparazione dei dati per la vista
                 ViewBag.CurrentSort = sortOrder;
@@ -183,7 +197,7 @@ namespace AiDbMaster.Controllers
                 // Statistiche aggiuntive
                 var dataOggi = DateTime.Today;
                 var statistiche = await _context.OrdiniTestate
-                    .Where(o => o.TipoOrdine == tipoOrdine) // Filtra per tipo ordine corrente
+                    .Where(o => o.TipoOrdine == tipoOrdine)
                     .GroupBy(o => 1)
                     .Select(g => new
                     {
@@ -192,8 +206,7 @@ namespace AiDbMaster.Controllers
                         OrdiniCliente = g.Count(o => o.TipoOrdine == "R"),
                         OrdiniConConsegna = g.Count(o => o.DataConsegna.HasValue),
                         OrdiniScaduti = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date < dataOggi),
-                        OrdiniInScadenza = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date == dataOggi),
-                        ValoreTotale = g.SelectMany(o => o.Righe).Sum(r => r.ValoreRiga)
+                        OrdiniInScadenza = g.Count(o => o.DataConsegna.HasValue && o.DataConsegna.Value.Date == dataOggi)
                     })
                     .FirstOrDefaultAsync();
 

@@ -282,18 +282,23 @@ namespace AiDbMaster.Controllers
             if (includiMagazzino20)
             {
                 // Calcola impegnato raggruppato per CodiceMagazzino delle righe ordine
-                var impegnati = await _context.OrdiniRighe
-                    .Where(r => r.TipoOrdine == "R")
-                    .Where(r => r.CodiceArticolo == codiceArticolo)
-                    .Where(r => r.DataConsegna <= dataRiferimento)
-                    .Where(r => r.Quantita > r.QuantitaEvasa)
-                    .GroupBy(r => r.CodiceMagazzino)
-                    .Select(g => new
-                    {
-                        CodiceMagazzino = g.Key,
-                        Impegnato = g.Sum(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0
-                    })
-                    .ToListAsync();
+                // Join con OrdiniTestate per escludere ordini completamente evasi (StatoEvasione = 'E')
+                var impegnati = await (from r in _context.OrdiniRighe
+                                      join t in _context.OrdiniTestate
+                                          on new { r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine, r.TipoOrdine }
+                                          equals new { t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine, t.TipoOrdine }
+                                      where r.TipoOrdine == "R"
+                                          && r.CodiceArticolo == codiceArticolo
+                                          && r.DataConsegna <= dataRiferimento
+                                          && r.Quantita > r.QuantitaEvasa
+                                          && t.StatoEvasione != "E"
+                                      group r by r.CodiceMagazzino into g
+                                      select new
+                                      {
+                                          CodiceMagazzino = g.Key,
+                                          Impegnato = g.Sum(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0
+                                      })
+                                      .ToListAsync();
 
                 foreach (var imp in impegnati)
                 {
@@ -303,12 +308,18 @@ namespace AiDbMaster.Controllers
             else
             {
                 // Comportamento standard: impegnato globale (senza filtro magazzino)
-                impegnatoGlobale = await _context.OrdiniRighe
-                    .Where(r => r.TipoOrdine == "R")
-                    .Where(r => r.CodiceArticolo == codiceArticolo)
-                    .Where(r => r.DataConsegna <= dataRiferimento)
-                    .Where(r => r.Quantita > r.QuantitaEvasa)
-                    .SumAsync(r => (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m)) ?? 0;
+                // Join con OrdiniTestate per escludere ordini completamente evasi (StatoEvasione = 'E')
+                impegnatoGlobale = await (from r in _context.OrdiniRighe
+                                         join t in _context.OrdiniTestate
+                                             on new { r.AnnoOrdine, r.SerieOrdine, r.NumeroOrdine, r.TipoOrdine }
+                                             equals new { t.AnnoOrdine, t.SerieOrdine, t.NumeroOrdine, t.TipoOrdine }
+                                         where r.TipoOrdine == "R"
+                                             && r.CodiceArticolo == codiceArticolo
+                                             && r.DataConsegna <= dataRiferimento
+                                             && r.Quantita > r.QuantitaEvasa
+                                             && t.StatoEvasione != "E"
+                                         select (decimal?)((r.Quantita - r.QuantitaEvasa) * r.PercentualeInclusione / 100m))
+                                         .SumAsync() ?? 0;
             }
             
             decimal impegnatoFuturo = 0;
@@ -1361,7 +1372,7 @@ namespace AiDbMaster.Controllers
                             join cliente in _context.AnagraficaClienti
                                 on testata.CodiceCliente equals cliente.CodiceCliente
                             join agente in _context.TabellaAgenti
-                                on cliente.CodiceAgente equals agente.CodiceAgente into agenteGroup
+                                on testata.CodiceAgente equals agente.CodiceAgente into agenteGroup
                             from agente in agenteGroup.DefaultIfEmpty()
                             join destinazione in _context.DestinazioniDiverse
                                 on new { CodiceConto = testata.CodiceCliente, CodiceDestinazione = (int?)testata.CodiceDestinazione }
@@ -1385,7 +1396,7 @@ namespace AiDbMaster.Controllers
                 // Filtro per agente (FORZATO se l'utente è un agente)
                 if (model.CodiceAgente.HasValue)
                 {
-                    query = query.Where(x => x.Cliente.CodiceAgente == model.CodiceAgente.Value);
+                    query = query.Where(x => x.Testata.CodiceAgente == model.CodiceAgente.Value);
                 }
 
                 // NON applicare i filtri Provincia e Comune qui - verranno applicati dopo
@@ -1790,7 +1801,7 @@ namespace AiDbMaster.Controllers
                     join cliente in _context.AnagraficaClienti
                         on testata.CodiceCliente equals cliente.CodiceCliente
                     join agente in _context.TabellaAgenti
-                        on cliente.CodiceAgente equals agente.CodiceAgente into agenteGroup
+                        on testata.CodiceAgente equals agente.CodiceAgente into agenteGroup
                     from agente in agenteGroup.DefaultIfEmpty()
                     where testata.TipoOrdine == "R"
                        && testata.CodiceCliente != clienteEscluso
@@ -1919,7 +1930,7 @@ namespace AiDbMaster.Controllers
                         CodiceCliente = item.Testata.CodiceCliente,
                         RagioneSociale = item.Cliente.RagioneSociale,
                         EmailCliente = item.Cliente.Email,
-                        CodiceAgente = item.Cliente.CodiceAgente,
+                        CodiceAgente = item.Testata.CodiceAgente ?? 0,
                         NomeAgente = item.Agente?.DescrizioneAgente,
                         EmailAgente = item.Agente?.Email,
                         DataOrdine = item.Testata.DataOrdine,
@@ -2025,8 +2036,8 @@ namespace AiDbMaster.Controllers
 
                     var cliente = await _context.AnagraficaClienti
                         .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
-                    var agente = cliente != null
-                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
+                    var agente = testata.CodiceAgente.HasValue
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == testata.CodiceAgente.Value)
                         : null;
 
                     var emailCliente = cliente?.Email;
@@ -2052,7 +2063,7 @@ namespace AiDbMaster.Controllers
                         CodiceCliente = testata.CodiceCliente,
                         RagioneSociale = cliente?.RagioneSociale ?? "N/D",
                         EmailCliente = emailCliente,
-                        CodiceAgente = cliente?.CodiceAgente ?? 0,
+                        CodiceAgente = testata.CodiceAgente ?? 0,
                         NomeAgente = agente?.DescrizioneAgente,
                         EmailAgente = emailAgente,
                         DataOrdine = testata.DataOrdine,
@@ -2239,12 +2250,12 @@ namespace AiDbMaster.Controllers
                         {
                             var cliente = clientiDict[testata.CodiceCliente];
                             dettaglio.RagioneSociale = cliente.RagioneSociale;
+                        }
 
-                            // Cerca l'agente
-                            if (agentiDict.ContainsKey(cliente.CodiceAgente))
-                            {
-                                dettaglio.NomeAgente = agentiDict[cliente.CodiceAgente].DescrizioneAgente;
-                            }
+                        // Cerca l'agente dalla testata ordine
+                        if (testata.CodiceAgente.HasValue && agentiDict.ContainsKey(testata.CodiceAgente.Value))
+                        {
+                            dettaglio.NomeAgente = agentiDict[testata.CodiceAgente.Value].DescrizioneAgente;
                         }
                     }
 
@@ -2313,8 +2324,8 @@ namespace AiDbMaster.Controllers
 
                     var cliente = await _context.AnagraficaClienti
                         .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
-                    var agente = cliente != null
-                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
+                    var agente = testata.CodiceAgente.HasValue
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == testata.CodiceAgente.Value)
                         : null;
 
                     var emailCliente = cliente?.Email;
@@ -2401,8 +2412,8 @@ namespace AiDbMaster.Controllers
 
                     var cliente = await _context.AnagraficaClienti
                         .FirstOrDefaultAsync(c => c.CodiceCliente == testata.CodiceCliente);
-                    var agente = cliente != null
-                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == cliente.CodiceAgente)
+                    var agente = testata.CodiceAgente.HasValue
+                        ? await _context.TabellaAgenti.FirstOrDefaultAsync(a => a.CodiceAgente == testata.CodiceAgente.Value)
                         : null;
 
                     var emailCliente = cliente?.Email;
@@ -2492,6 +2503,103 @@ namespace AiDbMaster.Controllers
         {
             public List<string> righeSelezionate { get; set; } = new();
             public List<string>? ccAgente { get; set; }
+        }
+
+        // ===== STORICO MATERIALE LIBERATO =====
+
+        /// <summary>
+        /// GET: Pagina Storico Materiale Liberato (griglia read-only con filtri)
+        /// </summary>
+        [HttpGet]
+        public IActionResult StoricoMaterialeLiberato()
+        {
+            ViewBag.UseFluidContainer = true;
+            return View();
+        }
+
+        /// <summary>
+        /// API: Restituisce i dati filtrati dello Storico Materiale Liberato
+        /// </summary>
+        [HttpGet]
+        [Route("api/storico-materiale-liberato")]
+        public async Task<IActionResult> GetStoricoMaterialeLiberato(
+            DateTime? dataDa, DateTime? dataA, string? codiceArticolo)
+        {
+            try
+            {
+                var query = _context.StoricoMaterialeLiberato.AsQueryable();
+
+                if (dataDa.HasValue)
+                    query = query.Where(s => s.DataLiberazione >= dataDa.Value);
+
+                if (dataA.HasValue)
+                    query = query.Where(s => s.DataLiberazione <= dataA.Value.Date.AddDays(1).AddSeconds(-1));
+
+                if (!string.IsNullOrWhiteSpace(codiceArticolo))
+                    query = query.Where(s => s.CodiceArticolo == codiceArticolo);
+
+                var risultati = await query
+                    .OrderByDescending(s => s.DataLiberazione)
+                    .ThenByDescending(s => s.ID)
+                    .Select(s => new
+                    {
+                        s.ID,
+                        DataLiberazione = s.DataLiberazione.ToString("dd/MM/yyyy HH:mm"),
+                        s.TipoOrdine,
+                        s.AnnoOrdine,
+                        SerieOrdine = s.SerieOrdine.Trim(),
+                        s.NumeroOrdine,
+                        s.RigaOrdine,
+                        NumeroOrdineCompleto = s.TipoOrdine + s.AnnoOrdine + "/" + s.SerieOrdine.Trim() + "/" + s.NumeroOrdine,
+                        s.CodiceCliente,
+                        RagioneSociale = s.RagioneSociale.Trim(),
+                        CodiceArticolo = s.CodiceArticolo.Trim(),
+                        DescrizioneArticolo = s.DescrizioneArticolo ?? "",
+                        DataConsegna = s.DataConsegna.ToString("dd/MM/yyyy"),
+                        UnitaMisura = (s.UnitaMisura ?? "").Trim(),
+                        s.Quantita,
+                        UnitaMisuraColli = (s.UnitaMisuraColli ?? "").Trim(),
+                        s.NumeroColli
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, data = risultati, totale = risultati.Count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante il caricamento dello Storico Materiale Liberato");
+                return Json(new { success = false, errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// API: Restituisce la lista articoli distinti presenti nello storico (per dropdown filtro)
+        /// </summary>
+        [HttpGet]
+        [Route("api/storico-materiale-liberato/articoli")]
+        public async Task<IActionResult> GetArticoliStoricoMaterialeLiberato()
+        {
+            try
+            {
+                var articoli = await _context.StoricoMaterialeLiberato
+                    .Select(s => new { s.CodiceArticolo, s.DescrizioneArticolo })
+                    .Distinct()
+                    .OrderBy(a => a.CodiceArticolo)
+                    .Select(a => new
+                    {
+                        codice = a.CodiceArticolo.Trim(),
+                        descrizione = (a.DescrizioneArticolo ?? "").Trim(),
+                        testo = a.CodiceArticolo.Trim() + " - " + (a.DescrizioneArticolo ?? "").Trim()
+                    })
+                    .ToListAsync();
+
+                return Json(articoli);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante il caricamento degli articoli per filtro StoricoMaterialeLiberato");
+                return Json(new List<object>());
+            }
         }
     }
 }

@@ -383,7 +383,7 @@ namespace AiDbMaster.ViewModels
         public DateTime DataOrdine { get; set; }
         public string? RiferimentoOrdine { get; set; }
         public DateTime? DataConsegnaTestata { get; set; }
-        public short CodiceAgente { get; set; }
+        public short? CodiceAgente { get; set; }
         public string? NoteTestata { get; set; }
 
         // Campi Cliente (da AnagraficaClienti)

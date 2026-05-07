@@ -34,9 +34,10 @@ namespace AiDbMaster.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(int? viaggioId = null)
         {
             ViewBag.Title = "Composizione Viaggi";
+            ViewBag.ViaggioId = viaggioId;
             return View();
         }
 
@@ -92,11 +93,115 @@ namespace AiDbMaster.Controllers
         }
 
         /// <summary>
+        /// Restituisce comuni e clienti distinti filtrati per province selezionate,
+        /// per popolare i dropdown dipendenti nella pagina ComposizioneViaggi.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetComuniClienti([FromQuery] string[]? province, [FromQuery] string[]? comuni)
+        {
+            try
+            {
+                var queryTestate = _context.OrdiniTestate
+                    .AsNoTracking()
+                    .Where(t => t.TipoOrdine == "R" && t.StatoEvasione != "E");
+
+                var testate = await queryTestate
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.CodiceCliente,
+                        t.CodiceDestinazione,
+                        ClienteRagioneSociale = t.Cliente != null ? t.Cliente.RagioneSociale : "",
+                        ClienteProvincia = t.Cliente != null ? t.Cliente.Provincia : "",
+                        ClienteCitta = t.Cliente != null ? t.Cliente.Citta : ""
+                    })
+                    .ToListAsync();
+
+                // Risolvi provincia e località dalla destinazione diversa
+                var testateConDest = testate.Where(t => t.CodiceDestinazione.HasValue).ToList();
+                var destinazioni = new Dictionary<string, (string Provincia, string Localita)>();
+
+                if (testateConDest.Any())
+                {
+                    var destList = await _context.DestinazioniDiverse
+                        .AsNoTracking()
+                        .Where(d => testateConDest.Select(t => t.CodiceCliente).Contains(d.CodiceConto)
+                                 && testateConDest.Select(t => t.CodiceDestinazione!.Value).Contains(d.CodiceDestinazione))
+                        .Select(d => new { d.CodiceConto, d.CodiceDestinazione, d.Provincia, d.Localita })
+                        .ToListAsync();
+
+                    foreach (var d in destList)
+                        destinazioni[$"{d.CodiceConto}|{d.CodiceDestinazione}"] =
+                            ((d.Provincia ?? "").Trim().ToUpper(), (d.Localita ?? "").Trim());
+                }
+
+                var testateRisolte = testate.Select(t =>
+                {
+                    string provincia = (t.ClienteProvincia ?? "").Trim().ToUpper();
+                    string localita = (t.ClienteCitta ?? "").Trim();
+
+                    if (t.CodiceDestinazione.HasValue)
+                    {
+                        var key = $"{t.CodiceCliente}|{t.CodiceDestinazione.Value}";
+                        if (destinazioni.TryGetValue(key, out var dest))
+                        {
+                            if (!string.IsNullOrEmpty(dest.Provincia)) provincia = dest.Provincia;
+                            if (!string.IsNullOrEmpty(dest.Localita)) localita = dest.Localita;
+                        }
+                    }
+
+                    return new { t.CodiceCliente, t.ClienteRagioneSociale, Provincia = provincia, Localita = localita };
+                }).ToList();
+
+                // Filtra per province selezionate
+                if (province != null && province.Length > 0)
+                {
+                    var provUpper = province.Select(p => p.Trim().ToUpper()).ToHashSet();
+                    testateRisolte = testateRisolte.Where(t => provUpper.Contains(t.Provincia)).ToList();
+                }
+
+                // Comuni distinti
+                var comuniDistinti = testateRisolte
+                    .Where(t => !string.IsNullOrWhiteSpace(t.Localita))
+                    .Select(t => t.Localita)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(c => c)
+                    .Select(c => new { nome = c })
+                    .ToList();
+
+                // Filtra per comuni selezionati (per restringere la lista clienti)
+                var testatePerClienti = testateRisolte;
+                if (comuni != null && comuni.Length > 0)
+                {
+                    var comuniUpper = comuni.Select(c => c.Trim().ToUpper()).ToHashSet();
+                    testatePerClienti = testatePerClienti
+                        .Where(t => comuniUpper.Contains(t.Localita.ToUpper()))
+                        .ToList();
+                }
+
+                // Clienti distinti
+                var clientiDistinti = testatePerClienti
+                    .GroupBy(t => t.CodiceCliente)
+                    .Select(g => g.First())
+                    .OrderBy(t => t.ClienteRagioneSociale)
+                    .Select(t => new { codice = t.CodiceCliente, ragioneSociale = t.ClienteRagioneSociale })
+                    .ToList();
+
+                return Json(new { comuni = comuniDistinti, clienti = clientiDistinti });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel recupero comuni/clienti");
+                return StatusCode(500, new { error = true, message = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Restituisce le righe ordine filtrate per tipo mezzo e province selezionate.
         /// La provincia si determina dalla destinazione diversa (se presente) o dal cliente.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetRighePerTipoMezzo(string tipoMezzo, [FromQuery] string[]? province, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false)
+        public async Task<IActionResult> GetRighePerTipoMezzo(string tipoMezzo, [FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
         {
             try
             {
@@ -113,6 +218,12 @@ namespace AiDbMaster.Controllers
 
                 if (portoFranco)
                     queryTestate = queryTestate.Where(t => t.Porto == "1");
+
+                if (numeroOrdine.HasValue)
+                    queryTestate = queryTestate.Where(t => t.NumeroOrdine == numeroOrdine.Value);
+
+                if (annoOrdine.HasValue)
+                    queryTestate = queryTestate.Where(t => t.AnnoOrdine == annoOrdine.Value);
 
                 // Il filtro data consegna si applica SOLO agli ordini evasi (StatoEvasione = 'E'),
                 // gli ordini non evasi vengono sempre mostrati.
@@ -143,8 +254,6 @@ namespace AiDbMaster.Controllers
                 };
 
                 var testate = await queryTestate
-                    .Include(t => t.Cliente)
-                    .Include(t => t.Agente)
                     .Select(t => new
                     {
                         t.Id,
@@ -160,7 +269,6 @@ namespace AiDbMaster.Controllers
                         ClienteRagioneSociale = t.Cliente != null ? t.Cliente.RagioneSociale : "",
                         ClienteProvincia = t.Cliente != null ? t.Cliente.Provincia : "",
                         ClienteCitta = t.Cliente != null ? t.Cliente.Citta : "",
-                        AgenteDescrizione = t.Agente != null ? t.Agente.DescrizioneAgente : "",
                         t.NoteTestata,
                         t.Porto,
                         t.PesoKg
@@ -169,6 +277,13 @@ namespace AiDbMaster.Controllers
 
                 if (!testate.Any())
                     return Json(new List<object>());
+
+                // Carica descrizioni agenti separatamente (evita INNER JOIN)
+                var codiciAgenti = testate.Where(t => t.CodiceAgente.HasValue).Select(t => t.CodiceAgente!.Value).Distinct().ToList();
+                var agentiDict = await _context.TabellaAgenti
+                    .AsNoTracking()
+                    .Where(a => codiciAgenti.Contains(a.CodiceAgente))
+                    .ToDictionaryAsync(a => a.CodiceAgente, a => a.DescrizioneAgente ?? "");
 
                 // Carica destinazioni diverse per le testate che ne hanno una
                 var testateConDest = testate.Where(t => t.CodiceDestinazione.HasValue).ToList();
@@ -223,7 +338,7 @@ namespace AiDbMaster.Controllers
                         t.CodiceCliente,
                         t.ClienteRagioneSociale,
                         t.RiferimentoOrdine,
-                        t.AgenteDescrizione,
+                        AgenteDescrizione = t.CodiceAgente.HasValue && agentiDict.TryGetValue(t.CodiceAgente.Value, out var agDesc) ? agDesc : "",
                         t.NoteTestata,
                         t.Porto,
                         t.PesoKg,
@@ -242,6 +357,24 @@ namespace AiDbMaster.Controllers
                         .ToList();
                 }
 
+                // Filtra per comuni se selezionati
+                if (comuni != null && comuni.Length > 0)
+                {
+                    var comuniUpper = comuni.Select(c => c.Trim().ToUpper()).ToHashSet();
+                    testateConProvincia = testateConProvincia
+                        .Where(t => comuniUpper.Contains(t.Localita.Trim().ToUpper()))
+                        .ToList();
+                }
+
+                // Filtra per clienti se selezionati
+                if (clienti != null && clienti.Length > 0)
+                {
+                    var clientiSet = clienti.ToHashSet();
+                    testateConProvincia = testateConProvincia
+                        .Where(t => clientiSet.Contains(t.CodiceCliente))
+                        .ToList();
+                }
+
                 if (!testateConProvincia.Any())
                     return Json(new List<object>());
 
@@ -252,18 +385,30 @@ namespace AiDbMaster.Controllers
                 var righe = await _context.OrdiniRighe
                     .AsNoTracking()
                     .Include(r => r.Testata)
-                    .Include(r => r.Articolo)
                     .Where(r => r.Testata != null && testataIds.Contains(r.Testata.Id))
                     .Where(r => r.StatoEvasione != "E")
                     .ToListAsync();
 
+                // Carica dati articoli separatamente (evita INNER JOIN)
+                var codiciArticoli = righe.Select(r => r.CodiceArticolo).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+                var articoliDict = await _context.AnagraficaArticoli
+                    .AsNoTracking()
+                    .Where(a => codiciArticoli.Contains(a.CodiceArticolo))
+                    .ToDictionaryAsync(a => a.CodiceArticolo);
+
                 // Calcola quantità già assegnata ai viaggi (non annullati) per ogni riga
-                // distinguendo tra viaggi normali e manuali
+                // distinguendo tra viaggi normali e manuali.
+                // PUNTO 1d: Se stiamo modificando un viaggio, escludiamo le sue assegnazioni
+                // così le righe di quel viaggio risultano "disponibili" nella griglia.
                 var righeIds = righe.Select(r => r.Id).ToList();
+                var queryViaggiValidi = _context.ViaggiConsegna.Where(v => v.Stato != "Annullato");
+                if (viaggioIdInModifica.HasValue)
+                    queryViaggiValidi = queryViaggiValidi.Where(v => v.Id != viaggioIdInModifica.Value);
+
                 var assegnazioniPerRiga = await _context.ViaggioConsegnaRighe
                     .AsNoTracking()
                     .Where(vr => righeIds.Contains(vr.OrdineRigaId))
-                    .Join(_context.ViaggiConsegna.Where(v => v.Stato != "Annullato"),
+                    .Join(queryViaggiValidi,
                           vr => vr.ViaggioConsegnaId, v => v.Id, (vr, v) => new { vr.OrdineRigaId, vr.QuantitaAssegnata, v.IsManuale })
                     .GroupBy(x => x.OrdineRigaId)
                     .Select(g => new
@@ -306,6 +451,9 @@ namespace AiDbMaster.Controllers
                         var soloManuale = qtaSoloManuali > 0 && qtaSoloViaggi <= 0;
                         var hasManuali = qtaSoloManuali > 0;
 
+                        articoliDict.TryGetValue(r.CodiceArticolo, out var articolo);
+                        var pesoUnit = articolo?.PesoUnitarioKg ?? 0m;
+
                         return new
                         {
                             rigaId = r.Id,
@@ -325,8 +473,8 @@ namespace AiDbMaster.Controllers
                             quantitaEvasa = r.QuantitaEvasa,
                             quantitaRimanente = qtaRim,
                             unitaMisura = r.UnitaMisura ?? "",
-                            pesoKgUnitario = r.PesoKg,
-                            pesoKgTotale = r.PesoKg * qtaRim,
+                            pesoKgUnitario = pesoUnit,
+                            pesoKgTotale = pesoUnit * qtaRim,
                             dataConsegna = r.DataConsegna.ToString("dd/MM/yyyy"),
                             statoEvasione = r.StatoEvasione,
                             descrizioneStatoEvasione = r.DescrizioneStatoEvasione,
@@ -339,9 +487,9 @@ namespace AiDbMaster.Controllers
                             completamenteSpedita = statoSped == "SP",
                             soloManuale = soloManuale,
                             hasManuali = hasManuali,
-                            qtaPerPallet = r.Articolo?.QtaUMPPerPallet ?? 0m,
-                            tavolePerPallet = r.Articolo?.TavolePerPallet ?? 0m,
-                            qtaPerTavola = r.Articolo?.QtaUMPPerTavola ?? 0m
+                            qtaPerPallet = articolo?.QtaUMPPerPallet ?? 0m,
+                            tavolePerPallet = articolo?.TavolePerPallet ?? 0m,
+                            qtaPerTavola = articolo?.QtaUMPPerTavola ?? 0m
                         };
                     })
                     .OrderBy(r => r.provincia)
@@ -367,13 +515,12 @@ namespace AiDbMaster.Controllers
         /// Usa la stessa logica di filtro di GetRighePerTipoMezzo per essere allineato.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetConteggiTipiMezzo([FromQuery] string[]? province, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false)
+        public async Task<IActionResult> GetConteggiTipiMezzo([FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
         {
             try
             {
                 var queryTestate = _context.OrdiniTestate
                     .AsNoTracking()
-                    .Include(t => t.Cliente)
                     .Where(t => t.TipoOrdine == "R");
 
                 if (escludiEvasi)
@@ -381,6 +528,12 @@ namespace AiDbMaster.Controllers
 
                 if (portoFranco)
                     queryTestate = queryTestate.Where(t => t.Porto == "1");
+
+                if (numeroOrdine.HasValue)
+                    queryTestate = queryTestate.Where(t => t.NumeroOrdine == numeroOrdine.Value);
+
+                if (annoOrdine.HasValue)
+                    queryTestate = queryTestate.Where(t => t.AnnoOrdine == annoOrdine.Value);
 
                 var dataLimiteEvasi = dataConsegnaDa ?? DateTime.Today.AddDays(-7);
                 queryTestate = queryTestate.Where(t =>
@@ -394,6 +547,7 @@ namespace AiDbMaster.Controllers
                     t.CodiceCliente,
                     t.CodiceDestinazione,
                     ClienteProvincia = t.Cliente != null ? t.Cliente.Provincia : "",
+                    ClienteCitta = t.Cliente != null ? t.Cliente.Citta : "",
                     t.MotriceGru,
                     t.AutotrenoGru,
                     t.AutotrenoAbbinato,
@@ -408,9 +562,9 @@ namespace AiDbMaster.Controllers
                 if (!testate.Any())
                     return Json(new Dictionary<string, int>());
 
-                // Risolvi provincia da destinazione diversa (stessa logica della griglia)
+                // Risolvi provincia e località da destinazione diversa
                 var testateConDest = testate.Where(t => t.CodiceDestinazione.HasValue).ToList();
-                var destProvDict = new Dictionary<int, string>();
+                var destInfoDict = new Dictionary<int, (string Provincia, string Localita)>();
 
                 if (testateConDest.Any())
                 {
@@ -418,33 +572,58 @@ namespace AiDbMaster.Controllers
                         .AsNoTracking()
                         .Where(d => testateConDest.Select(t => t.CodiceCliente).Contains(d.CodiceConto)
                                  && testateConDest.Select(t => t.CodiceDestinazione!.Value).Contains(d.CodiceDestinazione))
-                        .Select(d => new { d.CodiceConto, d.CodiceDestinazione, d.Provincia })
+                        .Select(d => new { d.CodiceConto, d.CodiceDestinazione, d.Provincia, d.Localita })
                         .ToListAsync();
 
-                    var destLookup = destList.ToDictionary(d => $"{d.CodiceConto}|{d.CodiceDestinazione}", d => (d.Provincia ?? "").Trim().ToUpper());
+                    var destLookup = destList.ToDictionary(
+                        d => $"{d.CodiceConto}|{d.CodiceDestinazione}",
+                        d => ((d.Provincia ?? "").Trim().ToUpper(), (d.Localita ?? "").Trim()));
 
                     foreach (var t in testateConDest)
                     {
                         var key = $"{t.CodiceCliente}|{t.CodiceDestinazione!.Value}";
-                        if (destLookup.TryGetValue(key, out var prov) && !string.IsNullOrEmpty(prov))
-                            destProvDict[t.Id] = prov;
+                        if (destLookup.TryGetValue(key, out var info))
+                            destInfoDict[t.Id] = info;
                     }
                 }
 
-                string GetProvincia(int testataId, int codiceCliente, string? clienteProv)
+                string GetProvincia(int testataId, string? clienteProv)
                 {
-                    if (destProvDict.TryGetValue(testataId, out var destProv))
-                        return destProv;
+                    if (destInfoDict.TryGetValue(testataId, out var info) && !string.IsNullOrEmpty(info.Provincia))
+                        return info.Provincia;
                     return (clienteProv ?? "").Trim().ToUpper();
                 }
 
-                // Filtra per province selezionate (stessa logica della griglia: provincia da destinazione o cliente)
+                string GetLocalita(int testataId, string? clienteCitta)
+                {
+                    if (destInfoDict.TryGetValue(testataId, out var info) && !string.IsNullOrEmpty(info.Localita))
+                        return info.Localita;
+                    return (clienteCitta ?? "").Trim();
+                }
+
+                // Filtra per province selezionate
                 if (province != null && province.Length > 0)
                 {
                     var provUpper = province.Select(p => p.Trim().ToUpper()).ToHashSet();
                     testate = testate
-                        .Where(t => provUpper.Contains(GetProvincia(t.Id, t.CodiceCliente, t.ClienteProvincia)))
+                        .Where(t => provUpper.Contains(GetProvincia(t.Id, t.ClienteProvincia)))
                         .ToList();
+                }
+
+                // Filtra per comuni selezionati
+                if (comuni != null && comuni.Length > 0)
+                {
+                    var comuniUpper = comuni.Select(c => c.Trim().ToUpper()).ToHashSet();
+                    testate = testate
+                        .Where(t => comuniUpper.Contains(GetLocalita(t.Id, t.ClienteCitta).ToUpper()))
+                        .ToList();
+                }
+
+                // Filtra per clienti selezionati
+                if (clienti != null && clienti.Length > 0)
+                {
+                    var clientiSet = clienti.ToHashSet();
+                    testate = testate.Where(t => clientiSet.Contains(t.CodiceCliente)).ToList();
                 }
 
                 if (!testate.Any())
@@ -461,13 +640,18 @@ namespace AiDbMaster.Controllers
                     .ToListAsync();
 
                 // Se escludiSpediti, escludi righe completamente assegnate ai viaggi
+                // PUNTO 1d: Se stiamo modificando un viaggio, escludiamo le sue assegnazioni dal conteggio
                 if (escludiSpediti)
                 {
                     var righeIds = righePerTestata.Select(r => r.Id).ToList();
+                    var queryViaggiValidiConteggi = _context.ViaggiConsegna.Where(v => v.Stato != "Annullato");
+                    if (viaggioIdInModifica.HasValue)
+                        queryViaggiValidiConteggi = queryViaggiValidiConteggi.Where(v => v.Id != viaggioIdInModifica.Value);
+
                     var assegnazioni = await _context.ViaggioConsegnaRighe
                         .AsNoTracking()
                         .Where(vr => righeIds.Contains(vr.OrdineRigaId))
-                        .Join(_context.ViaggiConsegna.Where(v => v.Stato != "Annullato"),
+                        .Join(queryViaggiValidiConteggi,
                               vr => vr.ViaggioConsegnaId, v => v.Id, (vr, v) => new { vr.OrdineRigaId, vr.QuantitaAssegnata })
                         .GroupBy(x => x.OrdineRigaId)
                         .Select(g => new { RigaId = g.Key, Totale = g.Sum(x => x.QuantitaAssegnata) })
@@ -761,8 +945,9 @@ namespace AiDbMaster.Controllers
                 var righeIds = request.Righe.Select(r => r.RigaId).ToList();
                 var qtaPerRiga = request.Righe.ToDictionary(r => r.RigaId, r => r.Quantita);
 
-                // Verifica che le righe esistano
+                // Verifica che le righe esistano (include Articolo per il peso unitario)
                 var righe = await _context.OrdiniRighe
+                    .Include(r => r.Articolo)
                     .Where(r => righeIds.Contains(r.Id))
                     .ToListAsync();
 
@@ -797,25 +982,14 @@ namespace AiDbMaster.Controllers
                 if (righeEccedenti.Any())
                     _logger.LogWarning("Viaggio creato con quantità forzate: {Dettagli}", string.Join("; ", righeEccedenti));
 
-                // Verifica disponibilità mezzo interno nella stessa data
-                if (request.MezzoTrasportoId.HasValue)
-                {
-                    var mezzoOccupato = await _context.ViaggiConsegna
-                        .AsNoTracking()
-                        .AnyAsync(v => v.MezzoTrasportoId == request.MezzoTrasportoId.Value
-                                    && v.DataConsegna == request.DataConsegna
-                                    && v.Stato != "Annullato");
-                    if (mezzoOccupato)
-                    {
-                        var mezzo = await _context.MezziTrasporto.AsNoTracking()
-                            .Where(m => m.Id == request.MezzoTrasportoId.Value)
-                            .Select(m => m.Descrizione).FirstOrDefaultAsync();
-                        return BadRequest(new { success = false, message = $"Il mezzo '{mezzo}' è già impegnato per il {request.DataConsegna:dd/MM/yyyy}" });
-                    }
-                }
-
                 // Calcola ora arrivo se non fornita: partenza + durata stimata
                 var oraArrivo = request.OraArrivo ?? request.OraPartenza.Add(TimeSpan.FromMinutes(request.DurataStimataMinuti > 0 ? request.DurataStimataMinuti : 240));
+
+                var erroreConflitto = await ControllaConflittiViaggioAsync(
+                    request.DataConsegna, request.MezzoTrasportoId, request.MezzoTrasportoEsternoId,
+                    request.AutistaId, request.OraPartenza, oraArrivo, null);
+                if (erroreConflitto != null)
+                    return BadRequest(new { success = false, message = erroreConflitto });
 
                 var viaggio = new ViaggioConsegna
                 {
@@ -841,14 +1015,15 @@ namespace AiDbMaster.Controllers
                 foreach (var riga in righe)
                 {
                     var qtaAssegnata = qtaPerRiga.TryGetValue(riga.Id, out var q) ? q : riga.QuantitaRimanente;
+                    var pesoUnitario = riga.Articolo?.PesoUnitarioKg ?? 0m;
 
                     var viaggioRiga = new ViaggioConsegnaRiga
                     {
                         ViaggioConsegnaId = viaggio.Id,
                         OrdineRigaId = riga.Id,
                         QuantitaAssegnata = qtaAssegnata,
-                        PesoUnitarioKgSnapshot = riga.PesoKg,
-                        PesoTotaleKgSnapshot = riga.PesoKg * qtaAssegnata
+                        PesoUnitarioKgSnapshot = pesoUnitario,
+                        PesoTotaleKgSnapshot = pesoUnitario * qtaAssegnata
                     };
                     _context.ViaggioConsegnaRighe.Add(viaggioRiga);
                 }
@@ -885,6 +1060,7 @@ namespace AiDbMaster.Controllers
                 var qtaPerRiga = request.Righe.ToDictionary(r => r.RigaId, r => r.Quantita);
 
                 var righe = await _context.OrdiniRighe
+                    .Include(r => r.Articolo)
                     .Where(r => righeIds.Contains(r.Id))
                     .ToListAsync();
 
@@ -946,14 +1122,15 @@ namespace AiDbMaster.Controllers
                 foreach (var riga in righe)
                 {
                     var qtaAssegnata = qtaPerRiga.TryGetValue(riga.Id, out var q) ? q : riga.Quantita;
+                    var pesoUnitario = riga.Articolo?.PesoUnitarioKg ?? 0m;
 
                     _context.ViaggioConsegnaRighe.Add(new ViaggioConsegnaRiga
                     {
                         ViaggioConsegnaId = viaggio.Id,
                         OrdineRigaId = riga.Id,
                         QuantitaAssegnata = qtaAssegnata,
-                        PesoUnitarioKgSnapshot = riga.PesoKg,
-                        PesoTotaleKgSnapshot = riga.PesoKg * qtaAssegnata
+                        PesoUnitarioKgSnapshot = pesoUnitario,
+                        PesoTotaleKgSnapshot = pesoUnitario * qtaAssegnata
                     });
                 }
 
@@ -971,6 +1148,296 @@ namespace AiDbMaster.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore nella creazione della spedizione manuale");
+                return StatusCode(500, new { success = false, message = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Restituisce i dati completi di un viaggio per la modalità modifica
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetViaggio(int viaggioId)
+        {
+            try
+            {
+                var viaggio = await _context.ViaggiConsegna
+                    .AsNoTracking()
+                    .Include(v => v.MezzoTrasportoEsterno)
+                    .Where(v => v.Id == viaggioId)
+                    .Select(v => new
+                    {
+                        v.Id,
+                        dataConsegna = v.DataConsegna.ToString("yyyy-MM-dd"),
+                        v.TipoTrasportoId,
+                        v.MezzoTrasportoId,
+                        v.MezzoTrasportoEsternoId,
+                        mezzoEsternoDisplay = v.MezzoTrasportoEsterno != null
+                            ? $"{v.MezzoTrasportoEsterno.NomeVettore} - {v.MezzoTrasportoEsterno.Comune}"
+                            : "",
+                        v.AutistaId,
+                        oraPartenza = v.OraPartenza.ToString(@"hh\:mm"),
+                        oraArrivo = v.OraArrivo.HasValue ? v.OraArrivo.Value.ToString(@"hh\:mm") : "",
+                        v.Note,
+                        v.ConRimorchio,
+                        v.CostoTrasporto,
+                        v.Stato
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (viaggio == null)
+                    return NotFound(new { success = false, message = "Viaggio non trovato" });
+
+                // Carica le righe del viaggio con dati testata e articolo
+                var righeViaggio = await _context.ViaggioConsegnaRighe
+                    .AsNoTracking()
+                    .Where(vr => vr.ViaggioConsegnaId == viaggioId)
+                    .Include(vr => vr.OrdineRiga)
+                        .ThenInclude(r => r!.Testata)
+                            .ThenInclude(t => t!.Cliente)
+                    .Include(vr => vr.OrdineRiga)
+                        .ThenInclude(r => r!.Articolo)
+                    .ToListAsync();
+
+                // Risolvi provincia/localita per ogni riga
+                var testateConDest = righeViaggio
+                    .Where(vr => vr.OrdineRiga?.Testata?.CodiceDestinazione.HasValue == true)
+                    .Select(vr => vr.OrdineRiga!.Testata!)
+                    .Distinct()
+                    .ToList();
+
+                var destinazioni = new Dictionary<string, (string? Provincia, string? Localita)>();
+                if (testateConDest.Any())
+                {
+                    var destList = await _context.DestinazioniDiverse
+                        .AsNoTracking()
+                        .Where(d => testateConDest.Select(t => t.CodiceCliente).Contains(d.CodiceConto)
+                                 && testateConDest.Select(t => t.CodiceDestinazione!.Value).Contains(d.CodiceDestinazione))
+                        .Select(d => new { d.CodiceConto, d.CodiceDestinazione, d.Provincia, d.Localita })
+                        .ToListAsync();
+
+                    foreach (var d in destList)
+                        destinazioni[$"{d.CodiceConto}|{d.CodiceDestinazione}"] = (d.Provincia, d.Localita);
+                }
+
+                var righe = righeViaggio.Select(vr =>
+                {
+                    var r = vr.OrdineRiga;
+                    var t = r?.Testata;
+                    string provincia = (t?.Cliente?.Provincia ?? "").Trim().ToUpper();
+                    string localita = t?.Cliente?.Citta ?? "";
+                    string ordine = "";
+
+                    if (t != null)
+                    {
+                        ordine = $"{t.TipoOrdine}{t.AnnoOrdine}/{t.SerieOrdine}/{t.NumeroOrdine:D6}";
+                        if (t.CodiceDestinazione.HasValue)
+                        {
+                            var key = $"{t.CodiceCliente}|{t.CodiceDestinazione.Value}";
+                            if (destinazioni.TryGetValue(key, out var dest))
+                            {
+                                if (!string.IsNullOrEmpty(dest.Provincia)) provincia = dest.Provincia.Trim().ToUpper();
+                                if (!string.IsNullOrEmpty(dest.Localita)) localita = dest.Localita;
+                            }
+                        }
+                    }
+
+                    var pesoUnitario = r?.Articolo?.PesoUnitarioKg ?? 0m;
+
+                    return new
+                    {
+                        rigaId = vr.OrdineRigaId,
+                        ordine,
+                        cliente = t?.Cliente?.RagioneSociale ?? "",
+                        codiceArticolo = r?.CodiceArticolo ?? "",
+                        descrizione = r?.DescrizioneArticolo ?? "",
+                        quantita = vr.QuantitaAssegnata,
+                        qtaMax = r?.Quantita ?? vr.QuantitaAssegnata,
+                        pesoKgUnitario = pesoUnitario,
+                        pesoKgTotale = pesoUnitario * vr.QuantitaAssegnata,
+                        unitaMisura = r?.UnitaMisura ?? "",
+                        provincia,
+                        localita
+                    };
+                }).ToList();
+
+                return Json(new { success = true, viaggio, righe });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel recupero viaggio {ViaggioId}", viaggioId);
+                return StatusCode(500, new { success = false, message = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        private async Task<string?> ControllaConflittiViaggioAsync(
+            DateTime dataConsegna, int? mezzoTrasportoId, int? mezzoTrasportoEsternoId,
+            int? autistaId, TimeSpan oraPartenza, TimeSpan oraArrivo, int? viaggioDaEscludere)
+        {
+            if (mezzoTrasportoId.HasValue)
+            {
+                var viaggiStessoMezzo = await _context.ViaggiConsegna
+                    .AsNoTracking()
+                    .Where(v => v.DataConsegna == dataConsegna
+                        && v.MezzoTrasportoId == mezzoTrasportoId.Value
+                        && v.Stato != "Annullato"
+                        && (!viaggioDaEscludere.HasValue || v.Id != viaggioDaEscludere.Value))
+                    .Select(v => new { v.OraPartenza, v.OraArrivo, v.DurataStimataMinuti })
+                    .ToListAsync();
+
+                foreach (var v in viaggiStessoMezzo)
+                {
+                    var arrivoV = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
+                    if (oraPartenza < arrivoV && v.OraPartenza < oraArrivo)
+                    {
+                        var mezzo = await _context.MezziTrasporto.AsNoTracking()
+                            .Where(m => m.Id == mezzoTrasportoId.Value)
+                            .Select(m => m.Descrizione).FirstOrDefaultAsync();
+                        return $"Il mezzo interno '{mezzo}' è già impegnato il {dataConsegna:dd/MM/yyyy} nella fascia {v.OraPartenza:hh\\:mm}-{arrivoV:hh\\:mm}";
+                    }
+                }
+            }
+
+            if (mezzoTrasportoEsternoId.HasValue)
+            {
+                var viaggiStessoMezzoEst = await _context.ViaggiConsegna
+                    .AsNoTracking()
+                    .Where(v => v.DataConsegna == dataConsegna
+                        && v.MezzoTrasportoEsternoId == mezzoTrasportoEsternoId.Value
+                        && v.Stato != "Annullato"
+                        && (!viaggioDaEscludere.HasValue || v.Id != viaggioDaEscludere.Value))
+                    .Select(v => new { v.OraPartenza, v.OraArrivo, v.DurataStimataMinuti })
+                    .ToListAsync();
+
+                foreach (var v in viaggiStessoMezzoEst)
+                {
+                    var arrivoV = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
+                    if (oraPartenza < arrivoV && v.OraPartenza < oraArrivo)
+                        return $"Il mezzo esterno è già impegnato il {dataConsegna:dd/MM/yyyy} nella fascia {v.OraPartenza:hh\\:mm}-{arrivoV:hh\\:mm}";
+                }
+            }
+
+            if (autistaId.HasValue)
+            {
+                var viaggiStessoAutista = await _context.ViaggiConsegna
+                    .AsNoTracking()
+                    .Where(v => v.DataConsegna == dataConsegna
+                        && v.AutistaId == autistaId.Value
+                        && v.Stato != "Annullato"
+                        && (!viaggioDaEscludere.HasValue || v.Id != viaggioDaEscludere.Value))
+                    .Select(v => new { v.OraPartenza, v.OraArrivo, v.DurataStimataMinuti })
+                    .ToListAsync();
+
+                foreach (var v in viaggiStessoAutista)
+                {
+                    var arrivoV = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
+                    if (oraPartenza < arrivoV && v.OraPartenza < oraArrivo)
+                    {
+                        var autista = await _context.Autisti.AsNoTracking()
+                            .Where(a => a.Id == autistaId.Value)
+                            .Select(a => $"{a.Cognome} {a.Nome}").FirstOrDefaultAsync();
+                        return $"L'autista '{autista}' è già impegnato il {dataConsegna:dd/MM/yyyy} nella fascia {v.OraPartenza:hh\\:mm}-{arrivoV:hh\\:mm}";
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Modifica un viaggio esistente: aggiorna dati e righe (aggiunge, rimuove, modifica quantità)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ModificaViaggio([FromBody] ModificaViaggioRequest request)
+        {
+            try
+            {
+                var viaggio = await _context.ViaggiConsegna
+                    .Include(v => v.Righe)
+                    .FirstOrDefaultAsync(v => v.Id == request.ViaggioId);
+
+                if (viaggio == null)
+                    return NotFound(new { success = false, message = "Viaggio non trovato" });
+
+                if (request.Righe == null || !request.Righe.Any())
+                    return BadRequest(new { success = false, message = "Selezionare almeno una riga ordine" });
+
+                var oraArrivoMod = request.OraArrivo ?? request.OraPartenza.Add(TimeSpan.FromMinutes(viaggio.DurataStimataMinuti));
+                var erroreConflitto = await ControllaConflittiViaggioAsync(
+                    request.DataConsegna, request.MezzoTrasportoId, request.MezzoTrasportoEsternoId,
+                    request.AutistaId, request.OraPartenza, oraArrivoMod, request.ViaggioId);
+                if (erroreConflitto != null)
+                    return BadRequest(new { success = false, message = erroreConflitto });
+
+                viaggio.DataConsegna = request.DataConsegna;
+                viaggio.TipoTrasportoId = request.TipoTrasportoId;
+                viaggio.MezzoTrasportoId = request.MezzoTrasportoId;
+                viaggio.MezzoTrasportoEsternoId = request.MezzoTrasportoEsternoId;
+                viaggio.AutistaId = request.AutistaId;
+                viaggio.OraPartenza = request.OraPartenza;
+                viaggio.OraArrivo = request.OraArrivo;
+                viaggio.Note = request.Note;
+                viaggio.ConRimorchio = request.ConRimorchio;
+                viaggio.CostoTrasporto = request.CostoTrasporto;
+
+                // Gestione righe: confronta attuali con richieste
+                var righeRichieste = request.Righe.ToDictionary(r => r.RigaId, r => r.Quantita);
+                var righeAttuali = viaggio.Righe.ToDictionary(r => r.OrdineRigaId);
+
+                // Rimuovi righe non più presenti
+                var righeIdDaRimuovere = righeAttuali.Keys.Except(righeRichieste.Keys).ToList();
+                foreach (var rigaId in righeIdDaRimuovere)
+                {
+                    _context.ViaggioConsegnaRighe.Remove(righeAttuali[rigaId]);
+                }
+
+                // Carica le righe ordine necessarie per il peso unitario
+                var righeIdNuoveOModificate = righeRichieste.Keys.ToList();
+                var ordiniRighe = await _context.OrdiniRighe
+                    .Include(r => r.Articolo)
+                    .Where(r => righeIdNuoveOModificate.Contains(r.Id))
+                    .ToDictionaryAsync(r => r.Id);
+
+                // Aggiorna righe esistenti e aggiungi nuove
+                foreach (var (rigaId, qtaRichiesta) in righeRichieste)
+                {
+                    var pesoUnitario = ordiniRighe.TryGetValue(rigaId, out var ordRiga)
+                        ? (ordRiga.Articolo?.PesoUnitarioKg ?? 0m)
+                        : 0m;
+
+                    if (righeAttuali.TryGetValue(rigaId, out var rigaEsistente))
+                    {
+                        rigaEsistente.QuantitaAssegnata = qtaRichiesta;
+                        rigaEsistente.PesoUnitarioKgSnapshot = pesoUnitario;
+                        rigaEsistente.PesoTotaleKgSnapshot = pesoUnitario * qtaRichiesta;
+                    }
+                    else
+                    {
+                        _context.ViaggioConsegnaRighe.Add(new ViaggioConsegnaRiga
+                        {
+                            ViaggioConsegnaId = viaggio.Id,
+                            OrdineRigaId = rigaId,
+                            QuantitaAssegnata = qtaRichiesta,
+                            PesoUnitarioKgSnapshot = pesoUnitario,
+                            PesoTotaleKgSnapshot = pesoUnitario * qtaRichiesta
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Viaggio {ViaggioId} modificato: {NumRighe} righe, {Rimosse} rimosse",
+                    viaggio.Id, righeRichieste.Count, righeIdDaRimuovere.Count);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Viaggio #{viaggio.Id} aggiornato con {righeRichieste.Count} righe",
+                    viaggioId = viaggio.Id
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nella modifica del viaggio {ViaggioId}", request.ViaggioId);
                 return StatusCode(500, new { success = false, message = ex.InnerException?.Message ?? ex.Message });
             }
         }
@@ -1005,6 +1472,22 @@ namespace AiDbMaster.Controllers
     {
         public int RigaId { get; set; }
         public decimal Quantita { get; set; }
+    }
+
+    public class ModificaViaggioRequest
+    {
+        public int ViaggioId { get; set; }
+        public List<RigaViaggioInput> Righe { get; set; } = new();
+        public DateTime DataConsegna { get; set; }
+        public int TipoTrasportoId { get; set; }
+        public int? MezzoTrasportoId { get; set; }
+        public int? MezzoTrasportoEsternoId { get; set; }
+        public int? AutistaId { get; set; }
+        public TimeSpan OraPartenza { get; set; }
+        public TimeSpan? OraArrivo { get; set; }
+        public string? Note { get; set; }
+        public bool ConRimorchio { get; set; } = false;
+        public decimal? CostoTrasporto { get; set; }
     }
 
     public class UpdateCostoMezzoEsternoRequest

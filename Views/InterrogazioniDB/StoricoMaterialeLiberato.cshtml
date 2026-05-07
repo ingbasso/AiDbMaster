@@ -1,0 +1,456 @@
+@{
+    ViewData["Title"] = "Storico Materiale Liberato";
+}
+
+@section Styles {
+    <style>
+        .filter-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-card .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+            padding: 0.6rem 1rem;
+        }
+
+        .filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .stats-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 0.5rem;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+        }
+
+        .result-card .card-body {
+            padding: 0;
+        }
+
+        #gridStoricoMateriale {
+            width: 100%;
+        }
+
+        .e-grid {
+            border-radius: 0 0 0.5rem 0.5rem;
+            overflow: hidden;
+        }
+
+        .e-grid .e-headercell {
+            background-color: #0d6efd;
+            color: white;
+            font-weight: 600;
+        }
+
+        .e-grid .e-headercell .e-icon-filter,
+        .e-grid .e-headercell .e-sortfilterdiv .e-icon-filter,
+        .e-grid .e-headercell .e-filtermenudiv,
+        .e-grid .e-headercell .e-icons {
+            color: white !important;
+        }
+
+        .e-grid .e-rowcell {
+            padding: 8px 10px;
+            font-size: 0.85rem;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        .e-grid .e-gridcontent::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .loading-overlay {
+            position: relative;
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">
+            <i class="bi bi-clock-history text-primary me-2"></i>
+            Storico Materiale Liberato
+        </h4>
+        <p class="text-muted mb-0">Consultazione dello storico dei materiali liberati per la produzione</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-success btn-sm" onclick="esportaExcel()">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Esporta Excel
+        </button>
+    </div>
+</div>
+
+<!-- Filtri -->
+<div class="card filter-card">
+    <div class="card-header d-flex align-items-center">
+        <i class="bi bi-funnel me-2 text-white"></i>
+        <h6 class="mb-0">Filtri di Ricerca</h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3 col-lg-2">
+                <label for="filtroDataDa" class="form-label fw-semibold">
+                    <i class="bi bi-calendar-event me-1"></i>Data Da
+                </label>
+                <input type="date" id="filtroDataDa" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3 col-lg-2">
+                <label for="filtroDataA" class="form-label fw-semibold">
+                    <i class="bi bi-calendar-event me-1"></i>Data A
+                </label>
+                <input type="date" id="filtroDataA" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-4 col-lg-4">
+                <label for="filtroArticolo" class="form-label fw-semibold">
+                    <i class="bi bi-box-seam me-1"></i>Codice / Descrizione Articolo
+                </label>
+                <select id="filtroArticolo" class="form-select form-select-sm">
+                    <option value="">-- Tutti gli Articoli --</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-lg-2">
+                <button type="button" id="btnCerca" class="btn btn-primary btn-sm w-100" onclick="cercaDati()">
+                    <i class="bi bi-search me-1"></i>Cerca
+                </button>
+            </div>
+            <div class="col-md-2 col-lg-2">
+                <button type="button" id="btnReset" class="btn btn-outline-secondary btn-sm w-100" onclick="resetFiltri()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar" id="statsBar" style="display: none;">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <h5 class="mb-0 text-primary" id="statsTotale">0</h5>
+            <small class="text-muted">Record Trovati</small>
+        </div>
+        <div class="col-md-4">
+            <h5 class="mb-0 text-info" id="statsArticoli">0</h5>
+            <small class="text-muted">Articoli Distinti</small>
+        </div>
+        <div class="col-md-4">
+            <h5 class="mb-0 text-success" id="statsClienti">0</h5>
+            <small class="text-muted">Clienti Distinti</small>
+        </div>
+    </div>
+</div>
+
+<!-- Griglia -->
+<div class="card result-card">
+    <div class="card-body loading-overlay">
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+        </div>
+        <div id="gridStoricoMateriale"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        var grid = null;
+        var datiCompleti = [];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof ej !== 'undefined' && ej.base) {
+                ej.base.registerLicense("Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZeeHVXRGlfUU1wV0FZYUA=");
+            }
+
+            inizializzaGrid();
+            caricaArticoli();
+
+            // Date default: ultimo mese
+            var oggi = new Date();
+            var unMeseFa = new Date();
+            unMeseFa.setMonth(unMeseFa.getMonth() - 1);
+
+            document.getElementById('filtroDataA').value = formatDateForInput(oggi);
+            document.getElementById('filtroDataDa').value = formatDateForInput(unMeseFa);
+
+            cercaDati();
+        });
+
+        function formatDateForInput(date) {
+            var y = date.getFullYear();
+            var m = String(date.getMonth() + 1).padStart(2, '0');
+            var d = String(date.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + d;
+        }
+
+        function inizializzaGrid() {
+            grid = new ej.grids.Grid({
+                dataSource: [],
+                allowPaging: true,
+                allowSorting: true,
+                allowFiltering: true,
+                allowResizing: true,
+                allowTextWrap: true,
+                allowExcelExport: true,
+                enableStickyHeader: true,
+                height: 500,
+                pageSettings: { pageSize: 50, pageSizes: [20, 50, 100, 200] },
+                filterSettings: { type: 'Excel' },
+                columns: [
+                    {
+                        field: 'id',
+                        headerText: '#',
+                        width: 70,
+                        textAlign: 'Center',
+                        isPrimaryKey: true,
+                        allowFiltering: false
+                    },
+                    {
+                        field: 'dataLiberazione',
+                        headerText: 'Data Liberazione',
+                        width: 140,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'numeroOrdineCompleto',
+                        headerText: 'Ordine',
+                        width: 160,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'rigaOrdine',
+                        headerText: 'Riga',
+                        width: 70,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'codiceCliente',
+                        headerText: 'Cod. Cliente',
+                        width: 100,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'ragioneSociale',
+                        headerText: 'Ragione Sociale',
+                        width: 200
+                    },
+                    {
+                        field: 'codiceArticolo',
+                        headerText: 'Codice Articolo',
+                        width: 150
+                    },
+                    {
+                        field: 'descrizioneArticolo',
+                        headerText: 'Descrizione Articolo',
+                        width: 220
+                    },
+                    {
+                        field: 'dataConsegna',
+                        headerText: 'Data Consegna',
+                        width: 120,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'unitaMisura',
+                        headerText: 'U.M.',
+                        width: 70,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'quantita',
+                        headerText: 'Quantità',
+                        width: 110,
+                        textAlign: 'Right',
+                        format: 'N2'
+                    },
+                    {
+                        field: 'unitaMisuraColli',
+                        headerText: 'U.M. Colli',
+                        width: 80,
+                        textAlign: 'Center'
+                    },
+                    {
+                        field: 'numeroColli',
+                        headerText: 'N. Colli',
+                        width: 100,
+                        textAlign: 'Right',
+                        format: 'N2'
+                    }
+                ],
+                created: function () {
+                    console.log('Grid Storico Materiale Liberato creato');
+                }
+            });
+
+            grid.appendTo('#gridStoricoMateriale');
+        }
+
+        function caricaArticoli() {
+            fetch('/api/storico-materiale-liberato/articoli')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    var select = $('#filtroArticolo');
+                    select.empty();
+                    select.append('<option value="">-- Tutti gli Articoli --</option>');
+
+                    data.forEach(function (art) {
+                        select.append(
+                            $('<option></option>')
+                                .val(art.codice)
+                                .text(art.testo)
+                        );
+                    });
+
+                    select.select2({
+                        theme: 'bootstrap-5',
+                        placeholder: '-- Tutti gli Articoli --',
+                        allowClear: true,
+                        width: '100%',
+                        language: {
+                            noResults: function () { return "Nessun articolo trovato"; },
+                            searching: function () { return "Ricerca..."; },
+                            inputTooShort: function () { return "Digita almeno 2 caratteri..."; }
+                        }
+                    });
+                })
+                .catch(function (error) {
+                    console.error('Errore caricamento articoli:', error);
+                });
+        }
+
+        function cercaDati() {
+            var dataDa = document.getElementById('filtroDataDa').value;
+            var dataA = document.getElementById('filtroDataA').value;
+            var codiceArticolo = $('#filtroArticolo').val();
+
+            var params = new URLSearchParams();
+            if (dataDa) params.append('dataDa', dataDa);
+            if (dataA) params.append('dataA', dataA);
+            if (codiceArticolo) params.append('codiceArticolo', codiceArticolo);
+
+            mostraSpinner(true);
+
+            fetch('/api/storico-materiale-liberato?' + params.toString())
+                .then(function (response) { return response.json(); })
+                .then(function (result) {
+                    mostraSpinner(false);
+
+                    if (result.success) {
+                        datiCompleti = result.data;
+                        grid.dataSource = result.data;
+
+                        aggiornaStats(result.data);
+                        document.getElementById('statsBar').style.display = '';
+                    } else {
+                        console.error('Errore dal server:', result.errore);
+                        grid.dataSource = [];
+                        document.getElementById('statsBar').style.display = 'none';
+                    }
+                })
+                .catch(function (error) {
+                    mostraSpinner(false);
+                    console.error('Errore nella ricerca:', error);
+                    grid.dataSource = [];
+                });
+        }
+
+        function aggiornaStats(data) {
+            document.getElementById('statsTotale').textContent = data.length;
+
+            var articoliDistinti = [...new Set(data.map(function (d) { return d.codiceArticolo; }))];
+            document.getElementById('statsArticoli').textContent = articoliDistinti.length;
+
+            var clientiDistinti = [...new Set(data.map(function (d) { return d.codiceCliente; }))];
+            document.getElementById('statsClienti').textContent = clientiDistinti.length;
+        }
+
+        function resetFiltri() {
+            var oggi = new Date();
+            var unMeseFa = new Date();
+            unMeseFa.setMonth(unMeseFa.getMonth() - 1);
+
+            document.getElementById('filtroDataDa').value = formatDateForInput(unMeseFa);
+            document.getElementById('filtroDataA').value = formatDateForInput(oggi);
+            $('#filtroArticolo').val('').trigger('change');
+
+            cercaDati();
+        }
+
+        function esportaExcel() {
+            if (grid && grid.dataSource && grid.dataSource.length > 0) {
+                var excelExportProperties = {
+                    fileName: 'StoricoMaterialeLiberato_' + formatDateForInput(new Date()).replace(/-/g, '') + '.xlsx',
+                    header: {
+                        headerRows: 1,
+                        rows: [{
+                            cells: [{
+                                colSpan: 13,
+                                value: 'Storico Materiale Liberato',
+                                style: { fontSize: 14, bold: true, hAlign: 'Center' }
+                            }]
+                        }]
+                    }
+                };
+                grid.excelExport(excelExportProperties);
+            } else {
+                alert('Nessun dato da esportare. Eseguire prima una ricerca.');
+            }
+        }
+
+        function mostraSpinner(mostra) {
+            var spinner = document.getElementById('loadingSpinner');
+            if (mostra) {
+                spinner.classList.add('active');
+            } else {
+                spinner.classList.remove('active');
+            }
+        }
+    </script>
+}

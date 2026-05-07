@@ -316,6 +316,9 @@
     <!-- RISULTATI -->
     @if (Model.Ordini != null && Model.Ordini.Any())
     {
+        <!-- PAGINAZIONE TOP (generata via JS) -->
+        <div id="paginazioneTop" class="d-flex justify-content-between align-items-center mb-3"></div>
+
         <!-- ACCORDION ORDINI -->
         <div class="accordion" id="accordionOrdini" style="margin-bottom: 3rem;">
             @for (int i = 0; i < Model.Ordini.Count; i++)
@@ -480,6 +483,9 @@
                 </div>
             }
         </div>
+
+        <!-- PAGINAZIONE BOTTOM (generata via JS) -->
+        <div id="paginazioneBottom" class="d-flex justify-content-between align-items-center mb-3"></div>
     }
     else if (Model.Ordini != null && !Model.Ordini.Any())
     {
@@ -633,6 +639,88 @@
                 caricaComuni(provinciaSelezionata);
                 $('#comune').val(''); // Reset comune
             });
+        });
+
+        // ===== PAGINAZIONE CLIENT-SIDE =====
+        var paginazioneConfig = {
+            elementiPerPagina: 12,
+            paginaCorrente: 1,
+            cards: [],
+            totalePagine: 0
+        };
+
+        function inizializzaPaginazione() {
+            var accordion = document.getElementById('accordionOrdini');
+            if (!accordion) return;
+            
+            paginazioneConfig.cards = Array.from(accordion.querySelectorAll(':scope > .card.result-card'));
+            paginazioneConfig.totalePagine = Math.ceil(paginazioneConfig.cards.length / paginazioneConfig.elementiPerPagina);
+            paginazioneConfig.paginaCorrente = 1;
+            
+            if (paginazioneConfig.cards.length > 0) {
+                mostraPagina(1);
+            }
+        }
+
+        function mostraPagina(numeroPagina) {
+            var config = paginazioneConfig;
+            config.paginaCorrente = numeroPagina;
+            
+            var inizio = (numeroPagina - 1) * config.elementiPerPagina;
+            var fine = inizio + config.elementiPerPagina;
+            
+            for (var i = 0; i < config.cards.length; i++) {
+                config.cards[i].style.display = (i >= inizio && i < fine) ? '' : 'none';
+            }
+            
+            aggiornaPaginazioneUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function aggiornaPaginazioneUI() {
+            var config = paginazioneConfig;
+            var totale = config.cards.length;
+            var pag = config.paginaCorrente;
+            var tp = config.totalePagine;
+            var inizio = (pag - 1) * config.elementiPerPagina + 1;
+            var fine = Math.min(pag * config.elementiPerPagina, totale);
+            
+            var riepilogoHtml = '<span class="text-muted">Mostro <strong>' + inizio + '</strong>–<strong>' + fine + '</strong> di <strong>' + totale + '</strong> ordini</span>';
+            var navHtml = '';
+            
+            if (tp > 1) {
+                navHtml = '<nav><ul class="pagination pagination-sm mb-0">';
+                navHtml += '<li class="page-item ' + (pag <= 1 ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(1)" title="Prima pagina"><i class="bi bi-chevron-double-left"></i></a></li>';
+                navHtml += '<li class="page-item ' + (pag <= 1 ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(' + (pag - 1) + ')" title="Precedente"><i class="bi bi-chevron-left"></i></a></li>';
+                
+                var startP = Math.max(1, pag - 2);
+                var endP = Math.min(tp, pag + 2);
+                
+                if (startP > 1) {
+                    navHtml += '<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(1)">1</a></li>';
+                    if (startP > 2) navHtml += '<li class="page-item disabled"><span class="page-link">&hellip;</span></li>';
+                }
+                for (var p = startP; p <= endP; p++) {
+                    navHtml += '<li class="page-item ' + (p === pag ? 'active' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(' + p + ')">' + p + '</a></li>';
+                }
+                if (endP < tp) {
+                    if (endP < tp - 1) navHtml += '<li class="page-item disabled"><span class="page-link">&hellip;</span></li>';
+                    navHtml += '<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(' + tp + ')">' + tp + '</a></li>';
+                }
+                
+                navHtml += '<li class="page-item ' + (pag >= tp ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(' + (pag + 1) + ')" title="Successiva"><i class="bi bi-chevron-right"></i></a></li>';
+                navHtml += '<li class="page-item ' + (pag >= tp ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="mostraPagina(' + tp + ')" title="Ultima pagina"><i class="bi bi-chevron-double-right"></i></a></li>';
+                navHtml += '</ul></nav>';
+            }
+            
+            var topEl = document.getElementById('paginazioneTop');
+            var bottomEl = document.getElementById('paginazioneBottom');
+            if (topEl) topEl.innerHTML = '<div>' + riepilogoHtml + '</div>' + navHtml;
+            if (bottomEl) bottomEl.innerHTML = '<span class="text-muted">Pagina <strong>' + pag + '</strong> di <strong>' + tp + '</strong></span>' + navHtml;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            inizializzaPaginazione();
         });
 
         // ===== FUNZIONE: Reset Filtri =====

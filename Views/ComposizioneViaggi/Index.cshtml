@@ -240,6 +240,110 @@
     .table-righe tr.selezionata {
         background-color: #d4edda !important;
     }
+    .filtri-dropdowns {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+    .filtri-dropdowns .filtro-group {
+        flex: 1;
+        min-width: 180px;
+    }
+    .filtri-dropdowns .filtro-group.filtro-province {
+        max-width: 220px;
+        min-width: 150px;
+    }
+    .filtri-dropdowns .filtro-group label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #6c757d;
+        margin-bottom: 2px;
+        display: block;
+    }
+    .multi-select-wrap {
+        position: relative;
+    }
+    .multi-select-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 34px;
+        padding: 4px 10px;
+        font-size: 0.82rem;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 0.15s;
+    }
+    .multi-select-toggle:hover { border-color: #86b7fe; }
+    .multi-select-toggle.open { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15); }
+    .multi-select-toggle .ms-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .multi-select-toggle .ms-arrow { font-size: 0.65rem; color: #6c757d; margin-left: 6px; }
+    .multi-select-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1060;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        max-height: 280px;
+        overflow-y: auto;
+        margin-top: 2px;
+    }
+    .multi-select-dropdown.show { display: block; }
+    .multi-select-dropdown .ms-search {
+        position: sticky;
+        top: 0;
+        padding: 6px 8px;
+        background: #fff;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .multi-select-dropdown .ms-search input {
+        width: 100%;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        outline: none;
+    }
+    .multi-select-dropdown .ms-search input:focus { border-color: #86b7fe; }
+    .multi-select-dropdown .ms-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .multi-select-dropdown .ms-option:hover { background: #f0f4ff; }
+    .multi-select-dropdown .ms-option.selected { background: #e8f0fe; font-weight: 600; }
+    .multi-select-dropdown .ms-option.all-option {
+        border-bottom: 1px solid #eee;
+        font-weight: 600;
+    }
+    .multi-select-dropdown .ms-option input[type="checkbox"] { margin: 0; }
+    .multi-select-dropdown .ms-no-results {
+        padding: 10px;
+        text-align: center;
+        color: #999;
+        font-size: 0.8rem;
+    }
     .province-chips {
         display: flex;
         flex-wrap: wrap;
@@ -486,8 +590,7 @@
                 <div class="form-check ms-3" style="white-space:nowrap;">
                     <input class="form-check-input" type="checkbox" id="filtroOrdiniEvasi" checked />
                     <label class="form-check-label" for="filtroOrdiniEvasi" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
-                        Ordini Evasi
-                        <div style="font-size:0.62rem; font-weight:400; line-height:1; margin-top:1px;">(Evasi da 7 giorni)</div>
+                        Ordini Evasi <span style="font-size:0.62rem; font-weight:400;">(Evasi da 7 giorni)</span>
                     </label>
                 </div>
                 <div class="form-check ms-3" style="white-space:nowrap;">
@@ -501,13 +604,35 @@
         </div>
 
         <div class="composizione-container">
-            <!-- Barra filtri province -->
+            <!-- Barra filtri: Province, Comuni, Clienti -->
             <div class="filtri-bar">
-                <label class="form-label mb-1" style="font-size:0.78rem; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d;">
-                    <i class="bi bi-geo-alt me-1"></i>Province
-                </label>
-                <div id="provinceContainer" class="province-chips">
-                    <span class="text-muted" style="font-size:0.82rem;">Caricamento province...</span>
+                <div class="filtri-dropdowns">
+                    <div class="filtro-group filtro-province">
+                        <label><i class="bi bi-geo-alt me-1"></i>Province</label>
+                        <div id="ddProvince" class="multi-select-wrap" data-placeholder="Seleziona province..."></div>
+                    </div>
+                    <div class="filtro-group">
+                        <label><i class="bi bi-building me-1"></i>Comuni</label>
+                        <div id="ddComuni" class="multi-select-wrap" data-placeholder="Seleziona comuni..."></div>
+                    </div>
+                    <div class="filtro-group">
+                        <label><i class="bi bi-people me-1"></i>Clienti</label>
+                        <div id="ddClienti" class="multi-select-wrap" data-placeholder="Seleziona clienti..."></div>
+                    </div>
+                    <div class="filtro-group" style="min-width:110px; flex:0 0 110px;">
+                        <label><i class="bi bi-hash me-1"></i>N° Ordine</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="filtroNumeroOrdine" class="form-control form-control-sm" placeholder="Tutti" style="height:31px;" />
+                    </div>
+                    <div class="filtro-group" style="min-width:120px; flex:0 0 120px;">
+                        <label style="white-space:nowrap;"><i class="bi bi-calendar3 me-1"></i>Anno Ordine</label>
+                        <select id="filtroAnnoOrdine" class="form-select form-select-sm" style="height:31px;">
+                            <option value="">Tutti</option>
+                            @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 2; y++)
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -676,6 +801,9 @@
                         <div class="span-full" style="margin-top:4px;">
                             <button id="btnCreaViaggio" class="btn btn-success w-100" disabled>
                                 <i class="bi bi-check-circle me-1"></i>Crea Viaggio
+                            </button>
+                            <button id="btnNuovoViaggio" class="btn btn-outline-secondary w-100 mt-1" style="display:none;">
+                                <i class="bi bi-plus-circle me-1"></i>Nuovo Viaggio (annulla modifica)
                             </button>
                         </div>
                     </div>
@@ -1087,21 +1215,169 @@
 $(function () {
     // Stato applicazione
     let provinceSelezionate = [];
+    let comuniSelezionati = [];
+    let clientiSelezionati = [];
     let tipoMezzoAttivo = 'MotriceGru';
-    let righeCarrello = [];  // { rigaId, ordine, cliente, articolo, quantita, pesoKg, provincia, localita }
+    let righeCarrello = [];
     let datiViaggio = null;
+    let viaggioIdInModifica = @(ViewBag.ViaggioId != null ? ViewBag.ViaggioId.ToString() : "null");
+    let modalitaModifica = viaggioIdInModifica !== null;
 
     const urlGetProvince = '@Url.Action("GetProvince", "ComposizioneViaggi")';
+    const urlGetComuniClienti = '@Url.Action("GetComuniClienti", "ComposizioneViaggi")';
     const urlGetRighe = '@Url.Action("GetRighePerTipoMezzo", "ComposizioneViaggi")';
     const urlGetConteggi = '@Url.Action("GetConteggiTipiMezzo", "ComposizioneViaggi")';
     const urlGetDatiViaggio = '@Url.Action("GetDatiViaggio", "ComposizioneViaggi")';
     const urlCreaViaggio = '@Url.Action("CreaViaggio", "ComposizioneViaggi")';
+    const urlGetViaggio = '@Url.Action("GetViaggio", "ComposizioneViaggi")';
+    const urlModificaViaggio = '@Url.Action("ModificaViaggio", "ComposizioneViaggi")';
     const urlDisponibilita = '@Url.Action("GetDisponibilitaArticoloJson", "InterrogazioniDB")';
     const urlViaggiOrdine = '@Url.Action("GetViaggiPerOrdine", "ComposizioneViaggi")';
     const urlSpedizioneManuale = '@Url.Action("CreaSpedizioneManuale", "ComposizioneViaggi")';
     const urlDettaglioMovimentiNota = '@Url.Action("GetDettaglioMovimentiNota", "InterrogazioniDB")';
     const urlGetMezziEsterni = '@Url.Action("GetMezziEsterni", "ComposizioneViaggi")';
     const urlUpdateCostoME = '@Url.Action("UpdateCostoMezzoEsterno", "ComposizioneViaggi")';
+
+    // ===== COMPONENTE MULTI-SELECT DROPDOWN =====
+    function creaMultiSelect(containerId, options, onChange, opts) {
+        opts = opts || {};
+        const $wrap = $('#' + containerId);
+        const placeholder = $wrap.data('placeholder') || 'Seleziona...';
+        $wrap.empty();
+        $wrap.data('ms-selected', []);
+
+        const $toggle = $(`<div class="multi-select-toggle"><span class="ms-text">${placeholder}</span><i class="bi bi-chevron-down ms-arrow"></i></div>`);
+        const $dd = $('<div class="multi-select-dropdown"></div>');
+
+        // Barra ricerca
+        const $search = $('<div class="ms-search"><input type="text" placeholder="Cerca..." /></div>');
+        $dd.append($search);
+
+        // Opzione "Tutte/Tutti"
+        const allLabel = opts.allLabel || 'Tutte';
+        const $allOpt = $(`<div class="ms-option all-option" data-value="__ALL__"><input type="checkbox" /><span>${allLabel}</span></div>`);
+        $dd.append($allOpt);
+
+        // Opzioni
+        options.forEach(function (o) {
+            const $opt = $(`<div class="ms-option" data-value="${o.value}"><input type="checkbox" /><span>${o.label}</span></div>`);
+            $dd.append($opt);
+        });
+
+        $wrap.append($toggle).append($dd);
+
+        function getSelected() {
+            const sel = [];
+            $dd.find('.ms-option:not(.all-option)').each(function () {
+                if ($(this).find('input').prop('checked')) sel.push($(this).data('value'));
+            });
+            return sel;
+        }
+
+        function updateToggleText() {
+            const sel = getSelected();
+            const total = options.length;
+            if (sel.length === 0) {
+                $toggle.find('.ms-text').text(placeholder);
+            } else if (sel.length === total) {
+                $toggle.find('.ms-text').text(allLabel);
+            } else if (sel.length <= 3) {
+                const labels = sel.map(v => {
+                    const o = options.find(x => String(x.value) === String(v));
+                    return o ? o.label : v;
+                });
+                $toggle.find('.ms-text').text(labels.join(', '));
+            } else {
+                $toggle.find('.ms-text').text(sel.length + ' selezionati');
+            }
+            $wrap.data('ms-selected', sel);
+        }
+
+        function syncAllCheckbox() {
+            const total = $dd.find('.ms-option:not(.all-option):visible').length;
+            const checked = $dd.find('.ms-option:not(.all-option):visible input:checked').length;
+            $allOpt.find('input').prop('checked', total > 0 && checked === total);
+        }
+
+        // Click opzione singola
+        $dd.on('click', '.ms-option:not(.all-option)', function (e) {
+            e.stopPropagation();
+            const $cb = $(this).find('input');
+            if (!$(e.target).is('input')) $cb.prop('checked', !$cb.prop('checked'));
+            $(this).toggleClass('selected', $cb.prop('checked'));
+            syncAllCheckbox();
+            updateToggleText();
+            if (onChange) onChange(getSelected());
+        });
+
+        // Click "Tutte"
+        $allOpt.on('click', function (e) {
+            e.stopPropagation();
+            const $cb = $(this).find('input');
+            if (!$(e.target).is('input')) $cb.prop('checked', !$cb.prop('checked'));
+            const isChecked = $cb.prop('checked');
+            $dd.find('.ms-option:not(.all-option):visible').each(function () {
+                $(this).find('input').prop('checked', isChecked);
+                $(this).toggleClass('selected', isChecked);
+            });
+            updateToggleText();
+            if (onChange) onChange(getSelected());
+        });
+
+        // Ricerca
+        $search.find('input').on('input', function () {
+            const term = $(this).val().toLowerCase();
+            $dd.find('.ms-option:not(.all-option)').each(function () {
+                const text = $(this).find('span').text().toLowerCase();
+                $(this).toggle(text.includes(term));
+            });
+            syncAllCheckbox();
+        });
+
+        // Toggle apertura/chiusura
+        $toggle.on('click', function (e) {
+            e.stopPropagation();
+            // Chiudi tutti gli altri dropdown
+            $('.multi-select-dropdown.show').not($dd).removeClass('show');
+            $('.multi-select-toggle.open').not($toggle).removeClass('open');
+            $dd.toggleClass('show');
+            $toggle.toggleClass('open');
+            if ($dd.hasClass('show')) $search.find('input').focus();
+        });
+
+        // Chiudi dropdown se click fuori
+        $(document).on('click.ms_' + containerId, function (e) {
+            if (!$wrap.is(e.target) && $wrap.has(e.target).length === 0) {
+                $dd.removeClass('show');
+                $toggle.removeClass('open');
+            }
+        });
+
+        // Metodo per settare valori programmaticamente
+        $wrap.data('ms-setOptions', function (newOptions, keepSelected) {
+            const prevSel = keepSelected ? getSelected().map(String) : [];
+            $dd.find('.ms-option:not(.all-option)').remove();
+            options = newOptions;
+            newOptions.forEach(function (o) {
+                const checked = prevSel.includes(String(o.value)) ? 'checked' : '';
+                const selClass = checked ? ' selected' : '';
+                const $opt = $(`<div class="ms-option${selClass}" data-value="${o.value}"><input type="checkbox" ${checked} /><span>${o.label}</span></div>`);
+                $dd.append($opt);
+            });
+            syncAllCheckbox();
+            updateToggleText();
+        });
+
+        // Metodo per ottenere i selezionati
+        $wrap.data('ms-getSelected', getSelected);
+
+        // Metodo per resettare
+        $wrap.data('ms-reset', function () {
+            $dd.find('input').prop('checked', false);
+            $dd.find('.ms-option').removeClass('selected');
+            updateToggleText();
+        });
+    }
 
     // ===== INIZIALIZZAZIONE =====
     const oggi = new Date();
@@ -1123,71 +1399,111 @@ $(function () {
         caricaConteggi();
     });
 
-    // Event: crea viaggio
-    $('#btnCreaViaggio').on('click', creaViaggio);
+    // Event: cambio filtro numero ordine e anno ordine
+    $('#filtroNumeroOrdine, #filtroAnnoOrdine').on('change', function () {
+        caricaRighe();
+        caricaConteggi();
+    });
 
-    // ===== PROVINCE =====
+    // Event: crea viaggio / salva modifiche
+    $('#btnCreaViaggio').on('click', function () {
+        if (modalitaModifica) {
+            salvaModificheViaggio();
+        } else {
+            creaViaggio();
+        }
+    });
+
+    // Event: nuovo viaggio (reset modalità modifica)
+    $('#btnNuovoViaggio').on('click', function () {
+        resetModalitaModifica();
+    });
+
+    // Se in modalità modifica, carica i dati del viaggio
+    if (modalitaModifica) {
+        impostaModalitaModifica();
+        caricaViaggioInModifica();
+    }
+
+    // ===== PROVINCE / COMUNI / CLIENTI =====
     function caricaProvince() {
         $.getJSON(urlGetProvince, function (data) {
-            const container = $('#provinceContainer');
-            container.empty();
-
             if (!data || data.length === 0) {
-                container.html('<span class="text-muted" style="font-size:0.82rem;">Nessuna provincia trovata</span>');
+                creaMultiSelect('ddProvince', [], onProvinceCambiata, { allLabel: 'Tutte' });
+                creaMultiSelect('ddComuni', [], onComuneCambiato, { allLabel: 'Tutti' });
+                creaMultiSelect('ddClienti', [], onClienteCambiato, { allLabel: 'Tutti' });
                 return;
             }
 
-            // Aggiungi chip "Tutte"
-            const chipTutte = $('<span class="province-chip" data-sigla="__ALL__">Tutte</span>');
-            chipTutte.on('click', function () {
-                const isActive = $(this).hasClass('active');
-                if (isActive) {
-                    $('.province-chip').removeClass('active');
-                    provinceSelezionate = [];
-                } else {
-                    $('.province-chip').addClass('active');
-                    provinceSelezionate = data.map(p => p.sigla);
-                }
-                caricaRighe();
-                caricaConteggi();
-            });
-            container.append(chipTutte);
+            const opzioni = data.map(p => ({ value: p.sigla, label: p.sigla }));
+            creaMultiSelect('ddProvince', opzioni, onProvinceCambiata, { allLabel: 'Tutte' });
+            creaMultiSelect('ddComuni', [], onComuneCambiato, { allLabel: 'Tutti' });
+            creaMultiSelect('ddClienti', [], onClienteCambiato, { allLabel: 'Tutti' });
+        });
+    }
 
-            data.forEach(function (p) {
-                const chip = $(`<span class="province-chip" data-sigla="${p.sigla}">${p.sigla}</span>`);
-                chip.on('click', function () {
-                    $(this).toggleClass('active');
-                    // Aggiorna "Tutte"
-                    const tutteActive = $('.province-chip:not([data-sigla="__ALL__"])').length ===
-                                        $('.province-chip.active:not([data-sigla="__ALL__"])').length;
-                    $('.province-chip[data-sigla="__ALL__"]').toggleClass('active', tutteActive);
+    function onProvinceCambiata(selezionate) {
+        provinceSelezionate = selezionate;
+        comuniSelezionati = [];
+        clientiSelezionati = [];
+        caricaComuniClienti();
+        caricaRighe();
+        caricaConteggi();
+    }
 
-                    provinceSelezionate = [];
-                    $('.province-chip.active:not([data-sigla="__ALL__"])').each(function () {
-                        provinceSelezionate.push($(this).data('sigla'));
-                    });
-                    caricaRighe();
-                    caricaConteggi();
-                });
-                container.append(chip);
-            });
+    function onComuneCambiato(selezionati) {
+        comuniSelezionati = selezionati;
+        clientiSelezionati = [];
+        caricaComuniClienti(true);
+        caricaRighe();
+        caricaConteggi();
+    }
+
+    function onClienteCambiato(selezionati) {
+        clientiSelezionati = selezionati.map(v => parseInt(v));
+        caricaRighe();
+        caricaConteggi();
+    }
+
+    function caricaComuniClienti(soloClienti) {
+        const params = new URLSearchParams();
+        provinceSelezionate.forEach(p => params.append('province', p));
+        comuniSelezionati.forEach(c => params.append('comuni', c));
+
+        $.getJSON(urlGetComuniClienti + '?' + params.toString(), function (data) {
+            if (!soloClienti) {
+                const opzComuni = (data.comuni || []).map(c => ({ value: c.nome, label: c.nome }));
+                const setOpts = $('#ddComuni').data('ms-setOptions');
+                if (setOpts) setOpts(opzComuni, false);
+            }
+
+            const opzClienti = (data.clienti || []).map(c => ({ value: String(c.codice), label: c.ragioneSociale + ' (' + c.codice + ')' }));
+            const setOptsC = $('#ddClienti').data('ms-setOptions');
+            if (setOptsC) setOptsC(opzClienti, false);
         });
     }
 
     // ===== CONTEGGI BADGE =====
+    const tuttiTipiMezzo = ['MotriceGru','AutotrenoGru','AutotrenoAbbinato','AutotrenoNoGru','Bilico','BilicoInAbbinamento','MotriceInAbbinamento','Trasporto','TrasportoPosa','NessunMezzo'];
+
+    function resetBadges() {
+        tuttiTipiMezzo.forEach(function (tipo) {
+            $(`#badge-${tipo}`).text('0').css('opacity', '0.35');
+            $(`#tabTipiMezzo button[data-tipo="${tipo}"]`).removeClass('tab-has-ordini').addClass('tab-vuoto');
+        });
+    }
+
     function caricaConteggi() {
-        const params = new URLSearchParams();
-        provinceSelezionate.forEach(p => params.append('province', p));
-        const dataDa = $('#dataConsegnaDa').val();
-        const dataA = $('#dataConsegnaA').val();
-        if (dataDa) params.append('dataConsegnaDa', dataDa);
-        if (dataA) params.append('dataConsegnaA', dataA);
-        if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
-        if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
-        if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
+        const hasNumeroOrdine = $('#filtroNumeroOrdine').val() !== '';
+        if (provinceSelezionate.length === 0 && !hasNumeroOrdine) {
+            resetBadges();
+            return;
+        }
+
+        const params = buildFiltriParams();
 
         $.getJSON(urlGetConteggi + '?' + params.toString(), function (data) {
-            Object.keys(data).forEach(function (tipo) {
+            tuttiTipiMezzo.forEach(function (tipo) {
                 var count = data[tipo] || 0;
 
                 var badge = $(`#badge-${tipo}`);
@@ -1201,37 +1517,59 @@ $(function () {
         });
     }
 
+    // ===== HELPER: costruisce i parametri di filtro comuni =====
+    function buildFiltriParams() {
+        const params = new URLSearchParams();
+        provinceSelezionate.forEach(p => params.append('province', p));
+        comuniSelezionati.forEach(c => params.append('comuni', c));
+        clientiSelezionati.forEach(c => params.append('clienti', c));
+        const dataDa = $('#dataConsegnaDa').val();
+        const dataA = $('#dataConsegnaA').val();
+        if (dataDa) params.append('dataConsegnaDa', dataDa);
+        if (dataA) params.append('dataConsegnaA', dataA);
+        const numOrdine = $('#filtroNumeroOrdine').val();
+        const annoOrdine = $('#filtroAnnoOrdine').val();
+        if (numOrdine) params.append('numeroOrdine', numOrdine);
+        if (annoOrdine) params.append('annoOrdine', annoOrdine);
+        if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
+        if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
+        if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
+        if (viaggioIdInModifica) params.append('viaggioIdInModifica', viaggioIdInModifica);
+        return params;
+    }
+
     // ===== GRIGLIA RIGHE =====
     function caricaRighe() {
-        if (provinceSelezionate.length === 0) {
+        const hasNumeroOrdine = $('#filtroNumeroOrdine').val() !== '';
+        if (provinceSelezionate.length === 0 && !hasNumeroOrdine) {
             $('#grigliaRighe').html(`
                 <div class="empty-state">
                     <i class="bi bi-funnel"></i>
-                    <p>Seleziona almeno una provincia per visualizzare le righe ordine</p>
+                    <p>Seleziona almeno una provincia o un numero ordine per visualizzare le righe ordine</p>
                 </div>`);
             return;
         }
 
         $('#grigliaRighe').html('<div class="spinner-loading"><div class="spinner-border text-primary" role="status"></div></div>');
 
-        const params = new URLSearchParams();
+        const params = buildFiltriParams();
         params.append('tipoMezzo', tipoMezzoAttivo);
-        provinceSelezionate.forEach(p => params.append('province', p));
-
-        const dataDa = $('#dataConsegnaDa').val();
-        const dataA = $('#dataConsegnaA').val();
-        if (dataDa) params.append('dataConsegnaDa', dataDa);
-        if (dataA) params.append('dataConsegnaA', dataA);
-        if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
-        if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
-        if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
 
         $.getJSON(urlGetRighe + '?' + params.toString(), function (data) {
+            // Aggiorna badge del tab attivo con il conteggio reale delle righe
+            var badgeAttivo = $(`#badge-${tipoMezzoAttivo}`);
+            var tabBtnAttivo = $(`#tabTipiMezzo button[data-tipo="${tipoMezzoAttivo}"]`);
+            var countAttivo = data ? data.length : 0;
+            badgeAttivo.text(countAttivo);
+            badgeAttivo.css('opacity', countAttivo > 0 ? '1' : '0.35');
+            tabBtnAttivo.toggleClass('tab-has-ordini', countAttivo > 0);
+            tabBtnAttivo.toggleClass('tab-vuoto', countAttivo === 0);
+
             if (!data || data.length === 0) {
                 $('#grigliaRighe').html(`
                     <div class="empty-state">
                         <i class="bi bi-inbox"></i>
-                        <p>Nessuna riga trovata per questo tipo mezzo e queste province</p>
+                        <p>Nessuna riga trovata per questo tipo mezzo e questi filtri</p>
                     </div>`);
                 return;
             }
@@ -2270,6 +2608,181 @@ $(function () {
     }
 
     // ===== CREA VIAGGIO =====
+    // ===== MODALITA' MODIFICA VIAGGIO =====
+    function impostaModalitaModifica() {
+        $('#btnCreaViaggio').html('<i class="bi bi-save me-1"></i>Salva Modifiche');
+        $('#btnCreaViaggio').removeClass('btn-success').addClass('btn-primary');
+        $('#btnNuovoViaggio').show();
+        document.title = 'Modifica Viaggio #' + viaggioIdInModifica;
+    }
+
+    function resetModalitaModifica() {
+        viaggioIdInModifica = null;
+        modalitaModifica = false;
+        righeCarrello = [];
+        aggiornaCarrello();
+        $('#btnCreaViaggio').html('<i class="bi bi-check-circle me-1"></i>Crea Viaggio');
+        $('#btnCreaViaggio').removeClass('btn-primary').addClass('btn-success');
+        $('#btnNuovoViaggio').hide();
+        document.title = 'Composizione Viaggi';
+
+        // Reset form viaggio
+        $('#viaggioDataConsegna').val(oggi.toISOString().split('T')[0]);
+        $('#viaggioTipoTrasporto').val('').trigger('change');
+        $('#viaggioMezzoInterno').val('');
+        $('#viaggioAutista').val('');
+        $('#viaggioOraPartenza').val('06:00');
+        $('#viaggioOraArrivo').val('');
+        $('#viaggioNote').val('');
+        $('#viaggioConRimorchio').prop('checked', false);
+        $('#viaggioConRimorchioWrap').hide();
+        clearMezzoEsterno();
+
+        // Aggiorna URL senza viaggioId
+        window.history.replaceState({}, '', '@Url.Action("Index", "ComposizioneViaggi")');
+
+        caricaRighe();
+        caricaConteggi();
+    }
+
+    function caricaViaggioInModifica() {
+        $.getJSON(urlGetViaggio + '?viaggioId=' + viaggioIdInModifica, function (resp) {
+            if (!resp.success) {
+                showAlert('Viaggio non trovato: ' + (resp.message || ''), 'danger');
+                resetModalitaModifica();
+                return;
+            }
+
+            const v = resp.viaggio;
+            const righe = resp.righe;
+
+            // Pre-popola il form con un piccolo ritardo per dare tempo ai dropdown di caricarsi
+            function compilaForm() {
+                if (!datiViaggio) {
+                    setTimeout(compilaForm, 200);
+                    return;
+                }
+
+                $('#viaggioDataConsegna').val(v.dataConsegna);
+                $('#viaggioTipoTrasporto').val(v.tipoTrasportoId).trigger('change');
+
+                setTimeout(function () {
+                    if (v.mezzoTrasportoId) {
+                        $('#viaggioMezzoInterno').val(v.mezzoTrasportoId);
+                    }
+                    if (v.autistaId) {
+                        $('#viaggioAutista').val(v.autistaId);
+                    }
+                    if (v.mezzoTrasportoEsternoId) {
+                        $('#viaggioMezzoEsterno').val(v.mezzoTrasportoEsternoId);
+                        $('#viaggioMezzoEsternoDisplay').val(v.mezzoEsternoDisplay);
+                        $('#btnClearMezzoEsterno').show();
+                        if (v.costoTrasporto) {
+                            $('#viaggioCostoTrasporto').val(v.costoTrasporto.toFixed(2));
+                            $('#viaggioCostoTrasportoWrap').show();
+                        }
+                    }
+                    if (v.oraPartenza) $('#viaggioOraPartenza').val(v.oraPartenza);
+                    if (v.oraArrivo) $('#viaggioOraArrivo').val(v.oraArrivo);
+                    if (v.note) $('#viaggioNote').val(v.note);
+                    if (v.conRimorchio) {
+                        $('#viaggioConRimorchio').prop('checked', true);
+                        $('#viaggioConRimorchioWrap').show();
+                    }
+                }, 100);
+            }
+            compilaForm();
+
+            // Popola il carrello con le righe del viaggio
+            righeCarrello = righe.map(r => ({
+                rigaId: r.rigaId,
+                ordine: r.ordine,
+                cliente: r.cliente,
+                articolo: r.codiceArticolo,
+                descrizione: r.descrizione,
+                quantita: r.quantita,
+                qtaMax: r.qtaMax,
+                pesoKgUnitario: r.pesoKgUnitario,
+                pesoKgTotale: r.pesoKgTotale,
+                provincia: r.provincia,
+                localita: r.localita
+            }));
+
+            aggiornaCarrello();
+
+            showAlert(`Viaggio #${viaggioIdInModifica} caricato in modifica (${righe.length} righe). Puoi aggiungere o rimuovere righe, poi clicca "Salva Modifiche".`, 'info');
+        }).fail(function () {
+            showAlert('Errore nel caricamento del viaggio', 'danger');
+            resetModalitaModifica();
+        });
+    }
+
+    function salvaModificheViaggio(forzaQuantita) {
+        if (righeCarrello.length === 0) {
+            showAlert('Aggiungere almeno una riga al viaggio', 'warning');
+            return;
+        }
+
+        const tipoTrasportoId = parseInt($('#viaggioTipoTrasporto').val());
+        if (!tipoTrasportoId) {
+            showAlert('Selezionare un tipo trasporto', 'warning');
+            return;
+        }
+
+        const dataConsegna = $('#viaggioDataConsegna').val();
+        if (!dataConsegna) {
+            showAlert('Inserire la data consegna', 'warning');
+            return;
+        }
+
+        const oraPartenza = $('#viaggioOraPartenza').val() || '06:00';
+        const oraArrivo = $('#viaggioOraArrivo').val() || null;
+
+        const payload = {
+            viaggioId: viaggioIdInModifica,
+            righe: righeCarrello.map(r => ({ rigaId: r.rigaId, quantita: r.quantita })),
+            dataConsegna: dataConsegna,
+            tipoTrasportoId: tipoTrasportoId,
+            mezzoTrasportoId: parseInt($('#viaggioMezzoInterno').val()) || null,
+            mezzoTrasportoEsternoId: parseInt($('#viaggioMezzoEsterno').val()) || null,
+            autistaId: parseInt($('#viaggioAutista').val()) || null,
+            oraPartenza: oraPartenza + ':00',
+            oraArrivo: oraArrivo ? oraArrivo + ':00' : null,
+            note: $('#viaggioNote').val() || null,
+            conRimorchio: $('#viaggioConRimorchio').is(':checked'),
+            costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null
+        };
+
+        $('#btnCreaViaggio').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Salvataggio...');
+
+        $.ajax({
+            url: urlModificaViaggio,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (result) {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    caricaRighe();
+                    caricaConteggi();
+                    // Ricarica il viaggio per aggiornare i dati nel carrello
+                    caricaViaggioInModifica();
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            },
+            error: function (xhr) {
+                const resp = xhr.responseJSON;
+                const msg = resp?.message || 'Errore nel salvataggio delle modifiche';
+                showAlert(msg, 'danger');
+            },
+            complete: function () {
+                $('#btnCreaViaggio').prop('disabled', righeCarrello.length === 0)
+                    .html('<i class="bi bi-save me-1"></i>Salva Modifiche');
+            }
+        });
+    }
+
     function creaViaggio(forzaQuantita) {
         if (righeCarrello.length === 0) return;
 
@@ -2340,8 +2853,10 @@ $(function () {
                 }
             },
             complete: function () {
-                $('#btnCreaViaggio').prop('disabled', righeCarrello.length === 0)
-                    .html('<i class="bi bi-check-circle me-1"></i>Crea Viaggio');
+                const label = modalitaModifica
+                    ? '<i class="bi bi-save me-1"></i>Salva Modifiche'
+                    : '<i class="bi bi-check-circle me-1"></i>Crea Viaggio';
+                $('#btnCreaViaggio').prop('disabled', righeCarrello.length === 0).html(label);
             }
         });
     }

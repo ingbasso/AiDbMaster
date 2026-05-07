@@ -1,0 +1,335 @@
+@model List<AiDbMaster.Models.LogEmailAutomatico>
+
+@{
+    ViewData["Title"] = "Log Email Automatiche";
+    ViewBag.UseFluidContainer = true;
+}
+
+@section Styles {
+    <style>
+        .stats-card {
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            text-align: center;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stats-card h3 { margin: 0; font-weight: 700; }
+        .stats-card small { opacity: 0.85; }
+        .stats-totale { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .stats-ok { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .stats-fallite { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .stats-saltate { background: linear-gradient(135deg, #f7971e, #ffd200); }
+
+        .table-log { font-size: 0.82rem; }
+
+        .table-log thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table-log thead th {
+            border: none;
+            padding: 0.6rem 0.5rem;
+            white-space: nowrap;
+        }
+
+        .table-log td {
+            padding: 0.4rem 0.5rem;
+            vertical-align: middle;
+        }
+
+        .table-log tbody tr:hover { background-color: #e8f0fe; }
+
+        .badge-tipo-invio { background-color: #198754; }
+        .badge-tipo-saltato { background-color: #ffc107; color: #333; }
+        .badge-tipo-errore { background-color: #dc3545; }
+        .badge-tipo-info { background-color: #0dcaf0; color: #333; }
+
+        .badge-esito-ok { background-color: #198754; }
+        .badge-esito-fallito { background-color: #dc3545; }
+        .badge-esito-saltato { background-color: #ffc107; color: #333; }
+
+        .filter-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .result-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">
+            <i class="bi bi-journal-text text-primary me-2"></i>
+            Log Email Automatiche
+        </h4>
+        <p class="text-muted mb-0">Storico completo delle elaborazioni automatiche di invio email</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="InterrogazioniDB" asp-action="ListaEmailInviate" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-envelope-open me-1"></i> Email Inviate
+        </a>
+        <form asp-action="SvuotaLog" method="post" onsubmit="return confirm('Sei sicuro di voler cancellare tutti i log?');">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i> Svuota Log
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="stats-card stats-totale">
+            <h3>@ViewBag.TotaleRecord</h3>
+            <small>Totale Record</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stats-card stats-ok">
+            <h3>@ViewBag.TotaleInviate</h3>
+            <small>Inviate OK</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stats-card stats-fallite">
+            <h3>@ViewBag.TotaleFallite</h3>
+            <small>Fallite</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stats-card stats-saltate">
+            <h3>@ViewBag.TotaleSaltate</h3>
+            <small>Saltate</small>
+        </div>
+    </div>
+</div>
+
+<!-- Filtri -->
+<div class="card filter-card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label mb-0 small fw-bold">Da</label>
+                <input type="date" name="dataDa" value="@ViewBag.DataDa" class="form-control form-control-sm" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label mb-0 small fw-bold">A</label>
+                <input type="date" name="dataA" value="@ViewBag.DataA" class="form-control form-control-sm" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label mb-0 small fw-bold">Tipo</label>
+                <select name="filtroTipo" class="form-select form-select-sm">
+                    <option value="">Tutti</option>
+                    <option value="Info" selected="@(ViewBag.FiltroTipo == "Info")">Info</option>
+                    <option value="Invio" selected="@(ViewBag.FiltroTipo == "Invio")">Invio</option>
+                    <option value="Saltato" selected="@(ViewBag.FiltroTipo == "Saltato")">Saltato</option>
+                    <option value="Errore" selected="@(ViewBag.FiltroTipo == "Errore")">Errore</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label mb-0 small fw-bold">Esito</label>
+                <select name="filtroEsito" class="form-select form-select-sm">
+                    <option value="">Tutti</option>
+                    <option value="OK" selected="@(ViewBag.FiltroEsito == "OK")">OK</option>
+                    <option value="Fallito" selected="@(ViewBag.FiltroEsito == "Fallito")">Fallito</option>
+                    <option value="Saltato" selected="@(ViewBag.FiltroEsito == "Saltato")">Saltato</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel me-1"></i> Filtra
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-circle me-1"></i> Reset
+                </a>
+            </div>
+            <div class="col-auto ms-auto">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Cerca..." style="min-width: 200px;" />
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (TempData["Messaggio"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i> @TempData["Messaggio"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="card result-card">
+        <div class="card-body empty-state">
+            <i class="bi bi-journal-x text-muted d-block"></i>
+            <h5>Nessun log trovato</h5>
+            <p>Non ci sono record per i filtri selezionati.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">
+            Visualizzati <strong id="countVisible">@Model.Count</strong> di @Model.Count record
+        </small>
+    </div>
+
+    <div class="card result-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-log table-striped table-hover mb-0" id="tabellaLog">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 40px;">#</th>
+                            <th>Data/Ora</th>
+                            <th class="text-center">Tipo</th>
+                            <th>Ordine</th>
+                            <th>Cliente</th>
+                            <th>Email</th>
+                            <th class="text-center">Esito</th>
+                            <th>Motivo</th>
+                            <th>Dettagli</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model)
+                        {
+                            var rowClass = log.Esito switch
+                            {
+                                "Fallito" => "table-danger",
+                                "Saltato" => "table-warning",
+                                _ => ""
+                            };
+                            <tr class="@rowClass">
+                                <td class="text-center text-muted">@log.ID</td>
+                                <td>
+                                    <strong>@log.DataOra.ToString("dd/MM/yyyy")</strong><br />
+                                    <small class="text-muted">@log.DataOra.ToString("HH:mm:ss")</small>
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var badgeTipo = log.Tipo switch
+                                        {
+                                            "Invio" => "badge-tipo-invio",
+                                            "Saltato" => "badge-tipo-saltato",
+                                            "Errore" => "badge-tipo-errore",
+                                            _ => "badge-tipo-info"
+                                        };
+                                    }
+                                    <span class="badge @badgeTipo">@log.Tipo</span>
+                                </td>
+                                <td>
+                                    @if (log.NumeroOrdine.HasValue)
+                                    {
+                                        <span class="badge bg-primary">@(log.AnnoOrdine)/@(log.SerieOrdine)/@(log.NumeroOrdine)</span>
+                                        @if (log.RigaOrdine.HasValue)
+                                        {
+                                            <small class="text-muted ms-1">r.@log.RigaOrdine</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (log.CodiceCliente.HasValue)
+                                    {
+                                        <span>@(log.RagioneSociale ?? "N/D")</span><br />
+                                        <small class="text-muted">Cod. @log.CodiceCliente</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.EmailDestinatario))
+                                    {
+                                        <small>@log.EmailDestinatario</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var badgeEsito = log.Esito switch
+                                        {
+                                            "OK" => "badge-esito-ok",
+                                            "Fallito" => "badge-esito-fallito",
+                                            "Saltato" => "badge-esito-saltato",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeEsito">@log.Esito</span>
+                                </td>
+                                <td>
+                                    <small>@(log.Motivo ?? "-")</small>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.Dettagli))
+                                    {
+                                        <small class="text-danger" title="@log.Dettagli">
+                                            @(log.Dettagli.Length > 80 ? log.Dettagli[..80] + "..." : log.Dettagli)
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById('searchInput')?.addEventListener('input', function () {
+            var searchText = this.value.toLowerCase();
+            var rows = document.querySelectorAll('#tabellaLog tbody tr');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var text = row.textContent.toLowerCase();
+                if (text.indexOf(searchText) > -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('countVisible').textContent = visibleCount;
+        });
+    </script>
+}

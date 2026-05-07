@@ -4,6 +4,7 @@ using AiDbMaster.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AiDbMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260507100213_MakeCodiceAgenteNullableInOrdiniTestate")]
+    partial class MakeCodiceAgenteNullableInOrdiniTestate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -161,7 +164,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("Marca");
 
-                    b.ToTable("AnagraficaArticoli", (string)null);
+                    b.ToTable("AnagraficaArticoli");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.AnagraficaClienti", b =>
@@ -248,7 +251,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("CodiceAgente2");
 
-                    b.ToTable("AnagraficaClienti", (string)null);
+                    b.ToTable("AnagraficaClienti");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.AnagraficaFornitori", b =>
@@ -318,7 +321,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AnagraficaFornitori", (string)null);
+                    b.ToTable("AnagraficaFornitori");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ApplicationUser", b =>
@@ -423,7 +426,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("CodiceArticolo", "CodiceArticoloSostitutivo");
 
-                    b.ToTable("ArticoliSostitutivi", (string)null);
+                    b.ToTable("ArticoliSostitutivi");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Autista", b =>
@@ -464,7 +467,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("Cognome", "Nome")
                         .HasDatabaseName("IX_Autisti_CognomeNome");
 
-                    b.ToTable("Autisti", (string)null);
+                    b.ToTable("Autisti");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.CalendarioFermiCentriLavoro", b =>
@@ -528,7 +531,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("TipoFermo")
                         .HasDatabaseName("IX_CalendarioFermiCentriLavoro_TipoFermo");
 
-                    b.ToTable("CalendarioFermiCentriLavoro", (string)null);
+                    b.ToTable("CalendarioFermiCentriLavoro");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.CentroLavoro", b =>
@@ -569,7 +572,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("DescrizioneCentro")
                         .HasDatabaseName("IX_CentriLavoro_DescrizioneCentro");
 
-                    b.ToTable("CentriLavoro", (string)null);
+                    b.ToTable("CentriLavoro");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ClasseProvvigione", b =>
@@ -601,7 +604,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TabellaClassiProvvigioni_CodiceClasse");
 
-                    b.ToTable("TabellaClassiProvvigioni", (string)null);
+                    b.ToTable("TabellaClassiProvvigioni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DbLavorazione", b =>
@@ -709,7 +712,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("CodiceDistinta", "RigaCiclo")
                         .HasDatabaseName("IX_DB_Lavorazioni_Distinta_RigaCiclo");
 
-                    b.ToTable("DB_Lavorazioni", (string)null);
+                    b.ToTable("DB_Lavorazioni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DbMateriale", b =>
@@ -811,7 +814,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("CodiceDistinta", "RigaDistinta")
                         .HasDatabaseName("IX_DB_Materiali_Distinta_RigaDistinta");
 
-                    b.ToTable("DB_Materiali", (string)null);
+                    b.ToTable("DB_Materiali");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DbTestata", b =>
@@ -868,7 +871,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_DB_Testata_CodiceDistinta");
 
-                    b.ToTable("DB_Testata", (string)null);
+                    b.ToTable("DB_Testata");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DestinazioniDiverse", b =>
@@ -929,7 +932,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("CodiceAgente2");
 
-                    b.ToTable("DestinazioniDiverse", (string)null);
+                    b.ToTable("DestinazioniDiverse");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Document", b =>
@@ -989,7 +992,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("UploadedById");
 
-                    b.ToTable("Documents", (string)null);
+                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DocumentCategory", b =>
@@ -1011,7 +1014,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DocumentCategories", (string)null);
+                    b.ToTable("DocumentCategories");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.DocumentPermission", b =>
@@ -1046,7 +1049,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DocumentPermissions", (string)null);
+                    b.ToTable("DocumentPermissions");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Famiglia", b =>
@@ -1077,7 +1080,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TabellaFamiglie_CodiceFamiglia");
 
-                    b.ToTable("TabellaFamiglie", (string)null);
+                    b.ToTable("TabellaFamiglie");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.InvioEmail", b =>
@@ -1140,7 +1143,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_InvioEmail_OrdineRiga");
 
-                    b.ToTable("InvioEmail", (string)null);
+                    b.ToTable("InvioEmail");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Lavorazioni", b =>
@@ -1170,7 +1173,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("DescrizioneLavorazione")
                         .HasDatabaseName("IX_Lavorazioni_DescrizioneLavorazione");
 
-                    b.ToTable("Lavorazioni", (string)null);
+                    b.ToTable("Lavorazioni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ListaIP", b =>
@@ -1273,7 +1276,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ListaIP", (string)null);
+                    b.ToTable("ListaIP");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ListaOP", b =>
@@ -1405,7 +1408,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("TipoOrdine", "AnnoOrdine", "SerieOrdine", "NumeroOrdine")
                         .HasDatabaseName("IX_ListaOP_ChiaveComposita");
 
-                    b.ToTable("ListaOP", null, t =>
+                    b.ToTable("ListaOP", t =>
                         {
                             t.HasTrigger("trg_ListaOP");
                         });
@@ -1439,7 +1442,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TabellaMarche_CodiceMarca");
 
-                    b.ToTable("TabellaMarche", (string)null);
+                    b.ToTable("TabellaMarche");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.MezzoTrasporto", b =>
@@ -1510,7 +1513,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("Targa")
                         .HasDatabaseName("IX_MezziTrasporto_Targa");
 
-                    b.ToTable("MezziTrasportoInterni", (string)null);
+                    b.ToTable("MezziTrasportoInterni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.MezzoTrasportoEsterno", b =>
@@ -1576,7 +1579,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("NomeVettore")
                         .HasDatabaseName("IX_MezziTrasportoEsterni_NomeVettore");
 
-                    b.ToTable("MezziTrasportoEsterni", (string)null);
+                    b.ToTable("MezziTrasportoEsterni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Operatore", b =>
@@ -1635,7 +1638,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("Nome", "Cognome")
                         .HasDatabaseName("IX_Operatori_NomeCognome");
 
-                    b.ToTable("Operatori", (string)null);
+                    b.ToTable("Operatori");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Opzione", b =>
@@ -1663,7 +1666,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TabellaOpzioni_NomeOpzione");
 
-                    b.ToTable("TabellaOpzioni", (string)null);
+                    b.ToTable("TabellaOpzioni");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.OrdiniRighe", b =>
@@ -1787,7 +1790,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("TipoOrdine", "AnnoOrdine", "SerieOrdine", "NumeroOrdine")
                         .HasDatabaseName("IX_OrdiniRighe_ChiaveComposita");
 
-                    b.ToTable("OrdiniRighe", (string)null);
+                    b.ToTable("OrdiniRighe");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.OrdiniTestate", b =>
@@ -1962,7 +1965,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_OrdiniTestate_ChiaveComposita");
 
-                    b.ToTable("OrdiniTestate", (string)null);
+                    b.ToTable("OrdiniTestate");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ParametriChiave", b =>
@@ -1980,7 +1983,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ParametriChiave", (string)null);
+                    b.ToTable("ParametriChiave");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Permission", b =>
@@ -2029,7 +2032,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Permissions_RoleId_ResourceId");
 
-                    b.ToTable("Permissions", (string)null);
+                    b.ToTable("Permissions");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PoliticaRiordinoMagazzino", b =>
@@ -2111,7 +2114,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_PoliticheRiordino_Articolo_Magazzino");
 
-                    b.ToTable("PoliticheRiordinoMagazzino", (string)null);
+                    b.ToTable("PoliticheRiordinoMagazzino");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ProgressiviArticoli", b =>
@@ -2178,7 +2181,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProgressiviArticoli", (string)null);
+                    b.ToTable("ProgressiviArticoli");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeAssociazioniCE", b =>
@@ -2203,7 +2206,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdCodiceConto");
 
-                    b.ToTable("Pstree_AssociazioniCE", (string)null);
+                    b.ToTable("Pstree_AssociazioniCE");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaFamiglie", b =>
@@ -2241,7 +2244,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdFamigliaPadre");
 
-                    b.ToTable("Pstree_ListaFamiglie", (string)null);
+                    b.ToTable("Pstree_ListaFamiglie");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaPianoDeiConti", b =>
@@ -2265,7 +2268,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("CodicePdC");
 
-                    b.ToTable("Pstree_ListaPianoDeiConti", (string)null);
+                    b.ToTable("Pstree_ListaPianoDeiConti");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaRettifiche", b =>
@@ -2305,7 +2308,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdSede");
 
-                    b.ToTable("Pstree_ListaRettifiche", (string)null);
+                    b.ToTable("Pstree_ListaRettifiche");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaRimanenze", b =>
@@ -2344,7 +2347,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdSede");
 
-                    b.ToTable("Pstree_ListaRimanenze", (string)null);
+                    b.ToTable("Pstree_ListaRimanenze");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaSaldi", b =>
@@ -2386,7 +2389,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdSede");
 
-                    b.ToTable("Pstree_ListaSaldi", (string)null);
+                    b.ToTable("Pstree_ListaSaldi");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeListaSedi", b =>
@@ -2405,7 +2408,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Pstree_ListaSedi", (string)null);
+                    b.ToTable("Pstree_ListaSedi");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreePercentualiFamiglie", b =>
@@ -2442,7 +2445,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("IdSede");
 
-                    b.ToTable("Pstree_PercentualiFamiglie", (string)null);
+                    b.ToTable("Pstree_PercentualiFamiglie");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeSottoGruppi", b =>
@@ -2476,7 +2479,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("CodiceFamiglia");
 
-                    b.ToTable("Pstree_SottoGruppi", (string)null);
+                    b.ToTable("Pstree_SottoGruppi");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.PstreeStrutturaContoEconomico", b =>
@@ -2522,7 +2525,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("IdCodiceConto");
 
-                    b.ToTable("Pstree_StrutturaContoEconomico", (string)null);
+                    b.ToTable("Pstree_StrutturaContoEconomico");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.Resource", b =>
@@ -2581,7 +2584,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasIndex("ParentResourceId");
 
-                    b.ToTable("Resources", (string)null);
+                    b.ToTable("Resources");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.StatoOP", b =>
@@ -2617,7 +2620,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("Ordine")
                         .HasDatabaseName("IX_StatiOP_Ordine");
 
-                    b.ToTable("StatiOP", (string)null);
+                    b.ToTable("StatiOP");
 
                     b.HasData(
                         new
@@ -2699,7 +2702,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("CodiceAgente");
 
-                    b.ToTable("TabellaAgenti", (string)null);
+                    b.ToTable("TabellaAgenti");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.TabellaMagazzini", b =>
@@ -2722,7 +2725,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TabellaMagazzini", (string)null);
+                    b.ToTable("TabellaMagazzini");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.TempiAsciugatura", b =>
@@ -2746,7 +2749,7 @@ namespace AiDbMaster.Migrations
 
                     b.HasKey("IdMese");
 
-                    b.ToTable("TempiAsciugatura", (string)null);
+                    b.ToTable("TempiAsciugatura");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.TipoTrasporto", b =>
@@ -2783,7 +2786,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TipiTrasporto_Codice");
 
-                    b.ToTable("TipiTrasporto", (string)null);
+                    b.ToTable("TipiTrasporto");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.UserDataFilter", b =>
@@ -2823,7 +2826,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("UserId", "ResourceName")
                         .HasDatabaseName("IX_UserDataFilters_UserId_ResourceName");
 
-                    b.ToTable("UserDataFilters", (string)null);
+                    b.ToTable("UserDataFilters");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegna", b =>
@@ -2937,7 +2940,7 @@ namespace AiDbMaster.Migrations
                     b.HasIndex("DataConsegna", "MezzoTrasportoId")
                         .HasDatabaseName("IX_ViaggiConsegna_DataConsegna_Mezzo");
 
-                    b.ToTable("ViaggiConsegna", (string)null);
+                    b.ToTable("ViaggiConsegna");
                 });
 
             modelBuilder.Entity("AiDbMaster.Models.ViaggioConsegnaRiga", b =>
@@ -2985,7 +2988,7 @@ namespace AiDbMaster.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_ViaggioConsegnaRighe_Viaggio_OrdineRiga");
 
-                    b.ToTable("ViaggioConsegnaRighe", (string)null);
+                    b.ToTable("ViaggioConsegnaRighe");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

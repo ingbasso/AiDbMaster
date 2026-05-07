@@ -44,6 +44,9 @@ namespace AiDbMaster.Data
         // Tabella Log Invio Email
         public DbSet<InvioEmail> InvioEmail { get; set; }
         
+        // Tabella Log Elaborazione Email Automatiche
+        public DbSet<LogEmailAutomatico> LogEmailAutomatico { get; set; }
+        
         // Tabella Opzioni di Sistema
         public DbSet<Opzione> Opzioni { get; set; }
 
@@ -79,6 +82,12 @@ namespace AiDbMaster.Data
         public DbSet<PstreeListaSaldi> PstreeListaSaldi { get; set; }
         public DbSet<PstreePercentualiFamiglie> PstreePercentualiFamiglie { get; set; }
         public DbSet<PstreeSottoGruppi> PstreeSottoGruppi { get; set; }
+
+        // Tabella Storico Materiale Liberato
+        public DbSet<StoricoMaterialeLiberato> StoricoMaterialeLiberato { get; set; }
+
+        // Tabella Durata delle Scorte
+        public DbSet<DurataDelleScorte> DurataDelleScorte { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -147,7 +156,8 @@ namespace AiDbMaster.Data
                 .WithMany()
                 .HasForeignKey(o => o.CodiceAgente)
                 .HasPrincipalKey(a => a.CodiceAgente)
-                .OnDelete(DeleteBehavior.Restrict);
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<OrdiniTestate>()
                 .HasOne(o => o.Agente2)
@@ -1194,6 +1204,72 @@ namespace AiDbMaster.Data
                 .WithMany()
                 .HasForeignKey(p => p.IdCodiceConto)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== CONFIGURAZIONI STORICO MATERIALE LIBERATO =====
+
+            builder.Entity<StoricoMaterialeLiberato>()
+                .Property(s => s.Quantita)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<StoricoMaterialeLiberato>()
+                .Property(s => s.NumeroColli)
+                .HasColumnType("decimal(27,9)")
+                .HasDefaultValue(0m);
+
+            builder.Entity<StoricoMaterialeLiberato>()
+                .Property(s => s.UltimoAggiornamento)
+                .HasDefaultValueSql("GETDATE()");
+
+            builder.Entity<StoricoMaterialeLiberato>()
+                .HasIndex(s => s.DataLiberazione)
+                .HasDatabaseName("IX_StoricoMaterialeLiberato_DataLiberazione");
+
+            builder.Entity<StoricoMaterialeLiberato>()
+                .HasIndex(s => s.CodiceArticolo)
+                .HasDatabaseName("IX_StoricoMaterialeLiberato_CodiceArticolo");
+
+            // ===== CONFIGURAZIONI DURATA DELLE SCORTE =====
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.Esistenza)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.Disponibilita)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.ConsumoUltimoMese)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.ConsumoDueMesiFa)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.ConsumoTreMesiFa)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.ConsumoMedioPonderato)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .Property(d => d.DurataScorte)
+                .HasColumnType("decimal(27,9)");
+
+            builder.Entity<DurataDelleScorte>()
+                .HasIndex(d => d.CodiceArticolo)
+                .HasDatabaseName("IX_DurataDelleScorte_CodiceArticolo");
+
+            builder.Entity<DurataDelleScorte>()
+                .HasIndex(d => d.CodMarca)
+                .HasDatabaseName("IX_DurataDelleScorte_CodMarca");
+
+            builder.Entity<DurataDelleScorte>()
+                .HasIndex(d => d.CodFamiglia)
+                .HasDatabaseName("IX_DurataDelleScorte_CodFamiglia");
 
             // Pstree_SottoGruppi: FK verso ListaFamiglie.CodiceFamiglia
             builder.Entity<PstreeSottoGruppi>()

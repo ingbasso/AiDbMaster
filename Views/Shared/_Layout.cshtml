@@ -71,10 +71,22 @@
                                             <span>Lista Email Inviate</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item" permission-required="ListaEmailInviate:View">
+                                        <a class="sidebar-link" asp-controller="LogEmail" asp-action="Index">
+                                            <i class="bi bi-journal-text"></i>
+                                            <span>Log Email Automatiche</span>
+                                        </a>
+                                    </li>
                                     <li class="sidebar-item" permission-required="Grafici:View">
                                         <a class="sidebar-link" asp-controller="Grafici" asp-action="Index">
                                             <i class="bi bi-graph-up"></i>
                                             <span>Grafici</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="StoricoMaterialeLiberato:View">
+                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="StoricoMaterialeLiberato">
+                                            <i class="bi bi-clock-history"></i>
+                                            <span>Storico Mat. Liberato</span>
                                         </a>
                                     </li>
                                     <li class="sidebar-item" permission-required="InterrogazioniAI:View">
@@ -132,6 +144,12 @@
                                             <span>Consumi Prod. Previsti</span>
                                         </a>
                                     </li>
+                                    <li class="sidebar-item" permission-required="DurataDelleScorte:View">
+                                        <a class="sidebar-link" asp-controller="DurataDelleScorte" asp-action="Index">
+                                            <i class="bi bi-hourglass-split"></i>
+                                            <span>Durata delle Scorte</span>
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
@@ -163,8 +181,8 @@
                                             <span>Lista Viaggi Consegna</span>
                                         </a>
                                     </li>
-                                    <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
-                                        <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
+                                    <li class="sidebar-item" permission-required="OrdiniTestate:View">
+                                        <a class="sidebar-link" asp-controller="OrdiniTestate" asp-action="Index">
                                             <i class="bi bi-calendar-event"></i>
                                             <span>Lista Ordini Clienti</span>
                                         </a>
@@ -480,6 +498,12 @@
                                                 <a class="sidebar-link" asp-controller="TabellaOpzioni" asp-action="Index">
                                                     <i class="bi bi-sliders"></i>
                                                     <span>Tabella Opzioni</span>
+                                                </a>
+                                            </li>
+                                            <li class="sidebar-item" permission-required="ConsegneProgrammate:View">
+                                                <a class="sidebar-link" asp-controller="InterrogazioniDB" asp-action="ConsegneProgrammate">
+                                                    <i class="bi bi-calendar-event"></i>
+                                                    <span>Consegne Programmate</span>
                                                 </a>
                                             </li>
                                         }

@@ -786,6 +786,29 @@ namespace AiDbMaster.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequirePermission("ConsegneKanban", "Edit")]
+        public async Task<IActionResult> CancellaViaggio(int viaggioId, bool nascondiWeekend = false)
+        {
+            var viaggio = await _context.ViaggiConsegna
+                .Include(v => v.Righe)
+                .FirstOrDefaultAsync(v => v.Id == viaggioId);
+
+            if (viaggio == null)
+            {
+                TempData["ErrorMessage"] = "Viaggio non trovato.";
+                return RedirectToAction(nameof(Index), new { nascondiWeekend });
+            }
+
+            _context.ViaggioConsegnaRighe.RemoveRange(viaggio.Righe);
+            _context.ViaggiConsegna.Remove(viaggio);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Viaggio eliminato con successo.";
+            return RedirectToAction(nameof(Index), new { nascondiWeekend });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("ConsegneKanban", "Edit")]
         public async Task<IActionResult> ModificaViaggio(
             int viaggioId,
             DateTime dataConsegna,
