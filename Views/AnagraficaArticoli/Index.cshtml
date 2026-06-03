@@ -160,6 +160,7 @@
                                     <th>Marca</th>
                                     <th>Famiglia</th>
                                     <th class="text-end">Peso Kg</th>
+                                    <th class="text-center">Gg Asc. Extra</th>
                                     <th>Outlet</th>
                                     <th>F.P.</th>
                                     <th>Azioni</th>
@@ -229,6 +230,16 @@
                                             else
                                             {
                                                 <span class="text-danger">N/D</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.GiorniAsciugaturaExtra > 0)
+                                            {
+                                                <span class="badge bg-info text-white">@item.GiorniAsciugaturaExtra</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
                                             }
                                         </td>
                                         <td class="text-center">

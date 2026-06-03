@@ -228,7 +228,7 @@
                         </div>
                         <hr />
                         <div class="row text-center">
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label class="form-label fw-bold">Outlet</label>
                                 <div>
                                     @if (Model.Outlet == "S")
@@ -241,7 +241,7 @@
                                     }
                                 </div>
                             </div>
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label class="form-label fw-bold">Fuori Produzione</label>
                                 <div>
                                     @if (Model.FuoriProduzione == "S")
@@ -251,6 +251,19 @@
                                     else
                                     {
                                         <span class="badge bg-light text-dark fs-6">No</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label fw-bold">Gg Asc. Extra</label>
+                                <div>
+                                    @if (Model.GiorniAsciugaturaExtra > 0)
+                                    {
+                                        <span class="badge bg-info text-white fs-6">@Model.GiorniAsciugaturaExtra gg</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark fs-6">0</span>
                                     }
                                 </div>
                             </div>

@@ -204,6 +204,14 @@ namespace AiDbMaster.Models
         [Column("StatoArticolo", TypeName = "varchar(1)")]
         public string? StatoArticolo { get; set; }
 
+        /// <summary>
+        /// Giorni di asciugatura extra specifici per questo articolo.
+        /// Se maggiore di 0, vengono sommati ai giorni della tabella TempiAsciugatura.
+        /// </summary>
+        [Display(Name = "Giorni Asciugatura Extra")]
+        [Column("GiorniAsciugaturaExtra")]
+        public int GiorniAsciugaturaExtra { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

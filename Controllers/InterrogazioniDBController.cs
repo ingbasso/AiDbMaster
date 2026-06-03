@@ -328,6 +328,12 @@ namespace AiDbMaster.Controllers
             var tempiAsciugatura = await _context.TempiAsciugatura
                 .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
 
+            // Recupera giorni asciugatura extra dall'anagrafica articolo
+            var giorniAsciugaturaExtra = await _context.AnagraficaArticoli
+                .Where(a => a.CodiceArticolo == codiceArticolo)
+                .Select(a => a.GiorniAsciugaturaExtra)
+                .FirstOrDefaultAsync();
+
             // Calcola produzione disponibile (solo se data > oggi)
             decimal produzioneDisponibile = 0;
             if (dataRiferimento > oggi)
@@ -348,7 +354,7 @@ namespace AiDbMaster.Controllers
                 {
                     if (prod.DataFinePrevista.HasValue)
                     {
-                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0) + giorniAsciugaturaExtra;
                         var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
 
                         if (dataDisponibilita <= dataRiferimento)
@@ -475,6 +481,12 @@ namespace AiDbMaster.Controllers
             var tempiAsciugatura = await _context.TempiAsciugatura
                 .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
 
+            // Recupera giorni asciugatura extra dall'anagrafica articolo
+            var giorniAsciugaturaExtra = await _context.AnagraficaArticoli
+                .Where(a => a.CodiceArticolo == codiceArticolo)
+                .Select(a => a.GiorniAsciugaturaExtra)
+                .FirstOrDefaultAsync();
+
             // 4. Carica ordini produzione (stati: Emesso=1, In Produzione=2)
             var ordiniProduzione = await _context.ListaOP
                 .Where(op => op.CodiceArticolo == codiceArticolo)
@@ -493,7 +505,7 @@ namespace AiDbMaster.Controllers
             {
                 if (prod.DataFinePrevista.HasValue)
                 {
-                    var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                    var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0) + giorniAsciugaturaExtra;
                     var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
 
                     // Solo se la data disponibilità è nel periodo di analisi
@@ -770,6 +782,12 @@ namespace AiDbMaster.Controllers
                 var tempiAsciugatura = await _context.TempiAsciugatura
                     .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
 
+                // Recupera giorni asciugatura extra dall'anagrafica articolo
+                var giorniAsciugaturaExtra = await _context.AnagraficaArticoli
+                    .Where(a => a.CodiceArticolo == codiceArticolo)
+                    .Select(a => a.GiorniAsciugaturaExtra)
+                    .FirstOrDefaultAsync();
+
                 // Query produzioni programmate
                 var produzioni = await _context.ListaOP
                     .Where(op => op.CodiceArticolo == codiceArticolo)
@@ -797,7 +815,7 @@ namespace AiDbMaster.Controllers
                 {
                     if (prod.DataFinePrevista.HasValue)
                     {
-                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0) + giorniAsciugaturaExtra;
                         var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
                         var disponibile = dataDisponibilita <= dataRif;
 
@@ -1095,6 +1113,12 @@ namespace AiDbMaster.Controllers
                 var tempiAsciugatura = await _context.TempiAsciugatura
                     .ToDictionaryAsync(t => t.IdMese, t => t.GiorniAsciugatura);
 
+                // Recupera giorni asciugatura extra dall'anagrafica articolo
+                var giorniAsciugaturaExtra = await _context.AnagraficaArticoli
+                    .Where(a => a.CodiceArticolo == codiceArticolo)
+                    .Select(a => a.GiorniAsciugaturaExtra)
+                    .FirstOrDefaultAsync();
+
                 // 4. Carica ordini produzione (stati: Emesso=1, In Produzione=2)
                 var ordiniProduzione = await _context.ListaOP
                     .Where(op => op.CodiceArticolo == codiceArticolo)
@@ -1116,7 +1140,7 @@ namespace AiDbMaster.Controllers
                 {
                     if (prod.DataFinePrevista.HasValue)
                     {
-                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0);
+                        var giorniAsciugatura = tempiAsciugatura.GetValueOrDefault(prod.Mese, 0) + giorniAsciugaturaExtra;
                         var dataDisponibilita = prod.DataFinePrevista.Value.AddDays(giorniAsciugatura);
 
                         if (dataDisponibilita >= oggi && dataDisponibilita <= dataRiferimento)
