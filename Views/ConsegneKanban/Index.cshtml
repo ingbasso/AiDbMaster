@@ -277,6 +277,20 @@
             background: #f0f7f4;
         }
 
+        .cliente-group-header {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #0d6efd;
+            background: #e8f0fe;
+            border-radius: 4px;
+            padding: 2px 7px;
+            margin: 6px 0 3px 0;
+        }
+
+        .cliente-group-header:first-child {
+            margin-top: 0;
+        }
+
         .day-drop-hint {
             color: #9aa7b5;
             font-size: 0.8rem;
@@ -349,12 +363,10 @@
                     <small class="text-muted">Consegne</small>
                     <strong class="ms-1">@Model.DataInizio.ToString("dd/MM") - @Model.DataFine.ToString("dd/MM/yyyy")</strong>
                 </div>
-                <form method="get" asp-action="Index" class="mb-0">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" id="nascondiWeekend" name="nascondiWeekend" value="true" @(Model.NascondiWeekend ? "checked" : "") onchange="this.form.submit()" />
-                        <label class="form-check-label text-nowrap" for="nascondiWeekend">Nascondi weekend</label>
-                    </div>
-                </form>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="nascondiWeekend" @(Model.NascondiWeekend ? "checked" : "") onchange="window.location.href='@Url.Action("Index", "ConsegneKanban")?nascondiWeekend=' + this.checked" />
+                    <label class="form-check-label text-nowrap" for="nascondiWeekend">Nascondi weekend</label>
+                </div>
                 <div class="text-nowrap">
                     <small class="text-muted">Durata viaggio default</small>
                     <strong class="ms-1">@Model.DurataDefaultMinuti min</strong>
@@ -444,10 +456,6 @@
                                     @if (viaggio.Trasbordo == true) { <span class="badge bg-warning text-dark" style="font-size:0.65rem;"><i class="bi bi-arrow-left-right"></i> Trasb.</span> }
                                 </div>
                                 <div><small>@viaggio.TipoTrasporto | @viaggio.OraPartenza.ToString(@"hh\:mm") - @viaggio.OraArrivoEffettiva.ToString(@"hh\:mm")@(viaggio.Autista != null ? $" | {viaggio.Autista}" : "")</small></div>
-                                @if (viaggio.Destinazioni.Any())
-                                {
-                                    <div><small><i class="bi bi-geo-alt"></i> @string.Join(" · ", viaggio.Destinazioni)</small></div>
-                                }
                                 <div class="mt-1">
                                     <small>Carico: @viaggio.PesoTotaleKg.ToString("N0") / @viaggio.PortataMaxKg.ToString("N0") Kg</small>
                                     <div class="progress" style="height: 6px;">
@@ -473,8 +481,13 @@
                                 {
                                     <small class="text-muted">Trascina qui le righe da pianificare</small>
                                 }
-                                @foreach (var riga in viaggio.Righe)
+                                @foreach (var gruppo in viaggio.Righe.GroupBy(r => new { r.Cliente, r.Localita }).OrderBy(g => g.Key.Cliente).ThenBy(g => g.Key.Localita))
                                 {
+                                    <div class="cliente-group-header">
+                                        <i class="bi bi-person-fill"></i> @gruppo.Key.Cliente@if (!string.IsNullOrEmpty(gruppo.Key.Localita)) { <span class="ms-1 text-muted">· <i class="bi bi-geo-alt"></i> @gruppo.Key.Localita</span> }
+                                    </div>
+                                    foreach (var riga in gruppo)
+                                    {
                                     <div class="assigned-card"
                                          data-source-type="assigned"
                                          data-viaggio-riga-id="@riga.ViaggioRigaId"
@@ -489,6 +502,7 @@
                                         <div><small>@riga.CodiceArticolo - @riga.DescrizioneArticolo</small></div>
                                         <div><small>Qta: @riga.QuantitaAssegnata.ToString("N2") | Peso: @riga.PesoTotaleKg.ToString("N0") Kg</small></div>
                                     </div>
+                                    }
                                 }
                             </div>
                         </div>

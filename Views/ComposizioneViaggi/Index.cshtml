@@ -772,6 +772,10 @@
                             <select id="viaggioAutista" class="form-select form-select-sm">
                                 <option value="">-- Nessuno --</option>
                             </select>
+                            <div id="warningAutistaNonDefault" class="alert alert-warning py-1 px-2 mt-1 mb-0 small align-items-center" style="display:none;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span id="warningAutistaNonDefaultText"></span>
+                            </div>
                         </div>
                         <div class="form-section span-full">
                             <label>Mezzo Esterno</label>
@@ -1381,6 +1385,7 @@ $(function () {
 
     // ===== INIZIALIZZAZIONE =====
     const oggi = new Date();
+    var kanbanWindow = null;
     caricaProvince();
     caricaDatiViaggio();
 
@@ -2191,7 +2196,7 @@ $(function () {
             data.tipiTrasporto.forEach(t => selTipo.append(`<option value="${t.id}" data-codice="${t.codice}">${t.descrizione}</option>`));
 
             const selMI = $('#viaggioMezzoInterno');
-            data.mezziInterni.forEach(m => selMI.append(`<option value="${m.id}" data-portata="${m.portataMaxKg}" data-rimorchio="${m.rimorchioDisponibile}" data-portata-rimorchio="${m.portataMaxConRimorchioKg || 0}">${m.descrizione}</option>`));
+            data.mezziInterni.forEach(m => selMI.append(`<option value="${m.id}" data-portata="${m.portataMaxKg}" data-rimorchio="${m.rimorchioDisponibile}" data-portata-rimorchio="${m.portataMaxConRimorchioKg || 0}" data-autista-default="${m.autistaDefaultId || ''}">${m.descrizione}</option>`));
 
             const selAut = $('#viaggioAutista');
             data.autisti.forEach(a => selAut.append(`<option value="${a.id}">${a.nome}</option>`));
@@ -2518,6 +2523,33 @@ $(function () {
     $('#viaggioOraPartenza').on('change', calcolaPlaceholderOraArrivo);
     calcolaPlaceholderOraArrivo();
 
+    function controllaAutistaDefault() {
+        const $warnDiv = $('#warningAutistaNonDefault');
+        const $warnText = $('#warningAutistaNonDefaultText');
+        const mezzoId = $('#viaggioMezzoInterno').val();
+        const autistaId = $('#viaggioAutista').val();
+
+        if (!mezzoId || !autistaId) {
+            $warnDiv.css('display', 'none');
+            return;
+        }
+
+        const autistaDefaultId = $('#viaggioMezzoInterno').find(':selected').data('autista-default');
+        if (!autistaDefaultId) {
+            $warnDiv.css('display', 'none');
+            return;
+        }
+
+        if (String(autistaId) !== String(autistaDefaultId)) {
+            const nomeAutistaDefault = $(`#viaggioAutista option[value="${autistaDefaultId}"]`).text() || '?';
+            const nomeMezzo = $('#viaggioMezzoInterno').find(':selected').text();
+            $warnText.text(`Attenzione: l'autista di default per "${nomeMezzo}" è ${nomeAutistaDefault}`);
+            $warnDiv.css('display', 'flex');
+        } else {
+            $warnDiv.css('display', 'none');
+        }
+    }
+
     // Toggle checkbox rimorchio quando cambia mezzo interno
     $('#viaggioMezzoInterno').on('change', function () {
         const $opt = $(this).find(':selected');
@@ -2528,7 +2560,18 @@ $(function () {
             $('#viaggioConRimorchioWrap').hide();
             $('#viaggioConRimorchio').prop('checked', false);
         }
+
+        const autistaDefaultId = $opt.data('autista-default');
+        if (autistaDefaultId && $(this).val()) {
+            $('#viaggioAutista').val(autistaDefaultId);
+        }
+
+        controllaAutistaDefault();
         controllaPesoMax();
+    });
+
+    $('#viaggioAutista').on('change', function () {
+        controllaAutistaDefault();
     });
 
     $('#viaggioConRimorchio').on('change', function () { controllaPesoMax(); });
@@ -2636,6 +2679,7 @@ $(function () {
         $('#viaggioNote').val('');
         $('#viaggioConRimorchio').prop('checked', false);
         $('#viaggioConRimorchioWrap').hide();
+        $('#warningAutistaNonDefault').css('display', 'none');
         clearMezzoEsterno();
 
         // Aggiorna URL senza viaggioId
@@ -2689,6 +2733,7 @@ $(function () {
                         $('#viaggioConRimorchio').prop('checked', true);
                         $('#viaggioConRimorchioWrap').show();
                     }
+                    controllaAutistaDefault();
                 }, 100);
             }
             compilaForm();
@@ -2831,10 +2876,27 @@ $(function () {
                     aggiornaCarrello();
                     caricaRighe();
                     caricaConteggi();
+                    $('#viaggioDataConsegna').val(oggi.toISOString().split('T')[0]);
+                    $('#viaggioTipoTrasporto').val('').trigger('change');
+                    $('#viaggioMezzoInterno').val('');
+                    $('#viaggioAutista').val('');
+                    $('#viaggioOraPartenza').val('06:00');
+                    $('#viaggioOraArrivo').val('');
                     $('#viaggioNote').val('');
                     $('#viaggioConRimorchio').prop('checked', false);
                     $('#viaggioConRimorchioWrap').hide();
+                    $('#viaggioCostoTrasporto').val('');
+                    $('#viaggioCostoTrasportoWrap').hide();
+                    $('#warningAutistaNonDefault').css('display', 'none');
                     clearMezzoEsterno();
+
+                    var kanbanUrl = '@Url.Action("Index", "ConsegneKanban")';
+                    if (kanbanWindow && !kanbanWindow.closed) {
+                        kanbanWindow.location.href = kanbanUrl;
+                    } else {
+                        kanbanWindow = window.open(kanbanUrl, 'consegneKanbanTab');
+                    }
+                    window.focus();
                 } else {
                     showAlert(result.message, 'danger');
                 }

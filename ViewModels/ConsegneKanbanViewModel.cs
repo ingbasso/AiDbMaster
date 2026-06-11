@@ -53,6 +53,7 @@ namespace AiDbMaster.ViewModels
         public bool? Trasbordo { get; set; }
         public decimal Margine => (PrezzoVendita ?? 0) - (CostoTrasporto ?? 0);
         public List<string> Destinazioni { get; set; } = new();
+        public List<string> Clienti { get; set; } = new();
         public List<RigaAssegnataDto> Righe { get; set; } = new();
     }
 
@@ -68,6 +69,8 @@ namespace AiDbMaster.ViewModels
         public decimal QuantitaAssegnata { get; set; }
         public decimal PesoTotaleKg { get; set; }
         public string? NoteRiga { get; set; }
+        public string Cliente { get; set; } = string.Empty;
+        public string? Localita { get; set; }
     }
 
     public class RigaOrdineDaPianificareDto

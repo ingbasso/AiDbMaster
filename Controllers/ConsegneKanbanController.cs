@@ -153,6 +153,10 @@ namespace AiDbMaster.Controllers
                         : null;
                 });
 
+            var clientePerRigaOrdine = righeOrdine.ToDictionary(
+                x => x.Riga.Id,
+                x => x.Cliente.RagioneSociale ?? $"Cliente {x.Testata.CodiceCliente}");
+
             var totalDays = (endDate - startDate).Days + 1;
             var giorniRange = Enumerable.Range(0, totalDays)
                 .Select(offset => startDate.AddDays(offset))
@@ -209,6 +213,11 @@ namespace AiDbMaster.Controllers
                                     .Where(loc => !string.IsNullOrEmpty(loc))
                                     .Distinct()
                                     .ToList()!,
+                                Clienti = v.Righe
+                                    .Select(r => clientePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var cli) ? cli : null)
+                                    .Where(cli => !string.IsNullOrEmpty(cli))
+                                    .Distinct()
+                                    .ToList()!,
                                 Righe = v.Righe.Select(r => new RigaAssegnataDto
                                 {
                                     ViaggioRigaId = r.Id,
@@ -220,7 +229,9 @@ namespace AiDbMaster.Controllers
                                     DescrizioneArticolo = r.OrdineRiga?.DescrizioneArticolo,
                                     QuantitaAssegnata = r.QuantitaAssegnata,
                                     PesoTotaleKg = r.PesoTotaleKgSnapshot,
-                                    NoteRiga = r.NoteRiga
+                                    NoteRiga = r.NoteRiga,
+                                    Cliente = clientePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var cli) ? cli : "",
+                                    Localita = destinazionePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var loc) ? loc : null
                                 }).ToList()
                             };
                         }).ToList()

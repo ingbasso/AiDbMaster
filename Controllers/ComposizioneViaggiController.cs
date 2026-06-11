@@ -720,7 +720,8 @@ namespace AiDbMaster.Controllers
                         descrizione = m.Descrizione,
                         portataMaxKg = m.PortataMaxKg,
                         rimorchioDisponibile = m.RimorchioDisponibile,
-                        portataMaxConRimorchioKg = m.PortataMaxConRimorchioKg
+                        portataMaxConRimorchioKg = m.PortataMaxConRimorchioKg,
+                        autistaDefaultId = m.AutistaDefaultId
                     })
                     .ToListAsync();
 
