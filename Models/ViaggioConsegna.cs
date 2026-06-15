@@ -112,6 +112,7 @@ namespace AiDbMaster.Models
         public virtual Autista? Autista { get; set; }
 
         public virtual ICollection<ViaggioConsegnaRiga> Righe { get; set; } = new List<ViaggioConsegnaRiga>();
+        public virtual ICollection<ViaggioConsegnaDestinazione> Destinazioni { get; set; } = new List<ViaggioConsegnaDestinazione>();
 
         [NotMapped]
         public TimeSpan OraArrivoEffettiva => OraArrivo ?? OraPartenza.Add(TimeSpan.FromMinutes(DurataStimataMinuti));

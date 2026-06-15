@@ -56,6 +56,7 @@ namespace AiDbMaster.Data
         public DbSet<MezzoTrasporto> MezziTrasporto { get; set; }
         public DbSet<ViaggioConsegna> ViaggiConsegna { get; set; }
         public DbSet<ViaggioConsegnaRiga> ViaggioConsegnaRighe { get; set; }
+        public DbSet<ViaggioConsegnaDestinazione> ViaggioConsegnaDestinazioni { get; set; }
         public DbSet<MezzoTrasportoEsterno> MezziTrasportoEsterni { get; set; }
         
         // Tabelle Distinte Base (Testate, Cicli e Materiali)
@@ -724,6 +725,17 @@ namespace AiDbMaster.Data
             builder.Entity<ViaggioConsegnaRiga>()
                 .Property(r => r.PesoTotaleKgSnapshot)
                 .HasColumnType("decimal(18,3)");
+
+            builder.Entity<ViaggioConsegnaDestinazione>()
+                .HasOne(d => d.ViaggioConsegna)
+                .WithMany(v => v.Destinazioni)
+                .HasForeignKey(d => d.ViaggioConsegnaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ViaggioConsegnaDestinazione>()
+                .HasIndex(d => new { d.ViaggioConsegnaId, d.CodiceCliente, d.CodiceDestinazione })
+                .IsUnique()
+                .HasDatabaseName("IX_ViaggioConsegnaDestinazioni_Viaggio_Cliente_Dest");
 
             // ===== CONFIGURAZIONI MEZZI TRASPORTO ESTERNI =====
 

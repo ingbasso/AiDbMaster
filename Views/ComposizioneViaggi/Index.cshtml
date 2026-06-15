@@ -1223,6 +1223,7 @@ $(function () {
     let clientiSelezionati = [];
     let tipoMezzoAttivo = 'MotriceGru';
     let righeCarrello = [];
+    let destinazioniFlags = {};
     let datiViaggio = null;
     let viaggioIdInModifica = @(ViewBag.ViaggioId != null ? ViewBag.ViaggioId.ToString() : "null");
     let modalitaModifica = viaggioIdInModifica !== null;
@@ -1718,6 +1719,8 @@ $(function () {
                         <td><input type="checkbox" class="riga-check" value="${r.rigaId}" ${disabled} ${checked}
                             data-ordine="${r.numeroOrdine}"
                             data-cliente="${r.cliente}"
+                            data-codice-cliente="${r.codiceCliente}"
+                            data-codice-destinazione="${r.codiceDestinazione ?? ''}"
                             data-articolo="${r.codiceArticolo}"
                             data-descrizione="${r.descrizioneArticolo}"
                             data-quantita="${qtaDaSpedire}"
@@ -2062,6 +2065,8 @@ $(function () {
                 rigaId: rigaId,
                 ordine: $cb.data('ordine'),
                 cliente: $cb.data('cliente'),
+                codiceCliente: parseInt($cb.data('codice-cliente')) || 0,
+                codiceDestinazione: $cb.data('codice-destinazione') ? parseInt($cb.data('codice-destinazione')) : null,
                 articolo: $cb.data('articolo'),
                 descrizione: $cb.data('descrizione'),
                 quantita: qta,
@@ -2108,6 +2113,8 @@ $(function () {
             rigaId: rigaId,
             ordine: $checkbox.data('ordine'),
             cliente: $checkbox.data('cliente'),
+            codiceCliente: parseInt($checkbox.data('codice-cliente')) || 0,
+            codiceDestinazione: $checkbox.data('codice-destinazione') ? parseInt($checkbox.data('codice-destinazione')) : null,
             articolo: $checkbox.data('articolo'),
             descrizione: $checkbox.data('descrizione'),
             quantita: qta,
@@ -2157,32 +2164,100 @@ $(function () {
             return;
         }
 
-        // Raggruppa per provincia + localita
         const grouped = {};
         righeCarrello.forEach(r => {
-            const key = `${r.provincia} - ${r.localita}`;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(r);
+            const destKey = `${r.codiceCliente}|${r.codiceDestinazione ?? ''}`;
+            if (!grouped[destKey]) {
+                grouped[destKey] = { cliente: r.cliente, provincia: r.provincia, localita: r.localita, codiceCliente: r.codiceCliente, codiceDestinazione: r.codiceDestinazione, righe: [] };
+            }
+            grouped[destKey].righe.push(r);
+
+            if (!(destKey in destinazioniFlags)) {
+                destinazioniFlags[destKey] = { gru: true, trasbordo: false, prezzoVendita: 0 };
+            }
+        });
+
+        Object.keys(destinazioniFlags).forEach(k => {
+            if (!grouped[k]) delete destinazioniFlags[k];
         });
 
         let html = '';
-        Object.keys(grouped).sort().forEach(key => {
-            html += `<div class="mb-2"><small class="fw-bold text-muted"><i class="bi bi-geo-alt me-1"></i>${key}</small></div>`;
-            grouped[key].forEach(r => {
+        Object.keys(grouped).sort((a, b) => {
+            const ga = grouped[a], gb = grouped[b];
+            return (ga.cliente || '').localeCompare(gb.cliente || '') || (ga.localita || '').localeCompare(gb.localita || '');
+        }).forEach(destKey => {
+            const g = grouped[destKey];
+            const flags = destinazioniFlags[destKey];
+            const gruClass = flags.gru ? 'bg-info' : 'bg-light text-muted border';
+            const trasbClass = flags.trasbordo ? 'bg-warning text-dark' : 'bg-light text-muted border';
+
+            html += `<div class="mb-2 d-flex align-items-center flex-wrap gap-1" style="font-size:0.78rem;">
+                <small class="fw-bold text-primary"><i class="bi bi-person-fill me-1"></i>${g.cliente}</small>`;
+            if (g.localita) {
+                html += `<small class="text-muted">· <i class="bi bi-geo-alt"></i> ${g.localita}</small>`;
+            }
+            html += `<span class="badge ${gruClass} ms-1" style="cursor:pointer;font-size:0.68rem;" onclick="window.toggleDestFlag('${destKey}','gru')" title="Gru"><i class="bi bi-arrow-up-square"></i> Gru</span>`;
+            html += `<span class="badge ${trasbClass} ms-1" style="cursor:pointer;font-size:0.68rem;" onclick="window.toggleDestFlag('${destKey}','trasbordo')" title="Trasbordo"><i class="bi bi-arrow-left-right"></i> Trasb.</span>`;
+            const escapedKey = destKey.replace(/'/g, "\\'");
+            html += `<div class="d-flex align-items-center ms-auto" style="font-size:0.72rem;">
+                <label class="me-1 text-nowrap fw-semibold">€</label>
+                <input type="number" class="form-control form-control-sm dest-prezzo-input" style="width:80px;font-size:0.75rem;padding:1px 4px;"
+                    step="0.01" min="0" value="${flags.prezzoVendita.toFixed(2)}"
+                    onchange="window.updateDestPrezzo('${escapedKey}', this.value)" />
+            </div>`;
+            html += `</div>`;
+
+            g.righe.forEach(r => {
                 html += `<div class="carrello-item">
                     <button class="btn btn-sm btn-outline-danger btn-remove" onclick="window.rimuoviRiga(${r.rigaId})">&times;</button>
-                    <div><strong>${r.ordine}</strong> - ${r.cliente}</div>
+                    <div><strong>${r.ordine}</strong></div>
                     <div class="text-muted">${r.articolo} - Qta: ${r.quantita.toFixed(2)} - ${r.pesoKgTotale.toFixed(2)} Kg</div>
                 </div>`;
             });
         });
+
+        html += `<div id="carrelloTotali" class="border-top mt-2 pt-2" style="font-size:0.78rem;"></div>`;
         body.html(html);
+        aggiornaTotaliCarrello();
         controllaPesoMax();
     }
 
     window.rimuoviRiga = function (rigaId) {
         rimuoviDalCarrello(rigaId);
     };
+
+    window.toggleDestFlag = function (destKey, campo) {
+        if (destinazioniFlags[destKey]) {
+            destinazioniFlags[destKey][campo] = !destinazioniFlags[destKey][campo];
+            aggiornaCarrello();
+        }
+    };
+
+    window.updateDestPrezzo = function (destKey, valore) {
+        if (destinazioniFlags[destKey]) {
+            destinazioniFlags[destKey].prezzoVendita = parseFloat(valore) || 0;
+            aggiornaTotaliCarrello();
+        }
+    };
+
+    function aggiornaTotaliCarrello() {
+        const totalePrezzoVendita = Object.values(destinazioniFlags).reduce((s, f) => s + (f.prezzoVendita || 0), 0);
+        const costoTrasporto = parseFloat($('#viaggioCostoTrasporto').val()) || 0;
+        const margine = totalePrezzoVendita - costoTrasporto;
+        const margineClass = margine >= 0 ? 'text-success' : 'text-danger';
+
+        let totHtml = `<div class="d-flex justify-content-between fw-bold">
+            <span><i class="bi bi-currency-euro me-1"></i>Totale Prezzo Vendita</span>
+            <span>€ ${totalePrezzoVendita.toFixed(2)}</span>
+        </div>`;
+        if (costoTrasporto > 0) {
+            totHtml += `<div class="d-flex justify-content-between ${margineClass}">
+                <span><i class="bi bi-graph-up me-1"></i>Margine</span>
+                <span>€ ${margine.toFixed(2)}</span>
+            </div>`;
+        }
+        $('#carrelloTotali').html(totHtml);
+    }
 
     // ===== DATI VIAGGIO (DROPDOWN) =====
     function caricaDatiViaggio() {
@@ -2743,6 +2818,8 @@ $(function () {
                 rigaId: r.rigaId,
                 ordine: r.ordine,
                 cliente: r.cliente,
+                codiceCliente: r.codiceCliente || 0,
+                codiceDestinazione: r.codiceDestinazione ?? null,
                 articolo: r.codiceArticolo,
                 descrizione: r.descrizione,
                 quantita: r.quantita,
@@ -2752,6 +2829,14 @@ $(function () {
                 provincia: r.provincia,
                 localita: r.localita
             }));
+
+            destinazioniFlags = {};
+            if (resp.destinazioniFlags) {
+                resp.destinazioniFlags.forEach(df => {
+                    const key = `${df.codiceCliente}|${df.codiceDestinazione ?? ''}`;
+                    destinazioniFlags[key] = { gru: df.gru, trasbordo: df.trasbordo, prezzoVendita: df.prezzoVendita || 0 };
+                });
+            }
 
             aggiornaCarrello();
 
@@ -2783,6 +2868,12 @@ $(function () {
         const oraPartenza = $('#viaggioOraPartenza').val() || '06:00';
         const oraArrivo = $('#viaggioOraArrivo').val() || null;
 
+        const destFlagsMod = Object.keys(destinazioniFlags).map(k => {
+            const parts = k.split('|');
+            const f = destinazioniFlags[k];
+            return { codiceCliente: parseInt(parts[0]), codiceDestinazione: parts[1] ? parseInt(parts[1]) : null, gru: f.gru, trasbordo: f.trasbordo, prezzoVendita: f.prezzoVendita || 0 };
+        });
+
         const payload = {
             viaggioId: viaggioIdInModifica,
             righe: righeCarrello.map(r => ({ rigaId: r.rigaId, quantita: r.quantita })),
@@ -2795,7 +2886,8 @@ $(function () {
             oraArrivo: oraArrivo ? oraArrivo + ':00' : null,
             note: $('#viaggioNote').val() || null,
             conRimorchio: $('#viaggioConRimorchio').is(':checked'),
-            costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null
+            costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null,
+            destinazioniFlags: destFlagsMod
         };
 
         $('#btnCreaViaggio').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Salvataggio...');
@@ -2846,6 +2938,12 @@ $(function () {
         const oraPartenza = $('#viaggioOraPartenza').val() || '06:00';
         const oraArrivo = $('#viaggioOraArrivo').val() || null;
 
+        const destFlags = Object.keys(destinazioniFlags).map(k => {
+            const parts = k.split('|');
+            const f = destinazioniFlags[k];
+            return { codiceCliente: parseInt(parts[0]), codiceDestinazione: parts[1] ? parseInt(parts[1]) : null, gru: f.gru, trasbordo: f.trasbordo, prezzoVendita: f.prezzoVendita || 0 };
+        });
+
         const payload = {
             righe: righeCarrello.map(r => ({ rigaId: r.rigaId, quantita: r.quantita })),
             dataConsegna: dataConsegna,
@@ -2859,7 +2957,8 @@ $(function () {
             note: $('#viaggioNote').val() || null,
             conRimorchio: $('#viaggioConRimorchio').is(':checked'),
             costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null,
-            forzaQuantita: forzaQuantita === true
+            forzaQuantita: forzaQuantita === true,
+            destinazioniFlags: destFlags
         };
 
         $('#btnCreaViaggio').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creazione...');
@@ -2873,6 +2972,7 @@ $(function () {
                 if (result.success) {
                     showAlert(result.message, 'success');
                     righeCarrello = [];
+                    destinazioniFlags = {};
                     aggiornaCarrello();
                     caricaRighe();
                     caricaConteggi();

@@ -462,6 +462,10 @@
                                         <div class="progress-bar @barClass" style="width: @Math.Min(100, viaggio.PercentualeCarico)%"></div>
                                     </div>
                                 </div>
+                                @if ((viaggio.CostoTrasporto ?? 0) > 0)
+                                {
+                                    <div class="mt-1"><small class="fw-semibold"><i class="bi bi-currency-euro me-1"></i>Costo: € @((viaggio.CostoTrasporto ?? 0).ToString("N2"))</small></div>
+                                }
                                 <div class="mt-1 d-flex gap-1 trip-print-buttons">
                                     <a href="@Url.Action("StampaFoglioViaggio", new { id = viaggio.Id })" target="_blank" class="btn btn-sm" title="Foglio viaggio (autista)" onclick="event.stopPropagation();">
                                         <i class="bi bi-file-earmark-text"></i> Viaggio
@@ -483,8 +487,34 @@
                                 }
                                 @foreach (var gruppo in viaggio.Righe.GroupBy(r => new { r.Cliente, r.Localita }).OrderBy(g => g.Key.Cliente).ThenBy(g => g.Key.Localita))
                                 {
-                                    <div class="cliente-group-header">
-                                        <i class="bi bi-person-fill"></i> @gruppo.Key.Cliente@if (!string.IsNullOrEmpty(gruppo.Key.Localita)) { <span class="ms-1 text-muted">· <i class="bi bi-geo-alt"></i> @gruppo.Key.Localita</span> }
+                                    var primaRigaGruppo = gruppo.First();
+                                    <div class="cliente-group-header d-flex align-items-center flex-wrap">
+                                        <span><i class="bi bi-person-fill"></i> @gruppo.Key.Cliente</span>
+                                        @if (!string.IsNullOrEmpty(gruppo.Key.Localita)) { <span class="ms-1 text-muted">· <i class="bi bi-geo-alt"></i> @gruppo.Key.Localita</span> }
+                                        <span class="badge @(primaRigaGruppo.GruDestinazione ? "bg-info" : "bg-light text-muted border") ms-1 dest-flag-toggle"
+                                              style="cursor:pointer"
+                                              title="Clicca per attivare/disattivare Gru"
+                                              data-viaggio-id="@viaggio.Id"
+                                              data-codice-cliente="@primaRigaGruppo.CodiceCliente"
+                                              data-codice-destinazione="@(primaRigaGruppo.CodiceDestinazione?.ToString() ?? "")"
+                                              data-campo="Gru"
+                                              data-attivo="@primaRigaGruppo.GruDestinazione.ToString().ToLower()">
+                                            <i class="bi bi-arrow-up-square"></i> Gru
+                                        </span>
+                                        <span class="badge @(primaRigaGruppo.TrasbordoDestinazione ? "bg-warning text-dark" : "bg-light text-muted border") ms-1 dest-flag-toggle"
+                                              style="cursor:pointer"
+                                              title="Clicca per attivare/disattivare Trasbordo"
+                                              data-viaggio-id="@viaggio.Id"
+                                              data-codice-cliente="@primaRigaGruppo.CodiceCliente"
+                                              data-codice-destinazione="@(primaRigaGruppo.CodiceDestinazione?.ToString() ?? "")"
+                                              data-campo="Trasbordo"
+                                              data-attivo="@primaRigaGruppo.TrasbordoDestinazione.ToString().ToLower()">
+                                            <i class="bi bi-arrow-left-right"></i> Trasb.
+                                        </span>
+                                        @if (primaRigaGruppo.PrezzoVenditaDestinazione > 0)
+                                        {
+                                            <span class="badge bg-success ms-1" style="font-size:0.65rem;"><i class="bi bi-currency-euro"></i> @primaRigaGruppo.PrezzoVenditaDestinazione.ToString("N2")</span>
+                                        }
                                     </div>
                                     foreach (var riga in gruppo)
                                     {
@@ -503,6 +533,32 @@
                                         <div><small>Qta: @riga.QuantitaAssegnata.ToString("N2") | Peso: @riga.PesoTotaleKg.ToString("N0") Kg</small></div>
                                     </div>
                                     }
+                                }
+                                @{
+                                    var totalePrezzoViaggio = viaggio.Righe
+                                        .GroupBy(r => new { r.CodiceCliente, r.CodiceDestinazione })
+                                        .Sum(g => g.First().PrezzoVenditaDestinazione);
+                                    var costoViaggio = viaggio.CostoTrasporto ?? 0;
+                                    var margineViaggio = totalePrezzoViaggio - costoViaggio;
+                                }
+                                @if (totalePrezzoViaggio > 0 || costoViaggio > 0)
+                                {
+                                    <div class="border-top mt-1 pt-1" style="font-size:0.68rem;">
+                                        @if (totalePrezzoViaggio > 0)
+                                        {
+                                            <div class="d-flex justify-content-between fw-bold">
+                                                <span><i class="bi bi-currency-euro me-1"></i>Tot. Vendita</span>
+                                                <span>€ @totalePrezzoViaggio.ToString("N2")</span>
+                                            </div>
+                                        }
+                                        @if (costoViaggio > 0)
+                                        {
+                                            <div class="d-flex justify-content-between @(margineViaggio >= 0 ? "text-success" : "text-danger")">
+                                                <span><i class="bi bi-graph-up me-1"></i>Margine</span>
+                                                <span>€ @margineViaggio.ToString("N2")</span>
+                                            </div>
+                                        }
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -1809,6 +1865,49 @@
                         body.innerHTML = '<div class="alert alert-danger mb-0">Errore nel caricamento dei dati.</div>';
                     });
             }
+            document.querySelectorAll('.dest-flag-toggle').forEach(function(badge) {
+                badge.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var el = this;
+                    var viaggioId = parseInt(el.dataset.viaggioId);
+                    var codiceCliente = parseInt(el.dataset.codiceCliente);
+                    var codiceDestRaw = el.dataset.codiceDestinazione;
+                    var codiceDestinazione = codiceDestRaw ? parseInt(codiceDestRaw) : null;
+                    var campo = el.dataset.campo;
+                    var attivo = el.dataset.attivo === 'true';
+                    var nuovoValore = !attivo;
+
+                    fetch('@Url.Action("ToggleDestinazioneFlag", "ConsegneKanban")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({
+                            viaggioId: viaggioId,
+                            codiceCliente: codiceCliente,
+                            codiceDestinazione: codiceDestinazione,
+                            campo: campo,
+                            valore: nuovoValore
+                        })
+                    })
+                    .then(function(resp) { return resp.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            el.dataset.attivo = nuovoValore.toString();
+                            if (campo === 'Gru') {
+                                el.className = nuovoValore
+                                    ? 'badge bg-info ms-1 dest-flag-toggle'
+                                    : 'badge bg-light text-muted border ms-1 dest-flag-toggle';
+                            } else {
+                                el.className = nuovoValore
+                                    ? 'badge bg-warning text-dark ms-1 dest-flag-toggle'
+                                    : 'badge bg-light text-muted border ms-1 dest-flag-toggle';
+                            }
+                        }
+                    });
+                });
+            });
         })();
     </script>
 }

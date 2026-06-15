@@ -41,6 +41,7 @@ namespace AiDbMaster.Controllers
                 .Include(v => v.Autista)
                 .Include(v => v.Righe)
                     .ThenInclude(r => r.OrdineRiga)
+                .Include(v => v.Destinazioni)
                 .Where(v => v.DataConsegna >= startDate && v.DataConsegna <= endDate && v.Stato != "Annullato")
                 .OrderBy(v => v.DataConsegna)
                 .ThenBy(v => v.OraPartenza)
@@ -157,6 +158,10 @@ namespace AiDbMaster.Controllers
                 x => x.Riga.Id,
                 x => x.Cliente.RagioneSociale ?? $"Cliente {x.Testata.CodiceCliente}");
 
+            var codiciPerRigaOrdine = righeOrdine.ToDictionary(
+                x => x.Riga.Id,
+                x => new { x.Testata.CodiceCliente, x.Testata.CodiceDestinazione });
+
             var totalDays = (endDate - startDate).Days + 1;
             var giorniRange = Enumerable.Range(0, totalDays)
                 .Select(offset => startDate.AddDays(offset))
@@ -218,20 +223,43 @@ namespace AiDbMaster.Controllers
                                     .Where(cli => !string.IsNullOrEmpty(cli))
                                     .Distinct()
                                     .ToList()!,
-                                Righe = v.Righe.Select(r => new RigaAssegnataDto
+                                Righe = v.Righe.Select(r =>
                                 {
-                                    ViaggioRigaId = r.Id,
-                                    OrdineRigaId = r.OrdineRigaId,
-                                    OrdineCompleto = r.OrdineRiga != null ? $"{r.OrdineRiga.TipoOrdine}{r.OrdineRiga.AnnoOrdine}/{r.OrdineRiga.SerieOrdine}/{r.OrdineRiga.NumeroOrdine:D6}" : "N/D",
-                                    RigaOrdine = r.OrdineRiga?.RigaOrdine ?? 0,
-                                    DataConsegna = r.OrdineRiga?.DataConsegna ?? DateTime.MinValue,
-                                    CodiceArticolo = r.OrdineRiga?.CodiceArticolo ?? "N/D",
-                                    DescrizioneArticolo = r.OrdineRiga?.DescrizioneArticolo,
-                                    QuantitaAssegnata = r.QuantitaAssegnata,
-                                    PesoTotaleKg = r.PesoTotaleKgSnapshot,
-                                    NoteRiga = r.NoteRiga,
-                                    Cliente = clientePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var cli) ? cli : "",
-                                    Localita = destinazionePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var loc) ? loc : null
+                                    var gruDest = false;
+                                    var trasbordoDest = false;
+                                    var prezzoVenditaDest = 0m;
+                                    if (codiciPerRigaOrdine.TryGetValue(r.OrdineRigaId, out var codici))
+                                    {
+                                        var dest = v.Destinazioni.FirstOrDefault(d =>
+                                            d.CodiceCliente == codici.CodiceCliente
+                                            && d.CodiceDestinazione == codici.CodiceDestinazione);
+                                        if (dest != null)
+                                        {
+                                            gruDest = dest.Gru;
+                                            trasbordoDest = dest.Trasbordo;
+                                            prezzoVenditaDest = dest.PrezzoVendita;
+                                        }
+                                    }
+                                    return new RigaAssegnataDto
+                                    {
+                                        ViaggioRigaId = r.Id,
+                                        OrdineRigaId = r.OrdineRigaId,
+                                        OrdineCompleto = r.OrdineRiga != null ? $"{r.OrdineRiga.TipoOrdine}{r.OrdineRiga.AnnoOrdine}/{r.OrdineRiga.SerieOrdine}/{r.OrdineRiga.NumeroOrdine:D6}" : "N/D",
+                                        RigaOrdine = r.OrdineRiga?.RigaOrdine ?? 0,
+                                        DataConsegna = r.OrdineRiga?.DataConsegna ?? DateTime.MinValue,
+                                        CodiceArticolo = r.OrdineRiga?.CodiceArticolo ?? "N/D",
+                                        DescrizioneArticolo = r.OrdineRiga?.DescrizioneArticolo,
+                                        QuantitaAssegnata = r.QuantitaAssegnata,
+                                        PesoTotaleKg = r.PesoTotaleKgSnapshot,
+                                        NoteRiga = r.NoteRiga,
+                                        Cliente = clientePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var cli) ? cli : "",
+                                        Localita = destinazionePerRigaOrdine.TryGetValue(r.OrdineRigaId, out var loc) ? loc : null,
+                                        CodiceCliente = codici?.CodiceCliente ?? 0,
+                                        CodiceDestinazione = codici?.CodiceDestinazione,
+                                        GruDestinazione = gruDest,
+                                        TrasbordoDestinazione = trasbordoDest,
+                                        PrezzoVenditaDestinazione = prezzoVenditaDest
+                                    };
                                 }).ToList()
                             };
                         }).ToList()
@@ -433,6 +461,7 @@ namespace AiDbMaster.Controllers
             });
 
             await _context.SaveChangesAsync();
+            await SincronizzaDestinazioniViaggioAsync(viaggioId);
 
             if (pesoMancante)
                 TempData["ErrorMessage"] = $"⚠️ Riga assegnata, ma l'articolo {rigaOrdine.CodiceArticolo} non ha peso unitario. Il controllo capacità è stato saltato.";
@@ -543,6 +572,12 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
+                if (origineId != destinazioneId)
+                {
+                    await SincronizzaDestinazioniViaggioAsync(destinazioneId);
+                    await SincronizzaDestinazioniViaggioAsync(origineId);
+                }
+
                 var msgOk = origineId == destinazioneId
                     ? "Riga viaggio aggiornata con successo."
                     : "Riga viaggio spostata con successo.";
@@ -592,6 +627,7 @@ namespace AiDbMaster.Controllers
                 });
 
                 await _context.SaveChangesAsync();
+                await SincronizzaDestinazioniViaggioAsync(viaggioDestId);
 
                 if (pesoMancante)
                     TempData["ErrorMessage"] = warningPeso;
@@ -741,6 +777,7 @@ namespace AiDbMaster.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await SincronizzaDestinazioniViaggioAsync(viaggio.Id);
                 await transaction.CommitAsync();
 
                 if (pesoMancante)
@@ -788,6 +825,7 @@ namespace AiDbMaster.Controllers
             else
             {
                 await _context.SaveChangesAsync();
+                await SincronizzaDestinazioniViaggioAsync(viaggio.Id);
                 TempData["SuccessMessage"] = "Riga liberata dal viaggio.";
             }
 
@@ -892,6 +930,38 @@ namespace AiDbMaster.Controllers
 
             TempData["SuccessMessage"] = "Viaggio modificato con successo.";
             return RedirectToAction(nameof(Index), new { nascondiWeekend });
+        }
+
+        [HttpPost]
+        [RequirePermission("ConsegneKanban", "Edit")]
+        public async Task<IActionResult> ToggleDestinazioneFlag([FromBody] ToggleDestinazioneFlagRequest request)
+        {
+            var dest = await _context.ViaggioConsegnaDestinazioni
+                .FirstOrDefaultAsync(d => d.ViaggioConsegnaId == request.ViaggioId
+                    && d.CodiceCliente == request.CodiceCliente
+                    && d.CodiceDestinazione == request.CodiceDestinazione);
+
+            if (dest == null)
+                return NotFound(new { success = false, message = "Destinazione non trovata." });
+
+            if (request.Campo == "Gru")
+                dest.Gru = request.Valore;
+            else if (request.Campo == "Trasbordo")
+                dest.Trasbordo = request.Valore;
+            else
+                return BadRequest(new { success = false, message = "Campo non valido." });
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        public class ToggleDestinazioneFlagRequest
+        {
+            public int ViaggioId { get; set; }
+            public int CodiceCliente { get; set; }
+            public int? CodiceDestinazione { get; set; }
+            public string Campo { get; set; } = "";
+            public bool Valore { get; set; }
         }
 
         private static decimal GetPortataEffettiva(ViaggioConsegna v)
@@ -1600,6 +1670,59 @@ namespace AiDbMaster.Controllers
             var qtaGiaAssegnata = await query.SumAsync(x => (decimal?)x.QuantitaAssegnata) ?? 0;
 
             return rigaOrdine.Quantita - rigaOrdine.QuantitaEvasa - qtaGiaAssegnata;
+        }
+
+        private async Task SincronizzaDestinazioniViaggioAsync(int viaggioId)
+        {
+            var righeIds = await _context.ViaggioConsegnaRighe
+                .AsNoTracking()
+                .Where(r => r.ViaggioConsegnaId == viaggioId)
+                .Select(r => r.OrdineRigaId)
+                .ToListAsync();
+
+            var destEsistenti = await _context.ViaggioConsegnaDestinazioni
+                .Where(d => d.ViaggioConsegnaId == viaggioId)
+                .ToListAsync();
+
+            var testate = await _context.OrdiniRighe
+                .AsNoTracking()
+                .Where(r => righeIds.Contains(r.Id))
+                .Include(r => r.Testata)
+                .Select(r => new { r.Testata!.CodiceCliente, r.Testata.CodiceDestinazione })
+                .Distinct()
+                .ToListAsync();
+
+            var destNuove = testate
+                .Select(t => new { t.CodiceCliente, CodiceDestinazione = t.CodiceDestinazione ?? 0 })
+                .Distinct()
+                .ToList();
+
+            var daRimuovere = destEsistenti
+                .Where(e => !destNuove.Any(n => n.CodiceCliente == e.CodiceCliente
+                    && (n.CodiceDestinazione == 0 ? e.CodiceDestinazione == null : e.CodiceDestinazione == n.CodiceDestinazione)))
+                .ToList();
+            _context.ViaggioConsegnaDestinazioni.RemoveRange(daRimuovere);
+
+            var ordine = destEsistenti.Any() ? destEsistenti.Max(e => e.OrdineConsegna) + 1 : 0;
+            foreach (var dest in destNuove)
+            {
+                var codDest = dest.CodiceDestinazione == 0 ? (int?)null : dest.CodiceDestinazione;
+                var esiste = destEsistenti.Any(e =>
+                    e.CodiceCliente == dest.CodiceCliente && e.CodiceDestinazione == codDest);
+
+                if (!esiste)
+                {
+                    _context.ViaggioConsegnaDestinazioni.Add(new ViaggioConsegnaDestinazione
+                    {
+                        ViaggioConsegnaId = viaggioId,
+                        CodiceCliente = dest.CodiceCliente,
+                        CodiceDestinazione = codDest,
+                        OrdineConsegna = ordine++
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

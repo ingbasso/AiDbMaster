@@ -336,6 +336,7 @@ namespace AiDbMaster.Controllers
                         t.NumeroOrdine,
                         t.DataConsegna,
                         t.CodiceCliente,
+                        t.CodiceDestinazione,
                         t.ClienteRagioneSociale,
                         t.RiferimentoOrdine,
                         AgenteDescrizione = t.CodiceAgente.HasValue && agentiDict.TryGetValue(t.CodiceAgente.Value, out var agDesc) ? agDesc : "",
@@ -462,6 +463,8 @@ namespace AiDbMaster.Controllers
                             annoOrdine = t.AnnoOrdine,
                             numOrdine = t.NumeroOrdine,
                             cliente = t.ClienteRagioneSociale,
+                            codiceCliente = t.CodiceCliente,
+                            codiceDestinazione = t.CodiceDestinazione,
                             provincia = t.Provincia,
                             localita = t.Localita,
                             indirizzoDestinazione = t.IndirizzoDestinazione,
@@ -1031,6 +1034,9 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
+                await SincronizzaDestinazioniViaggioAsync(viaggio.Id, righeIds, request.DestinazioniFlags);
+                await _context.SaveChangesAsync();
+
                 _logger.LogInformation("Viaggio {ViaggioId} creato con {NumRighe} righe", viaggio.Id, righe.Count);
 
                 return Ok(new
@@ -1249,6 +1255,8 @@ namespace AiDbMaster.Controllers
                         rigaId = vr.OrdineRigaId,
                         ordine,
                         cliente = t?.Cliente?.RagioneSociale ?? "",
+                        codiceCliente = t?.CodiceCliente ?? 0,
+                        codiceDestinazione = t?.CodiceDestinazione,
                         codiceArticolo = r?.CodiceArticolo ?? "",
                         descrizione = r?.DescrizioneArticolo ?? "",
                         quantita = vr.QuantitaAssegnata,
@@ -1261,12 +1269,79 @@ namespace AiDbMaster.Controllers
                     };
                 }).ToList();
 
-                return Json(new { success = true, viaggio, righe });
+                var destFlags = await _context.ViaggioConsegnaDestinazioni
+                    .AsNoTracking()
+                    .Where(d => d.ViaggioConsegnaId == viaggioId)
+                    .Select(d => new { d.CodiceCliente, d.CodiceDestinazione, d.Gru, d.Trasbordo, d.PrezzoVendita })
+                    .ToListAsync();
+
+                return Json(new { success = true, viaggio, righe, destinazioniFlags = destFlags });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore nel recupero viaggio {ViaggioId}", viaggioId);
                 return StatusCode(500, new { success = false, message = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        private async Task SincronizzaDestinazioniViaggioAsync(int viaggioId, List<int> righeOrdineIds, List<DestinazioneFlagInput>? flags = null)
+        {
+            var destEsistenti = await _context.ViaggioConsegnaDestinazioni
+                .Where(d => d.ViaggioConsegnaId == viaggioId)
+                .ToListAsync();
+
+            var testate = await _context.OrdiniRighe
+                .AsNoTracking()
+                .Where(r => righeOrdineIds.Contains(r.Id))
+                .Include(r => r.Testata)
+                .Select(r => new { r.Testata!.CodiceCliente, r.Testata.CodiceDestinazione })
+                .Distinct()
+                .ToListAsync();
+
+            var destNuove = testate
+                .Select(t => new { t.CodiceCliente, CodiceDestinazione = t.CodiceDestinazione ?? 0 })
+                .Distinct()
+                .ToList();
+
+            var daDaRimuovere = destEsistenti
+                .Where(e => !destNuove.Any(n => n.CodiceCliente == e.CodiceCliente
+                    && (n.CodiceDestinazione == 0 ? e.CodiceDestinazione == null : e.CodiceDestinazione == n.CodiceDestinazione)))
+                .ToList();
+            _context.ViaggioConsegnaDestinazioni.RemoveRange(daDaRimuovere);
+
+            var ordine = 0;
+            foreach (var dest in destNuove)
+            {
+                var codDest = dest.CodiceDestinazione == 0 ? (int?)null : dest.CodiceDestinazione;
+                var esistente = destEsistenti.FirstOrDefault(e =>
+                    e.CodiceCliente == dest.CodiceCliente && e.CodiceDestinazione == codDest);
+
+                var flagInput = flags?.FirstOrDefault(f =>
+                    f.CodiceCliente == dest.CodiceCliente && f.CodiceDestinazione == codDest);
+
+                if (esistente == null)
+                {
+                    _context.ViaggioConsegnaDestinazioni.Add(new ViaggioConsegnaDestinazione
+                    {
+                        ViaggioConsegnaId = viaggioId,
+                        CodiceCliente = dest.CodiceCliente,
+                        CodiceDestinazione = codDest,
+                        Gru = flagInput?.Gru ?? true,
+                        Trasbordo = flagInput?.Trasbordo ?? false,
+                        PrezzoVendita = flagInput?.PrezzoVendita ?? 0,
+                        OrdineConsegna = ordine++
+                    });
+                }
+                else
+                {
+                    if (flagInput != null)
+                    {
+                        esistente.Gru = flagInput.Gru;
+                        esistente.Trasbordo = flagInput.Trasbordo;
+                        esistente.PrezzoVendita = flagInput.PrezzoVendita;
+                    }
+                    ordine++;
+                }
             }
         }
 
@@ -1426,6 +1501,9 @@ namespace AiDbMaster.Controllers
 
                 await _context.SaveChangesAsync();
 
+                await SincronizzaDestinazioniViaggioAsync(viaggio.Id, righeRichieste.Keys.ToList(), request.DestinazioniFlags);
+                await _context.SaveChangesAsync();
+
                 _logger.LogInformation("Viaggio {ViaggioId} modificato: {NumRighe} righe, {Rimosse} rimosse",
                     viaggio.Id, righeRichieste.Count, righeIdDaRimuovere.Count);
 
@@ -1467,6 +1545,7 @@ namespace AiDbMaster.Controllers
         public bool ConRimorchio { get; set; } = false;
         public decimal? CostoTrasporto { get; set; }
         public bool ForzaQuantita { get; set; } = false;
+        public List<DestinazioneFlagInput>? DestinazioniFlags { get; set; }
     }
 
     public class RigaViaggioInput
@@ -1489,6 +1568,16 @@ namespace AiDbMaster.Controllers
         public string? Note { get; set; }
         public bool ConRimorchio { get; set; } = false;
         public decimal? CostoTrasporto { get; set; }
+        public List<DestinazioneFlagInput>? DestinazioniFlags { get; set; }
+    }
+
+    public class DestinazioneFlagInput
+    {
+        public int CodiceCliente { get; set; }
+        public int? CodiceDestinazione { get; set; }
+        public bool Gru { get; set; }
+        public bool Trasbordo { get; set; }
+        public decimal PrezzoVendita { get; set; }
     }
 
     public class UpdateCostoMezzoEsternoRequest

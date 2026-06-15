@@ -71,6 +71,11 @@ namespace AiDbMaster.ViewModels
         public string? NoteRiga { get; set; }
         public string Cliente { get; set; } = string.Empty;
         public string? Localita { get; set; }
+        public int CodiceCliente { get; set; }
+        public int? CodiceDestinazione { get; set; }
+        public bool GruDestinazione { get; set; }
+        public bool TrasbordoDestinazione { get; set; }
+        public decimal PrezzoVenditaDestinazione { get; set; }
     }
 
     public class RigaOrdineDaPianificareDto
