@@ -3,69 +3,193 @@
 @{
     ViewData["Title"] = "Lista Viaggi Consegna";
     ViewBag.UseFluidContainer = true;
-    var dataDa = (DateTime)(ViewBag.DataDa ?? DateTime.Today);
+    var dataDa = (DateTime)(ViewBag.DataDa ?? DateTime.Today.AddDays(-30));
     var dataA = (DateTime)(ViewBag.DataA ?? DateTime.Today.AddDays(7));
+    var cliente = (string?)ViewBag.Cliente ?? "";
+    var numeroOrdine = (string?)ViewBag.NumeroOrdine ?? "";
+    var codiceArticolo = (string?)ViewBag.CodiceArticolo ?? "";
+    var stato = (string?)ViewBag.Stato ?? "";
+    var autistaId = (int?)ViewBag.AutistaId;
+    var tipoMezzo = (string?)ViewBag.TipoMezzo ?? "";
+    var autisti = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>?)ViewBag.Autisti ?? new();
+    var stati = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>?)ViewBag.StatiDisponibili ?? new();
 }
+
+<style>
+    .filtri-viaggi label { font-size: 0.78rem; margin-bottom: 2px; }
+    .filtri-viaggi .form-control, .filtri-viaggi .form-select { font-size: 0.82rem; }
+    .table-viaggi { font-size: 0.82rem; }
+    .table-viaggi th { white-space: nowrap; font-size: 0.78rem; }
+    .table-viaggi td { vertical-align: middle; }
+    .clienti-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge-count { font-size: 0.72rem; }
+</style>
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0"><i class="bi bi-calendar-event me-2 text-primary"></i>Lista Viaggi Consegna</h2>
-        <a asp-controller="ConsegneKanban" asp-action="Index" asp-route-dataInizio="@dataDa.ToString("yyyy-MM-dd")" class="btn btn-outline-secondary btn-sm">
+        <a asp-controller="ConsegneKanban" asp-action="Index" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Torna al Kanban
         </a>
     </div>
 
     <div class="card mb-3">
-        <div class="card-header">Filtri periodo</div>
-        <div class="card-body">
-            <form method="get" class="row g-2">
-                <div class="col-md-3">
-                    <label class="form-label">Data da</label>
-                    <input type="date" name="dataDa" class="form-control" value="@dataDa.ToString("yyyy-MM-dd")" />
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-funnel me-1"></i>Filtri</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('filtriBody').classList.toggle('d-none')">
+                <i class="bi bi-chevron-expand"></i>
+            </button>
+        </div>
+        <div class="card-body filtri-viaggi" id="filtriBody">
+            <form method="get">
+                <div class="row g-2">
+                    <div class="col-md-2">
+                        <label class="form-label">Data da</label>
+                        <input type="date" name="dataDa" class="form-control" value="@dataDa.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data a</label>
+                        <input type="date" name="dataA" class="form-control" value="@dataA.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Cliente</label>
+                        <input type="text" name="cliente" class="form-control" value="@cliente" placeholder="Ragione sociale..." />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">N. Ordine</label>
+                        <input type="text" name="numeroOrdine" class="form-control" value="@numeroOrdine" placeholder="es. R2025/1/123" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Codice Articolo</label>
+                        <input type="text" name="codiceArticolo" class="form-control" value="@codiceArticolo" placeholder="Codice..." />
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Data a</label>
-                    <input type="date" name="dataA" class="form-control" value="@dataA.ToString("yyyy-MM-dd")" />
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Filtra</button>
+                <div class="row g-2 mt-1">
+                    <div class="col-md-2">
+                        <label class="form-label">Stato</label>
+                        <select name="stato" class="form-select">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var s in stati)
+                            {
+                                <option value="@s.Value" selected="@(s.Value == stato)">@s.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Autista</label>
+                        <select name="autistaId" class="form-select">
+                            <option value="">-- Tutti --</option>
+                            @foreach (var a in autisti)
+                            {
+                                <option value="@a.Value" selected="@(autistaId.HasValue && a.Value == autistaId.Value.ToString())">@a.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tipo Mezzo</label>
+                        <select name="tipoMezzo" class="form-select">
+                            <option value="">-- Tutti --</option>
+                            <option value="Interno" selected="@(tipoMezzo == "Interno")">Interno</option>
+                            <option value="Esterno" selected="@(tipoMezzo == "Esterno")">Esterno</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end gap-1">
+                        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Filtra</button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary" title="Reset filtri"><i class="bi bi-x-lg"></i></a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Elenco viaggi</div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Risultati: <strong>@Model.Count()</strong> viaggi</span>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
+                <table class="table table-striped table-hover mb-0 table-viaggi">
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>
                             <th>Data</th>
-                            <th>Tipo Trasporto</th>
                             <th>Mezzo</th>
-                            <th>Partenza</th>
-                            <th>Arrivo</th>
+                            <th>Autista</th>
+                            <th>Orario</th>
                             <th>Stato</th>
+                            <th>Clienti</th>
                             <th class="text-end">Righe</th>
+                            <th class="text-end">Peso Kg</th>
+                            <th class="text-end">Costo €</th>
+                            <th class="text-end">Vendita €</th>
+                            <th>Articoli</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in Model)
+                        @foreach (var v in Model)
                         {
-                            var arrivoEff = item.OraArrivo ?? item.OraPartenza.Add(TimeSpan.FromMinutes(item.DurataStimataMinuti));
+                            var arrivoEff = v.OraArrivo ?? v.OraPartenza.Add(TimeSpan.FromMinutes(v.DurataStimataMinuti));
+                            var mezzo = v.MezzoTrasporto?.Descrizione
+                                ?? (v.MezzoTrasportoEsterno != null ? $"{v.MezzoTrasportoEsterno.NomeVettore} - {v.MezzoTrasportoEsterno.TipoMezzo}" : "N/D");
+                            var autista = v.Autista != null ? $"{v.Autista.Cognome} {v.Autista.Nome}" : "";
+                            var pesoTotale = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
+                            var clienti = v.Righe
+                                .Where(r => r.OrdineRiga?.Testata?.Cliente?.RagioneSociale != null)
+                                .Select(r => r.OrdineRiga!.Testata!.Cliente!.RagioneSociale!)
+                                .Distinct()
+                                .ToList();
+                            var articoli = v.Righe
+                                .Where(r => r.OrdineRiga != null)
+                                .Select(r => r.OrdineRiga!.CodiceArticolo)
+                                .Distinct()
+                                .ToList();
+                            var totalePrezzoVendita = v.Destinazioni.Sum(d => d.PrezzoVendita);
+                            var isEsterno = v.MezzoTrasportoEsternoId != null;
                             <tr>
-                                <td>@item.Id</td>
-                                <td>@item.DataConsegna.ToString("dd/MM/yyyy")</td>
-                                <td>@(item.TipoTrasporto?.Descrizione ?? "N/D")</td>
-                                <td>@(item.MezzoTrasporto?.Descrizione ?? (item.MezzoTrasportoEsterno != null ? $"{item.MezzoTrasportoEsterno.NomeVettore} - {item.MezzoTrasportoEsterno.TipoMezzo}" : "N/D"))</td>
-                                <td>@item.OraPartenza.ToString(@"hh\:mm")</td>
-                                <td>@arrivoEff.ToString(@"hh\:mm")</td>
+                                <td><strong>@v.Id</strong></td>
+                                <td>@v.DataConsegna.ToString("dd/MM/yyyy")</td>
                                 <td>
-                                    <span class="badge @(item.Stato == "Annullato" ? "bg-danger" : "bg-primary")">@item.Stato</span>
+                                    <span class="badge @(isEsterno ? "bg-warning text-dark" : "bg-success") badge-count">@(isEsterno ? "Est." : "Int.")</span>
+                                    @mezzo
                                 </td>
-                                <td class="text-end">@item.Righe.Count</td>
+                                <td>@autista</td>
+                                <td>@v.OraPartenza.ToString(@"hh\:mm") - @arrivoEff.ToString(@"hh\:mm")</td>
+                                <td>
+                                    @{
+                                        var badgeClass = v.Stato switch {
+                                            "Annullato" => "bg-danger",
+                                            "Completato" => "bg-success",
+                                            "In Corso" => "bg-info",
+                                            "Confermato" => "bg-primary",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@v.Stato</span>
+                                </td>
+                                <td class="clienti-cell" title="@string.Join(", ", clienti)">
+                                    @if (clienti.Count == 1)
+                                    {
+                                        @clienti[0]
+                                    }
+                                    else if (clienti.Count > 1)
+                                    {
+                                        @clienti[0] <span class="badge bg-light text-muted border badge-count">+@(clienti.Count - 1)</span>
+                                    }
+                                </td>
+                                <td class="text-end">@v.Righe.Count</td>
+                                <td class="text-end">@pesoTotale.ToString("N0")</td>
+                                <td class="text-end">@((v.CostoTrasporto ?? 0) > 0 ? (v.CostoTrasporto ?? 0).ToString("N2") : "")</td>
+                                <td class="text-end">@(totalePrezzoVendita > 0 ? totalePrezzoVendita.ToString("N2") : "")</td>
+                                <td title="@string.Join(", ", articoli)">
+                                    @if (articoli.Count <= 2)
+                                    {
+                                        @string.Join(", ", articoli)
+                                    }
+                                    else
+                                    {
+                                        @string.Join(", ", articoli.Take(2)) <span class="badge bg-light text-muted border badge-count">+@(articoli.Count - 2)</span>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>

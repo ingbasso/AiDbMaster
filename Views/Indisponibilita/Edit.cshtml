@@ -1,0 +1,37 @@
+@model AiDbMaster.Models.Indisponibilita
+
+@{
+    ViewData["Title"] = "Modifica Indisponibilità";
+    ViewBag.UseFluidContainer = true;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-pencil me-2 text-primary"></i>Modifica Indisponibilità</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-calendar-x me-1"></i>Dati indisponibilità</div>
+        <div class="card-body">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <partial name="_Form" model="Model" />
+
+                <hr />
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-x-lg me-1"></i>Annulla</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/indisponibilita-form.js" asp-append-version="true"></script>
+}

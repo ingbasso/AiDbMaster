@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "Calendario Assenze e Fermi";
+    ViewBag.UseFluidContainer = true;
+}
+
+<style>
+    #scheduleIndisp {
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        width: 100%;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>Calendario Assenze e Fermi</h2>
+            <div class="mt-1">
+                <span class="badge" style="background:#c92a2a;"><i class="bi bi-truck me-1"></i>Fermi mezzi</span>
+                <span class="badge" style="background:#1971c2;"><i class="bi bi-person-badge me-1"></i>Assenze autisti</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Create" class="btn btn-primary btn-sm me-2" permission-required="Indisponibilita:Create">
+                <i class="bi bi-plus-circle me-1"></i>Nuova Indisponibilità
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i> Vista elenco
+            </a>
+        </div>
+    </div>
+
+    <div id="scheduleIndisp"></div>
+</div>
+
+@section Scripts {
+    <script>
+        // Carica i file CLDR italiani (necessari per locale 'it' di Syncfusion)
+        function loadCultureFiles(name) {
+            var files = ['ca-gregorian.json', 'numberingSystems.json', 'numbers.json', 'timeZoneNames.json'];
+            var loader = ej.base.loadCldr;
+            for (var prop = 0; prop < files.length; prop++) {
+                var val, ajax;
+                if (files[prop] === 'numberingSystems.json') {
+                    ajax = new ej.base.Ajax('/cldr-data/supplemental/' + files[prop], 'GET', false);
+                } else {
+                    ajax = new ej.base.Ajax('/cldr-data/main/' + name + '/' + files[prop], 'GET', false);
+                }
+                ajax.onSuccess = function (value) { val = value; };
+                ajax.send();
+                loader(JSON.parse(val));
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof ej === 'undefined' || !ej.schedule) {
+                console.error('Syncfusion Schedule non disponibile');
+                return;
+            }
+
+            // Carica la cultura italiana (CLDR); se fallisce si prosegue comunque
+            try {
+                loadCultureFiles('it');
+            } catch (e) {
+                console.error('Errore caricamento CLDR italiano:', e);
+            }
+
+            // Localizzazione italiana minima
+            if (ej.base && ej.base.L10n) {
+                ej.base.L10n.load({
+                    'it': {
+                        'schedule': {
+                            'day': 'Giorno', 'week': 'Settimana', 'workWeek': 'Sett. lavorativa',
+                            'month': 'Mese', 'today': 'Oggi', 'noEvents': 'Nessuna indisponibilità',
+                            'allDay': 'Tutto il giorno', 'start': 'Inizio', 'end': 'Fine',
+                            'more': 'altro', 'close': 'Chiudi', 'previous': 'Precedente', 'next': 'Successivo'
+                        }
+                    }
+                });
+            }
+
+            let scheduleObj;
+
+            async function caricaEventi() {
+                const resp = await fetch('@Url.Action("GetEventi", "Indisponibilita")');
+                return await resp.json();
+            }
+
+            const editUrlBase = '@Url.Action("Edit", "Indisponibilita")';
+            const createUrlBase = '@Url.Action("Create", "Indisponibilita")';
+
+            function formatDate(d) {
+                const anno = d.getFullYear();
+                const mese = (d.getMonth() + 1).toString().padStart(2, '0');
+                const giorno = d.getDate().toString().padStart(2, '0');
+                return `${anno}-${mese}-${giorno}`;
+            }
+
+            caricaEventi().then(function (eventi) {
+                scheduleObj = new ej.schedule.Schedule({
+                    width: '100%',
+                    height: '100%',
+                    locale: 'it',
+                    selectedDate: new Date(),
+                    firstDayOfWeek: 1,
+                    currentView: 'Month',
+                    views: ['Week', 'Month'],
+                    showQuickInfo: true,
+                    eventSettings: {
+                        dataSource: eventi,
+                        fields: {
+                            id: 'id',
+                            subject: { name: 'subject' },
+                            startTime: { name: 'startTime' },
+                            endTime: { name: 'endTime' },
+                            isAllDay: { name: 'isAllDay' }
+                        }
+                    },
+                    // Colora l'evento in base al tipo (mezzo/autista)
+                    eventRendered: function (args) {
+                        if (args.data && args.data.color) {
+                            args.element.style.backgroundColor = args.data.color;
+                        }
+                    },
+                    // Click su evento esistente -> apri modifica
+                    eventClick: function (args) {
+                        args.cancel = true;
+                        const ev = Array.isArray(args.event) ? args.event[0] : args.event;
+                        if (ev && ev.id) {
+                            window.location.href = editUrlBase + '/' + ev.id;
+                        }
+                    },
+                    // Click su cella vuota -> nuova indisponibilità con data precompilata
+                    cellClick: function (args) {
+                        args.cancel = true;
+                        const data = formatDate(new Date(args.startTime));
+                        window.location.href = createUrlBase + '?data=' + data;
+                    },
+                    popupOpen: function (args) {
+                        // Disabilita l'editor nativo (usiamo le nostre pagine Crea/Modifica)
+                        if (args.type === 'Editor' || args.type === 'QuickInfo') {
+                            if (args.type === 'Editor') args.cancel = true;
+                        }
+                    }
+                });
+                scheduleObj.appendTo('#scheduleIndisp');
+            });
+        });
+    </script>
+}

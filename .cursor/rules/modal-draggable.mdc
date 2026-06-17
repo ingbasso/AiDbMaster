@@ -1,0 +1,55 @@
+---
+description: Pattern per rendere i modal Bootstrap trascinabili tramite transform translate
+globs: "**/*.cshtml"
+alwaysApply: false
+---
+
+# Modal Bootstrap trascinabili
+
+Tutti i modal (`<div class="modal fade">`) nelle pagine devono essere resi trascinabili dall'header.
+
+## Implementazione
+
+Usare SEMPRE `transform: translate()` per lo spostamento. NON usare `position: fixed` con `left/top` perché causa salti improvvisi dovuti al cambio di contesto di posizionamento rispetto al centraggio CSS di Bootstrap (`margin: auto`).
+
+### Funzione standard da usare
+
+```javascript
+function makeModalDraggable(modalEl) {
+    var dialog = modalEl.querySelector('.modal-dialog');
+    var header = modalEl.querySelector('.modal-header');
+    var dragging = false;
+    var startX = 0, startY = 0;
+    var currentX = 0, currentY = 0;
+
+    header.style.cursor = 'move';
+    header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.btn-close') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+        startX = e.clientX - currentX;
+        startY = e.clientY - currentY;
+        dragging = true;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+        dialog.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+    });
+
+    document.addEventListener('mouseup', function() { dragging = false; });
+    modalEl.addEventListener('show.bs.modal', function() {
+        currentX = 0;
+        currentY = 0;
+        dialog.style.transform = '';
+    });
+}
+```
+
+### Regole
+
+- Ogni nuovo modal DEVE avere `makeModalDraggable(element)` chiamato dopo l'inizializzazione
+- Usare `data-bs-backdrop="false"` sui modal per evitare che il backdrop blocchi il drag
+- Il reset della posizione avviene automaticamente su `show.bs.modal`
+- NON usare mai `position: fixed` + `left/top` + `margin: 0` per il drag dei modal

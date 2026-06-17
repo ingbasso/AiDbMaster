@@ -1,0 +1,96 @@
+@model AiDbMaster.Models.Indisponibilita
+@{
+    var mezzi = ViewBag.Mezzi as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    var autisti = ViewBag.Autisti as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    var causaliMezzo = ViewBag.CausaliMezzo as string[] ?? Array.Empty<string>();
+    var causaliAutista = ViewBag.CausaliAutista as string[] ?? Array.Empty<string>();
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+<div class="row g-3">
+    <div class="col-12">
+        <label class="form-label d-block">Tipo di indisponibilità <span class="text-danger">*</span></label>
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="Tipo" id="tipoMezzo" value="Mezzo"
+                   autocomplete="off" checked="@(Model.Tipo == AiDbMaster.Models.TipoIndisponibilita.Mezzo)" />
+            <label class="btn btn-outline-warning" for="tipoMezzo"><i class="bi bi-truck me-1"></i>Fermo Mezzo</label>
+
+            <input type="radio" class="btn-check" name="Tipo" id="tipoAutista" value="Autista"
+                   autocomplete="off" checked="@(Model.Tipo == AiDbMaster.Models.TipoIndisponibilita.Autista)" />
+            <label class="btn btn-outline-info" for="tipoAutista"><i class="bi bi-person-badge me-1"></i>Assenza Autista</label>
+        </div>
+    </div>
+
+    <div class="col-md-6" id="bloccoMezzo">
+        <label class="form-label">Mezzo <span class="text-danger">*</span></label>
+        <select asp-for="MezzoTrasportoId" class="form-select" asp-items="mezzi">
+            <option value="">-- Seleziona mezzo --</option>
+        </select>
+        <span asp-validation-for="MezzoTrasportoId" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6" id="bloccoAutista">
+        <label class="form-label">Autista <span class="text-danger">*</span></label>
+        <select asp-for="AutistaId" class="form-select" asp-items="autisti">
+            <option value="">-- Seleziona autista --</option>
+        </select>
+        <span asp-validation-for="AutistaId" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Causale <span class="text-danger">*</span></label>
+        <select asp-for="Causale" class="form-select" id="selCausale">
+            <option value="">-- Seleziona causale --</option>
+            <optgroup label="Mezzo" id="optgroupMezzo">
+                @foreach (var c in causaliMezzo)
+                {
+                    <option value="@c" selected="@(Model.Causale == c)">@c</option>
+                }
+            </optgroup>
+            <optgroup label="Autista" id="optgroupAutista">
+                @foreach (var c in causaliAutista)
+                {
+                    <option value="@c" selected="@(Model.Causale == c)">@c</option>
+                }
+            </optgroup>
+        </select>
+        <span asp-validation-for="Causale" class="text-danger"></span>
+    </div>
+
+    <div class="col-12"></div>
+
+    <div class="col-md-3">
+        <label class="form-label">Data inizio <span class="text-danger">*</span></label>
+        <input asp-for="DataInizio" type="date" class="form-control" />
+        <span asp-validation-for="DataInizio" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Data fine <span class="text-danger">*</span></label>
+        <input asp-for="DataFine" type="date" class="form-control" />
+        <span asp-validation-for="DataFine" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6 d-flex align-items-end">
+        <div class="form-check form-switch">
+            <input asp-for="GiornoIntero" class="form-check-input" id="chkGiornoIntero" />
+            <label class="form-check-label" for="chkGiornoIntero">Giornata intera</label>
+        </div>
+    </div>
+
+    <div class="col-md-3 fascia-oraria">
+        <label class="form-label">Ora inizio</label>
+        <input asp-for="OraInizio" type="time" class="form-control" />
+        <span asp-validation-for="OraInizio" class="text-danger"></span>
+    </div>
+    <div class="col-md-3 fascia-oraria">
+        <label class="form-label">Ora fine</label>
+        <input asp-for="OraFine" type="time" class="form-control" />
+        <span asp-validation-for="OraFine" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Note</label>
+        <textarea asp-for="Note" class="form-control" rows="2" maxlength="500"></textarea>
+    </div>
+</div>

@@ -1,0 +1,161 @@
+@model IEnumerable<AiDbMaster.Models.Indisponibilita>
+
+@{
+    ViewData["Title"] = "Assenze e Fermi";
+    ViewBag.UseFluidContainer = true;
+    var filtroTipo = ViewBag.FiltroTipo as string;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-calendar-x me-2 text-primary"></i>Assenze e Fermi</h2>
+        <div>
+            <a asp-action="Create" class="btn btn-primary btn-sm me-2" permission-required="Indisponibilita:Create">
+                <i class="bi bi-plus-circle me-1"></i>Nuova Indisponibilità
+            </a>
+            <a asp-action="Calendario" class="btn btn-outline-info btn-sm me-2">
+                <i class="bi bi-calendar3 me-1"></i> Vista calendario
+            </a>
+            <a asp-controller="ConsegneKanban" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Torna al Kanban
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="btn-group btn-group-sm mb-3" role="group">
+        <a asp-action="Index" class="btn @(string.IsNullOrEmpty(filtroTipo) ? "btn-primary" : "btn-outline-primary")">Tutte</a>
+        <a asp-action="Index" asp-route-tipo="Mezzo" class="btn @(filtroTipo == "Mezzo" ? "btn-primary" : "btn-outline-primary")">
+            <i class="bi bi-truck me-1"></i>Mezzi
+        </a>
+        <a asp-action="Index" asp-route-tipo="Autista" class="btn @(filtroTipo == "Autista" ? "btn-primary" : "btn-outline-primary")">
+            <i class="bi bi-person-badge me-1"></i>Autisti
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul me-1"></i>Elenco indisponibilità (@Model.Count())</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Soggetto</th>
+                            <th>Dal</th>
+                            <th>Al</th>
+                            <th>Fascia</th>
+                            <th>Causale</th>
+                            <th>Note</th>
+                            <th class="text-center" style="width:120px;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="8" class="text-center text-muted py-4">Nessuna indisponibilità registrata.</td></tr>
+                        }
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    @if (item.Tipo == AiDbMaster.Models.TipoIndisponibilita.Mezzo)
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-truck me-1"></i>Mezzo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-dark"><i class="bi bi-person-badge me-1"></i>Autista</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Tipo == AiDbMaster.Models.TipoIndisponibilita.Mezzo)
+                                    {
+                                        <strong>@(item.MezzoTrasporto?.Descrizione ?? "-")</strong>
+                                    }
+                                    else
+                                    {
+                                        <strong>@(item.Autista != null ? $"{item.Autista.Cognome} {item.Autista.Nome}" : "-")</strong>
+                                    }
+                                </td>
+                                <td>@item.DataInizio.ToString("dd/MM/yyyy")</td>
+                                <td>@item.DataFine.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (item.GiornoIntero)
+                                    {
+                                        <span class="badge bg-light text-dark border">Giornata intera</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(item.OraInizio?.ToString(@"hh\:mm")) - @(item.OraFine?.ToString(@"hh\:mm"))</span>
+                                    }
+                                </td>
+                                <td>@item.Causale</td>
+                                <td class="text-truncate" style="max-width:200px;" title="@item.Note">@item.Note</td>
+                                <td class="text-center">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1"
+                                       permission-required="Indisponibilita:Edit" title="Modifica">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id"
+                                            permission-required="Indisponibilita:Delete" title="Elimina">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach (var item in Model)
+{
+    <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Conferma eliminazione</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sei sicuro di voler eliminare questa indisponibilità?</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>Tipo:</strong> @item.Tipo</li>
+                        <li>
+                            <strong>Soggetto:</strong>
+                            @(item.Tipo == AiDbMaster.Models.TipoIndisponibilita.Mezzo
+                                ? item.MezzoTrasporto?.Descrizione
+                                : (item.Autista != null ? $"{item.Autista.Cognome} {item.Autista.Nome}" : "-"))
+                        </li>
+                        <li><strong>Periodo:</strong> @item.DataInizio.ToString("dd/MM/yyyy") - @item.DataFine.ToString("dd/MM/yyyy")</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Elimina</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

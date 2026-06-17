@@ -1081,9 +1081,15 @@ body.sidebar-open .top-header {
 
 /* Miglioramenti per la performance */
 .sidebar,
-.sidebar-overlay,
+.sidebar-overlay {
+    will-change: transform, left;
+}
+
+/* .main-wrapper viene animato solo con margin-left: non usare 'transform'
+   nel will-change, altrimenti crea uno stacking context che manda il
+   .modal-backdrop sopra i modali (popup velati e non cliccabili). */
 .main-wrapper {
-    will-change: transform, left, margin-left;
+    will-change: margin-left;
 }
 
 /* Prevenzione selezione testo durante animazioni - Solo sidebar */

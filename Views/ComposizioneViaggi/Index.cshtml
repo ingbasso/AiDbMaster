@@ -793,8 +793,8 @@
                             </div>
                             <input type="hidden" id="viaggioMezzoEsterno" value="" />
                         </div>
-                        <div class="form-section span-full" id="viaggioCostoTrasportoWrap" style="display:none;">
-                            <label>Costo Trasporto (€)</label>
+                        <div class="form-section span-full" id="viaggioCostoTrasportoWrap">
+                            <label>Costo Trasporto - intero viaggio (€)</label>
                             <input type="number" id="viaggioCostoTrasporto" class="form-control form-control-sm"
                                    step="0.01" min="0" placeholder="0.00" />
                         </div>
@@ -2320,7 +2320,6 @@ $(function () {
         $('#viaggioMezzoEsternoDisplay').val('').attr('placeholder', '-- Nessuno --');
         $('#btnClearMezzoEsterno').hide();
         $('#viaggioCostoTrasporto').val('');
-        $('#viaggioCostoTrasportoWrap').hide();
         controllaPesoMax();
     }
 
@@ -2911,6 +2910,7 @@ $(function () {
             error: function (xhr) {
                 const resp = xhr.responseJSON;
                 const msg = resp?.message || 'Errore nel salvataggio delle modifiche';
+                alert('⚠️ Modifiche NON salvate\n\n' + msg);
                 showAlert(msg, 'danger');
             },
             complete: function () {
@@ -2986,7 +2986,6 @@ $(function () {
                     $('#viaggioConRimorchio').prop('checked', false);
                     $('#viaggioConRimorchioWrap').hide();
                     $('#viaggioCostoTrasporto').val('');
-                    $('#viaggioCostoTrasportoWrap').hide();
                     $('#warningAutistaNonDefault').css('display', 'none');
                     clearMezzoEsterno();
 
@@ -3011,6 +3010,7 @@ $(function () {
                     }
                 } else {
                     const msg = resp?.message || 'Errore nella creazione del viaggio';
+                    alert('⚠️ Viaggio NON creato\n\n' + msg);
                     showAlert(msg, 'danger');
                 }
             },

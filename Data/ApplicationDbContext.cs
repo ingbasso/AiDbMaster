@@ -58,6 +58,7 @@ namespace AiDbMaster.Data
         public DbSet<ViaggioConsegnaRiga> ViaggioConsegnaRighe { get; set; }
         public DbSet<ViaggioConsegnaDestinazione> ViaggioConsegnaDestinazioni { get; set; }
         public DbSet<MezzoTrasportoEsterno> MezziTrasportoEsterni { get; set; }
+        public DbSet<Indisponibilita> Indisponibilita { get; set; }
         
         // Tabelle Distinte Base (Testate, Cicli e Materiali)
         public DbSet<DbTestata> DbTestate { get; set; }
@@ -657,6 +658,28 @@ namespace AiDbMaster.Data
             builder.Entity<Autista>()
                 .HasIndex(a => a.Attivo)
                 .HasDatabaseName("IX_Autisti_Attivo");
+
+            builder.Entity<Indisponibilita>()
+                .HasOne(i => i.Autista)
+                .WithMany()
+                .HasForeignKey(i => i.AutistaId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Indisponibilita>()
+                .HasOne(i => i.MezzoTrasporto)
+                .WithMany()
+                .HasForeignKey(i => i.MezzoTrasportoId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Indisponibilita>()
+                .HasIndex(i => new { i.DataInizio, i.DataFine })
+                .HasDatabaseName("IX_Indisponibilita_Date");
+
+            builder.Entity<Indisponibilita>()
+                .HasIndex(i => i.Tipo)
+                .HasDatabaseName("IX_Indisponibilita_Tipo");
 
             builder.Entity<ViaggioConsegna>()
                 .HasOne(v => v.TipoTrasporto)

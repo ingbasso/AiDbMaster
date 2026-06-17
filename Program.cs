@@ -55,6 +55,7 @@ builder.Services.AddScoped<ClassiProvvigioniService>();
 builder.Services.AddScoped<FamiglieService>();
 builder.Services.AddScoped<MarcheService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IndisponibilitaService>();
 
 // Registrazione servizi sistema permessi risorse
 builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();

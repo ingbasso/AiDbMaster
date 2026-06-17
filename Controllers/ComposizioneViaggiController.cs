@@ -1,5 +1,6 @@
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ namespace AiDbMaster.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ComposizioneViaggiController> _logger;
+        private readonly IndisponibilitaService _indisponibilitaService;
 
         private static readonly Dictionary<string, string> TipiMezzo = new()
         {
@@ -28,10 +30,12 @@ namespace AiDbMaster.Controllers
 
         public ComposizioneViaggiController(
             ApplicationDbContext context,
-            ILogger<ComposizioneViaggiController> logger)
+            ILogger<ComposizioneViaggiController> logger,
+            IndisponibilitaService indisponibilitaService)
         {
             _context = context;
             _logger = logger;
+            _indisponibilitaService = indisponibilitaService;
         }
 
         public IActionResult Index(int? viaggioId = null)
@@ -1415,6 +1419,12 @@ namespace AiDbMaster.Controllers
                     }
                 }
             }
+
+            // Controllo assenze autisti / fermi mezzi (indisponibilità pianificate)
+            var erroreIndisponibilita = await _indisponibilitaService.ControllaIndisponibilitaAsync(
+                dataConsegna, oraPartenza, oraArrivo, mezzoTrasportoId, autistaId);
+            if (erroreIndisponibilita != null)
+                return erroreIndisponibilita;
 
             return null;
         }

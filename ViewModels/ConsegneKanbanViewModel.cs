@@ -12,6 +12,7 @@ namespace AiDbMaster.ViewModels
 
         public List<LookupItemDto> TipiTrasporto { get; set; } = new();
         public List<LookupItemDto> Mezzi { get; set; } = new();
+        public List<LookupItemDto> MezziInterni { get; set; } = new();
         public List<LookupItemDto> MezziEsterni { get; set; } = new();
         public List<LookupItemDto> Autisti { get; set; } = new();
         public Dictionary<int, int?> MezzoAutistaDefaultMap { get; set; } = new();
@@ -24,6 +25,27 @@ namespace AiDbMaster.ViewModels
         public DateTime Data { get; set; }
         public string Etichetta => $"{Data:ddd dd/MM}";
         public List<ViaggioKanbanDto> Viaggi { get; set; } = new();
+
+        /// <summary>Fermi mezzi interni che coprono questa giornata (chiave = MezzoTrasportoId).</summary>
+        public List<IndisponibilitaInfoDto> MezziNonDisponibili { get; set; } = new();
+
+        /// <summary>Assenze autisti che coprono questa giornata.</summary>
+        public List<IndisponibilitaInfoDto> AutistiAssenti { get; set; } = new();
+    }
+
+    public class IndisponibilitaInfoDto
+    {
+        public int Id { get; set; }
+        public int? MezzoId { get; set; }
+        public int? AutistaId { get; set; }
+        public string Soggetto { get; set; } = string.Empty;
+        public string Causale { get; set; } = string.Empty;
+        public bool GiornoIntero { get; set; }
+        public TimeSpan? OraInizio { get; set; }
+        public TimeSpan? OraFine { get; set; }
+        public string Fascia => GiornoIntero || !OraInizio.HasValue || !OraFine.HasValue
+            ? "Tutto il giorno"
+            : $"{OraInizio.Value:hh\\:mm}-{OraFine.Value:hh\\:mm}";
     }
 
     public class ViaggioKanbanDto

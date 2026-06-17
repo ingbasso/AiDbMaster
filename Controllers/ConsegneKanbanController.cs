@@ -1,6 +1,7 @@
 using AiDbMaster.Attributes;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Services;
 using AiDbMaster.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,11 +19,13 @@ namespace AiDbMaster.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ConsegneKanbanController> _logger;
+        private readonly IndisponibilitaService _indisponibilitaService;
 
-        public ConsegneKanbanController(ApplicationDbContext context, ILogger<ConsegneKanbanController> logger)
+        public ConsegneKanbanController(ApplicationDbContext context, ILogger<ConsegneKanbanController> logger, IndisponibilitaService indisponibilitaService)
         {
             _context = context;
             _logger = logger;
+            _indisponibilitaService = indisponibilitaService;
         }
 
         public async Task<IActionResult> Index(bool nascondiWeekend = true)
@@ -174,13 +177,44 @@ namespace AiDbMaster.Controllers
                     .ToList();
             }
 
+            var indisponibilita = await _indisponibilitaService.GetIndisponibilitaPerPeriodoAsync(startDate, endDate);
+
             var giorni = giorniRange
                 .Select(day =>
                 {
                     var viaggiGiorno = viaggi.Where(v => v.DataConsegna.Date == day).ToList();
+                    var indGiorno = indisponibilita
+                        .Where(i => i.DataInizio.Date <= day && i.DataFine.Date >= day)
+                        .ToList();
                     return new GiornoKanbanDto
                     {
                         Data = day,
+                        MezziNonDisponibili = indGiorno
+                            .Where(i => i.Tipo == TipoIndisponibilita.Mezzo)
+                            .Select(i => new IndisponibilitaInfoDto
+                            {
+                                Id = i.Id,
+                                MezzoId = i.MezzoTrasportoId,
+                                Soggetto = i.MezzoTrasporto?.Descrizione ?? "Mezzo",
+                                Causale = i.Causale,
+                                GiornoIntero = i.GiornoIntero,
+                                OraInizio = i.OraInizio,
+                                OraFine = i.OraFine
+                            })
+                            .ToList(),
+                        AutistiAssenti = indGiorno
+                            .Where(i => i.Tipo == TipoIndisponibilita.Autista)
+                            .Select(i => new IndisponibilitaInfoDto
+                            {
+                                Id = i.Id,
+                                AutistaId = i.AutistaId,
+                                Soggetto = i.Autista != null ? $"{i.Autista.Cognome} {i.Autista.Nome}" : "Autista",
+                                Causale = i.Causale,
+                                GiornoIntero = i.GiornoIntero,
+                                OraInizio = i.OraInizio,
+                                OraFine = i.OraFine
+                            })
+                            .ToList(),
                         Viaggi = viaggiGiorno.Select(v =>
                         {
                             var pesoTotale = v.Righe.Sum(r => r.PesoTotaleKgSnapshot);
@@ -284,6 +318,11 @@ namespace AiDbMaster.Controllers
                     .Where(m => m.Attivo)
                     .OrderBy(m => m.Descrizione)
                     .Select(m => new LookupItemDto { Id = m.Id, Text = $"{m.Descrizione} ({m.PortataMaxKg:N0} Kg)" })
+                    .ToListAsync(),
+                MezziInterni = await _context.MezziTrasporto.AsNoTracking()
+                    .Where(m => m.Attivo)
+                    .OrderBy(m => m.Descrizione)
+                    .Select(m => new LookupItemDto { Id = m.Id, Text = m.Descrizione })
                     .ToListAsync(),
                 MezziEsterni = await _context.MezziTrasportoEsterni.AsNoTracking()
                     .OrderBy(m => m.NomeVettore)
@@ -1644,6 +1683,12 @@ namespace AiDbMaster.Controllers
                 if (await EsisteConflittoAutistaAsync(dataConsegna, autistaId.Value, oraPartenza, oraArrivoEffettiva, viaggioDaEscludere))
                     return "L'autista selezionato è già impegnato in un altro viaggio nella stessa fascia oraria.";
             }
+
+            // Controllo assenze autisti / fermi mezzi (indisponibilità pianificate)
+            var erroreIndisponibilita = await _indisponibilitaService.ControllaIndisponibilitaAsync(
+                dataConsegna, oraPartenza, oraArrivoEffettiva, mezzoTrasportoId, autistaId);
+            if (erroreIndisponibilita != null)
+                return erroreIndisponibilita;
 
             return null;
         }

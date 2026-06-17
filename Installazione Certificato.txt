@@ -1,0 +1,33 @@
+Copia il file aidbmaster.cer su una cartella condivisa o invialo ai PC client.
+
+Passo 2: Installa il certificato su OGNI PC client
+Hai 3 opzioni:
+
+Opzione A: Installazione Manuale (per pochi PC)
+Su ogni PC:
+Doppio click sul file aidbmaster.cer
+Click su Install Certificate...
+Seleziona Local Machine → Next (richiede privilegi Admin)
+Seleziona Place all certificates in the following store
+Click Browse...
+Seleziona Trusted Root Certification Authorities ← IMPORTANTE!
+Click OK → Next → Finish
+Conferma Yes all'avviso di sicurezza
+Riavvia il browser
+
+Opzione B: Via GPO (Group Policy) - Per molti PC in dominio
+Se i PC sono in un dominio Active Directory:
+Sul Domain Controller, apri Group Policy Management
+Crea una nuova GPO o modifica una esistente
+Vai su: Computer Configuration → Policies → Windows Settings → Security Settings → Public Key Policies → Trusted Root Certification Authorities
+Click destro → Import...
+Seleziona il file aidbmaster.cer
+Completa il wizard
+Applica la GPO agli OU desiderati
+Sui client, esegui gpupdate /force
+
+Opzione C: Script di installazione automatica
+Crea uno script PowerShell da eseguire sui PC client:
+install-cert.ps1:
+# Esegui come Amministratore$certPath = "\\server\share\aidbmaster.cer"  # ← Cambia con il percorso della cartella condivisa# Importa il certificato nel Trusted RootImport-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\RootWrite-Host "✅ Certificato installato con successo!" -ForegroundColor GreenWrite-Host "Riavvia il browser per applicare le modifiche."
+Esegui questo script come Amministratore su ogni PC client.
