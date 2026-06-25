@@ -1,0 +1,281 @@
+@model AiDbMaster.ViewModels.RipartizioneImportSaldiCreateViewModel
+
+@{
+    ViewData["Title"] = "Nuova Ripartizione Import Saldi";
+    var sedi = ViewBag.Sedi as List<SelectListItem> ?? new List<SelectListItem>();
+    var anni = ViewBag.AnniDisponibili as List<int> ?? new List<int>();
+    var mesi = ViewBag.Mesi as List<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle text-success"></i> Nuova Ripartizione</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Ripartizione saldo su voci di Conto Economico</h5>
+                </div>
+                <div class="card-body">
+                    <form id="ripForm" asp-action="Create" method="post">
+                        <input type="hidden" name="azione" id="azione" value="mese" />
+                        <input type="hidden" name="CodicePdC" id="CodicePdC" value="@Model.CodicePdC" />
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-book"></i> Codice Piano dei Conti <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="cmbPdC" />
+                                <div class="form-text">Inizia a digitare il codice o la descrizione per filtrare.</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label"><i class="bi bi-building"></i> Sede <span class="text-danger">*</span></label>
+                                <select name="IdSede" class="form-select">
+                                    <option value="">-- Seleziona una sede --</option>
+                                    @foreach (var s in sedi)
+                                    {
+                                        <option value="@s.Value" selected="@(s.Value == Model.IdSede.ToString())">@s.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label"><i class="bi bi-calendar"></i> Anno <span class="text-danger">*</span></label>
+                                <select name="Anno" class="form-select">
+                                    @foreach (var a in anni)
+                                    {
+                                        <option value="@a" selected="@(a == Model.Anno)">@a</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label"><i class="bi bi-calendar-month"></i> Mese <span class="text-danger">*</span></label>
+                                <select name="Mese" class="form-select">
+                                    @foreach (var m in mesi)
+                                    {
+                                        <option value="@m.Value" selected="@(m.Value == Model.Mese.ToString())">@m.Text</option>
+                                    }
+                                </select>
+                                <div class="form-text">Usato dal pulsante "Salva". Il pulsante "tutti i mesi" lo ignora.</div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Voci di Conto Economico e percentuali</h6>
+                            <button type="button" id="btnAddVoce" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-plus-lg"></i> Aggiungi voce
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:70%;">Voce Conto Economico</th>
+                                        <th style="width:20%;">Percentuale</th>
+                                        <th style="width:10%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vociBody"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td class="text-end fw-bold">Totale</td>
+                                        <td>
+                                            <span id="totaleBadge" class="badge bg-secondary">0,00%</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle"></i>
+                            La somma delle percentuali deve essere <strong>100%</strong>. Il salvataggio
+                            <strong>sostituisce</strong> le ripartizioni esistenti per lo stesso conto/sede/periodo.
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" id="btnSalvaMese" class="btn btn-success">
+                                <i class="bi bi-save"></i> Salva (mese selezionato)
+                            </button>
+                            <button type="button" id="btnSalvaAnno" class="btn btn-primary">
+                                <i class="bi bi-calendar-range"></i> Salva per tutti i mesi dell'anno
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var pdcData = @Html.Raw(ViewBag.PdcJson);
+            var vociData = @Html.Raw(ViewBag.VociJson);
+            var codicePdCIniziale = @Html.Raw(Json.Serialize(Model.CodicePdC));
+
+            // ComboBox ricercabile per il Piano dei Conti
+            var comboPdC = new ej.dropdowns.ComboBox({
+                dataSource: pdcData,
+                fields: { text: 'text', value: 'value' },
+                allowFiltering: true,
+                filterType: 'Contains',
+                placeholder: 'Seleziona o cerca un conto...',
+                value: codicePdCIniziale ? codicePdCIniziale : null,
+                change: function (e) {
+                    document.getElementById('CodicePdC').value = e.value != null ? e.value : '';
+                }
+            });
+            comboPdC.appendTo('#cmbPdC');
+
+            var vociBody = document.getElementById('vociBody');
+            var righe = [];
+            var contatore = 0;
+
+            function aggiornaTotale() {
+                var somma = 0;
+                righe.forEach(function (r) {
+                    var v = parseFloat((r.percInput.value || '0').replace(',', '.'));
+                    if (!isNaN(v)) somma += v;
+                });
+                var badge = document.getElementById('totaleBadge');
+                badge.textContent = somma.toFixed(2).replace('.', ',') + '%';
+                badge.className = 'badge ' + (Math.abs(somma - 100) < 0.01 ? 'bg-success' : 'bg-warning text-dark');
+            }
+
+            function aggiungiVoce(idSelezionato, percentuale) {
+                var indice = contatore++;
+                var tr = document.createElement('tr');
+
+                var tdVoce = document.createElement('td');
+                var inputVoce = document.createElement('input');
+                inputVoce.type = 'text';
+                inputVoce.id = 'cmbVoce_' + indice;
+                tdVoce.appendChild(inputVoce);
+
+                var tdPerc = document.createElement('td');
+                var groupPerc = document.createElement('div');
+                groupPerc.className = 'input-group input-group-sm';
+                var percInput = document.createElement('input');
+                percInput.type = 'number';
+                percInput.step = '0.01';
+                percInput.min = '0';
+                percInput.max = '100';
+                percInput.className = 'form-control';
+                percInput.value = (percentuale != null ? percentuale : '');
+                var percSuffix = document.createElement('span');
+                percSuffix.className = 'input-group-text';
+                percSuffix.textContent = '%';
+                groupPerc.appendChild(percInput);
+                groupPerc.appendChild(percSuffix);
+                tdPerc.appendChild(groupPerc);
+
+                var tdAzioni = document.createElement('td');
+                var btnDel = document.createElement('button');
+                btnDel.type = 'button';
+                btnDel.className = 'btn btn-sm btn-outline-danger';
+                btnDel.innerHTML = '<i class="bi bi-trash"></i>';
+                tdAzioni.appendChild(btnDel);
+
+                tr.appendChild(tdVoce);
+                tr.appendChild(tdPerc);
+                tr.appendChild(tdAzioni);
+                vociBody.appendChild(tr);
+
+                var comboVoce = new ej.dropdowns.ComboBox({
+                    dataSource: vociData,
+                    fields: { text: 'text', value: 'value' },
+                    allowFiltering: true,
+                    filterType: 'Contains',
+                    placeholder: 'Seleziona o cerca una voce...',
+                    value: (idSelezionato != null ? idSelezionato : null)
+                });
+                comboVoce.appendTo('#cmbVoce_' + indice);
+
+                var riga = { tr: tr, combo: comboVoce, percInput: percInput };
+                righe.push(riga);
+
+                percInput.addEventListener('input', aggiornaTotale);
+
+                btnDel.addEventListener('click', function () {
+                    comboVoce.destroy();
+                    vociBody.removeChild(tr);
+                    righe = righe.filter(function (x) { return x !== riga; });
+                    aggiornaTotale();
+                });
+
+                aggiornaTotale();
+            }
+
+            document.getElementById('btnAddVoce').addEventListener('click', function () {
+                aggiungiVoce(null, null);
+            });
+
+            // Prima riga di default
+            aggiungiVoce(null, null);
+
+            function inviaForm(azione) {
+                var form = document.getElementById('ripForm');
+
+                // Rimuovi eventuali hidden generati in precedenza
+                form.querySelectorAll('.voce-hidden').forEach(function (el) { el.remove(); });
+
+                document.getElementById('azione').value = azione;
+
+                var indice = 0;
+                righe.forEach(function (r) {
+                    var idVoce = r.combo.value;
+                    if (idVoce == null || idVoce === '') return;
+
+                    var perc = (r.percInput.value || '0').replace(',', '.');
+
+                    var hId = document.createElement('input');
+                    hId.type = 'hidden';
+                    hId.className = 'voce-hidden';
+                    hId.name = 'Voci[' + indice + '].IdCodiceConto';
+                    hId.value = idVoce;
+                    form.appendChild(hId);
+
+                    var hPerc = document.createElement('input');
+                    hPerc.type = 'hidden';
+                    hPerc.className = 'voce-hidden';
+                    hPerc.name = 'Voci[' + indice + '].Percentuale';
+                    hPerc.value = perc;
+                    form.appendChild(hPerc);
+
+                    indice++;
+                });
+
+                form.submit();
+            }
+
+            document.getElementById('btnSalvaMese').addEventListener('click', function () { inviaForm('mese'); });
+            document.getElementById('btnSalvaAnno').addEventListener('click', function () { inviaForm('anno'); });
+        });
+    </script>
+}

@@ -79,6 +79,7 @@ namespace AiDbMaster.Data
         public DbSet<PstreeListaFamiglie> PstreeListaFamiglie { get; set; }
         public DbSet<PstreeListaSedi> PstreeListaSedi { get; set; }
         public DbSet<PstreeAssociazioniCE> PstreeAssociazioniCE { get; set; }
+        public DbSet<PstreeAssociazioniImportSaldiCE> PstreeAssociazioniImportSaldiCE { get; set; }
         public DbSet<PstreeListaRettifiche> PstreeListaRettifiche { get; set; }
         public DbSet<PstreeListaRimanenze> PstreeListaRimanenze { get; set; }
         public DbSet<PstreeListaSaldi> PstreeListaSaldi { get; set; }
@@ -1169,6 +1170,33 @@ namespace AiDbMaster.Data
                 .WithMany()
                 .HasForeignKey(a => a.IdCodiceConto)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniImportSaldiCE: relazione con ListaPianoDeiConti
+            builder.Entity<PstreeAssociazioniImportSaldiCE>()
+                .HasOne(a => a.PianoDeiConti)
+                .WithMany()
+                .HasForeignKey(a => a.CodicePdC)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniImportSaldiCE: relazione con StrutturaContoEconomico
+            builder.Entity<PstreeAssociazioniImportSaldiCE>()
+                .HasOne(a => a.ContoEconomico)
+                .WithMany()
+                .HasForeignKey(a => a.IdCodiceConto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniImportSaldiCE: relazione con ListaSedi
+            builder.Entity<PstreeAssociazioniImportSaldiCE>()
+                .HasOne(a => a.Sede)
+                .WithMany()
+                .HasForeignKey(a => a.IdSede)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Pstree_AssociazioniImportSaldiCE: una sola ripartizione per conto/voce/sede/periodo
+            builder.Entity<PstreeAssociazioniImportSaldiCE>()
+                .HasIndex(a => new { a.CodicePdC, a.IdCodiceConto, a.IdSede, a.Anno, a.Mese })
+                .IsUnique()
+                .HasDatabaseName("IX_Pstree_AssociazioniImportSaldiCE_Ripartizione");
 
             // Pstree_ListaRettifiche: relazioni
             builder.Entity<PstreeListaRettifiche>()

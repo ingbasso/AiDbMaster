@@ -31,10 +31,8 @@ namespace AiDbMaster.Controllers
             // (Solo conti di tipo 'E' - Economico)
             // ========================================
 
-            // Tutti i codici PdC UNICI di tipo ECONOMICO presenti nel Piano dei Conti
-            // Esclude i conti che iniziano per '60' (non devono essere associati)
             var tuttiCodiciPdC = await _context.PstreeListaPianoDeiConti
-                .Where(p => p.TipoPdC == "E" && !p.CodicePdC.StartsWith("60"))
+                .Where(p => p.TipoPdC == "E")
                 .Select(p => p.CodicePdC)
                 .ToListAsync();
 

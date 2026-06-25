@@ -1,0 +1,67 @@
+@model AiDbMaster.Models.PstreeAssociazioniImportSaldiCE
+
+@{
+    ViewData["Title"] = "Dettaglio Ripartizione";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-info-circle text-info"></i> Dettaglio Ripartizione</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Torna all'elenco
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Ripartizione #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Codice PdC</dt>
+                        <dd class="col-sm-8">
+                            <code>@Model.CodicePdC</code>
+                            @if (Model.PianoDeiConti != null)
+                            {
+                                <span class="ms-2">- @Model.PianoDeiConti.DescrizionePdC</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Voce Conto Economico</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-primary">@Model.IdCodiceConto</span>
+                            @if (Model.ContoEconomico != null)
+                            {
+                                <span class="ms-1">@Model.ContoEconomico.DescrizioneConto</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Sede</dt>
+                        <dd class="col-sm-8">@(Model.Sede != null ? Model.Sede.Sede : Model.IdSede.ToString())</dd>
+
+                        <dt class="col-sm-4">Periodo</dt>
+                        <dd class="col-sm-8">@Model.Periodo</dd>
+
+                        <dt class="col-sm-4">Percentuale</dt>
+                        <dd class="col-sm-8">@Model.PercentualeFormattata</dd>
+                    </dl>
+
+                    <hr />
+
+                    <div class="d-flex gap-2">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"
+                           permission-required="PstreeAssociazioniImportSaldiCE:Edit">
+                            <i class="bi bi-pencil"></i> Modifica
+                        </a>
+                        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger"
+                           permission-required="PstreeAssociazioniImportSaldiCE:Delete">
+                            <i class="bi bi-trash"></i> Elimina
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

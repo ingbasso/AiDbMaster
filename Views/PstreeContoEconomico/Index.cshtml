@@ -127,14 +127,19 @@
 
                     <!-- Mesi (Checkbox compatti) -->
                     <div style="flex: 1; min-width: 280px;">
-                        <label class="form-label small mb-1">
-                            <i class="bi bi-calendar"></i> Mesi
-                        </label>
+                        <div class="d-flex align-items-center mb-1">
+                            <label class="form-label small mb-0">
+                                <i class="bi bi-calendar"></i> Mesi
+                            </label>
+                            <a href="javascript:void(0)" onclick="selezionaTuttiMesi()" class="ms-2 text-primary" style="font-size: 0.7rem; text-decoration: none;" title="Seleziona tutti i mesi">Tutti</a>
+                            <span class="text-muted mx-1" style="font-size: 0.7rem;">|</span>
+                            <a href="javascript:void(0)" onclick="deselezionaTuttiMesi()" class="text-danger" style="font-size: 0.7rem; text-decoration: none;" title="Deseleziona tutti i mesi">Nessuno</a>
+                        </div>
                         <div class="d-flex p-1 px-2 border rounded bg-white" style="height: 31px; align-items: center; gap: 0;">
                             @foreach (var mese in Model.Mesi)
                             {
                                 <div class="form-check form-check-inline mb-0" style="margin-right: 0; margin-left: 0;">
-                                    <input class="form-check-input" type="checkbox" 
+                                    <input class="form-check-input mese-check" type="checkbox" 
                                            name="mesi" value="@mese.Numero" id="mese_@mese.Numero"
                                            checked="@mese.Selezionato"
                                            onchange="document.getElementById('filterForm').submit();"
@@ -280,7 +285,12 @@
                                     {
                                         var val = riga.ValoriMensili[mese.Numero];
                                         var valClass = val < 0 ? "text-danger" : "";
-                                        <td class="text-end @valClass">
+                                        var tipoVoce = riga.VoceRettifica ? "rettifica" : (riga.VoceRimanenza ? "rimanenza" : "saldo");
+                                        var isCellClickable = !hasChildren && val != 0;
+                                        <td class="text-end @valClass @(isCellClickable ? "cell-clickable" : "")"
+                                            @if (isCellClickable) {
+                                                <text>onclick="mostraDettaglio(@riga.IdCodiceConto, @mese.Numero, '@tipoVoce')"</text>
+                                            }>
                                             @if (val != 0)
                                             {
                                                 @val.ToString("N0")
@@ -467,6 +477,27 @@
     </div>
 </div>
 
+<!-- Modal Dettaglio Saldi -->
+<div class="modal fade" id="modalDettaglio" tabindex="-1" data-bs-backdrop="false" aria-labelledby="modalDettaglioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="modalDettaglioLabel" style="color: #333 !important;">
+                    <i class="bi bi-search"></i> Dettaglio
+                </h6>
+                <span onclick="bootstrap.Modal.getInstance(document.getElementById('modalDettaglio')).hide();" style="color: #333 !important; font-size: 1.5rem !important; font-weight: bold !important; cursor: pointer !important; line-height: 1; padding: 0 4px;" title="Chiudi">&times;</span>
+            </div>
+            <div class="modal-body p-0" id="modalDettaglioBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     #tblContoEconomico tbody tr {
         transition: all 0.2s ease;
@@ -545,6 +576,20 @@
     #tblContoEconomico td:first-child > div {
         padding: 0 !important;
         margin: 0 !important;
+    }
+    
+    .cell-clickable {
+        cursor: pointer;
+        position: relative;
+    }
+    
+    .cell-clickable:hover {
+        background-color: #d4e9ff !important;
+        text-decoration: underline;
+    }
+    
+    #modalDettaglio .modal-header span:hover {
+        color: #000 !important;
     }
 </style>
 
@@ -661,6 +706,21 @@
             });
         })();
         
+        function selezionaTuttiMesi() {
+            document.querySelectorAll('.mese-check').forEach(cb => cb.checked = true);
+            document.getElementById('filterForm').submit();
+        }
+
+        function deselezionaTuttiMesi() {
+            document.querySelectorAll('.mese-check').forEach(cb => cb.checked = false);
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'mesiManuale';
+            input.value = 'true';
+            document.getElementById('filterForm').appendChild(input);
+            document.getElementById('filterForm').submit();
+        }
+
         function resetMesiESubmit() {
             document.querySelectorAll('.mese-check').forEach(cb => cb.checked = false);
             document.getElementById('filterForm').submit();
@@ -764,6 +824,202 @@
             document.querySelectorAll('.toggle-icon').forEach(icon => {
                 icon.classList.add('collapsed');
             });
+            
+            makeModalDraggable(document.getElementById('modalDettaglio'));
         });
+        
+        // === MODAL DRAGGABLE ===
+        function makeModalDraggable(modalEl) {
+            var dialog = modalEl.querySelector('.modal-dialog');
+            var header = modalEl.querySelector('.modal-header');
+            var dragging = false;
+            var startX = 0, startY = 0;
+            var currentX = 0, currentY = 0;
+
+            header.style.cursor = 'move';
+            header.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.btn-close') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+                startX = e.clientX - currentX;
+                startY = e.clientY - currentY;
+                dragging = true;
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!dragging) return;
+                currentX = e.clientX - startX;
+                currentY = e.clientY - startY;
+                dialog.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+            });
+
+            document.addEventListener('mouseup', function() { dragging = false; });
+            modalEl.addEventListener('show.bs.modal', function() {
+                currentX = 0;
+                currentY = 0;
+                dialog.style.transform = '';
+            });
+        }
+        
+        // === DETTAGLIO SALDI ===
+        function mostraDettaglio(idCodiceConto, mese, tipo) {
+            var anno = @Model.Anno;
+            var sede = @(Model.SedeSelezionata.HasValue ? Model.SedeSelezionata.Value.ToString() : "null");
+            
+            var body = document.getElementById('modalDettaglioBody');
+            body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+            
+            var modal = new bootstrap.Modal(document.getElementById('modalDettaglio'));
+            modal.show();
+            
+            var url = '@Url.Action("GetDettaglioSaldi")' + 
+                '?idCodiceConto=' + idCodiceConto + 
+                '&anno=' + anno + 
+                '&mese=' + mese + 
+                '&tipo=' + tipo;
+            if (sede !== null) url += '&sede=' + sede;
+            
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        body.innerHTML = '<div class="alert alert-danger m-3">' + (data.message || 'Errore') + '</div>';
+                        return;
+                    }
+                    
+                    document.getElementById('modalDettaglioLabel').innerHTML = 
+                        '<i class="bi bi-search"></i> ' + data.descrizioneVoce + ' - ' + data.nomeMese + ' ' + data.anno;
+                    
+                    var html = '';
+                    
+                    if (data.tipo === 'saldo') {
+                        html = renderTabellaStandard(data);
+                    } else if (data.tipo === 'rettifica') {
+                        html = renderTabellaRettifiche(data);
+                    } else if (data.tipo === 'rimanenza') {
+                        html = renderTabellaRimanenze(data);
+                    }
+                    
+                    body.innerHTML = html;
+                })
+                .catch(err => {
+                    body.innerHTML = '<div class="alert alert-danger m-3">Errore di connessione</div>';
+                });
+        }
+        
+        function formatNumber(val) {
+            if (val == null || val === 0) return '-';
+            return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val);
+        }
+        
+        function renderTabellaStandard(data) {
+            if (!data.righe || data.righe.length === 0) {
+                return '<div class="alert alert-info m-3"><i class="bi bi-info-circle"></i> Nessun saldo trovato per questa voce.</div>';
+            }
+            
+            var totale = data.righe.reduce(function(sum, r) { return sum + r.importoAttribuito; }, 0);
+            
+            var html = '<table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">';
+            html += '<thead class="table-light"><tr>';
+            html += '<th>Codice PdC</th>';
+            html += '<th>Descrizione</th>';
+            html += '<th class="text-end">Dare</th>';
+            html += '<th class="text-end">Avere</th>';
+            html += '<th class="text-end">Saldo</th>';
+            html += '<th class="text-end">%</th>';
+            html += '<th class="text-end">Attribuito</th>';
+            html += '</tr></thead><tbody>';
+            
+            data.righe.forEach(function(r) {
+                var colorClass = r.importoAttribuito < 0 ? 'text-danger' : '';
+                html += '<tr>';
+                html += '<td><code>' + r.codicePdC + '</code></td>';
+                html += '<td>' + r.descrizionePdC + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.dare) + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.avere) + '</td>';
+                html += '<td class="text-end ' + colorClass + '">' + formatNumber(r.saldo) + '</td>';
+                html += '<td class="text-end">' + r.percentuale.toFixed(1) + '%</td>';
+                html += '<td class="text-end fw-bold ' + colorClass + '">' + formatNumber(r.importoAttribuito) + '</td>';
+                html += '</tr>';
+            });
+            
+            var totaleClass = totale < 0 ? 'text-danger' : '';
+            html += '</tbody><tfoot class="table-primary"><tr>';
+            html += '<td colspan="6" class="fw-bold">TOTALE</td>';
+            html += '<td class="text-end fw-bold ' + totaleClass + '">' + formatNumber(totale) + '</td>';
+            html += '</tr></tfoot></table>';
+            
+            return html;
+        }
+        
+        function renderTabellaRettifiche(data) {
+            if (!data.righe || data.righe.length === 0) {
+                return '<div class="alert alert-info m-3"><i class="bi bi-info-circle"></i> Nessuna rettifica trovata.</div>';
+            }
+            
+            var totale = data.righe.reduce(function(sum, r) { return sum + r.saldo; }, 0);
+            
+            var html = '<table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">';
+            html += '<thead class="table-light"><tr>';
+            html += '<th>Famiglia</th>';
+            html += '<th class="text-end">Dare</th>';
+            html += '<th class="text-end">Avere</th>';
+            html += '<th class="text-end">Saldo</th>';
+            html += '<th>Sede</th>';
+            html += '</tr></thead><tbody>';
+            
+            data.righe.forEach(function(r) {
+                var colorClass = r.saldo < 0 ? 'text-danger' : '';
+                html += '<tr>';
+                html += '<td>' + r.descrizione + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.dare) + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.avere) + '</td>';
+                html += '<td class="text-end fw-bold ' + colorClass + '">' + formatNumber(r.saldo) + '</td>';
+                html += '<td>' + r.sede + '</td>';
+                html += '</tr>';
+            });
+            
+            var totaleClass = totale < 0 ? 'text-danger' : '';
+            html += '</tbody><tfoot class="table-warning"><tr>';
+            html += '<td colspan="3" class="fw-bold">TOTALE</td>';
+            html += '<td class="text-end fw-bold ' + totaleClass + '">' + formatNumber(totale) + '</td>';
+            html += '<td></td>';
+            html += '</tr></tfoot></table>';
+            
+            return html;
+        }
+        
+        function renderTabellaRimanenze(data) {
+            if (!data.righe || data.righe.length === 0) {
+                return '<div class="alert alert-info m-3"><i class="bi bi-info-circle"></i> Nessuna rimanenza trovata.</div>';
+            }
+            
+            var totale = data.righe.reduce(function(sum, r) { return sum + r.delta; }, 0);
+            
+            var html = '<table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">';
+            html += '<thead class="table-light"><tr>';
+            html += '<th>Famiglia</th>';
+            html += '<th class="text-end">Mese Prec.</th>';
+            html += '<th class="text-end">Mese Corr.</th>';
+            html += '<th class="text-end">Delta</th>';
+            html += '</tr></thead><tbody>';
+            
+            data.righe.forEach(function(r) {
+                var colorClass = r.delta < 0 ? 'text-danger' : '';
+                html += '<tr>';
+                html += '<td>' + r.descrizione + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.mesePrecedente) + '</td>';
+                html += '<td class="text-end">' + formatNumber(r.meseCorrente) + '</td>';
+                html += '<td class="text-end fw-bold ' + colorClass + '">' + formatNumber(r.delta) + '</td>';
+                html += '</tr>';
+            });
+            
+            var totaleClass = totale < 0 ? 'text-danger' : '';
+            html += '</tbody><tfoot class="table-info"><tr>';
+            html += '<td colspan="3" class="fw-bold">TOTALE DELTA</td>';
+            html += '<td class="text-end fw-bold ' + totaleClass + '">' + formatNumber(totale) + '</td>';
+            html += '</tr></tfoot></table>';
+            
+            return html;
+        }
     </script>
 }

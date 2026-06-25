@@ -1,0 +1,247 @@
+@model IEnumerable<AiDbMaster.Models.PstreeAssociazioniImportSaldiCE>
+
+@{
+    ViewData["Title"] = "Ripartizioni Import Saldi CE";
+    ViewBag.UseFluidContainer = true;
+    var anno = (int)ViewBag.Anno;
+    var sedeSelezionata = ViewBag.SedeSelezionata as int?;
+    var searchCodicePdC = ViewBag.SearchCodicePdC as string;
+    var anniDisponibili = ViewBag.AnniDisponibili as List<int> ?? new List<int>();
+    var sedi = ViewBag.Sedi as List<SelectListItem> ?? new List<SelectListItem>();
+    var totaliGruppo = ViewBag.TotaliGruppo as Dictionary<(string, int, int, int), double>
+        ?? new Dictionary<(string, int, int, int), double>();
+}
+
+@section Styles {
+    <style>
+        .btn-toggle-mesi i { transition: transform .15s ease; }
+        .btn-toggle-mesi[aria-expanded="true"] i.bi-chevron-right { transform: rotate(90deg); }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Ripartizioni Import Saldi CE</h2>
+        <div>
+            <a asp-action="Create" asp-route-anno="@anno" asp-route-sede="@sedeSelezionata"
+               class="btn btn-primary btn-sm" permission-required="PstreeAssociazioniImportSaldiCE:Create">
+                <i class="bi bi-plus-circle me-1"></i>Nuova Ripartizione
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Anno</label>
+                    <select name="anno" class="form-select form-select-sm">
+                        @foreach (var a in anniDisponibili)
+                        {
+                            <option value="@a" selected="@(a == anno)">@a</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Sede</label>
+                    <select name="sede" class="form-select form-select-sm">
+                        <option value="">Tutte le sedi</option>
+                        @foreach (var s in sedi)
+                        {
+                            <option value="@s.Value" selected="@(sedeSelezionata.HasValue && s.Value == sedeSelezionata.Value.ToString())">@s.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Codice PdC</label>
+                    <input type="text" name="searchCodicePdC" value="@searchCodicePdC" class="form-control form-control-sm" placeholder="Cerca codice..." />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-search me-1"></i>Filtra
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="bi bi-list-ul me-1"></i>Elenco ripartizioni (@Model.Count())</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Codice PdC</th>
+                            <th>Voce Conto Economico</th>
+                            <th>Sede</th>
+                            <th class="text-center">Anno</th>
+                            <th class="text-center">Mese</th>
+                            <th class="text-end">Percentuale</th>
+                            <th class="text-center">Totale gruppo</th>
+                            <th class="text-center" style="width:120px;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="8" class="text-center text-muted py-4">Nessuna ripartizione registrata per i filtri selezionati.</td></tr>
+                        }
+                        @{
+                            // Raggruppa per conto/sede/anno/voce: se la voce è presente in tutti i 12 mesi
+                            // con la stessa percentuale, mostro una sola riga riassuntiva espandibile.
+                            var gruppiVoce = Model
+                                .GroupBy(r => new { r.CodicePdC, r.IdSede, r.Anno, r.IdCodiceConto })
+                                .OrderBy(g => g.Key.CodicePdC)
+                                .ThenBy(g => g.Key.IdSede)
+                                .ThenBy(g => g.Key.IdCodiceConto)
+                                .ToList();
+                            var grpId = 0;
+                        }
+                        @foreach (var g in gruppiVoce)
+                        {
+                            var righe = g.OrderBy(x => x.Mese).ToList();
+                            var mesiPresenti = righe.Select(x => x.Mese).Distinct().ToList();
+                            var percDistinte = righe.Select(x => Math.Round(x.Percentuale, 2)).Distinct().ToList();
+                            var rapp = righe.First();
+                            var tuttiMesiUguali = mesiPresenti.Count == 12 && percDistinte.Count == 1;
+
+                            if (tuttiMesiUguali)
+                            {
+                                grpId++;
+                                var collapseId = $"grpMesi_{grpId}";
+                                var totaleGrp = totaliGruppo.GetValueOrDefault((rapp.CodicePdC, rapp.IdSede, rapp.Anno, rapp.Mese), 0);
+                                var completoGrp = Math.Abs(totaleGrp - 100.0) < 0.01;
+                                <tr class="table-light">
+                                    <td>
+                                        <code>@rapp.CodicePdC</code>
+                                        @if (rapp.PianoDeiConti != null)
+                                        {
+                                            <div class="small text-muted">@rapp.PianoDeiConti.DescrizionePdC</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@rapp.IdCodiceConto</span>
+                                        @if (rapp.ContoEconomico != null)
+                                        {
+                                            <span class="ms-1">@rapp.ContoEconomico.DescrizioneConto</span>
+                                        }
+                                    </td>
+                                    <td>@(rapp.Sede != null ? rapp.Sede.Sede : rapp.IdSede.ToString())</td>
+                                    <td class="text-center">@rapp.Anno</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-link p-0 btn-toggle-mesi text-decoration-none"
+                                                data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false">
+                                            <i class="bi bi-chevron-right me-1"></i>
+                                            <span class="badge bg-info text-dark">Tutti i mesi (Gen–Dic)</span>
+                                        </button>
+                                    </td>
+                                    <td class="text-end">@rapp.Percentuale.ToString("N2")%</td>
+                                    <td class="text-center">
+                                        <span class="badge @(completoGrp ? "bg-success" : "bg-warning text-dark")" title="Somma delle percentuali per questo conto/sede/mese">
+                                            @totaleGrp.ToString("N2")%
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-muted small">12 mesi</td>
+                                </tr>
+                                <tr class="collapse" id="@collapseId">
+                                    <td colspan="8" class="p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="ps-4" style="width:50%;">Mese</th>
+                                                    <th class="text-end">Percentuale</th>
+                                                    <th class="text-center" style="width:120px;">Azioni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in righe)
+                                                {
+                                                    <tr>
+                                                        <td class="ps-4">@item.NomeMese</td>
+                                                        <td class="text-end">@item.Percentuale.ToString("N2")%</td>
+                                                        <td class="text-center">
+                                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1"
+                                                               permission-required="PstreeAssociazioniImportSaldiCE:Edit" title="Modifica">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                                               permission-required="PstreeAssociazioniImportSaldiCE:Delete" title="Elimina">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var item in righe)
+                                {
+                                    var totale = totaliGruppo.GetValueOrDefault((item.CodicePdC, item.IdSede, item.Anno, item.Mese), 0);
+                                    var completo = Math.Abs(totale - 100.0) < 0.01;
+                                    <tr>
+                                        <td>
+                                            <code>@item.CodicePdC</code>
+                                            @if (item.PianoDeiConti != null)
+                                            {
+                                                <div class="small text-muted">@item.PianoDeiConti.DescrizionePdC</div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">@item.IdCodiceConto</span>
+                                            @if (item.ContoEconomico != null)
+                                            {
+                                                <span class="ms-1">@item.ContoEconomico.DescrizioneConto</span>
+                                            }
+                                        </td>
+                                        <td>@(item.Sede != null ? item.Sede.Sede : item.IdSede.ToString())</td>
+                                        <td class="text-center">@item.Anno</td>
+                                        <td class="text-center">@item.NomeMese</td>
+                                        <td class="text-end">@item.Percentuale.ToString("N2")%</td>
+                                        <td class="text-center">
+                                            <span class="badge @(completo ? "bg-success" : "bg-warning text-dark")" title="Somma delle percentuali per questo conto/sede/mese">
+                                                @totale.ToString("N2")%
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1"
+                                               permission-required="PstreeAssociazioniImportSaldiCE:Edit" title="Modifica">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger"
+                                               permission-required="PstreeAssociazioniImportSaldiCE:Delete" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

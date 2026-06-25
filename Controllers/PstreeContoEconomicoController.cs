@@ -27,7 +27,7 @@ namespace AiDbMaster.Controllers
         }
 
         // GET: PstreeContoEconomico
-        public async Task<IActionResult> Index(int? anno, List<int>? famiglie, List<int>? mesi, int? sede, string? vista, bool escludiRimanenze = false, bool mostraCodici = false)
+        public async Task<IActionResult> Index(int? anno, List<int>? famiglie, List<int>? mesi, int? sede, string? vista, bool escludiRimanenze = false, bool mostraCodici = false, bool mesiManuale = false)
         {
             var viewModel = new Pstree_ContoEconomicoViewModel();
 
@@ -95,7 +95,7 @@ namespace AiDbMaster.Controllers
                 mesiDefault = new List<int>();
             }
 
-            var mesiSelezionati = (mesi != null && mesi.Any()) ? mesi : mesiDefault;
+            var mesiSelezionati = (mesi != null && mesi.Any()) ? mesi : (mesiManuale ? new List<int>() : mesiDefault);
             viewModel.MesiSelezionati = mesiSelezionati;
 
             viewModel.Mesi = Enumerable.Range(1, 12).Select(m => new Pstree_MeseCheckboxItem
@@ -156,9 +156,6 @@ namespace AiDbMaster.Controllers
                 .ToListAsync();
 
             var associazioni = await _context.PstreeAssociazioniCE.ToListAsync();
-            var associazioniDict = associazioni
-                .GroupBy(a => a.IdCodiceConto)
-                .ToDictionary(g => g.Key, g => g.Select(a => a.CodicePdC).ToList());
 
             var saldiQuery = _context.PstreeListaSaldi
                 .Where(s => s.Anno == viewModel.Anno);
@@ -169,6 +166,19 @@ namespace AiDbMaster.Controllers
             }
 
             var saldi = await saldiQuery.ToListAsync();
+
+            // Ripartizioni import saldi: override per CodicePdC + Anno + Mese + IdSede
+            var ripartizioniQuery = _context.PstreeAssociazioniImportSaldiCE
+                .Where(r => r.Anno == viewModel.Anno);
+
+            if (sede.HasValue)
+            {
+                ripartizioniQuery = ripartizioniQuery.Where(r => r.IdSede == sede.Value);
+            }
+
+            var ripartizioni = await ripartizioniQuery.ToListAsync();
+
+            var saldiAttribuiti = CalcolaSaldiAttribuiti(saldi, ripartizioni, associazioni);
 
             var rettificheQuery = _context.PstreeListaRettifiche
                 .Where(r => r.Anno == viewModel.Anno);
@@ -274,15 +284,12 @@ namespace AiDbMaster.Controllers
                 }
                 else if (!figliDict.ContainsKey(voce.IdCodiceConto))
                 {
-                    if (associazioniDict.TryGetValue(voce.IdCodiceConto, out var codiciPdC))
+                    for (int mese = 1; mese <= 12; mese++)
                     {
-                        var saldiVoce = saldi.Where(s => codiciPdC.Contains(s.CodicePdC));
-                        foreach (var saldo in saldiVoce)
+                        var valoreVoce = saldiAttribuiti.GetValueOrDefault((viewModel.Anno, mese, voce.IdCodiceConto), 0);
+                        if (valoreVoce != 0)
                         {
-                            if (saldo.Mese.HasValue && saldo.Mese >= 1 && saldo.Mese <= 12)
-                            {
-                                valori[saldo.Mese.Value] += saldo.Saldo * -1;
-                            }
+                            valori[mese] += valoreVoce;
                         }
                     }
                 }
@@ -600,10 +607,7 @@ namespace AiDbMaster.Controllers
             
             var struttura = await _context.PstreeStrutturaContoEconomico.ToListAsync();
             var associazioni = await _context.PstreeAssociazioniCE.ToListAsync();
-            var associazioniDict = associazioni
-                .GroupBy(a => a.IdCodiceConto)
-                .ToDictionary(g => g.Key, g => g.Select(a => a.CodicePdC).ToList());
-            
+
             var saldiGraficoQuery = _context.PstreeListaSaldi
                 .Where(s => s.Anno.HasValue && anniCoinvolti.Contains(s.Anno.Value));
             if (sede.HasValue)
@@ -611,6 +615,17 @@ namespace AiDbMaster.Controllers
                 saldiGraficoQuery = saldiGraficoQuery.Where(s => s.IdSede == sede.Value);
             }
             var saldiGrafico = await saldiGraficoQuery.ToListAsync();
+
+            // Ripartizioni import saldi: override per CodicePdC + Anno + Mese + IdSede
+            var ripartizioniGraficoQuery = _context.PstreeAssociazioniImportSaldiCE
+                .Where(r => anniCoinvolti.Contains(r.Anno));
+            if (sede.HasValue)
+            {
+                ripartizioniGraficoQuery = ripartizioniGraficoQuery.Where(r => r.IdSede == sede.Value);
+            }
+            var ripartizioniGrafico = await ripartizioniGraficoQuery.ToListAsync();
+
+            var saldiAttribuiti = CalcolaSaldiAttribuiti(saldiGrafico, ripartizioniGrafico, associazioni);
             
             var rettificheGraficoQuery = _context.PstreeListaRettifiche
                 .Where(r => anniCoinvolti.Contains(r.Anno));
@@ -685,12 +700,7 @@ namespace AiDbMaster.Controllers
                     }
                     else if (!figliDict.ContainsKey(voce.IdCodiceConto))
                     {
-                        if (associazioniDict.TryGetValue(voce.IdCodiceConto, out var codiciPdC))
-                        {
-                            valore = saldiMese
-                                .Where(s => codiciPdC.Contains(s.CodicePdC))
-                                .Sum(s => s.Saldo) * -1;
-                        }
+                        valore = saldiAttribuiti.GetValueOrDefault((anno, mese, voce.IdCodiceConto), 0);
                     }
                     
                     valoriVoce[voce.IdCodiceConto] = valore;
@@ -794,10 +804,7 @@ namespace AiDbMaster.Controllers
             var struttura = await _context.PstreeStrutturaContoEconomico.OrderBy(s => s.Ordine).ToListAsync();
             
             var associazioni = await _context.PstreeAssociazioniCE.ToListAsync();
-            var associazioniDict = associazioni
-                .GroupBy(a => a.IdCodiceConto)
-                .ToDictionary(g => g.Key, g => g.Select(a => a.CodicePdC).ToList());
-            
+
             var saldiQuery = _context.PstreeListaSaldi
                 .Where(s => s.Anno == viewModel.Anno && mesiSelezionati.Contains(s.Mese ?? 0));
             if (sede.HasValue)
@@ -805,6 +812,17 @@ namespace AiDbMaster.Controllers
                 saldiQuery = saldiQuery.Where(s => s.IdSede == sede.Value);
             }
             var saldi = await saldiQuery.ToListAsync();
+
+            // Ripartizioni import saldi: override per CodicePdC + Anno + Mese + IdSede
+            var ripartizioniQuery = _context.PstreeAssociazioniImportSaldiCE
+                .Where(r => r.Anno == viewModel.Anno);
+            if (sede.HasValue)
+            {
+                ripartizioniQuery = ripartizioniQuery.Where(r => r.IdSede == sede.Value);
+            }
+            var ripartizioni = await ripartizioniQuery.ToListAsync();
+
+            var saldiAttribuiti = CalcolaSaldiAttribuiti(saldi, ripartizioni, associazioni);
             
             var rettificheQuery = _context.PstreeListaRettifiche.Where(r => r.Anno == viewModel.Anno);
             if (sede.HasValue)
@@ -899,15 +917,12 @@ namespace AiDbMaster.Controllers
                 }
                 else if (!figliDict.ContainsKey(voce.IdCodiceConto))
                 {
-                    if (associazioniDict.TryGetValue(voce.IdCodiceConto, out var codiciPdC))
+                    for (int mese = 1; mese <= 12; mese++)
                     {
-                        var saldiVoce = saldi.Where(s => codiciPdC.Contains(s.CodicePdC));
-                        foreach (var saldo in saldiVoce)
+                        var valoreVoce = saldiAttribuiti.GetValueOrDefault((viewModel.Anno, mese, voce.IdCodiceConto), 0);
+                        if (valoreVoce != 0)
                         {
-                            if (saldo.Mese.HasValue && saldo.Mese >= 1 && saldo.Mese <= 12)
-                            {
-                                valori[saldo.Mese.Value] += saldo.Saldo * -1;
-                            }
+                            valori[mese] += valoreVoce;
                         }
                     }
                 }
@@ -1473,6 +1488,256 @@ namespace AiDbMaster.Controllers
             var content = package.GetAsByteArray();
             
             return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        /// <summary>
+        /// Attribuisce i saldi del Piano dei Conti alle voci del Conto Economico.
+        /// Regola: se per il saldo (CodicePdC + Anno + Mese + IdSede) esiste una ripartizione
+        /// in Pstree_AssociazioniImportSaldiCE, il valore viene spalmato sulle voci indicate
+        /// secondo la relativa percentuale; altrimenti si usa l'associazione classica
+        /// (Pstree_AssociazioniCE) attribuendo il 100% del saldo.
+        /// Ritorna un dizionario (Anno, Mese, IdCodiceConto) -> valore (con segno gia' invertito).
+        /// </summary>
+        private static Dictionary<(int Anno, int Mese, int IdCodiceConto), decimal> CalcolaSaldiAttribuiti(
+            IEnumerable<PstreeListaSaldi> saldi,
+            IEnumerable<PstreeAssociazioniImportSaldiCE> ripartizioni,
+            IEnumerable<PstreeAssociazioniCE> associazioni)
+        {
+            var ripartizioniDict = ripartizioni
+                .GroupBy(r => (r.CodicePdC, r.Anno, r.Mese, r.IdSede))
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(r => (r.IdCodiceConto, r.Percentuale)).ToList());
+
+            var pdcToVoci = associazioni
+                .GroupBy(a => a.CodicePdC)
+                .ToDictionary(g => g.Key, g => g.Select(a => a.IdCodiceConto).Distinct().ToList());
+
+            var risultato = new Dictionary<(int Anno, int Mese, int IdCodiceConto), decimal>();
+
+            void Accumula(int anno, int mese, int idCodiceConto, decimal valore)
+            {
+                var chiave = (anno, mese, idCodiceConto);
+                risultato[chiave] = risultato.GetValueOrDefault(chiave, 0) + valore;
+            }
+
+            foreach (var saldo in saldi)
+            {
+                if (!saldo.Anno.HasValue || !saldo.Mese.HasValue)
+                    continue;
+
+                var mese = saldo.Mese.Value;
+                if (mese < 1 || mese > 12)
+                    continue;
+
+                var anno = saldo.Anno.Value;
+                var importo = saldo.Saldo * -1;
+                var chiaveRip = (saldo.CodicePdC, anno, mese, saldo.IdSede ?? int.MinValue);
+
+                if (ripartizioniDict.TryGetValue(chiaveRip, out var quote))
+                {
+                    // Ripartizione presente: spalma il saldo sulle voci secondo le percentuali
+                    foreach (var (idCodiceConto, percentuale) in quote)
+                    {
+                        Accumula(anno, mese, idCodiceConto, importo * (decimal)(percentuale / 100.0));
+                    }
+                }
+                else if (pdcToVoci.TryGetValue(saldo.CodicePdC, out var vociTarget))
+                {
+                    // Nessuna ripartizione: comportamento classico, 100% sulle voci associate
+                    foreach (var idCodiceConto in vociTarget)
+                    {
+                        Accumula(anno, mese, idCodiceConto, importo);
+                    }
+                }
+            }
+
+            return risultato;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDettaglioSaldi(int idCodiceConto, int anno, int mese, int? sede, string tipo)
+        {
+            var nomiMesi = new[] { "", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+                "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre" };
+
+            var struttura = await _context.PstreeStrutturaContoEconomico
+                .FirstOrDefaultAsync(s => s.IdCodiceConto == idCodiceConto);
+
+            if (struttura == null)
+                return Json(new { success = false, message = "Voce non trovata" });
+
+            var nomeMese = (mese >= 1 && mese <= 12) ? nomiMesi[mese] : "-";
+
+            if (tipo == "rettifica")
+            {
+                var query = _context.PstreeListaRettifiche
+                    .Include(r => r.Famiglia)
+                    .Include(r => r.Sede)
+                    .Where(r => r.IdCodiceConto == idCodiceConto && r.Anno == anno && r.Mese == mese);
+
+                if (sede.HasValue)
+                    query = query.Where(r => r.IdSede == sede.Value);
+
+                var rettifiche = await query.ToListAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    tipo = "rettifica",
+                    descrizioneVoce = struttura.DescrizioneConto,
+                    nomeMese,
+                    anno,
+                    righe = rettifiche.Select(r => new
+                    {
+                        descrizione = r.Famiglia?.NomeFamiglia ?? "-",
+                        dare = r.Dare,
+                        avere = r.Avere,
+                        saldo = r.Saldo * -1,
+                        sede = r.Sede?.Sede ?? "-"
+                    })
+                });
+            }
+
+            if (tipo == "rimanenza")
+            {
+                var famiglie = await _context.PstreeListaFamiglie
+                    .Where(f => f.IdCodiceConto == idCodiceConto)
+                    .ToListAsync();
+
+                var famiglieIds = famiglie.Select(f => f.Id).ToList();
+
+                var rimanenzeQuery = _context.PstreeListaRimanenze
+                    .Include(r => r.Famiglia)
+                    .Where(r => famiglieIds.Contains(r.IdFamiglia));
+
+                if (mese == 1)
+                {
+                    rimanenzeQuery = rimanenzeQuery.Where(r =>
+                        (r.Anno == anno && r.Mese == 1) ||
+                        (r.Anno == anno - 1 && r.Mese == 12));
+                }
+                else
+                {
+                    rimanenzeQuery = rimanenzeQuery.Where(r =>
+                        r.Anno == anno && (r.Mese == mese || r.Mese == mese - 1));
+                }
+
+                if (sede.HasValue)
+                    rimanenzeQuery = rimanenzeQuery.Where(r => r.IdSede == sede.Value);
+
+                var rimanenze = await rimanenzeQuery.ToListAsync();
+
+                var righe = famiglieIds.SelectMany(famId =>
+                {
+                    var famiglia = famiglie.First(f => f.Id == famId);
+                    var rimCorrente = rimanenze
+                        .Where(r => r.IdFamiglia == famId && r.Anno == anno && r.Mese == mese)
+                        .Sum(r => r.Valore + r.RettificaValore);
+
+                    double rimPrecedente;
+                    if (mese == 1)
+                    {
+                        rimPrecedente = rimanenze
+                            .Where(r => r.IdFamiglia == famId && r.Anno == anno - 1 && r.Mese == 12)
+                            .Sum(r => r.Valore + r.RettificaValore);
+                    }
+                    else
+                    {
+                        rimPrecedente = rimanenze
+                            .Where(r => r.IdFamiglia == famId && r.Anno == anno && r.Mese == mese - 1)
+                            .Sum(r => r.Valore + r.RettificaValore);
+                    }
+
+                    return new[]
+                    {
+                        new
+                        {
+                            descrizione = famiglia.NomeFamiglia,
+                            mesePrecedente = rimPrecedente,
+                            meseCorrente = rimCorrente,
+                            delta = rimCorrente - rimPrecedente
+                        }
+                    };
+                }).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    tipo = "rimanenza",
+                    descrizioneVoce = struttura.DescrizioneConto,
+                    nomeMese,
+                    anno,
+                    righe
+                });
+            }
+
+            // tipo == "saldo": trova i saldi PdC che contribuiscono a questa voce
+            var ripartizioniVoce = await _context.PstreeAssociazioniImportSaldiCE
+                .Where(r => r.IdCodiceConto == idCodiceConto && r.Anno == anno && r.Mese == mese)
+                .Where(r => !sede.HasValue || r.IdSede == sede.Value)
+                .ToListAsync();
+
+            var codiciRipartizione = ripartizioniVoce.Select(r => r.CodicePdC).Distinct().ToList();
+            var ripartizioniPerc = ripartizioniVoce
+                .GroupBy(r => r.CodicePdC)
+                .ToDictionary(g => g.Key, g => g.First().Percentuale);
+
+            var codiciClassici = await _context.PstreeAssociazioniCE
+                .Where(a => a.IdCodiceConto == idCodiceConto)
+                .Select(a => a.CodicePdC)
+                .Distinct()
+                .ToListAsync();
+
+            var codiciConRipartizione = await _context.PstreeAssociazioniImportSaldiCE
+                .Where(r => codiciClassici.Contains(r.CodicePdC) && r.Anno == anno && r.Mese == mese)
+                .Where(r => !sede.HasValue || r.IdSede == sede.Value)
+                .Select(r => r.CodicePdC)
+                .Distinct()
+                .ToListAsync();
+
+            var codiciClassiciEffettivi = codiciClassici
+                .Where(c => !codiciConRipartizione.Contains(c))
+                .ToList();
+
+            var tuttiCodici = codiciRipartizione.Union(codiciClassiciEffettivi).Distinct().ToList();
+
+            var saldiQuery = _context.PstreeListaSaldi
+                .Include(s => s.PianoDeiConti)
+                .Where(s => tuttiCodici.Contains(s.CodicePdC) && s.Anno == anno && s.Mese == mese);
+
+            if (sede.HasValue)
+                saldiQuery = saldiQuery.Where(s => s.IdSede == sede.Value);
+
+            var saldi = await saldiQuery.ToListAsync();
+
+            var righeSaldi = saldi.Select(s =>
+            {
+                var importo = s.Saldo * -1;
+                var percentuale = ripartizioniPerc.TryGetValue(s.CodicePdC, out var perc) ? perc : 100.0;
+                var importoAttribuito = importo * (decimal)(percentuale / 100.0);
+
+                return new
+                {
+                    codicePdC = s.CodicePdC,
+                    descrizionePdC = s.PianoDeiConti?.DescrizionePdC ?? "-",
+                    dare = s.Dare ?? 0m,
+                    avere = s.Avere ?? 0m,
+                    saldo = importo,
+                    percentuale,
+                    importoAttribuito
+                };
+            }).OrderBy(r => r.codicePdC).ToList();
+
+            return Json(new
+            {
+                success = true,
+                tipo = "saldo",
+                descrizioneVoce = struttura.DescrizioneConto,
+                nomeMese,
+                anno,
+                righe = righeSaldi
+            });
         }
 
         /// <summary>
