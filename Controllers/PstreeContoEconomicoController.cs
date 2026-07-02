@@ -580,13 +580,10 @@ namespace AiDbMaster.Controllers
             return View(viewModel);
         }
 
-        /// <summary>
-        /// Calcola i dati per il grafico di andamento (Fatturato, Risultato Esercizio) per gli ultimi 12 mesi
-        /// </summary>
         private async Task CalcolaGraficoAndamento(int? sede)
         {
-            const int ID_FATTURATO = 800;
-            const int ID_RISULTATO_ESERCIZIO = 11100;
+            const int ID_RICAVI_LORDI = 350;
+            const int ID_RISULTATO_NETTO = 3200;
             
             var oggi = DateTime.Now;
             var meseFine = new DateTime(oggi.Year, oggi.Month, 1).AddMonths(-1);
@@ -723,8 +720,8 @@ namespace AiDbMaster.Controllers
                     }
                 }
                 
-                valoriFatturato.Add(valoriVoce.GetValueOrDefault(ID_FATTURATO, 0));
-                valoriRisultato.Add(valoriVoce.GetValueOrDefault(ID_RISULTATO_ESERCIZIO, 0));
+                valoriFatturato.Add(valoriVoce.GetValueOrDefault(ID_RICAVI_LORDI, 0));
+                valoriRisultato.Add(valoriVoce.GetValueOrDefault(ID_RISULTATO_NETTO, 0));
             }
             
             ViewBag.GraficoLabels = System.Text.Json.JsonSerializer.Serialize(mesiGrafico.Select(m => m.Label).ToList());

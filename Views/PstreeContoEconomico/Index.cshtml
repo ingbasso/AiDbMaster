@@ -612,7 +612,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Fatturato',
+                            label: 'Ricavi Lordi',
                             data: dataFatturato,
                             borderColor: '#0d6efd',
                             backgroundColor: 'rgba(13, 110, 253, 0.1)',
@@ -623,7 +623,7 @@
                             pointHoverRadius: 7
                         },
                         {
-                            label: 'Risultato Esercizio',
+                            label: 'Risultato Netto',
                             data: dataRisultato,
                             borderColor: '#fd7e14',
                             backgroundColor: 'rgba(253, 126, 20, 0.1)',
@@ -756,10 +756,15 @@
                 child.classList.remove('hidden');
                 const childId = child.getAttribute('data-id');
                 const hasChildren = child.getAttribute('data-has-children') === 'true';
+                const isExpandable = child.getAttribute('data-expandable') === 'true';
                 const toggleIcon = child.querySelector('.toggle-icon');
                 
-                if (hasChildren && toggleIcon && !toggleIcon.classList.contains('collapsed')) {
-                    showChildren(childId);
+                if (hasChildren) {
+                    if (!isExpandable) {
+                        showChildren(childId);
+                    } else if (toggleIcon && !toggleIcon.classList.contains('collapsed')) {
+                        showChildren(childId);
+                    }
                 }
             });
         }
@@ -767,8 +772,20 @@
         function hideChildren(parentId) {
             const children = document.querySelectorAll(`tr[data-parent="${parentId}"]`);
             children.forEach(child => {
-                child.classList.add('hidden');
+                const tipo = child.getAttribute('data-type');
+                if (tipo !== 'T') {
+                    child.classList.add('hidden');
+                }
                 const childId = child.getAttribute('data-id');
+                const toggleIcon = child.querySelector('.toggle-icon');
+                if (toggleIcon) {
+                    toggleIcon.classList.add('collapsed');
+                    const icon = toggleIcon.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-right');
+                    }
+                }
                 hideChildren(childId);
             });
         }
