@@ -989,10 +989,13 @@ namespace AiDbMaster.Controllers
                                    select new OrdineClienteDettaglioViewModel
                                    {
                                        AnnoOrdine = riga.AnnoOrdine,
+                                       SerieOrdine = riga.SerieOrdine,
                                        NumeroOrdine = riga.NumeroOrdine,
                                        DataConsegna = riga.DataConsegna,
                                        CodiceCliente = testata.CodiceCliente,
                                        RagioneSociale = cliente != null ? cliente.RagioneSociale ?? "" : "N/D",
+                                       Prenotato = testata.Prenotato,
+                                       Sospeso = testata.Sospeso,
                                        Quantita = riga.Quantita,
                                        QuantitaEvasa = riga.QuantitaEvasa,
                                        PercentualeInclusione = riga.PercentualeInclusione

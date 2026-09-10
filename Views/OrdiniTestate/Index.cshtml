@@ -259,6 +259,8 @@
                                         </a>
                                     </th>
                                     <th>Cliente</th>
+                                    <th class="text-center" title="Prenotato">Pren.</th>
+                                    <th class="text-center" title="Sospeso">Sosp.</th>
                                     <th class="col-data">
                                         <a asp-action="Index" 
                                            asp-route-search="@search"
@@ -344,6 +346,36 @@
                                                     <br><small class="text-muted">@ordine.Cliente.RagioneSociale</small>
                                                 }
                                             </div>
+                                        </td>
+                                        <td class="text-center">
+                                            @{ var prenotato = ordine.Prenotato?.Trim().ToUpperInvariant(); }
+                                            @if (prenotato == "S")
+                                            {
+                                                <span class="badge bg-warning text-dark">Sì</span>
+                                            }
+                                            else if (prenotato == "N")
+                                            {
+                                                <span class="badge bg-light text-muted">No</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @{ var sospeso = ordine.Sospeso?.Trim().ToUpperInvariant(); }
+                                            @if (sospeso == "S")
+                                            {
+                                                <span class="badge bg-warning text-dark">Sì</span>
+                                            }
+                                            else if (sospeso == "N")
+                                            {
+                                                <span class="badge bg-light text-muted">No</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
                                         </td>
                                         <td>
                                             <span class="badge bg-info text-white">@ordine.DataOrdine.ToString("dd/MM/yyyy")</span>
@@ -437,7 +469,7 @@
                                     </tr>
                                     <!-- Riga per le righe ordine (inizialmente nascosta) -->
                                     <tr class="righe-container" id="righe-@ordine.Id" style="display: none;">
-                                        <td colspan="10" class="p-0">
+                                        <td colspan="12" class="p-0">
                                             <div class="bg-light border-top">
                                                 <div class="p-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">

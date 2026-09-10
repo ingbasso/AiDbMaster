@@ -205,7 +205,7 @@ namespace AiDbMaster.Controllers
         /// La provincia si determina dalla destinazione diversa (se presente) o dal cliente.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetRighePerTipoMezzo(string tipoMezzo, [FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
+        public async Task<IActionResult> GetRighePerTipoMezzo(string tipoMezzo, [FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, bool includiSospesi = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
         {
             try
             {
@@ -228,6 +228,10 @@ namespace AiDbMaster.Controllers
 
                 if (annoOrdine.HasValue)
                     queryTestate = queryTestate.Where(t => t.AnnoOrdine == annoOrdine.Value);
+
+                // Default: solo non sospesi. Qualsiasi valore diverso da "S" (null incluso) è trattato come "N".
+                if (!includiSospesi)
+                    queryTestate = queryTestate.Where(t => (t.Sospeso ?? "N") != "S");
 
                 // Il filtro data consegna si applica SOLO agli ordini evasi (StatoEvasione = 'E'),
                 // gli ordini non evasi vengono sempre mostrati.
@@ -275,7 +279,8 @@ namespace AiDbMaster.Controllers
                         ClienteCitta = t.Cliente != null ? t.Cliente.Citta : "",
                         t.NoteTestata,
                         t.Porto,
-                        t.PesoKg
+                        t.PesoKg,
+                        t.Sospeso
                     })
                     .ToListAsync();
 
@@ -347,6 +352,7 @@ namespace AiDbMaster.Controllers
                         t.NoteTestata,
                         t.Porto,
                         t.PesoKg,
+                        t.Sospeso,
                         Provincia = (provincia ?? "").Trim().ToUpper(),
                         Localita = localita ?? "",
                         IndirizzoDestinazione = indirizzo ?? ""
@@ -487,6 +493,7 @@ namespace AiDbMaster.Controllers
                             descrizioneStatoEvasione = r.DescrizioneStatoEvasione,
                             noteTestata = t.NoteTestata ?? "",
                             porto = t.Porto ?? "",
+                            sospeso = string.Equals(t.Sospeso?.Trim(), "S", StringComparison.OrdinalIgnoreCase),
                             qtaGiaAssegnataViaggi = qtaGiaAssegnata,
                             qtaDaSpedire = qtaDaSpedire,
                             statoSpedizione = statoSped,
@@ -522,7 +529,7 @@ namespace AiDbMaster.Controllers
         /// Usa la stessa logica di filtro di GetRighePerTipoMezzo per essere allineato.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetConteggiTipiMezzo([FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
+        public async Task<IActionResult> GetConteggiTipiMezzo([FromQuery] string[]? province, [FromQuery] string[]? comuni, [FromQuery] int[]? clienti, DateTime? dataConsegnaDa, DateTime? dataConsegnaA, bool portoFranco = false, bool escludiEvasi = false, bool escludiSpediti = false, bool includiSospesi = false, int? viaggioIdInModifica = null, int? numeroOrdine = null, short? annoOrdine = null)
         {
             try
             {
@@ -541,6 +548,10 @@ namespace AiDbMaster.Controllers
 
                 if (annoOrdine.HasValue)
                     queryTestate = queryTestate.Where(t => t.AnnoOrdine == annoOrdine.Value);
+
+                // Default: solo non sospesi. Qualsiasi valore diverso da "S" (null incluso) è trattato come "N".
+                if (!includiSospesi)
+                    queryTestate = queryTestate.Where(t => (t.Sospeso ?? "N") != "S");
 
                 var dataLimiteEvasi = dataConsegnaDa ?? DateTime.Today.AddDays(-7);
                 queryTestate = queryTestate.Where(t =>

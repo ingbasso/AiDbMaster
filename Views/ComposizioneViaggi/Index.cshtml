@@ -224,6 +224,15 @@
     .table-righe tr.testata-header.testata-completa td {
         border-bottom-color: #a3d9a5;
     }
+    .table-righe tr.testata-header.testata-sospesa {
+        background: linear-gradient(135deg, #fff3cd, #ffe8a3);
+    }
+    .table-righe tr.testata-header.testata-sospesa:hover {
+        background: linear-gradient(135deg, #ffe8a3, #ffd966);
+    }
+    .table-righe tr.testata-header.testata-sospesa td {
+        border-bottom-color: #e0c36a;
+    }
     .table-righe tr.testata-header td {
         padding: 6px 8px;
         border-bottom: 2px solid #b8cce4;
@@ -597,6 +606,12 @@
                     <input class="form-check-input" type="checkbox" id="filtroOrdiniSpediti" checked />
                     <label class="form-check-label" for="filtroOrdiniSpediti" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
                         Ordini Spediti
+                    </label>
+                </div>
+                <div class="form-check ms-3" style="white-space:nowrap;">
+                    <input class="form-check-input" type="checkbox" id="filtroSospeso" />
+                    <label class="form-check-label" for="filtroSospeso" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                        Sospeso
                     </label>
                 </div>
             </div>
@@ -1400,7 +1415,7 @@ $(function () {
     });
 
     // Event: cambio filtro date e porto
-    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco, #filtroOrdiniEvasi, #filtroOrdiniSpediti').on('change', function () {
+    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco, #filtroOrdiniEvasi, #filtroOrdiniSpediti, #filtroSospeso').on('change', function () {
         caricaRighe();
         caricaConteggi();
     });
@@ -1540,6 +1555,7 @@ $(function () {
         if ($('#filtroPortoFranco').is(':checked')) params.append('portoFranco', 'true');
         if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
         if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
+        if ($('#filtroSospeso').is(':checked')) params.append('includiSospesi', 'true');
         if (viaggioIdInModifica) params.append('viaggioIdInModifica', viaggioIdInModifica);
         return params;
     }
@@ -1594,6 +1610,7 @@ $(function () {
                         agente: r.agente || '',
                         riferimentoOrdine: r.riferimentoOrdine || '',
                         noteTestata: r.noteTestata || '',
+                        sospeso: !!r.sospeso,
                         righe: []
                     };
                 }
@@ -1623,7 +1640,7 @@ $(function () {
 
                 const tutteSpedite = testata.righe.length > 0 && testata.righe.every(r => r.completamenteSpedita);
                 const almenoUnaParziale = testata.righe.some(r => r.statoSpedizione === 'PS' || r.statoSpedizione === 'SP');
-                const testataClasses = 'testata-header' + (tutteSpedite ? ' testata-completa' : '');
+                const testataClasses = 'testata-header' + (tutteSpedite ? ' testata-completa' : '') + (testata.sospeso ? ' testata-sospesa' : '');
 
                 // Verifica se la testata ha righe spedite solo manualmente
                 const tutteManuale = tutteSpedite && testata.righe.every(r => r.soloManuale);
@@ -1649,6 +1666,7 @@ $(function () {
                 infoHtml += `<span><span class="badge bg-info text-dark">${testata.provincia}</span> ${dest}</span>`;
                 if (testata.agente) infoHtml += `<span><span class="ti-label">Agente:</span> ${testata.agente}</span>`;
                 if (testata.riferimentoOrdine) infoHtml += `<span><span class="ti-label">Rif:</span> ${testata.riferimentoOrdine}</span>`;
+                if (testata.sospeso) infoHtml += `<span class="badge bg-warning text-dark ms-1"><i class="bi bi-pause-circle me-1"></i>Sospeso</span>`;
                 infoHtml += badgeSpedTestata;
 
                 let noteHtml = '';

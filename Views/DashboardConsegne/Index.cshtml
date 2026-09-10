@@ -52,6 +52,9 @@
 
     .mezzo-badge-int { background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 10px; font-size: .78rem; }
     .mezzo-badge-ext { background: #fff3cd; color: #856404; padding: 3px 10px; border-radius: 10px; font-size: .78rem; }
+
+    .kpi-card-clickable { cursor: pointer; }
+    .kpi-card-clickable:focus { outline: 2px solid rgba(13,110,253,.45); outline-offset: 2px; }
 </style>
 
 <div class="dashboard-container p-3">
@@ -144,6 +147,55 @@
                         @if (varMarg > 0) { <span class="trend-up"><i class="bi bi-arrow-up-short"></i>+@varMarg% vs periodo prec.</span> }
                         else if (varMarg < 0) { <span class="trend-down"><i class="bi bi-arrow-down-short"></i>@varMarg% vs periodo prec.</span> }
                         else { <span class="trend-neutral">= periodo prec.</span> }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* RIQUADRI GSTMAIL: sotto al riquadro Viaggi *@
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card kpi-card kpi-card-clickable" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: #fff;"
+                 role="button" tabindex="0"
+                 onclick="apriDettaglioGst('negativi')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();apriDettaglioGst('negativi');}">
+                <div class="card-body position-relative">
+                    <i class="bi bi-dash-circle kpi-icon"></i>
+                    <p class="kpi-label mb-1">Negativi Magazzino</p>
+                    <p class="kpi-value">@Model.CountNegativiMagazzino</p>
+                    <div class="kpi-trend">
+                        <span>Clicca per il dettaglio</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card kpi-card kpi-card-clickable" style="background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%); color: #212529;"
+                 role="button" tabindex="0"
+                 onclick="apriDettaglioGst('opScaduti')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();apriDettaglioGst('opScaduti');}">
+                <div class="card-body position-relative">
+                    <i class="bi bi-clock-history kpi-icon"></i>
+                    <p class="kpi-label mb-1">Ordini Produzione Scaduti</p>
+                    <p class="kpi-value">@Model.CountOrdiniProduzioneScaduti</p>
+                    <div class="kpi-trend">
+                        <span>Clicca per il dettaglio</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card kpi-card kpi-card-clickable" style="background: linear-gradient(135deg, #0d6efd 0%, #20c997 100%); color: #fff;"
+                 role="button" tabindex="0"
+                 onclick="apriDettaglioGst('giacenze')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();apriDettaglioGst('giacenze');}">
+                <div class="card-body position-relative">
+                    <i class="bi bi-boxes kpi-icon"></i>
+                    <p class="kpi-label mb-1">Giacenze Magazzino 2</p>
+                    <p class="kpi-value">@Model.CountGiacenzeMagazzino2</p>
+                    <div class="kpi-trend">
+                        <span>Clicca per il dettaglio</span>
                     </div>
                 </div>
             </div>
@@ -371,6 +423,117 @@
 
 </div>
 
+<div class="modal fade" id="modalNegativiMagazzino" tabindex="-1" data-bs-backdrop="false" data-bs-keyboard="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white"><i class="bi bi-dash-circle me-2"></i>Negativi Magazzino</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal" aria-label="Chiudi">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingNegativi" class="text-center py-4"><div class="spinner-border text-danger" role="status"></div></div>
+                <div id="erroreNegativi" class="alert alert-danger d-none"></div>
+                <div id="contenutoNegativi" class="d-none table-responsive">
+                    <table class="table table-sm table-hover table-detail mb-0">
+                        <thead>
+                            <tr>
+                                <th>Articolo</th>
+                                <th>Descrizione</th>
+                                <th>Magazzino</th>
+                                <th class="text-end">Esistenza</th>
+                                <th class="text-center">Stato inv.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyNegativi"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalOpScaduti" tabindex="-1" data-bs-backdrop="false" data-bs-keyboard="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Ordini Produzione Scaduti</h5>
+                <button type="button" class="btn btn-sm btn-dark" data-bs-dismiss="modal" aria-label="Chiudi">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingOpScaduti" class="text-center py-4"><div class="spinner-border text-warning" role="status"></div></div>
+                <div id="erroreOpScaduti" class="alert alert-danger d-none"></div>
+                <div id="contenutoOpScaduti" class="d-none table-responsive">
+                    <table class="table table-sm table-hover table-detail mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ordine</th>
+                                <th class="text-center">Riga</th>
+                                <th>Articolo</th>
+                                <th>Descrizione</th>
+                                <th class="text-end">Quantità</th>
+                                <th class="text-end">Evasa</th>
+                                <th class="text-end">Residuo</th>
+                                <th>Data consegna</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyOpScaduti"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGiacenzeMag2" tabindex="-1" data-bs-backdrop="false" data-bs-keyboard="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white"><i class="bi bi-boxes me-2"></i>Giacenze Magazzino 2</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal" aria-label="Chiudi">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingGiacenze" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+                <div id="erroreGiacenze" class="alert alert-danger d-none"></div>
+                <div id="contenutoGiacenze" class="d-none table-responsive">
+                    <table class="table table-sm table-hover table-detail mb-0">
+                        <thead>
+                            <tr>
+                                <th>Articolo</th>
+                                <th>Descrizione</th>
+                                <th>Famiglia</th>
+                                <th class="text-end">Esistenza</th>
+                                <th>Ultimo carico</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyGiacenze"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
     const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GraficoGiorniLabels));
@@ -506,5 +669,169 @@
             }
         }
     });
+
+    function makeModalDraggable(modalEl) {
+        if (!modalEl) return;
+        var dialog = modalEl.querySelector('.modal-dialog');
+        var header = modalEl.querySelector('.modal-header');
+        var dragging = false;
+        var startX = 0, startY = 0;
+        var currentX = 0, currentY = 0;
+
+        header.style.cursor = 'move';
+        header.addEventListener('mousedown', function (e) {
+            if (e.target.closest('.btn-close') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+            startX = e.clientX - currentX;
+            startY = e.clientY - currentY;
+            dragging = true;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (!dragging) return;
+            currentX = e.clientX - startX;
+            currentY = e.clientY - startY;
+            dialog.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px)';
+        });
+
+        document.addEventListener('mouseup', function () { dragging = false; });
+        modalEl.addEventListener('show.bs.modal', function () {
+            currentX = 0;
+            currentY = 0;
+            dialog.style.transform = '';
+        });
+    }
+
+    makeModalDraggable(document.getElementById('modalNegativiMagazzino'));
+    makeModalDraggable(document.getElementById('modalOpScaduti'));
+    makeModalDraggable(document.getElementById('modalGiacenzeMag2'));
+
+    function formatQty(value) {
+        if (value === null || value === undefined) return '-';
+        return Number(value).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+    }
+
+    function formatDate(value) {
+        if (!value) return '-';
+        var d = new Date(value);
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('it-IT');
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    var gstConfig = {
+        negativi: {
+            url: '@Url.Action("DettaglioNegativiMagazzino")',
+            modalId: 'modalNegativiMagazzino',
+            loadingId: 'loadingNegativi',
+            errorId: 'erroreNegativi',
+            contentId: 'contenutoNegativi',
+            tbodyId: 'tbodyNegativi',
+            emptyCols: 5,
+            renderRow: function (r) {
+                return '<tr>' +
+                    '<td><strong>' + escapeHtml(r.codiceArticolo) + '</strong></td>' +
+                    '<td>' + escapeHtml(r.descrizione) + '</td>' +
+                    '<td>' + escapeHtml(r.descrizioneMagazzino || r.codiceMagazzino) + '</td>' +
+                    '<td class="text-end text-danger fw-bold">' + formatQty(r.esistenza) + '</td>' +
+                    '<td class="text-center">' + escapeHtml(r.statoInventario) + '</td>' +
+                    '</tr>';
+            }
+        },
+        opScaduti: {
+            url: '@Url.Action("DettaglioOrdiniProduzioneScaduti")',
+            modalId: 'modalOpScaduti',
+            loadingId: 'loadingOpScaduti',
+            errorId: 'erroreOpScaduti',
+            contentId: 'contenutoOpScaduti',
+            tbodyId: 'tbodyOpScaduti',
+            emptyCols: 8,
+            renderRow: function (r) {
+                var serie = (r.serieOrdine || '').trim();
+                var ordine = r.annoOrdine + (serie ? '/' + serie : '') + '/' + r.numeroOrdine;
+                return '<tr>' +
+                    '<td><strong>' + escapeHtml(ordine) + '</strong></td>' +
+                    '<td class="text-center">' + r.riga + '</td>' +
+                    '<td>' + escapeHtml(r.codiceArticolo) + '</td>' +
+                    '<td>' + escapeHtml(r.descrizione) + '</td>' +
+                    '<td class="text-end">' + formatQty(r.quantita) + '</td>' +
+                    '<td class="text-end">' + formatQty(r.quantitaEvasa) + '</td>' +
+                    '<td class="text-end fw-bold">' + formatQty(r.residuo) + '</td>' +
+                    '<td>' + formatDate(r.dataConsegna) + '</td>' +
+                    '</tr>';
+            }
+        },
+        giacenze: {
+            url: '@Url.Action("DettaglioGiacenzeMagazzino2")',
+            modalId: 'modalGiacenzeMag2',
+            loadingId: 'loadingGiacenze',
+            errorId: 'erroreGiacenze',
+            contentId: 'contenutoGiacenze',
+            tbodyId: 'tbodyGiacenze',
+            emptyCols: 5,
+            renderRow: function (r) {
+                return '<tr>' +
+                    '<td><strong>' + escapeHtml(r.codiceArticolo) + '</strong></td>' +
+                    '<td>' + escapeHtml(r.descrizione) + '</td>' +
+                    '<td>' + escapeHtml(r.famiglia) + '</td>' +
+                    '<td class="text-end">' + formatQty(r.esistenza) + '</td>' +
+                    '<td>' + formatDate(r.dataUltimoCarico) + '</td>' +
+                    '</tr>';
+            }
+        }
+    };
+
+    function apriDettaglioGst(tipo) {
+        var cfg = gstConfig[tipo];
+        if (!cfg) return;
+
+        var modalEl = document.getElementById(cfg.modalId);
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: false });
+        var loading = document.getElementById(cfg.loadingId);
+        var errore = document.getElementById(cfg.errorId);
+        var contenuto = document.getElementById(cfg.contentId);
+        var tbody = document.getElementById(cfg.tbodyId);
+
+        loading.classList.remove('d-none');
+        errore.classList.add('d-none');
+        contenuto.classList.add('d-none');
+        tbody.innerHTML = '';
+        modal.show();
+
+        fetch(cfg.url, { headers: { 'Accept': 'application/json' } })
+            .then(function (response) {
+                if (!response.ok) {
+                    return response.json().then(function (body) {
+                        throw new Error((body && body.error) || 'Errore durante il caricamento');
+                    }).catch(function (err) {
+                        if (err instanceof Error && err.message && err.message !== 'Errore durante il caricamento') throw err;
+                        throw new Error('Errore durante il caricamento');
+                    });
+                }
+                return response.json();
+            })
+            .then(function (righe) {
+                if (!righe || righe.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="' + cfg.emptyCols + '" class="text-center text-muted py-3">Nessun dato</td></tr>';
+                } else {
+                    tbody.innerHTML = righe.map(cfg.renderRow).join('');
+                }
+                loading.classList.add('d-none');
+                contenuto.classList.remove('d-none');
+            })
+            .catch(function (err) {
+                loading.classList.add('d-none');
+                errore.textContent = err.message || 'Errore durante il caricamento';
+                errore.classList.remove('d-none');
+            });
+    }
 </script>
 }

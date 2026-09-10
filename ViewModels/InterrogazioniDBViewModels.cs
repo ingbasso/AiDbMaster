@@ -229,10 +229,13 @@ namespace AiDbMaster.ViewModels
     public class OrdineClienteDettaglioViewModel
     {
         public short AnnoOrdine { get; set; }
+        public string SerieOrdine { get; set; } = string.Empty;
         public int NumeroOrdine { get; set; }
         public DateTime DataConsegna { get; set; }
         public int CodiceCliente { get; set; }
         public string RagioneSociale { get; set; } = string.Empty;
+        public string? Prenotato { get; set; }
+        public string? Sospeso { get; set; }
         public decimal Quantita { get; set; }
         public decimal QuantitaEvasa { get; set; }
         public decimal QuantitaDaEvadere => Quantita - QuantitaEvasa;

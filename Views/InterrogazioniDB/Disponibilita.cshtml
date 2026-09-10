@@ -939,6 +939,8 @@
                                     <th class="text-center">Data Consegna</th>
                                     <th>Cliente</th>
                                     <th>Ragione Sociale</th>
+                                    <th class="text-center" title="Prenotato">Pren.</th>
+                                    <th class="text-center" title="Sospeso">Sosp.</th>
                                     <th class="text-end">Quantità</th>
                                     <th class="text-end">Qta Evasa</th>
                                     <th class="text-end">Qta da Evadere</th>
@@ -951,7 +953,7 @@
                             </tbody>
                             <tfoot class="table-secondary">
                                 <tr>
-                                    <th colspan="8">TOTALE IMPEGNATO</th>
+                                    <th colspan="10">TOTALE IMPEGNATO</th>
                                     <th class="text-end" id="totaleImpegnatoAttuale">0 pz</th>
                                 </tr>
                             </tfoot>
@@ -1377,6 +1379,17 @@
             });
         }
 
+        function badgeSiNo(valore) {
+            var flag = (valore || '').toString().trim().toUpperCase();
+            if (flag === 'S') {
+                return '<span class="badge bg-warning text-dark">Sì</span>';
+            }
+            if (flag === 'N') {
+                return '<span class="badge bg-light text-muted">No</span>';
+            }
+            return '<span class="text-muted">—</span>';
+        }
+
         // Funzione per popolare il popup impegnato attuale con i dati
         function popolaDettaglioImpegnatoAttuale(data) {
             console.log('Dati impegnato attuale ricevuti:', data); // Debug
@@ -1407,7 +1420,15 @@
                     console.log('Ordine:', ordine); // Debug
                     
                     var dataConsegnaFormatted = new Date(ordine.dataConsegna).toLocaleDateString('it-IT');
-                    var numeroOrdineFormatted = ordine.annoOrdine + '/' + ordine.numeroOrdine.toString().padStart(4, '0');
+                    var partiOrdine = [ordine.annoOrdine];
+                    var serieOrdine = (ordine.serieOrdine || '').toString().trim();
+                    if (serieOrdine) {
+                        partiOrdine.push(serieOrdine);
+                    }
+                    if (ordine.numeroOrdine) {
+                        partiOrdine.push(ordine.numeroOrdine.toString().padStart(4, '0'));
+                    }
+                    var numeroOrdineFormatted = partiOrdine.join('/');
                     var quantitaDaEvadere = ordine.quantitaDaEvadere;
                     var percentualeInclusione = ordine.percentualeInclusione;
                     var contributoImpegnato = ordine.contributoImpegnato;
@@ -1417,6 +1438,8 @@
                               '<td class="text-center">' + dataConsegnaFormatted + '</td>' +
                               '<td>' + ordine.codiceCliente + '</td>' +
                               '<td>' + ordine.ragioneSociale + '</td>' +
+                              '<td class="text-center">' + badgeSiNo(ordine.prenotato) + '</td>' +
+                              '<td class="text-center">' + badgeSiNo(ordine.sospeso) + '</td>' +
                               '<td class="text-end">' + ordine.quantita.toFixed(2) + ' ' + unitaMisura + '</td>' +
                               '<td class="text-end">' + ordine.quantitaEvasa.toFixed(2) + ' ' + unitaMisura + '</td>' +
                               '<td class="text-end">' + quantitaDaEvadere.toFixed(2) + ' ' + unitaMisura + '</td>' +
@@ -1429,7 +1452,7 @@
                 });
             } else {
                 console.log('Nessun ordine impegnato attuale trovato'); // Debug
-                tbody.append('<tr><td colspan="9" class="text-center text-muted">Nessun ordine cliente impegnato alla data odierna</td></tr>');
+                tbody.append('<tr><td colspan="11" class="text-center text-muted">Nessun ordine cliente impegnato alla data odierna</td></tr>');
             }
 
             // Totale nel footer (usa il totale dal server che considera la PercentualeInclusione)

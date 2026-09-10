@@ -577,6 +577,10 @@ namespace AiDbMaster.Data
                 .HasColumnType("varchar(1)")
                 .HasDefaultValue("A");
 
+            builder.Entity<OrdiniTestate>()
+                .Property(o => o.Sospeso)
+                .HasColumnType("varchar(1)");
+
             // ===== CONFIGURAZIONI TABELLA OPZIONI =====
 
             // Configurazione dei tipi di dato varchar (non nvarchar)

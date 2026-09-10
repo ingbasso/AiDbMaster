@@ -13,10 +13,17 @@ namespace AiDbMaster.Controllers
     public class DashboardConsegneController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly GstMailDbContext _gstMail;
+        private readonly ILogger<DashboardConsegneController> _logger;
 
-        public DashboardConsegneController(ApplicationDbContext context)
+        public DashboardConsegneController(
+            ApplicationDbContext context,
+            GstMailDbContext gstMail,
+            ILogger<DashboardConsegneController> logger)
         {
             _context = context;
+            _gstMail = gstMail;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(string periodo = "mese")
@@ -327,8 +334,109 @@ namespace AiDbMaster.Controllers
                 TopClienti = topClienti
             };
 
+            try
+            {
+                vm.CountNegativiMagazzino = await _gstMail.NegativiMagazzino.CountAsync();
+                vm.CountOrdiniProduzioneScaduti = await _gstMail.OrdiniProduzioneScaduti.CountAsync();
+                vm.CountGiacenzeMagazzino2 = await _gstMail.GiacenzeMagazzino2.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Impossibile leggere le viste GSTMAIL_FAVARO1 per la dashboard consegne.");
+            }
+
             ViewBag.PeriodoCorrente = periodo;
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DettaglioNegativiMagazzino()
+        {
+            try
+            {
+                var righe = await _gstMail.NegativiMagazzino
+                    .AsNoTracking()
+                    .OrderBy(r => r.Esistenza)
+                    .ThenBy(r => r.CodiceArticolo)
+                    .Select(r => new
+                    {
+                        r.CodiceArticolo,
+                        r.Descrizione,
+                        r.CodiceMagazzino,
+                        r.DescrizioneMagazzino,
+                        r.Esistenza,
+                        r.StatoInventario
+                    })
+                    .ToListAsync();
+
+                return Json(righe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore lettura V2050_NegativiMagazzino.");
+                return StatusCode(500, new { error = "Impossibile caricare i negativi magazzino." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DettaglioOrdiniProduzioneScaduti()
+        {
+            try
+            {
+                var righe = await _gstMail.OrdiniProduzioneScaduti
+                    .AsNoTracking()
+                    .OrderBy(r => r.DataConsegna)
+                    .ThenBy(r => r.NumeroOrdine)
+                    .ThenBy(r => r.Riga)
+                    .Select(r => new
+                    {
+                        r.AnnoOrdine,
+                        r.SerieOrdine,
+                        r.NumeroOrdine,
+                        r.Riga,
+                        r.CodiceArticolo,
+                        r.Descrizione,
+                        r.Quantita,
+                        r.QuantitaEvasa,
+                        Residuo = r.Quantita - r.QuantitaEvasa,
+                        r.DataConsegna
+                    })
+                    .ToListAsync();
+
+                return Json(righe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore lettura V2040_OrdiniProduzioneScaduti.");
+                return StatusCode(500, new { error = "Impossibile caricare gli ordini di produzione scaduti." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DettaglioGiacenzeMagazzino2()
+        {
+            try
+            {
+                var righe = await _gstMail.GiacenzeMagazzino2
+                    .AsNoTracking()
+                    .OrderBy(r => r.CodiceArticolo)
+                    .Select(r => new
+                    {
+                        r.CodiceArticolo,
+                        r.Descrizione,
+                        r.Famiglia,
+                        r.Esistenza,
+                        r.DataUltimoCarico
+                    })
+                    .ToListAsync();
+
+                return Json(righe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore lettura V2030_Giacenze_Magazzino_2.");
+                return StatusCode(500, new { error = "Impossibile caricare le giacenze magazzino 2." });
+            }
         }
     }
 }

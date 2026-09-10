@@ -2148,6 +2148,11 @@ namespace AiDbMaster.Migrations
                         .HasColumnType("nvarchar(1)")
                         .HasColumnName("Prenotato");
 
+                    b.Property<string>("Sospeso")
+                        .HasMaxLength(1)
+                        .HasColumnType("varchar(1)")
+                        .HasColumnName("Sospeso");
+
                     b.Property<string>("RiferimentoOrdine")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")

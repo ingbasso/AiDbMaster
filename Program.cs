@@ -31,6 +31,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
            .EnableSensitiveDataLogging()
            .LogTo(Console.WriteLine, LogLevel.Information));
 
+// Database email GST (GSTMAIL_FAVARO1 su SVRGEST). Non applicare migrazioni: è un DB esterno già esistente.
+var gstMailConnectionString = builder.Configuration.GetConnectionString("GstMailConnection") ??
+    throw new InvalidOperationException("Connection string 'GstMailConnection' not found.");
+
+builder.Services.AddDbContext<GstMailDbContext>(options =>
+    options.UseSqlServer(gstMailConnectionString));
+
 // Configurazione di Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;

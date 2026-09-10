@@ -32,6 +32,11 @@ namespace AiDbMaster.ViewModels
         public int ViaggiSottoutilizzati { get; set; }
         public int ViaggiSenzaPrezzo { get; set; }
 
+        // Riquadri GSTMAIL (viste su SVRGEST)
+        public int CountNegativiMagazzino { get; set; }
+        public int CountOrdiniProduzioneScaduti { get; set; }
+        public int CountGiacenzeMagazzino2 { get; set; }
+
         // Grafici (dati serializzati per Chart.js)
         public List<string> GraficoGiorniLabels { get; set; } = new();
         public List<int> GraficoViaggiInterni { get; set; } = new();

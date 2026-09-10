@@ -122,6 +122,14 @@ namespace AiDbMaster.Models
         public string? Prenotato { get; set; }
 
         /// <summary>
+        /// Indica se l'ordine è sospeso: "S" = Sì, "N" = No
+        /// </summary>
+        [StringLength(1)]
+        [Display(Name = "Sospeso")]
+        [Column("Sospeso")]
+        public string? Sospeso { get; set; }
+
+        /// <summary>
         /// Indica se serve motrice con gru: "S" = Sì, "N" = No
         /// </summary>
         [StringLength(1)]

@@ -176,12 +176,13 @@ namespace AiDbMaster.Controllers
             }
 
             // --- Salvataggio: per ogni mese interessato sostituisce le righe esistenti ---
+            var codicePdC = model.CodicePdC.Trim();
             var mesi = tuttiMesi ? Enumerable.Range(1, 12).ToList() : new List<int> { model.Mese };
 
             foreach (var mese in mesi)
             {
                 var esistenti = await _context.PstreeAssociazioniImportSaldiCE
-                    .Where(a => a.CodicePdC == model.CodicePdC &&
+                    .Where(a => a.CodicePdC == codicePdC &&
                                 a.IdSede == model.IdSede &&
                                 a.Anno == model.Anno &&
                                 a.Mese == mese)
@@ -193,7 +194,7 @@ namespace AiDbMaster.Controllers
                 {
                     _context.PstreeAssociazioniImportSaldiCE.Add(new PstreeAssociazioniImportSaldiCE
                     {
-                        CodicePdC = model.CodicePdC,
+                        CodicePdC = codicePdC,
                         IdCodiceConto = v.IdCodiceConto,
                         IdSede = model.IdSede,
                         Anno = model.Anno,
@@ -236,6 +237,7 @@ namespace AiDbMaster.Controllers
         {
             if (id != model.Id) return NotFound();
 
+            model.CodicePdC = model.CodicePdC?.Trim() ?? string.Empty;
             await ValidaModelloAsync(model, model.Id);
 
             if (ModelState.IsValid)
@@ -306,6 +308,8 @@ namespace AiDbMaster.Controllers
         /// </summary>
         private async Task ValidaModelloAsync(PstreeAssociazioniImportSaldiCE model, int? idEsclusione)
         {
+            model.CodicePdC = model.CodicePdC?.Trim() ?? string.Empty;
+
             if (model.Mese < 1 || model.Mese > 12)
             {
                 ModelState.AddModelError(nameof(model.Mese), "Il mese deve essere compreso tra 1 e 12.");
