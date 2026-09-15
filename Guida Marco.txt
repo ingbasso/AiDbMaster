@@ -1,3 +1,7 @@
+Utente admin:
+admin@example.com
+Admin123!
+
 🚀 COME USARE GLI SCRIPT:
 STEP 1: Sul tuo PC di sviluppo
 cd C:\AiDbMaster\

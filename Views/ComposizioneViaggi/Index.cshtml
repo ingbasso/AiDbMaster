@@ -121,6 +121,18 @@
     .carrello-footer .footer-grid .span-full {
         grid-column: 1 / -1;
     }
+    .carrello-footer .footer-row-3 {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1.15fr 1fr 1fr;
+        gap: 6px 10px;
+    }
+    #avvisoMezzoGiorno { font-size: 0.72rem; }
+    #avvisoMezzoGiorno .mezzo-viaggio-riga.sovrapposto {
+        background: #f8d7da;
+        border-radius: 4px;
+        padding: 1px 4px;
+    }
     .carrello-item {
         background: #f8f9fa;
         border: 1px solid #e9ecef;
@@ -579,40 +591,66 @@
 <div class="page-wrapper">
     <!-- ===== COLONNA SINISTRA (titolo + filtri + griglia) ===== -->
     <div class="page-main">
-        <div class="d-flex align-items-center mb-2" style="gap:16px;">
-            <h4 class="mb-0" style="white-space:nowrap;">
+        <div class="d-flex align-items-start mb-2" style="gap:16px;">
+            <h4 class="mb-0" style="white-space:nowrap; padding-top:4px;">
                 <i class="bi bi-puzzle me-2"></i>Composizione Viaggi
             </h4>
-            <div class="d-flex align-items-center gap-2">
-                <span style="font-size:0.78rem; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d; white-space:nowrap;">
-                    <i class="bi bi-calendar-event me-1"></i>Data Consegna
-                </span>
-                <input type="date" id="dataConsegnaDa" class="form-control form-control-sm" style="width:150px;" />
-                <span style="font-size:0.78rem; color:#6c757d;">—</span>
-                <input type="date" id="dataConsegnaA" class="form-control form-control-sm" style="width:150px;" />
-                <div class="form-check ms-3" style="white-space:nowrap;">
-                    <input class="form-check-input" type="checkbox" id="filtroPortoFranco" checked />
-                    <label class="form-check-label" for="filtroPortoFranco" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
-                        Porto Franco
-                    </label>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="filtro-help" style="font-size:0.78rem; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d; white-space:nowrap;"
+                          data-bs-toggle="tooltip" data-bs-placement="bottom"
+                          title="Senza 'Solo data consegna': il periodo vale solo per gli evasi (se Da è vuoto = oggi meno 7 giorni). I non evasi si vedono sempre. Con il flag: solo ordini con data consegna testata nel periodo, evasi compresi.">
+                        <i class="bi bi-calendar-event me-1"></i>Data Consegna
+                    </span>
+                    <input type="date" id="dataConsegnaDa" class="form-control form-control-sm" style="width:150px;"
+                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                           title="Data inizio. Senza 'Solo data consegna' vale solo per gli evasi (vuoto = oggi meno 7 giorni). Con il flag vale per tutti." />
+                    <span style="font-size:0.78rem; color:#6c757d;">—</span>
+                    <input type="date" id="dataConsegnaA" class="form-control form-control-sm" style="width:150px;"
+                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                           title="Data fine. Vuoto = nessun limite superiore." />
                 </div>
-                <div class="form-check ms-3" style="white-space:nowrap;">
-                    <input class="form-check-input" type="checkbox" id="filtroOrdiniEvasi" checked />
-                    <label class="form-check-label" for="filtroOrdiniEvasi" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
-                        Ordini Evasi <span style="font-size:0.62rem; font-weight:400;">(Evasi da 7 giorni)</span>
-                    </label>
-                </div>
-                <div class="form-check ms-3" style="white-space:nowrap;">
-                    <input class="form-check-input" type="checkbox" id="filtroOrdiniSpediti" checked />
-                    <label class="form-check-label" for="filtroOrdiniSpediti" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
-                        Ordini Spediti
-                    </label>
-                </div>
-                <div class="form-check ms-3" style="white-space:nowrap;">
-                    <input class="form-check-input" type="checkbox" id="filtroSospeso" />
-                    <label class="form-check-label" for="filtroSospeso" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
-                        Sospeso
-                    </label>
+                <div class="d-flex align-items-center flex-wrap gap-3 mt-1">
+                    <div class="form-check mb-0" style="white-space:nowrap;"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         title="Spuntato: mostra solo gli ordini la cui data di consegna in TESTATA è nel periodo (Da–A). Include anche chi ha già un DDT. Se Da e A sono vuoti non filtra per data. Tolto: comportamento attuale (la data limita solo gli evasi).">
+                        <input class="form-check-input" type="checkbox" id="filtroSoloDataConsegna" />
+                        <label class="form-check-label" for="filtroSoloDataConsegna" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                            Solo data consegna
+                        </label>
+                    </div>
+                    <div class="form-check mb-0" style="white-space:nowrap;"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         title="Spuntato: solo ordini in porto franco (Porto = 1). Tolto: tutti i tipi di porto.">
+                        <input class="form-check-input" type="checkbox" id="filtroPortoFranco" checked />
+                        <label class="form-check-label" for="filtroPortoFranco" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                            Porto Franco
+                        </label>
+                    </div>
+                    <div class="form-check mb-0" style="white-space:nowrap;"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         title="Spuntato: include anche gli ordini evasi (DDT), se la data di consegna è nel periodo. Tolto: nasconde tutti gli evasi. Non evasi: sempre visibili.">
+                        <input class="form-check-input" type="checkbox" id="filtroOrdiniEvasi" checked />
+                        <label class="form-check-label" for="filtroOrdiniEvasi" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                            Ordini Evasi <span style="font-size:0.62rem; font-weight:400;">(Evasi da 7 giorni)</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-0" style="white-space:nowrap;"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         title="Spuntato: mostra anche le righe già tutte assegnate ai viaggi. Tolto: nasconde le righe completamente spedite (quantità nei viaggi ≥ quantità ordine). Non dipende dai DDT.">
+                        <input class="form-check-input" type="checkbox" id="filtroOrdiniSpediti" checked />
+                        <label class="form-check-label" for="filtroOrdiniSpediti" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                            Ordini Spediti
+                        </label>
+                    </div>
+                    <div class="form-check mb-0" style="white-space:nowrap;"
+                         data-bs-toggle="tooltip" data-bs-placement="bottom"
+                         title="Spuntato: include anche gli ordini sospesi. Tolto (normale): i sospesi restano nascosti.">
+                        <input class="form-check-input" type="checkbox" id="filtroSospeso" />
+                        <label class="form-check-label" for="filtroSospeso" style="font-size:0.78rem; font-weight:600; color:#6c757d;">
+                            Sospeso
+                        </label>
+                    </div>
                 </div>
             </div>
             <div id="alertContainer" class="ms-auto"></div>
@@ -623,23 +661,23 @@
             <div class="filtri-bar">
                 <div class="filtri-dropdowns">
                     <div class="filtro-group filtro-province">
-                        <label><i class="bi bi-geo-alt me-1"></i>Province</label>
+                        <label data-bs-toggle="tooltip" data-bs-placement="top" title="Filtra le righe per provincia di destinazione (o del cliente se non c'è destinazione)."><i class="bi bi-geo-alt me-1"></i>Province</label>
                         <div id="ddProvince" class="multi-select-wrap" data-placeholder="Seleziona province..."></div>
                     </div>
                     <div class="filtro-group">
-                        <label><i class="bi bi-building me-1"></i>Comuni</label>
+                        <label data-bs-toggle="tooltip" data-bs-placement="top" title="Filtra le righe per comune/località di destinazione."><i class="bi bi-building me-1"></i>Comuni</label>
                         <div id="ddComuni" class="multi-select-wrap" data-placeholder="Seleziona comuni..."></div>
                     </div>
                     <div class="filtro-group">
-                        <label><i class="bi bi-people me-1"></i>Clienti</label>
+                        <label data-bs-toggle="tooltip" data-bs-placement="top" title="Filtra le righe per cliente. Puoi selezionare più clienti."><i class="bi bi-people me-1"></i>Clienti</label>
                         <div id="ddClienti" class="multi-select-wrap" data-placeholder="Seleziona clienti..."></div>
                     </div>
                     <div class="filtro-group" style="min-width:110px; flex:0 0 110px;">
-                        <label><i class="bi bi-hash me-1"></i>N° Ordine</label>
+                        <label data-bs-toggle="tooltip" data-bs-placement="top" title="Cerca un numero ordine preciso (solo la parte numerica, es. 123)."><i class="bi bi-hash me-1"></i>N° Ordine</label>
                         <input type="text" inputmode="numeric" pattern="[0-9]*" id="filtroNumeroOrdine" class="form-control form-control-sm" placeholder="Tutti" style="height:31px;" />
                     </div>
                     <div class="filtro-group" style="min-width:120px; flex:0 0 120px;">
-                        <label style="white-space:nowrap;"><i class="bi bi-calendar3 me-1"></i>Anno Ordine</label>
+                        <label style="white-space:nowrap;" data-bs-toggle="tooltip" data-bs-placement="top" title="Filtra per anno dell'ordine. 'Tutti' non applica questo filtro."><i class="bi bi-calendar3 me-1"></i>Anno Ordine</label>
                         <select id="filtroAnnoOrdine" class="form-select form-select-sm" style="height:31px;">
                             <option value="">Tutti</option>
                             @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 2; y++)
@@ -750,17 +788,19 @@
                 </div>
                 <div class="carrello-footer">
                     <div class="footer-grid">
-                        <div class="form-section span-full">
-                            <label>Data Consegna</label>
-                            <input type="date" id="viaggioDataConsegna" class="form-control form-control-sm" />
-                        </div>
-                        <div class="form-section">
-                            <label>Ora Partenza</label>
-                            <input type="time" id="viaggioOraPartenza" class="form-control form-control-sm" value="06:00" />
-                        </div>
-                        <div class="form-section">
-                            <label>Ora Arrivo</label>
-                            <input type="time" id="viaggioOraArrivo" class="form-control form-control-sm" />
+                        <div class="footer-row-3">
+                            <div class="form-section">
+                                <label>Data Consegna</label>
+                                <input type="date" id="viaggioDataConsegna" class="form-control form-control-sm" />
+                            </div>
+                            <div class="form-section">
+                                <label>Ora Partenza</label>
+                                <input type="time" id="viaggioOraPartenza" class="form-control form-control-sm" value="06:00" />
+                            </div>
+                            <div class="form-section">
+                                <label>Ora Arrivo</label>
+                                <input type="time" id="viaggioOraArrivo" class="form-control form-control-sm" value="07:00" />
+                            </div>
                         </div>
                         <div class="form-section span-full">
                             <label>Tipo Trasporto</label>
@@ -768,21 +808,13 @@
                                 <option value="">-- Seleziona --</option>
                             </select>
                         </div>
-                        <div class="form-section span-full">
+                        <div class="form-section">
                             <label>Mezzo Interno</label>
                             <select id="viaggioMezzoInterno" class="form-select form-select-sm">
                                 <option value="">-- Nessuno --</option>
                             </select>
                         </div>
-                        <div class="form-section span-full" id="viaggioConRimorchioWrap" style="display:none;">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="viaggioConRimorchio" />
-                                <label class="form-check-label" for="viaggioConRimorchio">
-                                    <i class="bi bi-truck-flatbed me-1"></i>Con rimorchio
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-section span-full">
+                        <div class="form-section">
                             <label>Autista</label>
                             <select id="viaggioAutista" class="form-select form-select-sm">
                                 <option value="">-- Nessuno --</option>
@@ -790,6 +822,14 @@
                             <div id="warningAutistaNonDefault" class="alert alert-warning py-1 px-2 mt-1 mb-0 small align-items-center" style="display:none;">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
                                 <span id="warningAutistaNonDefaultText"></span>
+                            </div>
+                        </div>
+                        <div class="form-section span-full" id="viaggioConRimorchioWrap" style="display:none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="viaggioConRimorchio" />
+                                <label class="form-check-label" for="viaggioConRimorchio">
+                                    <i class="bi bi-truck-flatbed me-1"></i>Con rimorchio
+                                </label>
                             </div>
                         </div>
                         <div class="form-section span-full">
@@ -808,10 +848,41 @@
                             </div>
                             <input type="hidden" id="viaggioMezzoEsterno" value="" />
                         </div>
-                        <div class="form-section span-full" id="viaggioCostoTrasportoWrap">
-                            <label>Costo Trasporto - intero viaggio (€)</label>
+                        <div class="form-section span-full" id="avvisoMezzoGiorno" style="display:none;"></div>
+                        <div class="form-section" id="viaggioCostoTrasportoWrap">
+                            <label>Costo Trasporto (€)</label>
                             <input type="number" id="viaggioCostoTrasporto" class="form-control form-control-sm"
                                    step="0.01" min="0" placeholder="0.00" />
+                        </div>
+                        <div class="form-section" id="viaggioPrezzoVenditaWrap">
+                            <label>Prezzo di vendita (€)</label>
+                            <input type="number" id="viaggioPrezzoVendita" class="form-control form-control-sm"
+                                   step="0.01" min="0" placeholder="0.00" />
+                        </div>
+                        <div class="form-section span-full" id="viaggioRiepilogoEconomico" style="display:none;">
+                            <div class="border rounded px-2 py-1" style="font-size:0.75rem;background:#f8f9fa;">
+                                <div class="d-flex justify-content-between fw-bold">
+                                    <span>Totale Costo Trasporto</span>
+                                    <span id="viaggioTotaleCostoTrasporto">€ 0.00</span>
+                                </div>
+                                <div id="viaggioRigaTrasbordo" class="d-none justify-content-between text-muted" style="font-size:0.72rem;">
+                                    <span>di cui trasbordo</span>
+                                    <span id="viaggioCostoTrasbordo">€ 0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span title="(Prezzo vendita − Totale costo) / Prezzo vendita">Margine %</span>
+                                    <span id="viaggioMarginePercentuale" class="fw-semibold">—</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-section span-full">
+                            <div class="form-check" data-bs-toggle="tooltip" data-bs-placement="top"
+                                 title="Flag da attivare se il viaggio ha bisogno di una conferma.">
+                                <input class="form-check-input" type="checkbox" id="viaggioDaConfermare" />
+                                <label class="form-check-label" for="viaggioDaConfermare">
+                                    <i class="bi bi-exclamation-diamond me-1 text-warning"></i>Da confermare
+                                </label>
+                            </div>
                         </div>
                         <div class="form-section span-full">
                             <label>Note</label>
@@ -1240,6 +1311,19 @@ $(function () {
     let righeCarrello = [];
     let destinazioniFlags = {};
     let datiViaggio = null;
+
+    function normalizzaCodiceDest(cod) {
+        if (cod === null || cod === undefined || cod === '' || Number(cod) === 0) return '';
+        return String(parseInt(cod, 10));
+    }
+
+    function chiaveDestinazione(codiceCliente, codiceDestinazione) {
+        return `${parseInt(codiceCliente, 10) || 0}|${normalizzaCodiceDest(codiceDestinazione)}`;
+    }
+
+    function costoTrasbordoDaFlag(f) {
+        return (f && (f.costoTrasbordo || f.prezzoVendita)) || 0;
+    }
     let viaggioIdInModifica = @(ViewBag.ViaggioId != null ? ViewBag.ViaggioId.ToString() : "null");
     let modalitaModifica = viaggioIdInModifica !== null;
 
@@ -1256,6 +1340,7 @@ $(function () {
     const urlSpedizioneManuale = '@Url.Action("CreaSpedizioneManuale", "ComposizioneViaggi")';
     const urlDettaglioMovimentiNota = '@Url.Action("GetDettaglioMovimentiNota", "InterrogazioniDB")';
     const urlGetMezziEsterni = '@Url.Action("GetMezziEsterni", "ComposizioneViaggi")';
+    const urlGetViaggiMezzoGiorno = '@Url.Action("GetViaggiMezzoGiorno", "ComposizioneViaggi")';
     const urlUpdateCostoME = '@Url.Action("UpdateCostoMezzoEsterno", "ComposizioneViaggi")';
 
     // ===== COMPONENTE MULTI-SELECT DROPDOWN =====
@@ -1399,6 +1484,10 @@ $(function () {
         });
     }
 
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+    });
+
     // ===== INIZIALIZZAZIONE =====
     const oggi = new Date();
     var kanbanWindow = null;
@@ -1415,7 +1504,7 @@ $(function () {
     });
 
     // Event: cambio filtro date e porto
-    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco, #filtroOrdiniEvasi, #filtroOrdiniSpediti, #filtroSospeso').on('change', function () {
+    $('#dataConsegnaDa, #dataConsegnaA, #filtroPortoFranco, #filtroOrdiniEvasi, #filtroOrdiniSpediti, #filtroSospeso, #filtroSoloDataConsegna').on('change', function () {
         caricaRighe();
         caricaConteggi();
     });
@@ -1556,6 +1645,7 @@ $(function () {
         if (!$('#filtroOrdiniEvasi').is(':checked')) params.append('escludiEvasi', 'true');
         if (!$('#filtroOrdiniSpediti').is(':checked')) params.append('escludiSpediti', 'true');
         if ($('#filtroSospeso').is(':checked')) params.append('includiSospesi', 'true');
+        if ($('#filtroSoloDataConsegna').is(':checked')) params.append('soloDataConsegna', 'true');
         if (viaggioIdInModifica) params.append('viaggioIdInModifica', viaggioIdInModifica);
         return params;
     }
@@ -1759,7 +1849,9 @@ $(function () {
                         </td>
                         <td>${r.unitaMisura}</td>
                         <td class="text-end peso-cell" data-riga-id="${r.rigaId}">${pesoTotRiga.toFixed(2)}</td>
-                        <td>${r.dataConsegna}</td>
+                        <td>${r.dataConsegna}${r.dataConsegnaDiversa
+                            ? ` <i class="bi bi-exclamation-triangle-fill text-warning" title="Data riga diversa dalla testata (${r.dataConsegnaTestata || 'mancante'})"></i>`
+                            : ''}</td>
                         <td>${isSpedita ? '' : `<button class="btn btn-outline-warning btn-sm px-1 py-0 btn-sped-manuale" data-riga-id="${r.rigaId}" data-articolo="${r.codiceArticolo}" data-descrizione="${r.descrizioneArticolo}" data-qta-da-spedire="${qtaDaSpedire}" data-peso="${r.pesoKgUnitario}" title="Spedizione Manuale"><i class="bi bi-box-arrow-up-right" style="font-size:0.75rem;"></i></button>`}</td>
                     </tr>`;
                 });
@@ -2173,25 +2265,34 @@ $(function () {
         $('#btnCreaViaggio').prop('disabled', count === 0);
 
         if (count === 0) {
+            destinazioniFlags = {};
             body.html(`<div class="empty-state" style="padding:20px;">
                 <i class="bi bi-cart-plus" style="font-size:2rem;"></i>
                 <p class="mb-0" style="font-size:0.85rem;">Seleziona righe dalla griglia</p>
             </div>`);
             $('#pesoWarning').remove();
             $('#indicatoreCarico').hide();
+            aggiornaRiepilogoEconomicoViaggio();
             return;
         }
 
         const grouped = {};
         righeCarrello.forEach(r => {
-            const destKey = `${r.codiceCliente}|${r.codiceDestinazione ?? ''}`;
+            const destKey = chiaveDestinazione(r.codiceCliente, r.codiceDestinazione);
             if (!grouped[destKey]) {
                 grouped[destKey] = { cliente: r.cliente, provincia: r.provincia, localita: r.localita, codiceCliente: r.codiceCliente, codiceDestinazione: r.codiceDestinazione, righe: [] };
             }
             grouped[destKey].righe.push(r);
 
             if (!(destKey in destinazioniFlags)) {
-                destinazioniFlags[destKey] = { gru: true, trasbordo: false, prezzoVendita: 0 };
+                destinazioniFlags[destKey] = {
+                    codiceCliente: r.codiceCliente,
+                    codiceDestinazione: r.codiceDestinazione ?? null,
+                    gru: true,
+                    trasbordo: false,
+                    prezzoVendita: 0,
+                    costoTrasbordo: 0
+                };
             }
         });
 
@@ -2218,9 +2319,10 @@ $(function () {
             html += `<span class="badge ${trasbClass} ms-1" style="cursor:pointer;font-size:0.68rem;" onclick="window.toggleDestFlag('${destKey}','trasbordo')" title="Trasbordo"><i class="bi bi-arrow-left-right"></i> Trasb.</span>`;
             const escapedKey = destKey.replace(/'/g, "\\'");
             html += `<div class="d-flex align-items-center ms-auto" style="font-size:0.72rem;">
-                <label class="me-1 text-nowrap fw-semibold">€</label>
+                <label class="me-1 text-nowrap fw-semibold" title="Costo trasbordo destinazione">Trasb. €</label>
                 <input type="number" class="form-control form-control-sm dest-prezzo-input" style="width:80px;font-size:0.75rem;padding:1px 4px;"
-                    step="0.01" min="0" value="${flags.prezzoVendita.toFixed(2)}"
+                    step="0.01" min="0" value="${costoTrasbordoDaFlag(flags).toFixed(2)}"
+                    title="Costo trasbordo destinazione"
                     onchange="window.updateDestPrezzo('${escapedKey}', this.value)" />
             </div>`;
             html += `</div>`;
@@ -2253,28 +2355,56 @@ $(function () {
 
     window.updateDestPrezzo = function (destKey, valore) {
         if (destinazioniFlags[destKey]) {
-            destinazioniFlags[destKey].prezzoVendita = parseFloat(valore) || 0;
-            aggiornaTotaliCarrello();
+            const importo = parseFloat(valore) || 0;
+            destinazioniFlags[destKey].prezzoVendita = importo;
+            destinazioniFlags[destKey].costoTrasbordo = importo;
+            if (importo > 0) {
+                destinazioniFlags[destKey].trasbordo = true;
+            }
+            aggiornaCarrello();
         }
     };
 
-    function aggiornaTotaliCarrello() {
-        const totalePrezzoVendita = Object.values(destinazioniFlags).reduce((s, f) => s + (f.prezzoVendita || 0), 0);
+    function calcolaTotaliEconomici() {
         const costoTrasporto = parseFloat($('#viaggioCostoTrasporto').val()) || 0;
-        const margine = totalePrezzoVendita - costoTrasporto;
-        const margineClass = margine >= 0 ? 'text-success' : 'text-danger';
+        const costoTrasbordo = Object.values(destinazioniFlags).reduce((s, f) => s + costoTrasbordoDaFlag(f), 0);
+        const totaleCosto = costoTrasporto + costoTrasbordo;
+        const prezzoVendita = parseFloat($('#viaggioPrezzoVendita').val()) || 0;
+        const percentuale = prezzoVendita > 0
+            ? ((prezzoVendita - totaleCosto) / prezzoVendita) * 100
+            : null;
+        return { costoTrasporto, costoTrasbordo, totaleCosto, prezzoVendita, percentuale };
+    }
 
-        let totHtml = `<div class="d-flex justify-content-between fw-bold">
-            <span><i class="bi bi-currency-euro me-1"></i>Totale Prezzo Vendita</span>
-            <span>€ ${totalePrezzoVendita.toFixed(2)}</span>
-        </div>`;
-        if (costoTrasporto > 0) {
-            totHtml += `<div class="d-flex justify-content-between ${margineClass}">
-                <span><i class="bi bi-graph-up me-1"></i>Margine</span>
-                <span>€ ${margine.toFixed(2)}</span>
-            </div>`;
+    function formattaPercentuale(percentuale) {
+        if (percentuale === null) return { testo: '—', css: 'text-muted' };
+        const css = percentuale >= 0 ? 'text-success' : 'text-danger';
+        return { testo: percentuale.toFixed(1) + '%', css };
+    }
+
+    function aggiornaRiepilogoEconomicoViaggio() {
+        const tot = calcolaTotaliEconomici();
+        const hasValori = tot.totaleCosto > 0 || tot.prezzoVendita > 0;
+        if (!hasValori) {
+            $('#viaggioRiepilogoEconomico').hide();
+            return;
         }
-        $('#carrelloTotali').html(totHtml);
+
+        const perc = formattaPercentuale(tot.percentuale);
+        $('#viaggioTotaleCostoTrasporto').text('€ ' + tot.totaleCosto.toFixed(2));
+        if (tot.costoTrasbordo > 0) {
+            $('#viaggioCostoTrasbordo').text('€ ' + tot.costoTrasbordo.toFixed(2));
+            $('#viaggioRigaTrasbordo').removeClass('d-none').addClass('d-flex');
+        } else {
+            $('#viaggioRigaTrasbordo').removeClass('d-flex').addClass('d-none');
+        }
+        $('#viaggioMarginePercentuale').text(perc.testo).attr('class', 'fw-semibold ' + perc.css);
+        $('#viaggioRiepilogoEconomico').show();
+    }
+
+    function aggiornaTotaliCarrello() {
+        $('#carrelloTotali').empty();
+        aggiornaRiepilogoEconomicoViaggio();
     }
 
     // ===== DATI VIAGGIO (DROPDOWN) =====
@@ -2313,6 +2443,7 @@ $(function () {
             $('#viaggioMezzoInterno, #viaggioAutista').prop('disabled', true).val('');
             clearMezzoEsterno();
             $('#btnSceltaMezzoEsterno').prop('disabled', true);
+            caricaViaggiMezzoGiorno();
             return;
         }
 
@@ -2329,6 +2460,10 @@ $(function () {
         controllaPesoMax();
     });
 
+    $('#viaggioCostoTrasporto, #viaggioPrezzoVendita').on('input change', function () {
+        aggiornaTotaliCarrello();
+    });
+
     // ===== POPUP MEZZO ESTERNO =====
     let mezziEsterniData = [];
     let meProvinceAttive = [];
@@ -2338,7 +2473,9 @@ $(function () {
         $('#viaggioMezzoEsternoDisplay').val('').attr('placeholder', '-- Nessuno --');
         $('#btnClearMezzoEsterno').hide();
         $('#viaggioCostoTrasporto').val('');
+        aggiornaTotaliCarrello();
         controllaPesoMax();
+        caricaViaggiMezzoGiorno();
     }
 
     function selezionaMezzoEsterno(mezzo) {
@@ -2347,8 +2484,10 @@ $(function () {
         $('#btnClearMezzoEsterno').show();
         $('#viaggioCostoTrasporto').val(mezzo.costo > 0 ? mezzo.costo.toFixed(2) : '');
         $('#viaggioCostoTrasportoWrap').show();
+        aggiornaTotaliCarrello();
         bootstrap.Modal.getInstance(document.getElementById('popupSceltaMezzoEsterno'))?.hide();
         controllaPesoMax();
+        caricaViaggiMezzoGiorno();
     }
 
     $('#btnClearMezzoEsterno').on('click', clearMezzoEsterno);
@@ -2600,20 +2739,22 @@ $(function () {
         });
     });
 
-    // Auto-calcolo ora arrivo quando cambia ora partenza e il campo è vuoto
-    function calcolaPlaceholderOraArrivo() {
-        const oraPartenza = $('#viaggioOraPartenza').val();
-        if (oraPartenza && !$('#viaggioOraArrivo').val()) {
-            const [hh, mm] = oraPartenza.split(':').map(Number);
-            const totMin = hh * 60 + mm + 240;
-            const h = String(Math.floor(totMin / 60) % 24).padStart(2, '0');
-            const m = String(totMin % 60).padStart(2, '0');
-            $('#viaggioOraArrivo').attr('placeholder', `${h}:${m} (auto)`);
-        }
+    function oraPiuUnOra(ora) {
+        const [hh, mm] = String(ora).split(':').map(Number);
+        const totMin = hh * 60 + (mm || 0) + 60;
+        const h = String(Math.floor(totMin / 60) % 24).padStart(2, '0');
+        const m = String(totMin % 60).padStart(2, '0');
+        return `${h}:${m}`;
     }
 
-    $('#viaggioOraPartenza').on('change', calcolaPlaceholderOraArrivo);
-    calcolaPlaceholderOraArrivo();
+    function impostaOraArrivoDaPartenza() {
+        const oraPartenza = $('#viaggioOraPartenza').val();
+        if (!oraPartenza) return;
+        $('#viaggioOraArrivo').val(oraPiuUnOra(oraPartenza));
+        renderAvvisoMezzoGiorno();
+    }
+
+    $('#viaggioOraPartenza').on('change input', impostaOraArrivoDaPartenza);
 
     function controllaAutistaDefault() {
         const $warnDiv = $('#warningAutistaNonDefault');
@@ -2660,11 +2801,104 @@ $(function () {
 
         controllaAutistaDefault();
         controllaPesoMax();
+        caricaViaggiMezzoGiorno();
     });
 
     $('#viaggioAutista').on('change', function () {
         controllaAutistaDefault();
     });
+
+    let viaggiMezzoGiorno = [];
+
+    function parseOraInMinuti(valore) {
+        if (!valore) return null;
+        const parts = String(valore).split(':');
+        if (parts.length < 2) return null;
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) return null;
+        return h * 60 + m;
+    }
+
+    function fasciaCorrenteSovrappone(viaggio) {
+        const partenza = parseOraInMinuti($('#viaggioOraPartenza').val()) ?? 6 * 60;
+        let arrivo = parseOraInMinuti($('#viaggioOraArrivo').val());
+        if (arrivo === null) arrivo = partenza + 60;
+        return partenza < viaggio.oraArrivoMin && viaggio.oraPartenzaMin < arrivo;
+    }
+
+    function renderAvvisoMezzoGiorno() {
+        const $box = $('#avvisoMezzoGiorno');
+        const mezzoInternoId = $('#viaggioMezzoInterno').val();
+        const mezzoEsternoId = $('#viaggioMezzoEsterno').val();
+        if (!mezzoInternoId && !mezzoEsternoId) {
+            $box.hide().empty();
+            return;
+        }
+
+        if (!viaggiMezzoGiorno.length) {
+            $box.removeClass('alert alert-warning alert-danger alert-success py-1 px-2 mb-0')
+                .addClass('alert alert-success py-1 px-2 mb-0')
+                .html('<i class="bi bi-check-circle me-1"></i>Nessun altro viaggio per questo mezzo in questa giornata.')
+                .show();
+            return;
+        }
+
+        const haSovrapposizione = viaggiMezzoGiorno.some(fasciaCorrenteSovrappone);
+        const dataLabel = $('#viaggioDataConsegna').val()
+            ? new Date($('#viaggioDataConsegna').val() + 'T00:00:00').toLocaleDateString('it-IT')
+            : '';
+        let html = `<div class="fw-semibold mb-1">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Questo mezzo ha già ${viaggiMezzoGiorno.length} viagg${viaggiMezzoGiorno.length === 1 ? 'io' : 'i'} il ${dataLabel}
+        </div>`;
+        html += '<div>';
+        viaggiMezzoGiorno.forEach(v => {
+            const sovrapposto = fasciaCorrenteSovrappone(v);
+            const extra = [v.autista, v.clienti].filter(Boolean).join(' · ');
+            html += `<div class="mezzo-viaggio-riga${sovrapposto ? ' sovrapposto' : ''}">
+                <strong>#${v.id}</strong> ${v.oraPartenza}–${v.oraArrivo}
+                ${extra ? ' · ' + extra : ''}
+                ${sovrapposto ? ' <span class="fw-semibold">sovrapposto</span>' : ''}
+            </div>`;
+        });
+        html += '</div>';
+        if (haSovrapposizione) {
+            html += '<div class="mt-1 fw-semibold">Attenzione: la fascia oraria scelta si sovrappone a un viaggio già programmato.</div>';
+        }
+
+        $box.removeClass('alert alert-warning alert-danger alert-success py-1 px-2 mb-0')
+            .addClass(haSovrapposizione ? 'alert alert-danger py-1 px-2 mb-0' : 'alert alert-warning py-1 px-2 mb-0')
+            .html(html)
+            .show();
+    }
+
+    function caricaViaggiMezzoGiorno() {
+        const data = $('#viaggioDataConsegna').val();
+        const mezzoInternoId = $('#viaggioMezzoInterno').val();
+        const mezzoEsternoId = $('#viaggioMezzoEsterno').val();
+        if (!data || (!mezzoInternoId && !mezzoEsternoId)) {
+            viaggiMezzoGiorno = [];
+            renderAvvisoMezzoGiorno();
+            return;
+        }
+
+        const params = { data: data };
+        if (mezzoInternoId) params.mezzoInternoId = mezzoInternoId;
+        if (mezzoEsternoId) params.mezzoEsternoId = mezzoEsternoId;
+        if (viaggioIdInModifica) params.escludiViaggioId = viaggioIdInModifica;
+
+        $.getJSON(urlGetViaggiMezzoGiorno, params, function (resp) {
+            viaggiMezzoGiorno = (resp && resp.success && resp.viaggi) ? resp.viaggi : [];
+            renderAvvisoMezzoGiorno();
+        }).fail(function () {
+            viaggiMezzoGiorno = [];
+            $('#avvisoMezzoGiorno').hide().empty();
+        });
+    }
+
+    $('#viaggioDataConsegna').on('change', caricaViaggiMezzoGiorno);
+    $('#viaggioOraPartenza, #viaggioOraArrivo').on('change', renderAvvisoMezzoGiorno);
 
     $('#viaggioConRimorchio').on('change', function () { controllaPesoMax(); });
 
@@ -2767,11 +3001,15 @@ $(function () {
         $('#viaggioMezzoInterno').val('');
         $('#viaggioAutista').val('');
         $('#viaggioOraPartenza').val('06:00');
-        $('#viaggioOraArrivo').val('');
+        $('#viaggioOraArrivo').val('07:00');
         $('#viaggioNote').val('');
         $('#viaggioConRimorchio').prop('checked', false);
         $('#viaggioConRimorchioWrap').hide();
+        $('#viaggioDaConfermare').prop('checked', false);
         $('#warningAutistaNonDefault').css('display', 'none');
+        $('#viaggioPrezzoVendita').val('');
+        $('#viaggioRiepilogoEconomico').hide();
+        destinazioniFlags = {};
         clearMezzoEsterno();
 
         // Aggiorna URL senza viaggioId
@@ -2813,19 +3051,33 @@ $(function () {
                         $('#viaggioMezzoEsterno').val(v.mezzoTrasportoEsternoId);
                         $('#viaggioMezzoEsternoDisplay').val(v.mezzoEsternoDisplay);
                         $('#btnClearMezzoEsterno').show();
-                        if (v.costoTrasporto) {
-                            $('#viaggioCostoTrasporto').val(v.costoTrasporto.toFixed(2));
-                            $('#viaggioCostoTrasportoWrap').show();
-                        }
                     }
+
+                    const costoTrasbordoSalvato = (resp.destinazioniFlags || [])
+                        .reduce((s, d) => s + (d.costoTrasbordo || d.prezzoVendita || 0), 0);
+                    const costoTrasportoInput = (v.costoTrasporto || 0) - costoTrasbordoSalvato;
+                    if (costoTrasportoInput !== 0) {
+                        $('#viaggioCostoTrasporto').val(costoTrasportoInput.toFixed(2));
+                    }
+                    $('#viaggioCostoTrasportoWrap').show();
+                    if (v.prezzoVendita) {
+                        $('#viaggioPrezzoVendita').val(v.prezzoVendita.toFixed(2));
+                    }
+                    aggiornaTotaliCarrello();
                     if (v.oraPartenza) $('#viaggioOraPartenza').val(v.oraPartenza);
-                    if (v.oraArrivo) $('#viaggioOraArrivo').val(v.oraArrivo);
+                    if (v.oraArrivo) {
+                        $('#viaggioOraArrivo').val(v.oraArrivo);
+                    } else {
+                        impostaOraArrivoDaPartenza();
+                    }
                     if (v.note) $('#viaggioNote').val(v.note);
                     if (v.conRimorchio) {
                         $('#viaggioConRimorchio').prop('checked', true);
                         $('#viaggioConRimorchioWrap').show();
                     }
+                    $('#viaggioDaConfermare').prop('checked', !!v.daConfermare);
                     controllaAutistaDefault();
+                    caricaViaggiMezzoGiorno();
                 }, 100);
             }
             compilaForm();
@@ -2850,8 +3102,16 @@ $(function () {
             destinazioniFlags = {};
             if (resp.destinazioniFlags) {
                 resp.destinazioniFlags.forEach(df => {
-                    const key = `${df.codiceCliente}|${df.codiceDestinazione ?? ''}`;
-                    destinazioniFlags[key] = { gru: df.gru, trasbordo: df.trasbordo, prezzoVendita: df.prezzoVendita || 0 };
+                    const key = chiaveDestinazione(df.codiceCliente, df.codiceDestinazione);
+                    const costo = df.costoTrasbordo || df.prezzoVendita || 0;
+                    destinazioniFlags[key] = {
+                        codiceCliente: df.codiceCliente,
+                        codiceDestinazione: df.codiceDestinazione ?? null,
+                        gru: df.gru,
+                        trasbordo: df.trasbordo,
+                        prezzoVendita: costo,
+                        costoTrasbordo: costo
+                    };
                 });
             }
 
@@ -2888,7 +3148,15 @@ $(function () {
         const destFlagsMod = Object.keys(destinazioniFlags).map(k => {
             const parts = k.split('|');
             const f = destinazioniFlags[k];
-            return { codiceCliente: parseInt(parts[0]), codiceDestinazione: parts[1] ? parseInt(parts[1]) : null, gru: f.gru, trasbordo: f.trasbordo, prezzoVendita: f.prezzoVendita || 0 };
+            const costo = costoTrasbordoDaFlag(f);
+            return {
+                codiceCliente: f.codiceCliente ?? parseInt(parts[0], 10),
+                codiceDestinazione: f.codiceDestinazione ?? (parts[1] ? parseInt(parts[1], 10) : null),
+                gru: f.gru,
+                trasbordo: f.trasbordo,
+                prezzoVendita: costo,
+                costoTrasbordo: costo
+            };
         });
 
         const payload = {
@@ -2903,7 +3171,9 @@ $(function () {
             oraArrivo: oraArrivo ? oraArrivo + ':00' : null,
             note: $('#viaggioNote').val() || null,
             conRimorchio: $('#viaggioConRimorchio').is(':checked'),
+            daConfermare: $('#viaggioDaConfermare').is(':checked'),
             costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null,
+            prezzoVendita: parseFloat($('#viaggioPrezzoVendita').val()) || null,
             destinazioniFlags: destFlagsMod
         };
 
@@ -2959,7 +3229,15 @@ $(function () {
         const destFlags = Object.keys(destinazioniFlags).map(k => {
             const parts = k.split('|');
             const f = destinazioniFlags[k];
-            return { codiceCliente: parseInt(parts[0]), codiceDestinazione: parts[1] ? parseInt(parts[1]) : null, gru: f.gru, trasbordo: f.trasbordo, prezzoVendita: f.prezzoVendita || 0 };
+            const costo = costoTrasbordoDaFlag(f);
+            return {
+                codiceCliente: f.codiceCliente ?? parseInt(parts[0], 10),
+                codiceDestinazione: f.codiceDestinazione ?? (parts[1] ? parseInt(parts[1], 10) : null),
+                gru: f.gru,
+                trasbordo: f.trasbordo,
+                prezzoVendita: costo,
+                costoTrasbordo: costo
+            };
         });
 
         const payload = {
@@ -2971,10 +3249,12 @@ $(function () {
             autistaId: parseInt($('#viaggioAutista').val()) || null,
             oraPartenza: oraPartenza + ':00',
             oraArrivo: oraArrivo ? oraArrivo + ':00' : null,
-            durataStimataMinuti: 240,
+            durataStimataMinuti: 60,
             note: $('#viaggioNote').val() || null,
             conRimorchio: $('#viaggioConRimorchio').is(':checked'),
+            daConfermare: $('#viaggioDaConfermare').is(':checked'),
             costoTrasporto: parseFloat($('#viaggioCostoTrasporto').val()) || null,
+            prezzoVendita: parseFloat($('#viaggioPrezzoVendita').val()) || null,
             forzaQuantita: forzaQuantita === true,
             destinazioniFlags: destFlags
         };
@@ -2999,11 +3279,14 @@ $(function () {
                     $('#viaggioMezzoInterno').val('');
                     $('#viaggioAutista').val('');
                     $('#viaggioOraPartenza').val('06:00');
-                    $('#viaggioOraArrivo').val('');
+                    $('#viaggioOraArrivo').val('07:00');
                     $('#viaggioNote').val('');
                     $('#viaggioConRimorchio').prop('checked', false);
                     $('#viaggioConRimorchioWrap').hide();
+                    $('#viaggioDaConfermare').prop('checked', false);
                     $('#viaggioCostoTrasporto').val('');
+                    $('#viaggioPrezzoVendita').val('');
+                    $('#viaggioRiepilogoEconomico').hide();
                     $('#warningAutistaNonDefault').css('display', 'none');
                     clearMezzoEsterno();
 

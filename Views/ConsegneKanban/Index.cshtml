@@ -581,12 +581,13 @@
                                  data-con-rimorchio="@viaggio.ConRimorchio.ToString().ToLowerInvariant()">
                                 @{
                                     var isEsterno = viaggio.MezzoTrasportoEsternoId.HasValue;
-                                    var haBadge = viaggio.ConRimorchio || viaggio.Gru == true || viaggio.Trasbordo == true;
+                                    var haBadge = viaggio.ConRimorchio || viaggio.Gru == true || viaggio.Trasbordo == true || viaggio.DaConfermare;
                                 }
                                 @if (isEsterno || haBadge)
                                 {
                                     <div class="d-flex align-items-center gap-1 flex-wrap mb-1">
                                         @if (isEsterno) { <span class="fw-bold">@viaggio.Mezzo</span> }
+                                        @if (viaggio.DaConfermare) { <span class="badge bg-warning text-dark" style="font-size:0.7rem;" title="Viaggio creato, da confermare"><i class="bi bi-exclamation-diamond-fill"></i> Da confermare</span> }
                                         @if (viaggio.ConRimorchio) { <span class="badge bg-secondary text-white" style="font-size:0.65rem;"><i class="bi bi-truck-flatbed"></i> Rim.</span> }
                                         @if (viaggio.Gru == true) { <span class="badge bg-info text-dark" style="font-size:0.65rem;"><i class="bi bi-arrow-up-circle"></i> Gru</span> }
                                         @if (viaggio.Trasbordo == true) { <span class="badge bg-warning text-dark" style="font-size:0.65rem;"><i class="bi bi-arrow-left-right"></i> Trasb.</span> }
@@ -610,8 +611,31 @@
                                 </div>
                                 <div class="mt-1 d-flex justify-content-between align-items-center flex-wrap gap-1">
                                     <span class="fw-semibold" style="color:#6f42c1;"><i class="bi bi-person-badge me-1"></i>@(string.IsNullOrEmpty(viaggio.Autista) ? "—" : viaggio.Autista)</span>
-                                    <span class="fw-semibold"><i class="bi bi-currency-euro me-1"></i>@((viaggio.CostoTrasporto ?? 0).ToString("N2"))</span>
                                 </div>
+                                @{
+                                    var costoViaggio = viaggio.CostoTrasporto ?? 0;
+                                    var venditaViaggio = viaggio.PrezzoVendita ?? 0;
+                                    var margineViaggio = venditaViaggio - costoViaggio;
+                                    var marginePerc = venditaViaggio > 0 ? (margineViaggio / venditaViaggio) * 100 : (decimal?)null;
+                                    var margineClass = margineViaggio >= 0 ? "text-success" : "text-danger";
+                                }
+                                <div class="mt-1 d-flex justify-content-between flex-wrap gap-1" style="font-size:0.72rem;">
+                                    <span title="Costo trasporto (incluso trasbordo)">Costo <strong>€ @costoViaggio.ToString("N2")</strong></span>
+                                    <span title="Prezzo di vendita">Vendita <strong>€ @venditaViaggio.ToString("N2")</strong></span>
+                                    <span class="@margineClass" title="(Vendita − Costo) / Vendita">
+                                        Margine <strong>€ @margineViaggio.ToString("N2")</strong>
+                                        @if (marginePerc.HasValue)
+                                        {
+                                            <span>(@marginePerc.Value.ToString("N1")%)</span>
+                                        }
+                                    </span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(viaggio.Note))
+                                {
+                                    <div class="mt-1" style="font-size:0.72rem;line-height:1.25;" title="@viaggio.Note">
+                                        <i class="bi bi-sticky me-1"></i>@viaggio.Note
+                                    </div>
+                                }
                                 <div class="mt-1">
                                     <small>Carico: @viaggio.PesoTotaleKg.ToString("N0") / @viaggio.PortataMaxKg.ToString("N0") Kg</small>
                                     <div class="progress" style="height: 6px;">
@@ -652,10 +676,6 @@
                                               data-attivo="@primaRigaGruppo.TrasbordoDestinazione.ToString().ToLower()">
                                             <i class="bi bi-arrow-left-right"></i> Trasb.
                                         </span>
-                                        @if (primaRigaGruppo.PrezzoVenditaDestinazione > 0)
-                                        {
-                                            <span class="badge bg-success ms-1" style="font-size:0.65rem;"><i class="bi bi-currency-euro"></i> @primaRigaGruppo.PrezzoVenditaDestinazione.ToString("N2")</span>
-                                        }
                                     </div>
                                     <div class="cliente-group-righe" style="display:none;">
                                     @foreach (var riga in gruppo)
@@ -675,20 +695,6 @@
                                         <div><small>Qta: @riga.QuantitaAssegnata.ToString("N2") | Peso: @riga.PesoTotaleKg.ToString("N0") Kg</small></div>
                                     </div>
                                     }
-                                    </div>
-                                }
-                                @{
-                                    var totalePrezzoViaggio = viaggio.Righe
-                                        .GroupBy(r => new { r.CodiceCliente, r.CodiceDestinazione })
-                                        .Sum(g => g.First().PrezzoVenditaDestinazione);
-                                }
-                                @if (totalePrezzoViaggio > 0)
-                                {
-                                    <div class="border-top mt-1 pt-1" style="font-size:0.68rem;">
-                                        <div class="d-flex justify-content-between fw-bold">
-                                            <span><i class="bi bi-currency-euro me-1"></i>Tot. Vendita</span>
-                                            <span>€ @totalePrezzoViaggio.ToString("N2")</span>
-                                        </div>
                                     </div>
                                 }
                             </div>

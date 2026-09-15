@@ -239,6 +239,37 @@
                             </div>
                         </li>
 
+                        <!-- Gestione Cantieri -->
+                        <li class="sidebar-item">
+                            <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#cantieriSubmenu" aria-expanded="false">
+                                <i class="bi bi-building"></i>
+                                <span>Gestione Cantieri</span>
+                                <i class="bi bi-chevron-down toggle-icon ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="cantieriSubmenu">
+                                <ul class="sidebar-submenu">
+                                    <li class="sidebar-item" permission-required="GestioneCantieri:View">
+                                        <a class="sidebar-link" asp-controller="GestioneCantieri" asp-action="Index">
+                                            <i class="bi bi-list-ul"></i>
+                                            <span>Elenco Cantieri</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ImpresePosa:View">
+                                        <a class="sidebar-link" asp-controller="ImpresePosa" asp-action="Index">
+                                            <i class="bi bi-person-workspace"></i>
+                                            <span>Imprese di posa</span>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-item" permission-required="ReferentiCantiere:View">
+                                        <a class="sidebar-link" asp-controller="ReferentiCantiere" asp-action="Index">
+                                            <i class="bi bi-person-vcard"></i>
+                                            <span>Referenti di cantiere</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
                         <!-- Controllo di Gestione -->
                         <li class="sidebar-item">
                             <a class="sidebar-link sidebar-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#contoEconomicoSubmenu" aria-expanded="false">

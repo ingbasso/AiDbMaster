@@ -233,6 +233,7 @@ namespace AiDbMaster.Controllers
                                 MezzoTrasportoEsternoId = v.MezzoTrasportoEsternoId,
                                 Mezzo = mezzoDescrizione,
                                 ConRimorchio = v.ConRimorchio,
+                                DaConfermare = v.DaConfermare,
                                 PortataMaxKg = portataMaxKg,
                                 PesoTotaleKg = pesoTotale,
                                 OraPartenza = v.OraPartenza,
@@ -1028,7 +1029,7 @@ namespace AiDbMaster.Controllers
                 return durata;
             }
 
-            return 240;
+            return 60;
         }
 
         [HttpGet]

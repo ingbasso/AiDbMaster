@@ -33,6 +33,10 @@ namespace AiDbMaster.Models
         [Column("PrezzoVendita", TypeName = "decimal(18,2)")]
         public decimal PrezzoVendita { get; set; } = 0;
 
+        [Display(Name = "Costo Trasbordo")]
+        [Column("CostoTrasbordo", TypeName = "decimal(18,2)")]
+        public decimal CostoTrasbordo { get; set; } = 0;
+
         [Display(Name = "Ordine Consegna")]
         [Column("OrdineConsegna")]
         public int OrdineConsegna { get; set; } = 0;

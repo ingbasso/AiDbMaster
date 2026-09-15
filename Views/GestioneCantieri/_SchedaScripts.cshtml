@@ -1,0 +1,268 @@
+@model AiDbMaster.ViewModels.CantiereSchedaViewModel
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    (function () {
+        var urlCercaClienti = '@Url.Action("CercaClienti", "GestioneCantieri")';
+        var urlDatiCliente = '@Url.Action("DatiCliente", "GestioneCantieri")';
+        var urlDestinazioni = '@Url.Action("DestinazioniCliente", "GestioneCantieri")';
+        var urlCercaOrdini = '@Url.Action("CercaOrdini", "GestioneCantieri")';
+        var urlAggiungiOrdine = '@Url.Action("AggiungiOrdine", "GestioneCantieri")';
+        var urlRimuoviOrdine = '@Url.Action("RimuoviOrdine", "GestioneCantieri")';
+        var urlCercaReferenti = '@Url.Action("CercaReferenti", "GestioneCantieri")';
+        var urlAggiungiReferente = '@Url.Action("AggiungiReferente", "GestioneCantieri")';
+        var urlRimuoviReferente = '@Url.Action("RimuoviReferente", "GestioneCantieri")';
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        var cantiereId = @(Model.Id);
+        var destinazioneSelezionata = @(Model.CodiceDestinazione.HasValue ? Model.CodiceDestinazione.Value.ToString() : "null");
+        var isEdit = cantiereId > 0;
+
+        function getCodiceCliente() {
+            var valore = $('#codiceCliente').val();
+            return valore ? parseInt(valore, 10) : 0;
+        }
+
+        function initSelect2Cliente() {
+            var $select = $('#codiceCliente');
+            if (!$select.is('select')) return;
+
+            $select.select2({
+                theme: 'bootstrap-5',
+                placeholder: '-- cerca codice o ragione sociale --',
+                allowClear: true,
+                minimumInputLength: 2,
+                width: '100%',
+                ajax: {
+                    url: urlCercaClienti,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { term: params.term }; },
+                    processResults: function (data) { return { results: data }; }
+                },
+                language: {
+                    noResults: function () { return 'Nessun cliente trovato'; },
+                    searching: function () { return 'Ricerca in corso...'; },
+                    inputTooShort: function () { return 'Inserisci almeno 2 caratteri'; }
+                }
+            });
+
+            $select.on('select2:select', function () {
+                onClienteCambiato(true);
+            });
+        }
+
+        function riempiIndirizzo(dati) {
+            if (!dati) return;
+            $('#nomeAgente').val(dati.agente || '');
+            $('#Indirizzo').val(dati.indirizzo || '');
+            $('#Cap').val(dati.cap || '');
+            $('#Localita').val(dati.localita || '');
+            $('#Provincia').val((dati.provincia || '').toUpperCase());
+            if (dati.telefono) $('#Telefono').val(dati.telefono);
+        }
+
+        function caricaDestinazioni(copiaIndirizzoCliente) {
+            var codice = getCodiceCliente();
+            var $dest = $('#codiceDestinazione');
+            $dest.find('option:not(:first)').remove();
+            if (!codice) return;
+
+            $.getJSON(urlDestinazioni, { codiceCliente: codice }, function (lista) {
+                (lista || []).forEach(function (d) {
+                    var opt = $('<option></option>').val(d.codice).text(d.text).data('indirizzo', d);
+                    $dest.append(opt);
+                });
+                if (destinazioneSelezionata) {
+                    $dest.val(String(destinazioneSelezionata));
+                }
+            });
+
+            $.getJSON(urlDatiCliente, { codiceCliente: codice }, function (dati) {
+                $('#nomeAgente').val(dati.agente || '');
+                if (copiaIndirizzoCliente) riempiIndirizzo(dati);
+            });
+        }
+
+        function onClienteCambiato(copiaIndirizzo) {
+            destinazioneSelezionata = null;
+            $('#codiceDestinazione').val('');
+            caricaDestinazioni(copiaIndirizzo);
+            if (isEdit) caricaOrdiniDisponibili();
+        }
+
+        $('#codiceDestinazione').on('change', function () {
+            var dati = $(this).find('option:selected').data('indirizzo');
+            if (dati) riempiIndirizzo(dati);
+        });
+
+        function caricaOrdiniDisponibili() {
+            var $select = $('#ordineDaAggiungere');
+            if (!$select.length) return;
+            var codice = getCodiceCliente();
+            $select.find('option:not(:first)').remove();
+            if (!codice) return;
+
+            $.getJSON(urlCercaOrdini, { codiceCliente: codice, cantiereId: cantiereId }, function (lista) {
+                (lista || []).forEach(function (o) {
+                    $select.append($('<option></option>').val(o.id).text(o.text));
+                });
+            });
+        }
+
+        function mostraAlertOrdini(messaggio) {
+            var $alert = $('#ordiniAlert');
+            if (!$alert.length) return;
+            $alert.removeClass('d-none').text(messaggio);
+        }
+
+        function aggiornaBadge() {
+            $('#badgeOrdini').text($('#tabellaOrdini tbody tr').length);
+        }
+
+        $('#btnAggiungiOrdine').on('click', function () {
+            var ordineId = $('#ordineDaAggiungere').val();
+            if (!ordineId) {
+                mostraAlertOrdini('Seleziona un ordine da collegare.');
+                return;
+            }
+
+            $.post(urlAggiungiOrdine, {
+                cantiereId: cantiereId,
+                ordineId: ordineId,
+                __RequestVerificationToken: token
+            }).done(function (res) {
+                if (!res.success) {
+                    mostraAlertOrdini(res.message || 'Impossibile collegare l\'ordine.');
+                    return;
+                }
+                $('#ordiniAlert').addClass('d-none');
+                var o = res.ordine;
+                var posa = o.trasportoPosa
+                    ? '<span class="badge bg-success">Sì</span>'
+                    : '<span class="badge bg-secondary">No</span>';
+                var riga = '<tr data-link-id="' + o.id + '">' +
+                    '<td>' + o.numeroOrdine + '</td>' +
+                    '<td>' + o.dataOrdine + '</td>' +
+                    '<td>' + (o.riferimento || '—') + '</td>' +
+                    '<td><span class="' + o.statoEvasioneCss + '">' + o.statoEvasione + '</span></td>' +
+                    '<td class="text-center">' + posa + '</td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-ordine" data-id="' + o.id + '" title="Scollega"><i class="bi bi-x-lg"></i></button></td>' +
+                    '</tr>';
+                $('#tabellaOrdini tbody').append(riga);
+                $('#ordineDaAggiungere option:selected').remove();
+                $('#ordineDaAggiungere').val('');
+                aggiornaBadge();
+            }).fail(function () {
+                mostraAlertOrdini('Errore durante il collegamento dell\'ordine.');
+            });
+        });
+
+        $(document).on('click', '.btn-rimuovi-ordine', function () {
+            var id = $(this).data('id');
+            var $riga = $(this).closest('tr');
+            if (!confirm('Scollegare questo ordine dal cantiere? L\'ordine non viene cancellato.')) return;
+
+            $.post(urlRimuoviOrdine, {
+                id: id,
+                __RequestVerificationToken: token
+            }).done(function (res) {
+                if (!res.success) {
+                    mostraAlertOrdini(res.message || 'Impossibile scollegare l\'ordine.');
+                    return;
+                }
+                $riga.remove();
+                aggiornaBadge();
+                caricaOrdiniDisponibili();
+            }).fail(function () {
+                mostraAlertOrdini('Errore durante lo scollegamento.');
+            });
+        });
+
+        $(function () {
+            initSelect2Cliente();
+            caricaDestinazioni(false);
+            if (isEdit) {
+                caricaOrdiniDisponibili();
+                caricaReferentiDisponibili();
+            }
+        });
+
+        function caricaReferentiDisponibili() {
+            var $select = $('#referenteDaAggiungere');
+            if (!$select.length) return;
+            $select.find('option:not(:first)').remove();
+            $.getJSON(urlCercaReferenti, { cantiereId: cantiereId }, function (lista) {
+                (lista || []).forEach(function (r) {
+                    $select.append($('<option></option>').val(r.id).text(r.text));
+                });
+            });
+        }
+
+        function mostraAlertReferenti(messaggio) {
+            var $alert = $('#referentiAlert');
+            if (!$alert.length) return;
+            $alert.removeClass('d-none').text(messaggio);
+        }
+
+        function aggiornaBadgeReferenti() {
+            $('#badgeReferenti').text($('#tabellaReferenti tbody tr').length);
+        }
+
+        $('#btnAggiungiReferente').on('click', function () {
+            var referenteId = $('#referenteDaAggiungere').val();
+            if (!referenteId) {
+                mostraAlertReferenti('Seleziona un referente da collegare.');
+                return;
+            }
+
+            $.post(urlAggiungiReferente, {
+                cantiereId: cantiereId,
+                referenteId: referenteId,
+                ruolo: $('#ruoloReferente').val(),
+                __RequestVerificationToken: token
+            }).done(function (res) {
+                if (!res.success) {
+                    mostraAlertReferenti(res.message || 'Impossibile collegare il referente.');
+                    return;
+                }
+                $('#referentiAlert').addClass('d-none');
+                var r = res.referente;
+                var riga = '<tr data-link-id="' + r.id + '">' +
+                    '<td>' + r.nome + '</td>' +
+                    '<td>' + (r.telefono || '—') + '</td>' +
+                    '<td>' + (r.email || '—') + '</td>' +
+                    '<td>' + (r.ruolo || '—') + '</td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-referente" data-id="' + r.id + '" title="Scollega"><i class="bi bi-x-lg"></i></button></td>' +
+                    '</tr>';
+                $('#tabellaReferenti tbody').append(riga);
+                $('#referenteDaAggiungere option:selected').remove();
+                $('#referenteDaAggiungere').val('');
+                $('#ruoloReferente').val('');
+                aggiornaBadgeReferenti();
+            }).fail(function () {
+                mostraAlertReferenti('Errore durante il collegamento del referente.');
+            });
+        });
+
+        $(document).on('click', '.btn-rimuovi-referente', function () {
+            var id = $(this).data('id');
+            var $riga = $(this).closest('tr');
+            if (!confirm('Scollegare questo referente dal cantiere? Il referente resta in anagrafica.')) return;
+
+            $.post(urlRimuoviReferente, {
+                id: id,
+                __RequestVerificationToken: token
+            }).done(function (res) {
+                if (!res.success) {
+                    mostraAlertReferenti(res.message || 'Impossibile scollegare il referente.');
+                    return;
+                }
+                $riga.remove();
+                aggiornaBadgeReferenti();
+                caricaReferentiDisponibili();
+            }).fail(function () {
+                mostraAlertReferenti('Errore durante lo scollegamento.');
+            });
+        });
+    })();
+</script>

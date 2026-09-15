@@ -10,6 +10,11 @@ using Syncfusion.Licensing;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// IIS con stdoutLogEnabled=true richiede che la cartella Logs esista,
+// altrimenti l'app può fallire con HTTP 500.30 ancora prima di partire.
+var logsDirectory = Path.Combine(builder.Environment.ContentRootPath, "Logs");
+Directory.CreateDirectory(logsDirectory);
+
 // Registrazione della licenza Syncfusion
 var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
 if (!string.IsNullOrEmpty(syncfusionLicenseKey))
@@ -32,8 +37,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
            .LogTo(Console.WriteLine, LogLevel.Information));
 
 // Database email GST (GSTMAIL_FAVARO1 su SVRGEST). Non applicare migrazioni: è un DB esterno già esistente.
-var gstMailConnectionString = builder.Configuration.GetConnectionString("GstMailConnection") ??
-    throw new InvalidOperationException("Connection string 'GstMailConnection' not found.");
+// Se la chiave manca nel file sul server (deploy che ripristina i vecchi appsettings),
+// non spegnere tutto il sito: usa Windows Authentication verso SVRGEST.
+var gstMailConnectionString = builder.Configuration.GetConnectionString("GstMailConnection");
+if (string.IsNullOrWhiteSpace(gstMailConnectionString))
+{
+    gstMailConnectionString =
+        "Data Source=SVRGEST;Initial Catalog=GSTMAIL_FAVARO1;Integrated Security=True;TrustServerCertificate=True;MultipleActiveResultSets=True;Encrypt=False";
+}
 
 builder.Services.AddDbContext<GstMailDbContext>(options =>
     options.UseSqlServer(gstMailConnectionString));
@@ -186,6 +197,16 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Si è verificato un errore durante l'inizializzazione del database.");
+        try
+        {
+            await File.WriteAllTextAsync(
+                Path.Combine(logsDirectory, "startup-error.txt"),
+                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}{ex}");
+        }
+        catch
+        {
+            // Se non riusciamo a scrivere il file, l'errore resta comunque nei log IIS/stdout.
+        }
     }
 }
 

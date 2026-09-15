@@ -40,7 +40,7 @@ namespace AiDbMaster.Models
         [Required]
         [Display(Name = "Durata Stimata (min)")]
         [Column("DurataStimataMinuti")]
-        public int DurataStimataMinuti { get; set; } = 240;
+        public int DurataStimataMinuti { get; set; } = 60;
 
         [Required]
         [StringLength(20)]
@@ -83,6 +83,10 @@ namespace AiDbMaster.Models
         [Display(Name = "Con Rimorchio")]
         [Column("ConRimorchio")]
         public bool ConRimorchio { get; set; } = false;
+
+        [Display(Name = "Da Confermare")]
+        [Column("DaConfermare")]
+        public bool DaConfermare { get; set; } = false;
 
         [Required]
         [Display(Name = "Spedizione Manuale")]

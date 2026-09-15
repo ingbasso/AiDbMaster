@@ -60,7 +60,25 @@ namespace AiDbMaster.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var oraInvio = await GetOraInvioAsync();
+                TimeSpan oraInvio;
+                try
+                {
+                    oraInvio = await GetOraInvioAsync();
+                }
+                catch (Exception ex)
+                {
+                    // In .NET 8 un'eccezione qui ferma tutto l'host → IIS 500.30.
+                    _logger.LogError(ex, "EmailAutomaticoService: impossibile leggere l'orario di invio. Riprovo tra 5 minuti.");
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    continue;
+                }
                 var ora = DateTime.Now;
                 var prossimoInvio = DateTime.Today.Add(oraInvio);
 

@@ -67,7 +67,9 @@ namespace AiDbMaster.Services
             var serverUrl = _configuration.GetSection("Server:Url").Value;
             if (string.IsNullOrEmpty(serverUrl))
             {
-                throw new InvalidOperationException("Server:Url non configurato in appsettings.json");
+                // Non bloccare l'avvio del sito: in produzione questa chiave può mancare.
+                _logger.LogWarning("Server:Url non configurato: il monitoraggio cartelle resterà disattivato.");
+                serverUrl = "http://localhost";
             }
             _httpClient.BaseAddress = new Uri(serverUrl);
         }

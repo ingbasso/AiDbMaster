@@ -4,7 +4,7 @@ namespace AiDbMaster.ViewModels
     {
         public DateTime DataInizio { get; set; }
         public DateTime DataFine { get; set; }
-        public int DurataDefaultMinuti { get; set; } = 240;
+        public int DurataDefaultMinuti { get; set; } = 60;
         public bool NascondiWeekend { get; set; }
 
         public List<GiornoKanbanDto> Giorni { get; set; } = new();
@@ -58,6 +58,7 @@ namespace AiDbMaster.ViewModels
         public int? MezzoTrasportoEsternoId { get; set; }
         public string Mezzo { get; set; } = string.Empty;
         public bool ConRimorchio { get; set; }
+        public bool DaConfermare { get; set; }
         public decimal PortataMaxKg { get; set; }
         public decimal PesoTotaleKg { get; set; }
         public decimal PercentualeCarico => PortataMaxKg <= 0 ? 0 : Math.Round((PesoTotaleKg / PortataMaxKg) * 100, 1);

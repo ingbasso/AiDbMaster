@@ -1,0 +1,690 @@
+@model AiDbMaster.ViewModels.ContabilitaCantiereViewModel
+@using System.Globalization
+@using AiDbMaster.Models
+
+@{
+    var etichettaTipo = Model.Tipo == TipoContabilitaCantiere.Finale ? "Finale" : "Iniziale";
+    ViewData["Title"] = $"Contabilità {etichettaTipo} - {Model.Titolo}";
+    ViewBag.UseFluidContainer = true;
+    var it = new CultureInfo("it-IT");
+
+    string Num(decimal? valore)
+    {
+        if (!valore.HasValue)
+            return string.Empty;
+        return valore.Value.ToString("0.####", it);
+    }
+
+    string HtmlUm(string name, string? selezionata)
+    {
+        var opzioni = new (string Valore, string Testo)[]
+        {
+            ("M", "M"),
+            ("MQ", "MQ"),
+            ("MC", "MC"),
+            ("SA", "SA (sacchetti)"),
+            ("RT", "RT (rotoli)")
+        };
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"<select name=\"{name}\" class=\"form-select form-select-sm um\">");
+        sb.Append("<option value=\"\"></option>");
+        var trovato = false;
+        foreach (var o in opzioni)
+        {
+            var sel = string.Equals(selezionata, o.Valore, StringComparison.OrdinalIgnoreCase);
+            if (sel) trovato = true;
+            sb.Append($"<option value=\"{o.Valore}\"{(sel ? " selected" : "")}>{o.Testo}</option>");
+        }
+        if (!string.IsNullOrWhiteSpace(selezionata) && !trovato)
+            sb.Append($"<option value=\"{selezionata}\" selected>{selezionata}</option>");
+        sb.Append("</select>");
+        return sb.ToString();
+    }
+}
+
+@section Styles {
+    <style>
+        .contab-table { font-size: 0.82rem; }
+        .contab-table th { white-space: nowrap; font-weight: 600; }
+        .contab-table td { vertical-align: middle; }
+        .contab-table .col-art { width: 100px; }
+        .contab-table .col-desc { min-width: 240px; }
+        .contab-table .col-um { width: 118px; }
+        .contab-table .col-num { width: 76px; }
+        .contab-table .col-tot { width: 82px; }
+        .contab-table input.num,
+        .contab-table input.qty,
+        .contab-table input.costo,
+        .contab-table input.prz {
+            width: 76px;
+            max-width: 76px;
+            padding-left: .3rem;
+            padding-right: .3rem;
+        }
+        .contab-table select.um {
+            width: 118px;
+            max-width: 118px;
+            padding-left: .25rem;
+            padding-right: .1rem;
+        }
+        .cerca-wrap { position: relative; width: 96px; }
+        .cerca-wrap .codice-art {
+            width: 96px;
+            max-width: 96px;
+            padding-left: .35rem;
+            padding-right: .35rem;
+        }
+        .cerca-risultati {
+            position: absolute;
+            z-index: 30;
+            top: calc(100% + 2px);
+            left: 0;
+            min-width: 340px;
+            max-width: 420px;
+            max-height: 260px;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .14);
+        }
+        .cerca-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #f1f3f5; }
+        .cerca-item:last-child { border-bottom: 0; }
+        .cerca-item:hover,
+        .cerca-item.active { background: #eef4ff; }
+        .cerca-item .cod { font-weight: 700; color: #1d4ed8; font-size: .78rem; }
+        .cerca-item .dsc { color: #495057; font-size: .75rem; line-height: 1.25; }
+        .cerca-vuoto { padding: 8px 10px; color: #868e96; font-size: .78rem; }
+        .riga-padre { background: #fff; }
+        .riga-figlio { background: #f8fafc; }
+        .riga-figlio .col-art { padding-left: 1.4rem; }
+        .tot-cell { background: #f1f3f5; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .riepilogo-box dt { font-weight: 500; color: #6c757d; }
+        .riepilogo-box dd { font-variant-numeric: tabular-nums; margin-bottom: 0.4rem; }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-calculator me-2 text-primary"></i>Contabilità @etichettaTipo
+            </h2>
+            <div class="text-muted">@Model.Titolo</div>
+        </div>
+        <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Torna alla scheda
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Iniziale ? "active" : null)"
+               asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Iniziale">
+                Iniziale
+                @if (Model.HaContabilitaIniziale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Finale ? "active" : null)"
+               asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Finale">
+                Finale
+                @if (Model.HaContabilitaFinale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
+            </a>
+        </li>
+    </ul>
+
+    <div class="card mb-3">
+        <div class="card-body py-3 small">
+            <div class="row g-3">
+                <div class="col-md-3"><strong>Cantiere:</strong> @Model.Titolo</div>
+                <div class="col-md-3"><strong>Impresa di posa:</strong> @(Model.ImpresaPosa ?? "—")</div>
+                <div class="col-md-3"><strong>Agente:</strong> @(Model.NomeAgente ?? "—")</div>
+                <div class="col-md-3"><strong>Magazzino N.:</strong> @(Model.MagazzinoN ?? "—")</div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="SalvaContabilita" method="post" id="formContabilita">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="CantiereId" />
+        <input type="hidden" asp-for="Tipo" />
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span><i class="bi bi-diagram-3 me-1"></i>Articoli padre e figli</span>
+                <div class="d-flex flex-wrap gap-2" permission-required="GestioneCantieri:Edit">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAggiungiPadre">
+                        <i class="bi bi-plus-lg me-1"></i>Aggiungi articolo padre
+                    </button>
+                    <button type="submit" formaction="@Url.Action("ImportaDaOrdini", new { id = Model.CantiereId, tipo = Model.Tipo })"
+                            class="btn btn-outline-primary btn-sm"
+                            @(Model.NumeroOrdiniCollegati == 0 ? "disabled" : null)
+                            onclick="return confirm('Importo gli articoli degli ordini collegati come padri. Le righe già presenti restano.');">
+                        <i class="bi bi-box-arrow-in-down me-1"></i>Importa da ordini (@Model.NumeroOrdiniCollegati)
+                    </button>
+                    @if (Model.Tipo == TipoContabilitaCantiere.Finale)
+                    {
+                        <button type="submit" formaction="@Url.Action("CopiaInizialeSuFinale", new { id = Model.CantiereId })"
+                                class="btn btn-outline-warning btn-sm"
+                                @(Model.HaContabilitaIniziale ? null : "disabled")
+                                onclick="return confirm('Copio la contabilità iniziale (padri e figli) sulla finale. Le righe finali già presenti verranno sostituite.');">
+                            <i class="bi bi-copy me-1"></i>Copia da iniziale
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0 contab-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="col-art">Art.</th>
+                                <th>Descrizione</th>
+                                <th class="col-um">UM</th>
+                                <th class="col-num text-end">Q.tà</th>
+                                <th class="col-num text-end">Costo €</th>
+                                <th class="col-tot text-end">Tot. costo</th>
+                                <th class="col-num text-end">Vendita €</th>
+                                <th class="col-tot text-end">Tot. vendita</th>
+                                <th>Note</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoContabilita">
+                        @for (var i = 0; i < Model.Righe.Count; i++)
+                        {
+                            var padre = Model.Righe[i];
+                            <tr class="riga-contab riga-padre" data-ix="@i">
+                                <td class="col-art">
+                                    <input type="hidden" name="Righe.Index" value="@i" />
+                                    <input type="hidden" name="Righe[@i].Id" value="@padre.Id" />
+                                    <div class="cerca-wrap">
+                                        <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" />
+                                        <div class="cerca-risultati d-none"></div>
+                                    </div>
+                                </td>
+                                <td><input name="Righe[@i].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@padre.Descrizione" /></td>
+                                <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].UnitaMisura", padre.UnitaMisura))</td>
+                                <td class="col-num"><input name="Righe[@i].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" value="@Num(padre.QuantitaPosata)" /></td>
+                                <td class="col-num"><input name="Righe[@i].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" value="@Num(padre.CostoMaterialeServizio)" /></td>
+                                <td class="tot-cell text-end align-middle tot-costo"></td>
+                                <td class="col-num"><input name="Righe[@i].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" value="@Num(padre.PrezzoVenditaCliente)" /></td>
+                                <td class="tot-cell text-end align-middle tot-vendita"></td>
+                                <td><input name="Righe[@i].Note" class="form-control form-control-sm" maxlength="200" value="@padre.Note" /></td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-padre" title="Elimina padre e figli">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            @for (var f = 0; f < padre.Figli.Count; f++)
+                            {
+                                var figlio = padre.Figli[f];
+                                <tr class="riga-contab riga-figlio" data-padre-ix="@i">
+                                    <td class="col-art">
+                                        <input type="hidden" name="Righe[@i].Figli.Index" value="@f" />
+                                        <input type="hidden" name="Righe[@i].Figli[@f].Id" value="@figlio.Id" />
+                                        <div class="cerca-wrap">
+                                            <input name="Righe[@i].Figli[@f].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@figlio.CodiceArticolo" />
+                                            <div class="cerca-risultati d-none"></div>
+                                        </div>
+                                    </td>
+                                    <td><input name="Righe[@i].Figli[@f].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@figlio.Descrizione" /></td>
+                                    <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].Figli[{f}].UnitaMisura", figlio.UnitaMisura))</td>
+                                    <td class="col-num"><input name="Righe[@i].Figli[@f].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" value="@Num(figlio.QuantitaPosata)" /></td>
+                                    <td class="col-num"><input name="Righe[@i].Figli[@f].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" value="@Num(figlio.CostoMaterialeServizio)" /></td>
+                                    <td class="tot-cell text-end align-middle tot-costo"></td>
+                                    <td class="col-num"><input name="Righe[@i].Figli[@f].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" value="@Num(figlio.PrezzoVenditaCliente)" /></td>
+                                    <td class="tot-cell text-end align-middle tot-vendita"></td>
+                                    <td><input name="Righe[@i].Figli[@f].Note" class="form-control form-control-sm" maxlength="200" value="@figlio.Note" /></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-figlio" title="Elimina figlio">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            <tr class="riga-azioni-padre" data-ix="@i">
+                                <td colspan="10" class="py-1">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-aggiungi-figlio">
+                                        <i class="bi bi-plus-lg me-1"></i>Aggiungi figlio
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header">Dati di chiusura</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Riferimento ordine</label>
+                                <input asp-for="RiferimentoOrdine" class="form-control" maxlength="150" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Aliquota IVA %</label>
+                                <input asp-for="AliquotaIva" class="form-control num" id="aliquotaIva" inputmode="decimal" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Imponibile acconto</label>
+                                <input asp-for="ImponibileAcconto" class="form-control num" id="imponibileAcconto" inputmode="decimal" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Note</label>
+                                <textarea asp-for="Note" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-header">Riepilogo</div>
+                    <div class="card-body riepilogo-box">
+                        <dl class="row mb-0">
+                            <dt class="col-7">Totale vendita</dt>
+                            <dd class="col-5 text-end" id="totVendita">0,00</dd>
+                            <dt class="col-7">Totale vendita posa</dt>
+                            <dd class="col-5 text-end" id="totVenditaPosa">0,00</dd>
+                            <dt class="col-7">Totale acquisto posa</dt>
+                            <dd class="col-5 text-end" id="totAcquistoPosa">0,00</dd>
+                            <dt class="col-7 mt-2">Imponibile acconto</dt>
+                            <dd class="col-5 text-end mt-2" id="totAcconto">0,00</dd>
+                            <dt class="col-7">Imponibile a saldo</dt>
+                            <dd class="col-5 text-end fw-semibold" id="totSaldo">0,00</dd>
+                            <dt class="col-7">Totale con IVA</dt>
+                            <dd class="col-5 text-end fw-semibold" id="totIva">0,00</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3 mb-4" permission-required="GestioneCantieri:Edit">
+            <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-secondary">Annulla</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Salva contabilità @etichettaTipo.ToLower()
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="tplPadre">
+    <tr class="riga-contab riga-padre" data-ix="__P__">
+        <td class="col-art">
+            <input type="hidden" name="Righe.Index" value="__P__" />
+            <input type="hidden" name="Righe[__P__].Id" value="0" />
+            <div class="cerca-wrap">
+                <input name="Righe[__P__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                <div class="cerca-risultati d-none"></div>
+            </div>
+        </td>
+        <td><input name="Righe[__P__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" /></td>
+        <td class="col-um">@Html.Raw(HtmlUm("Righe[__P__].UnitaMisura", null))</td>
+        <td class="col-num"><input name="Righe[__P__].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-costo"></td>
+        <td class="col-num"><input name="Righe[__P__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-vendita"></td>
+        <td><input name="Righe[__P__].Note" class="form-control form-control-sm" maxlength="200" /></td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-padre" title="Elimina padre e figli"><i class="bi bi-x-lg"></i></button>
+        </td>
+    </tr>
+    <tr class="riga-azioni-padre" data-ix="__P__">
+        <td colspan="10" class="py-1">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-aggiungi-figlio">
+                <i class="bi bi-plus-lg me-1"></i>Aggiungi figlio
+            </button>
+        </td>
+    </tr>
+</template>
+
+<template id="tplFiglio">
+    <tr class="riga-contab riga-figlio" data-padre-ix="__P__">
+        <td class="col-art">
+            <input type="hidden" name="Righe[__P__].Figli.Index" value="__F__" />
+            <input type="hidden" name="Righe[__P__].Figli[__F__].Id" value="0" />
+            <div class="cerca-wrap">
+                <input name="Righe[__P__].Figli[__F__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                <div class="cerca-risultati d-none"></div>
+            </div>
+        </td>
+        <td><input name="Righe[__P__].Figli[__F__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" /></td>
+        <td class="col-um">@Html.Raw(HtmlUm("Righe[__P__].Figli[__F__].UnitaMisura", null))</td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-costo"></td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-vendita"></td>
+        <td><input name="Righe[__P__].Figli[__F__].Note" class="form-control form-control-sm" maxlength="200" /></td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-figlio" title="Elimina figlio"><i class="bi bi-x-lg"></i></button>
+        </td>
+    </tr>
+</template>
+
+@section Scripts {
+    <script>
+        (function () {
+            var urlArticoli = '@Url.Action("CercaArticoliContabilita", "GestioneCantieri")';
+            var urlDatiArticolo = '@Url.Action("DatiArticoloContabilita", "GestioneCantieri")';
+            var corpo = document.getElementById('corpoContabilita');
+            var form = document.getElementById('formContabilita');
+            var prossimoPadre = document.querySelectorAll('tr.riga-padre').length;
+            var timerCerca = null;
+            var richiestaCerca = 0;
+            var indiceAttivo = -1;
+
+            function parseNum(valore) {
+                if (valore === null || valore === undefined) return 0;
+                var s = String(valore).trim().replace(/\s/g, '');
+                if (!s) return 0;
+                if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) {
+                    if (s.lastIndexOf(',') > s.lastIndexOf('.'))
+                        s = s.replace(/\./g, '').replace(',', '.');
+                    else
+                        s = s.replace(/,/g, '');
+                } else {
+                    s = s.replace(',', '.');
+                }
+                var n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            }
+
+            function formatIta(n, dec) {
+                return n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+            }
+
+            function campo(data, nomeMinuscolo, nomeMaiuscolo) {
+                if (!data) return '';
+                return data[nomeMinuscolo] || data[nomeMaiuscolo] || '';
+            }
+
+            function normalizzaUm(um) {
+                var v = String(um || '').trim().toUpperCase();
+                if (!v) return '';
+                if (v === 'ML' || v === 'METRI') return 'M';
+                if (v === 'M2' || v === 'MQ.') return 'MQ';
+                if (v === 'M3' || v === 'MC.') return 'MC';
+                if (v === 'SAC' || v === 'SACCHETTI' || v === 'SACCHETTO') return 'SA';
+                if (v === 'ROT' || v === 'ROTOLO' || v === 'ROTOLI') return 'RT';
+                return v;
+            }
+
+            function impostaUm(select, um) {
+                if (!select) return;
+                var valore = normalizzaUm(um);
+                if (!valore) return;
+                var esiste = Array.prototype.some.call(select.options, function (o) {
+                    return o.value.toUpperCase() === valore;
+                });
+                if (!esiste)
+                    select.appendChild(new Option(valore, valore));
+                select.value = esiste
+                    ? Array.prototype.find.call(select.options, function (o) { return o.value.toUpperCase() === valore; }).value
+                    : valore;
+            }
+
+            function applicaArticolo(tr, data, forza) {
+                if (!tr || !data) return;
+                var desc = campo(data, 'descrizione', 'Descrizione');
+                var um = campo(data, 'unitaMisura', 'UnitaMisura');
+                var codice = campo(data, 'id', 'Id') || campo(data, 'codice', 'Codice');
+                var inputCodice = tr.querySelector('input.codice-art');
+                var inputDesc = tr.querySelector('input.desc');
+                var selectUm = tr.querySelector('select.um');
+                if (inputCodice && codice) inputCodice.value = codice;
+                if (inputDesc && desc && (forza || !inputDesc.value.trim())) inputDesc.value = desc;
+                if (selectUm && um && (forza || !selectUm.value)) impostaUm(selectUm, um);
+            }
+
+            function chiudiRisultati(wrap) {
+                if (!wrap) {
+                    document.querySelectorAll('.cerca-risultati').forEach(function (el) {
+                        el.classList.add('d-none');
+                        el.innerHTML = '';
+                    });
+                    indiceAttivo = -1;
+                    return;
+                }
+                var box = wrap.querySelector('.cerca-risultati');
+                if (box) {
+                    box.classList.add('d-none');
+                    box.innerHTML = '';
+                }
+                indiceAttivo = -1;
+            }
+
+            function vociRisultati(box) {
+                return box ? Array.prototype.slice.call(box.querySelectorAll('.cerca-item')) : [];
+            }
+
+            function evidenziaVoce(box, indice) {
+                var voci = vociRisultati(box);
+                voci.forEach(function (v, i) { v.classList.toggle('active', i === indice); });
+                if (voci[indice]) voci[indice].scrollIntoView({ block: 'nearest' });
+                indiceAttivo = indice;
+            }
+
+            function scegliArticolo(input, voce) {
+                var tr = input.closest('tr');
+                applicaArticolo(tr, {
+                    id: voce.getAttribute('data-id'),
+                    descrizione: voce.getAttribute('data-desc'),
+                    unitaMisura: voce.getAttribute('data-um')
+                }, true);
+                chiudiRisultati(input.closest('.cerca-wrap'));
+            }
+
+            function escapeHtml(s) {
+                return String(s || '').replace(/[&<>"']/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+                });
+            }
+
+            function mostraRisultati(input, articoli) {
+                var wrap = input.closest('.cerca-wrap');
+                var box = wrap.querySelector('.cerca-risultati');
+                if (!articoli || !articoli.length) {
+                    box.innerHTML = '<div class="cerca-vuoto">Nessun articolo trovato. Puoi lasciare il codice libero.</div>';
+                    box.classList.remove('d-none');
+                    indiceAttivo = -1;
+                    return;
+                }
+                box.innerHTML = articoli.map(function (a) {
+                    var id = campo(a, 'id', 'Id');
+                    var desc = campo(a, 'descrizione', 'Descrizione');
+                    var um = campo(a, 'unitaMisura', 'UnitaMisura');
+                    return '<button type="button" class="cerca-item" data-id="' + escapeHtml(id) + '" data-desc="' +
+                        escapeHtml(desc) + '" data-um="' + escapeHtml(um) +
+                        '"><div class="cod">' + escapeHtml(id) + '</div><div class="dsc">' +
+                        escapeHtml(desc) + (um ? ' · ' + escapeHtml(um) : '') + '</div></button>';
+                }).join('');
+                box.classList.remove('d-none');
+                evidenziaVoce(box, 0);
+            }
+
+            function cercaArticoli(input) {
+                var term = input.value.trim();
+                if (term.length < 2) {
+                    chiudiRisultati(input.closest('.cerca-wrap'));
+                    return;
+                }
+                var token = ++richiestaCerca;
+                fetch(urlArticoli + '?term=' + encodeURIComponent(term))
+                    .then(function (r) { return r.json(); })
+                    .then(function (dati) {
+                        if (token !== richiestaCerca) return;
+                        if (document.activeElement !== input) return;
+                        mostraRisultati(input, dati || []);
+                    })
+                    .catch(function () { });
+            }
+
+            function caricaDatiArticolo(tr, codice) {
+                if (!codice) return;
+                fetch(urlDatiArticolo + '?codice=' + encodeURIComponent(codice))
+                    .then(function (r) { return r.json(); })
+                    .then(function (dati) { applicaArticolo(tr, dati); })
+                    .catch(function () { });
+            }
+
+            function ricalcola() {
+                var totV = 0, totVenditaPosa = 0, totAcquistoPosa = 0;
+                document.querySelectorAll('tr.riga-contab').forEach(function (tr) {
+                    var qty = parseNum(tr.querySelector('.qty')?.value);
+                    var costo = parseNum(tr.querySelector('.costo')?.value);
+                    var prz = parseNum(tr.querySelector('.prz')?.value);
+                    var rC = qty * costo;
+                    var rV = qty * prz;
+                    if (tr.classList.contains('riga-padre'))
+                        totV += rV;
+                    if (tr.classList.contains('riga-figlio')) {
+                        totVenditaPosa += rV;
+                        totAcquistoPosa += rC;
+                    }
+                    var cC = tr.querySelector('.tot-costo');
+                    var cV = tr.querySelector('.tot-vendita');
+                    if (cC) cC.textContent = rC ? formatIta(rC, 2) : '';
+                    if (cV) cV.textContent = rV ? formatIta(rV, 2) : '';
+                });
+                var acconto = parseNum(document.getElementById('imponibileAcconto')?.value);
+                var iva = parseNum(document.getElementById('aliquotaIva')?.value);
+                var saldo = totV - acconto;
+                var conIva = saldo * (1 + iva / 100);
+                document.getElementById('totVendita').textContent = formatIta(totV, 2);
+                document.getElementById('totVenditaPosa').textContent = formatIta(totVenditaPosa, 2);
+                document.getElementById('totAcquistoPosa').textContent = formatIta(totAcquistoPosa, 2);
+                document.getElementById('totAcconto').textContent = formatIta(acconto, 2);
+                document.getElementById('totSaldo').textContent = formatIta(saldo, 2);
+                document.getElementById('totIva').textContent = formatIta(conIva, 2);
+            }
+
+            function aggiungiFiglio(ixPadre) {
+                var azioni = corpo.querySelector('tr.riga-azioni-padre[data-ix="' + ixPadre + '"]');
+                if (!azioni) return;
+                var f = corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ixPadre + '"]').length;
+                var html = document.getElementById('tplFiglio').innerHTML
+                    .replace(/__P__/g, String(ixPadre))
+                    .replace(/__F__/g, String(f));
+                azioni.insertAdjacentHTML('beforebegin', html);
+                ricalcola();
+            }
+
+            document.getElementById('btnAggiungiPadre')?.addEventListener('click', function () {
+                var p = prossimoPadre++;
+                var html = document.getElementById('tplPadre').innerHTML.replace(/__P__/g, String(p));
+                corpo.insertAdjacentHTML('beforeend', html);
+                ricalcola();
+                var nuovo = corpo.querySelector('tr.riga-padre[data-ix="' + p + '"] input.codice-art');
+                if (nuovo) nuovo.focus();
+            });
+
+            form.addEventListener('click', function (e) {
+                var voce = e.target.closest('.cerca-item');
+                if (voce) {
+                    e.preventDefault();
+                    var wrap = voce.closest('.cerca-wrap');
+                    scegliArticolo(wrap.querySelector('input.codice-art'), voce);
+                    return;
+                }
+                var btnFiglio = e.target.closest('.btn-aggiungi-figlio');
+                if (btnFiglio) {
+                    e.preventDefault();
+                    var azioni = btnFiglio.closest('tr.riga-azioni-padre');
+                    if (!azioni) return;
+                    aggiungiFiglio(azioni.getAttribute('data-ix'));
+                    return;
+                }
+                if (e.target.closest('.btn-elimina-padre')) {
+                    var padre = e.target.closest('tr.riga-padre');
+                    if (!padre) return;
+                    var ix = padre.getAttribute('data-ix');
+                    corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]').forEach(function (r) { r.remove(); });
+                    corpo.querySelector('tr.riga-azioni-padre[data-ix="' + ix + '"]')?.remove();
+                    padre.remove();
+                    ricalcola();
+                    return;
+                }
+                if (e.target.closest('.btn-elimina-figlio')) {
+                    e.target.closest('tr')?.remove();
+                    ricalcola();
+                }
+            });
+
+            form.addEventListener('input', function (e) {
+                if (e.target.classList.contains('num'))
+                    ricalcola();
+                if (e.target.classList.contains('codice-art')) {
+                    clearTimeout(timerCerca);
+                    var input = e.target;
+                    timerCerca = setTimeout(function () { cercaArticoli(input); }, 220);
+                }
+            });
+
+            form.addEventListener('keydown', function (e) {
+                if (!e.target.classList.contains('codice-art')) return;
+                var box = e.target.closest('.cerca-wrap').querySelector('.cerca-risultati');
+                if (box.classList.contains('d-none')) {
+                    if (e.key === 'Enter') e.preventDefault();
+                    return;
+                }
+                var voci = vociRisultati(box);
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    evidenziaVoce(box, Math.min(indiceAttivo + 1, voci.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    evidenziaVoce(box, Math.max(indiceAttivo - 1, 0));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (voci[indiceAttivo]) scegliArticolo(e.target, voci[indiceAttivo]);
+                } else if (e.key === 'Escape') {
+                    chiudiRisultati(e.target.closest('.cerca-wrap'));
+                }
+            });
+
+            form.addEventListener('focusout', function (e) {
+                if (!e.target.classList.contains('codice-art')) return;
+                var input = e.target;
+                setTimeout(function () {
+                    if (input.closest('.cerca-wrap')?.contains(document.activeElement)) return;
+                    chiudiRisultati(input.closest('.cerca-wrap'));
+                    if (input.value.trim())
+                        caricaDatiArticolo(input.closest('tr'), input.value.trim());
+                }, 180);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.cerca-wrap'))
+                    chiudiRisultati();
+            });
+
+            form.addEventListener('submit', function () {
+                document.querySelectorAll('#formContabilita input.num').forEach(function (input) {
+                    if (!input.value) return;
+                    input.value = String(parseNum(input.value)).replace('.', ',');
+                });
+            });
+
+            ricalcola();
+        })();
+    </script>
+}

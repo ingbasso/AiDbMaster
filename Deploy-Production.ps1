@@ -47,6 +47,119 @@ function Write-WarningMsg {
     Write-Host "⚠️  $Message" -ForegroundColor $WarningColor
 }
 
+# Converte un oggetto JSON (PSCustomObject) in Hashtable, per poterlo unire.
+function ConvertTo-ConfigHashtable {
+    param($Object)
+
+    if ($null -eq $Object) {
+        return $null
+    }
+
+    if ($Object -is [hashtable] -or $Object -is [System.Collections.IDictionary]) {
+        $result = @{}
+        foreach ($key in @($Object.Keys)) {
+            $result[$key] = ConvertTo-ConfigHashtable $Object[$key]
+        }
+        return $result
+    }
+
+    if ($Object -is [pscustomobject]) {
+        $result = @{}
+        foreach ($prop in $Object.PSObject.Properties) {
+            $result[$prop.Name] = ConvertTo-ConfigHashtable $prop.Value
+        }
+        return $result
+    }
+
+    if ($Object -is [string] -or $Object -is [ValueType]) {
+        return $Object
+    }
+
+    if ($Object -is [System.Collections.IEnumerable]) {
+        $list = New-Object System.Collections.Generic.List[object]
+        foreach ($item in $Object) {
+            $list.Add((ConvertTo-ConfigHashtable $item))
+        }
+        return ,$list.ToArray()
+    }
+
+    return $Object
+}
+
+# Unisce due configurazioni: i valori gia' presenti sul server vincono,
+# le chiavi nuove del pacchetto vengono aggiunte (es. GstMailConnection).
+function Merge-ConfigHashtable {
+    param(
+        [hashtable]$Base,
+        [hashtable]$Incoming,
+        [string]$Prefix = ""
+    )
+
+    if ($null -eq $Base) { return $Incoming }
+    if ($null -eq $Incoming) { return $Base }
+
+    $result = @{}
+    foreach ($key in $Base.Keys) {
+        $result[$key] = $Base[$key]
+    }
+
+    foreach ($key in $Incoming.Keys) {
+        $path = if ($Prefix) { "$Prefix.$key" } else { $key }
+        if (-not $result.ContainsKey($key)) {
+            $result[$key] = $Incoming[$key]
+            Write-Host "    + aggiunta chiave '$path'" -ForegroundColor $InfoColor
+        }
+        elseif ($result[$key] -is [hashtable] -and $Incoming[$key] -is [hashtable]) {
+            $result[$key] = Merge-ConfigHashtable -Base $result[$key] -Incoming $Incoming[$key] -Prefix $path
+        }
+    }
+
+    return $result
+}
+
+# Unisce il file gia' presente sul server con quello nuovo del pacchetto.
+function Merge-AppSettingsFile {
+    param(
+        [string]$ExistingPath,
+        [string]$IncomingPath,
+        [string]$DestinationPath
+    )
+
+    $fileName = Split-Path $DestinationPath -Leaf
+
+    if (-not (Test-Path $IncomingPath) -and -not (Test-Path $ExistingPath)) {
+        Write-WarningMsg "Nessun file di configurazione trovato per $fileName"
+        return
+    }
+
+    if (-not (Test-Path $ExistingPath)) {
+        Copy-Item $IncomingPath $DestinationPath -Force
+        Write-Success "Configurazione nuova applicata (non esisteva sul server): $fileName"
+        return
+    }
+
+    if (-not (Test-Path $IncomingPath)) {
+        Copy-Item $ExistingPath $DestinationPath -Force
+        Write-Success "Configurazione esistente ripristinata: $fileName"
+        return
+    }
+
+    try {
+        $existingObj = Get-Content -Path $ExistingPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $incomingObj = Get-Content -Path $IncomingPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $existingHash = ConvertTo-ConfigHashtable $existingObj
+        $incomingHash = ConvertTo-ConfigHashtable $incomingObj
+        $merged = Merge-ConfigHashtable -Base $existingHash -Incoming $incomingHash
+        $json = $merged | ConvertTo-Json -Depth 30
+        [System.IO.File]::WriteAllText($DestinationPath, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+        Write-Success "Configurazione unita (valori server conservati, chiavi nuove aggiunte): $fileName"
+    }
+    catch {
+        Write-WarningMsg "Unione JSON fallita per $fileName ($($_.Exception.Message)). Ripristino file gia' presente sul server."
+        Copy-Item $ExistingPath $DestinationPath -Force
+    }
+}
+
 # ============================================================================
 # MAIN SCRIPT
 # ============================================================================
@@ -388,21 +501,19 @@ try {
             throw "Directory App non trovata nel package"
         }
         
-        # Ripristina configurazione se esisteva
-        if (Test-Path $tempConfigBackup) {
-            Copy-Item $tempConfigBackup $existingConfig -Force
-            Write-Success "Configurazione esistente ripristinata"
+        # Unisce i file di configurazione: tiene i valori gia' presenti sul server
+        # (password, connection string) e aggiunge solo le chiavi nuove del pacchetto.
+        $newAppSettings = Join-Path $appSourceDir "appsettings.json"
+        $newProdConfig = Join-Path $appSourceDir "appsettings.Production.json"
+        if (-not (Test-Path $newProdConfig)) {
+            $altProdConfig = Join-Path $tempDeployDir "Config\appsettings.Production.json"
+            if (Test-Path $altProdConfig) {
+                $newProdConfig = $altProdConfig
+            }
         }
-        
-        # Copia nuova configurazione produzione se presente nel package
-        $newProdConfig = Join-Path $tempDeployDir "Config\appsettings.Production.json"
-        if (Test-Path $newProdConfig) {
-            Copy-Item $newProdConfig $existingProdConfig -Force
-            Write-Success "Nuova configurazione produzione applicata"
-        } elseif (Test-Path $tempProdConfigBackup) {
-            Copy-Item $tempProdConfigBackup $existingProdConfig -Force
-            Write-Success "Configurazione produzione esistente ripristinata"
-        }
+
+        Merge-AppSettingsFile -ExistingPath $tempConfigBackup -IncomingPath $newAppSettings -DestinationPath $existingConfig
+        Merge-AppSettingsFile -ExistingPath $tempProdConfigBackup -IncomingPath $newProdConfig -DestinationPath $existingProdConfig
         
         # Ripristina web.config esistente se c'era (preserva configurazione funzionante)
         # A meno che non sia specificato -ForceUpdateWebConfig

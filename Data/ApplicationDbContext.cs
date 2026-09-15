@@ -92,6 +92,15 @@ namespace AiDbMaster.Data
         // Tabella Durata delle Scorte
         public DbSet<DurataDelleScorte> DurataDelleScorte { get; set; }
 
+        // Tabelle Gestione Cantieri
+        public DbSet<Cantiere> Cantieri { get; set; }
+        public DbSet<CantiereOrdine> CantiereOrdini { get; set; }
+        public DbSet<ImpresaPosa> ImpresePosa { get; set; }
+        public DbSet<ReferenteCantiere> ReferentiCantiere { get; set; }
+        public DbSet<CantiereReferente> CantiereReferenti { get; set; }
+        public DbSet<CantiereContabilita> CantiereContabilita { get; set; }
+        public DbSet<CantiereContabilitaRiga> CantiereContabilitaRighe { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -1345,6 +1354,106 @@ namespace AiDbMaster.Data
                 .HasForeignKey(s => s.CodiceFamiglia)
                 .HasPrincipalKey(f => f.CodiceFamiglia)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== GESTIONE CANTIERI =====
+            // Nessuna FK su AnagraficaClienti.CodiceCliente: in database non è chiave candidata.
+            builder.Entity<Cantiere>()
+                .HasIndex(c => c.Codice)
+                .IsUnique()
+                .HasDatabaseName("IX_Cantieri_Codice");
+
+            builder.Entity<Cantiere>()
+                .HasIndex(c => c.CodiceCliente)
+                .HasDatabaseName("IX_Cantieri_CodiceCliente");
+
+            builder.Entity<Cantiere>()
+                .HasIndex(c => c.Stato)
+                .HasDatabaseName("IX_Cantieri_Stato");
+
+            builder.Entity<Cantiere>()
+                .HasOne(c => c.ImpresaPosa)
+                .WithMany()
+                .HasForeignKey(c => c.ImpresaPosaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ImpresaPosa>()
+                .HasIndex(i => i.Nome)
+                .IsUnique()
+                .HasDatabaseName("IX_ImpresePosa_Nome");
+
+            builder.Entity<ReferenteCantiere>()
+                .HasIndex(r => r.Nome)
+                .HasDatabaseName("IX_ReferentiCantiere_Nome");
+
+            builder.Entity<CantiereReferente>()
+                .HasOne(r => r.Cantiere)
+                .WithMany(c => c.Referenti)
+                .HasForeignKey(r => r.CantiereId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CantiereReferente>()
+                .HasOne(r => r.Referente)
+                .WithMany(p => p.Cantieri)
+                .HasForeignKey(r => r.ReferenteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CantiereReferente>()
+                .HasIndex(r => new { r.CantiereId, r.ReferenteId })
+                .IsUnique()
+                .HasDatabaseName("IX_CantiereReferenti_Cantiere_Referente");
+
+            builder.Entity<CantiereOrdine>()
+                .HasOne(o => o.Cantiere)
+                .WithMany(c => c.Ordini)
+                .HasForeignKey(o => o.CantiereId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CantiereOrdine>()
+                .HasOne(o => o.Ordine)
+                .WithMany()
+                .HasForeignKey(o => o.OrdineTestataId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CantiereOrdine>()
+                .HasIndex(o => new { o.CantiereId, o.OrdineTestataId })
+                .IsUnique()
+                .HasDatabaseName("IX_CantiereOrdini_Cantiere_Ordine");
+
+            builder.Entity<CantiereOrdine>()
+                .HasIndex(o => o.OrdineTestataId)
+                .IsUnique()
+                .HasDatabaseName("IX_CantiereOrdini_OrdineTestataId");
+
+            builder.Entity<CantiereContabilita>()
+                .HasOne(c => c.Cantiere)
+                .WithMany(c => c.Contabilita)
+                .HasForeignKey(c => c.CantiereId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CantiereContabilita>()
+                .HasIndex(c => new { c.CantiereId, c.Tipo })
+                .IsUnique()
+                .HasDatabaseName("IX_CantiereContabilita_Cantiere_Tipo");
+
+            builder.Entity<CantiereContabilitaRiga>()
+                .HasOne(r => r.Contabilita)
+                .WithMany(c => c.Righe)
+                .HasForeignKey(r => r.ContabilitaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CantiereContabilitaRiga>()
+                .HasOne(r => r.Padre)
+                .WithMany(r => r.Figli)
+                .HasForeignKey(r => r.PadreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CantiereContabilitaRiga>()
+                .HasIndex(r => new { r.ContabilitaId, r.Ordine })
+                .HasDatabaseName("IX_CantiereContabilitaRighe_Contabilita_Ordine");
+
+            builder.Entity<CantiereContabilitaRiga>()
+                .HasIndex(r => r.PadreId)
+                .HasDatabaseName("IX_CantiereContabilitaRighe_PadreId");
         }
     }
 } 
