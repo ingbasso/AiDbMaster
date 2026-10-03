@@ -1,0 +1,32 @@
+@model AiDbMaster.ViewModels.CostoArticoloCantiereForm
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div class="row g-3">
+    <div class="col-md-3">
+        <label class="form-label" asp-for="CodiceArticolo"></label>
+        <input asp-for="CodiceArticolo" class="form-control" maxlength="50" required />
+        <span asp-validation-for="CodiceArticolo" class="text-danger"></span>
+    </div>
+    <div class="col-md-9">
+        <label class="form-label" asp-for="Descrizione"></label>
+        <input asp-for="Descrizione" class="form-control" maxlength="255" required />
+        <span asp-validation-for="Descrizione" class="text-danger"></span>
+    </div>
+</div>
+<div class="row g-3 mt-1">
+    <div class="col-md-3">
+        <label class="form-label" asp-for="CostoUnitario"></label>
+        <input asp-for="CostoUnitario" class="form-control text-end" inputmode="decimal" placeholder="0,00" required />
+        <span asp-validation-for="CostoUnitario" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" asp-for="PrezzoMedioVendita"></label>
+        <input asp-for="PrezzoMedioVendita" class="form-control text-end" inputmode="decimal" placeholder="0,00" required />
+        <span asp-validation-for="PrezzoMedioVendita" class="text-danger"></span>
+    </div>
+</div>
+<p class="text-muted small mt-3 mb-0">
+    Puoi scrivere i numeri con la virgola, per esempio 13,15.
+    In contabilità il costo viene proposto solo se il campo è ancora vuoto.
+    Il prezzo medio compare come PM sotto il prezzo del padre e non sostituisce il prezzo già scritto.
+</p>

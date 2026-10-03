@@ -74,6 +74,8 @@ builder.Services.AddScoped<FamiglieService>();
 builder.Services.AddScoped<MarcheService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IndisponibilitaService>();
+builder.Services.Configure<CantieriOptions>(builder.Configuration.GetSection(CantieriOptions.SectionName));
+builder.Services.AddScoped<CantieriDocumentiService>();
 
 // Registrazione servizi sistema permessi risorse
 builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();

@@ -100,6 +100,8 @@ namespace AiDbMaster.Data
         public DbSet<CantiereReferente> CantiereReferenti { get; set; }
         public DbSet<CantiereContabilita> CantiereContabilita { get; set; }
         public DbSet<CantiereContabilitaRiga> CantiereContabilitaRighe { get; set; }
+        public DbSet<CantiereContabilitaAcconto> CantiereContabilitaAcconti { get; set; }
+        public DbSet<CostoArticoloCantiere> CostiArticoliCantiere { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -1454,6 +1456,21 @@ namespace AiDbMaster.Data
             builder.Entity<CantiereContabilitaRiga>()
                 .HasIndex(r => r.PadreId)
                 .HasDatabaseName("IX_CantiereContabilitaRighe_PadreId");
+
+            builder.Entity<CantiereContabilitaAcconto>()
+                .HasOne(a => a.Contabilita)
+                .WithMany(c => c.Acconti)
+                .HasForeignKey(a => a.ContabilitaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CantiereContabilitaAcconto>()
+                .HasIndex(a => new { a.ContabilitaId, a.Ordine })
+                .HasDatabaseName("IX_CantiereContabilitaAcconti_Contabilita");
+
+            builder.Entity<CostoArticoloCantiere>()
+                .HasIndex(c => c.CodiceArticolo)
+                .IsUnique()
+                .HasDatabaseName("IX_CostiArticoliCantiere_CodiceArticolo");
         }
     }
 } 

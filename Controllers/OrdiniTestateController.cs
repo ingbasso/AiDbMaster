@@ -34,6 +34,8 @@ namespace AiDbMaster.Controllers
         /// <param name="codiceCliente">Filtro per codice cliente</param>
         /// <param name="codiceAgente">Filtro per codice agente</param>
         /// <param name="statoOrdine">Filtro per stato ordine</param>
+        /// <param name="prenotati">Se true, mostra solo gli ordini con flag Prenotato = S</param>
+        /// <param name="sospesi">Se true, mostra solo gli ordini con flag Sospeso = S</param>
         /// <param name="dataInizio">Data inizio per filtro periodo</param>
         /// <param name="dataFine">Data fine per filtro periodo</param>
         /// <param name="sortOrder">Ordinamento dei risultati</param>
@@ -51,7 +53,9 @@ namespace AiDbMaster.Controllers
             DateTime? dataFine,
             string sortOrder = "data_desc",
             int page = 1,
-            int pageSize = 50)
+            int pageSize = 50,
+            bool prenotati = false,
+            bool sospesi = false)
         {
             // Usa container fluid per massimizzare lo spazio
             ViewBag.UseFluidContainer = true;
@@ -118,6 +122,17 @@ namespace AiDbMaster.Controllers
                     query = query.Where(o => o.StatoEvasione == statoOrdine);
                 }
 
+                // Flag Prenotato / Sospeso: "S" = sì. Il valore può arrivare con spazi, quindi si pulisce prima del confronto.
+                if (prenotati)
+                {
+                    query = query.Where(o => o.Prenotato != null && o.Prenotato.Trim().ToUpper() == "S");
+                }
+
+                if (sospesi)
+                {
+                    query = query.Where(o => o.Sospeso != null && o.Sospeso.Trim().ToUpper() == "S");
+                }
+
                 // Ordinamento
                 query = sortOrder switch
                 {
@@ -168,6 +183,8 @@ namespace AiDbMaster.Controllers
                 ViewBag.CurrentCodiceCliente = codiceCliente;
                 ViewBag.CurrentCodiceAgente = codiceAgente;
                 ViewBag.CurrentStatoOrdine = statoOrdine;
+                ViewBag.CurrentPrenotati = prenotati;
+                ViewBag.CurrentSospesi = sospesi;
                 ViewBag.CurrentDataInizio = dataInizio;
                 ViewBag.CurrentDataFine = dataFine;
                 ViewBag.CurrentPage = page;

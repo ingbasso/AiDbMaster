@@ -9,6 +9,8 @@
     var codiceCliente = ViewBag.CurrentCodiceCliente as int?;
     var codiceAgente = ViewBag.CurrentCodiceAgente as short?;
     var statoOrdine = ViewBag.CurrentStatoOrdine as string ?? "";
+    var soloPrenotati = ViewBag.CurrentPrenotati as bool? ?? false;
+    var soloSospesi = ViewBag.CurrentSospesi as bool? ?? false;
     var dataInizio = ViewBag.CurrentDataInizio as DateTime?;
     var dataFine = ViewBag.CurrentDataFine as DateTime?;
     var sortOrder = ViewBag.CurrentSort as string ?? "data_desc";
@@ -103,7 +105,7 @@
 
         <!-- Filtri (collassabile) -->
         @{
-            var hasFiltriAttivi = !string.IsNullOrEmpty(search) || annoOrdine.HasValue || codiceCliente.HasValue || codiceAgente.HasValue || !string.IsNullOrEmpty(statoOrdine) || dataInizio.HasValue || dataFine.HasValue;
+            var hasFiltriAttivi = !string.IsNullOrEmpty(search) || annoOrdine.HasValue || codiceCliente.HasValue || codiceAgente.HasValue || !string.IsNullOrEmpty(statoOrdine) || soloPrenotati || soloSospesi || dataInizio.HasValue || dataFine.HasValue;
         }
         <div class="card mb-4">
             <div class="card-header bg-light" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#filtriCollapse" aria-expanded="@(hasFiltriAttivi ? "true" : "false")" aria-controls="filtriCollapse">
@@ -173,12 +175,12 @@
                         </div>
                     </div>
                     <div class="row g-3 mt-2">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="dataInizio" class="form-label">Data Ordine Da</label>
                             <input type="date" class="form-control" id="dataInizio" name="dataInizio" 
                                    value="@(dataInizio?.ToString("yyyy-MM-dd"))">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="dataFine" class="form-label">Data Ordine A</label>
                             <input type="date" class="form-control" id="dataFine" name="dataFine" 
                                    value="@(dataFine?.ToString("yyyy-MM-dd"))">
@@ -193,6 +195,18 @@
                             </select>
                         </div>
                         <div class="col-md-4 d-flex align-items-end">
+                            <div class="d-flex flex-wrap gap-4 pb-2">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="prenotati" name="prenotati" value="true" @(soloPrenotati ? "checked" : "")>
+                                    <label class="form-check-label" for="prenotati">Prenotati</label>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="sospesi" name="sospesi" value="true" @(soloSospesi ? "checked" : "")>
+                                    <label class="form-check-label" for="sospesi">Sospesi</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-search"></i> Cerca
                             </button>
@@ -242,6 +256,8 @@
                                            asp-route-codiceCliente="@codiceCliente"
                                            asp-route-codiceAgente="@codiceAgente"
                                            asp-route-statoOrdine="@statoOrdine"
+                                           asp-route-prenotati="@soloPrenotati"
+                                           asp-route-sospesi="@soloSospesi"
                                            asp-route-dataInizio="@dataInizio"
                                            asp-route-dataFine="@dataFine"
                                            asp-route-pageSize="@pageSize"
@@ -269,6 +285,8 @@
                                            asp-route-codiceCliente="@codiceCliente"
                                            asp-route-codiceAgente="@codiceAgente"
                                            asp-route-statoOrdine="@statoOrdine"
+                                           asp-route-prenotati="@soloPrenotati"
+                                           asp-route-sospesi="@soloSospesi"
                                            asp-route-dataInizio="@dataInizio"
                                            asp-route-dataFine="@dataFine"
                                            asp-route-pageSize="@pageSize"
@@ -293,6 +311,8 @@
                                            asp-route-codiceCliente="@codiceCliente"
                                            asp-route-codiceAgente="@codiceAgente"
                                            asp-route-statoOrdine="@statoOrdine"
+                                           asp-route-prenotati="@soloPrenotati"
+                                           asp-route-sospesi="@soloSospesi"
                                            asp-route-dataInizio="@dataInizio"
                                            asp-route-dataFine="@dataFine"
                                            asp-route-pageSize="@pageSize"
@@ -506,6 +526,8 @@
                                                asp-route-codiceCliente="@codiceCliente"
                                                asp-route-codiceAgente="@codiceAgente"
                                                asp-route-statoOrdine="@statoOrdine"
+                                               asp-route-prenotati="@soloPrenotati"
+                                               asp-route-sospesi="@soloSospesi"
                                                asp-route-dataInizio="@dataInizio"
                                                asp-route-dataFine="@dataFine"
                                                asp-route-pageSize="@pageSize"
@@ -522,6 +544,8 @@
                                                asp-route-codiceCliente="@codiceCliente"
                                                asp-route-codiceAgente="@codiceAgente"
                                                asp-route-statoOrdine="@statoOrdine"
+                                               asp-route-prenotati="@soloPrenotati"
+                                               asp-route-sospesi="@soloSospesi"
                                                asp-route-dataInizio="@dataInizio"
                                                asp-route-dataFine="@dataFine"
                                                asp-route-pageSize="@pageSize"
@@ -542,6 +566,8 @@
                                                asp-route-codiceCliente="@codiceCliente"
                                                asp-route-codiceAgente="@codiceAgente"
                                                asp-route-statoOrdine="@statoOrdine"
+                                               asp-route-prenotati="@soloPrenotati"
+                                               asp-route-sospesi="@soloSospesi"
                                                asp-route-dataInizio="@dataInizio"
                                                asp-route-dataFine="@dataFine"
                                                asp-route-pageSize="@pageSize"
@@ -560,6 +586,8 @@
                                                asp-route-codiceCliente="@codiceCliente"
                                                asp-route-codiceAgente="@codiceAgente"
                                                asp-route-statoOrdine="@statoOrdine"
+                                               asp-route-prenotati="@soloPrenotati"
+                                               asp-route-sospesi="@soloSospesi"
                                                asp-route-dataInizio="@dataInizio"
                                                asp-route-dataFine="@dataFine"
                                                asp-route-pageSize="@pageSize"
@@ -576,6 +604,8 @@
                                                asp-route-codiceCliente="@codiceCliente"
                                                asp-route-codiceAgente="@codiceAgente"
                                                asp-route-statoOrdine="@statoOrdine"
+                                               asp-route-prenotati="@soloPrenotati"
+                                               asp-route-sospesi="@soloSospesi"
                                                asp-route-dataInizio="@dataInizio"
                                                asp-route-dataFine="@dataFine"
                                                asp-route-pageSize="@pageSize"
@@ -1041,7 +1071,7 @@
             });
 
             // Auto-submit per filtri
-            $('#annoOrdine, #codiceCliente, #codiceAgente, #statoOrdine, #pageSize, #dataInizio, #dataFine').change(function() {
+            $('#annoOrdine, #codiceCliente, #codiceAgente, #statoOrdine, #pageSize, #dataInizio, #dataFine, #prenotati, #sospesi').change(function() {
                 $('#filterForm').submit();
             });
 

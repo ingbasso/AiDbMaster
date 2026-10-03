@@ -1,6 +1,7 @@
 @model AiDbMaster.ViewModels.ContabilitaCantiereViewModel
 @using System.Globalization
 @using AiDbMaster.Models
+@using AiDbMaster.ViewModels
 
 @{
     var etichettaTipo = Model.Tipo == TipoContabilitaCantiere.Finale ? "Finale" : "Iniziale";
@@ -13,6 +14,15 @@
         if (!valore.HasValue)
             return string.Empty;
         return valore.Value.ToString("0.####", it);
+    }
+
+    string FlagProforma(string nome, bool acceso)
+    {
+        var spunta = acceso ? " checked" : "";
+        return "<label class=\"flag-proforma\" title=\"Se è spuntato, la riga compare nella proforma.\">"
+            + $"<input type=\"checkbox\" name=\"{nome}\" value=\"true\"{spunta} />"
+            + $"<input type=\"hidden\" name=\"{nome}\" value=\"false\" />"
+            + "<span>Proforma</span></label>";
     }
 
     string HtmlUm(string name, string? selezionata)
@@ -40,14 +50,68 @@
         sb.Append("</select>");
         return sb.ToString();
     }
+
+    string Inv(decimal? valore) => valore.HasValue
+        ? valore.Value.ToString(CultureInfo.InvariantCulture)
+        : string.Empty;
+
+    string AttrConfronto(ContabilitaCantiereRigaViewModel riga)
+    {
+        var parti = new List<string>();
+        if (riga.HaConfronto)
+        {
+            parti.Add($"data-iniz-qty=\"{Inv(riga.InizialeQuantita)}\"");
+            parti.Add($"data-iniz-costo=\"{Inv(riga.InizialeCostoUnitario)}\"");
+            parti.Add($"data-iniz-vendita=\"{Inv(riga.InizialePrezzoUnitario)}\"");
+        }
+        if (riga.HaConfrontoPosa)
+        {
+            parti.Add($"data-iniz-posa-qty=\"{Inv(riga.InizialePosaQuantita)}\"");
+            parti.Add($"data-iniz-posa-costo=\"{Inv(riga.InizialePosaCostoUnitario)}\"");
+            parti.Add($"data-iniz-posa-vendita=\"{Inv(riga.InizialePosaPrezzoUnitario)}\"");
+        }
+        return parti.Count == 0 ? string.Empty : " " + string.Join(" ", parti);
+    }
+
+    Microsoft.AspNetCore.Html.IHtmlContent TestoMancante(decimal? iniziale, int decimali = 2)
+    {
+        var baseVal = Math.Round(iniziale ?? 0m, decimali);
+        if (baseVal == 0)
+            return new Microsoft.AspNetCore.Html.HtmlString(string.Empty);
+
+        var formato = "N" + decimali;
+        var delta = -baseVal;
+        var classe = delta > 0 ? "delta-positivo" : "delta-negativo";
+        var dif = delta.ToString(formato, it);
+        if (delta > 0)
+            dif = "+" + dif;
+        return new Microsoft.AspNetCore.Html.HtmlString(
+            $"iniz. {baseVal.ToString(formato, it)} · <span class=\"{classe}\">Δ {dif}</span>");
+    }
 }
 
 @section Styles {
     <style>
         .contab-table { font-size: 0.82rem; }
         .contab-table th { white-space: nowrap; font-weight: 600; }
-        .contab-table td { vertical-align: middle; }
-        .contab-table .col-art { width: 100px; }
+        .contab-table td { vertical-align: top; }
+        .contab-table .col-art { width: 138px; }
+        .codice-con-figlio { display: flex; align-items: center; gap: .25rem; }
+        .contab-table .form-control {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+            min-height: 0;
+            line-height: 1.3;
+            font-size: 0.82rem;
+        }
+        .contab-table select.um,
+        .contab-table .btn-sm {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+            font-size: 0.82rem;
+            line-height: 1.3;
+        }
+        .btn-aggiungi-figlio { padding: .2rem .45rem; line-height: 1; }
         .contab-table .col-desc { min-width: 240px; }
         .contab-table .col-um { width: 118px; }
         .contab-table .col-num { width: 76px; }
@@ -55,12 +119,17 @@
         .contab-table input.num,
         .contab-table input.qty,
         .contab-table input.costo,
-        .contab-table input.prz {
+        .contab-table input.prz,
+        .contab-table input.prz-um {
             width: 76px;
             max-width: 76px;
             padding-left: .3rem;
             padding-right: .3rem;
         }
+        .prezzo-um-wrap { display: none; }
+        tr.riga-um-diversa .prezzo-um-wrap { display: block; }
+        tr.riga-um-diversa input.prz { display: none; }
+        .delta-riga.prz-mq { white-space: pre-line; }
         .contab-table select.um {
             width: 118px;
             max-width: 118px;
@@ -96,25 +165,149 @@
         .cerca-item .dsc { color: #495057; font-size: .75rem; line-height: 1.25; }
         .cerca-vuoto { padding: 8px 10px; color: #868e96; font-size: .78rem; }
         .riga-padre { background: #fff; }
+        .riga-padre:not(.riga-articolo) .tot-vendita { font-weight: 700; }
+        .riga-sconto { background: #fff5f5; }
+        .riga-sconto .tot-vendita { color: #c0392b; font-weight: 700; }
         .riga-figlio { background: #f8fafc; }
         .riga-figlio .col-art { padding-left: 1.4rem; }
-        .tot-cell { background: #f1f3f5; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .tot-cell { background: #fff6cc; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .contab-table input.num-edit,
+        .chiusura-box input.num-edit {
+            background-color: #e6f6ea;
+        }
+        .contab-table input.num-calc {
+            background-color: #fff6cc;
+            pointer-events: none;
+        }
+        .contab-table input.costo-padre {
+            background: #f1f3f5;
+            pointer-events: none;
+        }
+        .contab-table tr.posa-sotto-zero input.prz,
+        .contab-table tr.posa-sotto-zero .tot-vendita {
+            background-color: #fde8e8;
+            color: #9b1c1c;
+            font-weight: 600;
+        }
+        .riga-sforamento td {
+            background: #fde8e8;
+            color: #9b1c1c;
+            font-size: .8rem;
+            padding: .35rem .75rem;
+        }
+        .riga-totale-padre td {
+            background: #f7f4ea;
+            font-size: .78rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        .riga-totale-padre .tot-costo-gruppo {
+            background: #fff6cc;
+            color: #212529;
+        }
+        .riga-totale-padre .tot-vendita-manca {
+            background: #fff6cc;
+            font-size: .68rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+        .riga-totale-padre .tot-vendita-manca.delta-negativo {
+            color: #c0392b;
+            font-weight: 700;
+        }
+        .delta-riga:empty { display: none; }
+        .delta-riga {
+            display: block;
+            margin-top: 2px;
+            font-size: .68rem;
+            font-weight: 500;
+            line-height: 1.2;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+        .delta-positivo { color: #157347; font-weight: 700; }
+        .delta-negativo { color: #c0392b; font-weight: 700; }
+        .contab-table td:has(.delta-riga) { vertical-align: top; }
+        .flag-proforma {
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+            margin-right: .35rem;
+            font-size: .68rem;
+            font-weight: 600;
+            color: #495057;
+            vertical-align: middle;
+            cursor: pointer;
+            user-select: none;
+        }
+        .flag-proforma input { margin: 0; }
+        .badge-confronto {
+            display: inline-block;
+            margin-left: .35rem;
+            padding: 0 .4rem;
+            border-radius: 999px;
+            background: #e9ecef;
+            color: #495057;
+            font-size: .68rem;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        .riga-mancante td {
+            background: #f8f9fa;
+            color: #6c757d;
+            font-size: .78rem;
+        }
         .riepilogo-box dt { font-weight: 500; color: #6c757d; }
-        .riepilogo-box dd { font-variant-numeric: tabular-nums; margin-bottom: 0.4rem; }
+        .riepilogo-box dd { font-variant-numeric: tabular-nums; margin-bottom: 0.25rem; }
+        .comp-vendita, .delta-sotto, .margine-piccolo { font-size: .72rem; font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; }
+        .comp-vendita, .delta-sotto { margin-left: .35rem; }
+        .comp-vendita { color: #6c757d; }
+        .comp-vendita:empty, .delta-sotto:empty, .margine-piccolo:empty { display: none; }
+        .margine-piccolo { display: block; color: #6c757d; }
+        .margine-piccolo.delta-negativo { color: #c0392b; font-weight: 700; }
+        .riepilogo-sep { margin: .45rem 0 .35rem; border: 0; border-top: 1px solid #dee2e6; opacity: 1; }
+        .contab-info { font-size: .85rem; }
+        .chiusura-box .form-label { font-size: .78rem; margin-bottom: .15rem; }
+        .pagina-contabilita .btn,
+        .pagina-contabilita .btn:hover,
+        .pagina-contabilita .btn:focus,
+        .pagina-contabilita .btn:active {
+            color: #fff !important;
+        }
+        .btn-excel,
+        .btn-excel:hover,
+        .btn-excel:focus {
+            background: #1d6f42;
+            border-color: #1d6f42;
+        }
     </style>
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-        <div>
-            <h2 class="mb-1">
-                <i class="bi bi-calculator me-2 text-primary"></i>Contabilità @etichettaTipo
-            </h2>
-            <div class="text-muted">@Model.Titolo</div>
+<div class="container-fluid pagina-contabilita">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <h2 class="mb-0 fs-4">
+            <i class="bi bi-calculator me-2 text-primary"></i>Contabilità @etichettaTipo
+            <span class="fw-normal text-muted fs-5">— @Model.Titolo</span>
+        </h2>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Torna alla scheda
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-success btn-sm" permission-required="GestioneCantieri:Edit">Annulla</a>
+            <button type="submit" form="formContabilita" class="btn btn-primary btn-sm" permission-required="GestioneCantieri:Edit">
+                <i class="bi bi-check-lg me-1"></i>Salva contabilità @etichettaTipo.ToLower()
+            </button>
+            <a asp-action="EsportaExcel" asp-route-id="@Model.CantiereId" asp-route-tipo="@Model.Tipo"
+               class="btn btn-excel btn-sm"
+               title="Scarica la griglia in Excel con i dati già salvati. Le modifiche non ancora salvate non entrano nel file.">
+                <i class="bi bi-file-earmark-excel me-1"></i>Esporta Excel
+            </a>
+            <a asp-action="Proforma" asp-route-id="@Model.CantiereId" asp-route-tipo="@Model.Tipo"
+               class="btn btn-dark btn-sm" target="_blank"
+               title="Crea il PDF della proforma con i dati già salvati. Le modifiche non ancora salvate non entrano nel documento.">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Proforma
+            </a>
         </div>
-        <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Torna alla scheda
-        </a>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
@@ -142,17 +335,6 @@
         </li>
     </ul>
 
-    <div class="card mb-3">
-        <div class="card-body py-3 small">
-            <div class="row g-3">
-                <div class="col-md-3"><strong>Cantiere:</strong> @Model.Titolo</div>
-                <div class="col-md-3"><strong>Impresa di posa:</strong> @(Model.ImpresaPosa ?? "—")</div>
-                <div class="col-md-3"><strong>Agente:</strong> @(Model.NomeAgente ?? "—")</div>
-                <div class="col-md-3"><strong>Magazzino N.:</strong> @(Model.MagazzinoN ?? "—")</div>
-            </div>
-        </div>
-    </div>
-
     <form asp-action="SalvaContabilita" method="post" id="formContabilita">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="CantiereId" />
@@ -160,13 +342,19 @@
 
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span><i class="bi bi-diagram-3 me-1"></i>Articoli padre e figli</span>
+                <span><i class="bi bi-diagram-3 me-1"></i>Lista Materiali e Lavorazioni</span>
                 <div class="d-flex flex-wrap gap-2" permission-required="GestioneCantieri:Edit">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAggiungiPadre">
-                        <i class="bi bi-plus-lg me-1"></i>Aggiungi articolo padre
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnAggiungiPadre">
+                        <i class="bi bi-plus-lg me-1"></i>Articolo con Posa
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm" id="btnAggiungiArticolo">
+                        <i class="bi bi-plus-lg me-1"></i>Aggiungi Articolo
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btnAggiungiSconto">
+                        <i class="bi bi-dash-lg me-1"></i>Aggiungi sconto
                     </button>
                     <button type="submit" formaction="@Url.Action("ImportaDaOrdini", new { id = Model.CantiereId, tipo = Model.Tipo })"
-                            class="btn btn-outline-primary btn-sm"
+                            class="btn btn-primary btn-sm"
                             @(Model.NumeroOrdiniCollegati == 0 ? "disabled" : null)
                             onclick="return confirm('Importo gli articoli degli ordini collegati come padri. Le righe già presenti restano.');">
                         <i class="bi bi-box-arrow-in-down me-1"></i>Importa da ordini (@Model.NumeroOrdiniCollegati)
@@ -174,7 +362,7 @@
                     @if (Model.Tipo == TipoContabilitaCantiere.Finale)
                     {
                         <button type="submit" formaction="@Url.Action("CopiaInizialeSuFinale", new { id = Model.CantiereId })"
-                                class="btn btn-outline-warning btn-sm"
+                                class="btn btn-warning btn-sm"
                                 @(Model.HaContabilitaIniziale ? null : "disabled")
                                 onclick="return confirm('Copio la contabilità iniziale (padri e figli) sulla finale. Le righe finali già presenti verranno sostituite.');">
                             <i class="bi bi-copy me-1"></i>Copia da iniziale
@@ -191,10 +379,11 @@
                                 <th>Descrizione</th>
                                 <th class="col-um">UM</th>
                                 <th class="col-num text-end">Q.tà</th>
-                                <th class="col-num text-end">Costo €</th>
-                                <th class="col-tot text-end">Tot. costo</th>
-                                <th class="col-num text-end">Vendita €</th>
-                                <th class="col-tot text-end">Tot. vendita</th>
+                                <th class="col-num text-end">Ct Un.€</th>
+                                <th class="col-tot text-end">Tot.Ct.€</th>
+                                <th class="col-num text-end">Ric.%</th>
+                                <th class="col-num text-end" title="Sul padre è il prezzo al metro quadro. Sul figlio è lo stesso prezzo riportato sui metri quadri del padre.">Ven. €/MQ</th>
+                                <th class="col-tot text-end">Tot.Ven.€</th>
                                 <th>Note</th>
                                 <th></th>
                             </tr>
@@ -203,25 +392,145 @@
                         @for (var i = 0; i < Model.Righe.Count; i++)
                         {
                             var padre = Model.Righe[i];
-                            <tr class="riga-contab riga-padre" data-ix="@i">
+                            if (padre.IsSconto)
+                            {
+                                <tr class="riga-contab riga-padre riga-sconto" data-ix="@i"@Html.Raw(AttrConfronto(padre))>
+                                    <td>
+                                        <input type="hidden" name="Righe.Index" value="@i" />
+                                        <input type="hidden" name="Righe[@i].Id" value="@padre.Id" />
+                                        <input type="hidden" name="Righe[@i].IsSconto" value="true" />
+                                    </td>
+                                    <td>
+                                        <input name="Righe[@i].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@(string.IsNullOrWhiteSpace(padre.Descrizione) ? "Sconto" : padre.Descrizione)" />
+                                        @if (padre.SoloFinale)
+                                        {
+                                            <span class="badge-confronto">solo finale</span>
+                                        }
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" title="Importo dello sconto in euro. Viene sottratto dal totale vendita." value="@Num(padre.PrezzoVenditaCliente.HasValue ? Math.Abs(padre.PrezzoVenditaCliente.Value) : null)" />
+                                        @if (padre.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-vendita"></div>
+                                        }
+                                    </td>
+                                    <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
+                                    <td><input name="Righe[@i].Note" class="form-control form-control-sm" maxlength="200" value="@padre.Note" /></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina sconto">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                continue;
+                            }
+                            if (padre.IsArticoloSingolo)
+                            {
+                                <tr class="riga-contab riga-padre riga-articolo" data-ix="@i"@Html.Raw(AttrConfronto(padre))>
+                                    <td class="col-art">
+                                        <input type="hidden" name="Righe.Index" value="@i" />
+                                        <input type="hidden" name="Righe[@i].Id" value="@padre.Id" />
+                                        <input type="hidden" name="Righe[@i].IsArticoloSingolo" value="true" />
+                                        <div class="cerca-wrap">
+                                            <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" />
+                                            <div class="cerca-risultati d-none"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input name="Righe[@i].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@padre.Descrizione" />
+                                        @if (padre.SoloFinale)
+                                        {
+                                            <span class="badge-confronto">solo finale</span>
+                                        }
+                                    </td>
+                                    <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].UnitaMisura", padre.UnitaMisura))</td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" value="@Num(padre.QuantitaPosata)" />
+                                        @if (padre.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-qty"></div>
+                                        }
+                                    </td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].CostoMaterialeServizio" class="form-control form-control-sm text-end num num-edit costo" inputmode="decimal" value="@Num(padre.CostoMaterialeServizio)" />
+                                        @if (padre.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-costo"></div>
+                                        }
+                                    </td>
+                                    <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].RicaricoPercentuale" class="form-control form-control-sm text-end num num-edit ricarico" inputmode="decimal" value="@Num(padre.RicaricoPercentuale)" />
+                                    </td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" value="@Num(padre.PrezzoVenditaCliente)" />
+                                        @if (padre.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-vendita"></div>
+                                        }
+                                    </td>
+                                    <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
+                                    <td><input name="Righe[@i].Note" class="form-control form-control-sm" maxlength="200" value="@padre.Note" /></td>
+                                    <td class="text-nowrap">
+                                        @Html.Raw(FlagProforma($"Righe[{i}].MostraInProforma", padre.MostraInProforma))
+                                        <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina articolo">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                continue;
+                            }
+                            <tr class="riga-contab riga-padre" data-ix="@i"@Html.Raw(AttrConfronto(padre))>
                                 <td class="col-art">
                                     <input type="hidden" name="Righe.Index" value="@i" />
                                     <input type="hidden" name="Righe[@i].Id" value="@padre.Id" />
-                                    <div class="cerca-wrap">
-                                        <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" />
-                                        <div class="cerca-risultati d-none"></div>
+                                    <div class="codice-con-figlio">
+                                        <div class="cerca-wrap">
+                                            <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" @(string.IsNullOrWhiteSpace(padre.CodiceArticolo) ? null : "readonly") title="@(string.IsNullOrWhiteSpace(padre.CodiceArticolo) ? "Codice articolo. Dopo la scelta non si può più modificare." : "Il codice non si può più modificare.")" />
+                                            <div class="cerca-risultati d-none"></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-primary btn-aggiungi-figlio" title="Aggiungi figlio">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
                                     </div>
                                 </td>
-                                <td><input name="Righe[@i].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@padre.Descrizione" /></td>
-                                <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].UnitaMisura", padre.UnitaMisura))</td>
-                                <td class="col-num"><input name="Righe[@i].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" value="@Num(padre.QuantitaPosata)" /></td>
-                                <td class="col-num"><input name="Righe[@i].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" value="@Num(padre.CostoMaterialeServizio)" /></td>
-                                <td class="tot-cell text-end align-middle tot-costo"></td>
-                                <td class="col-num"><input name="Righe[@i].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" value="@Num(padre.PrezzoVenditaCliente)" /></td>
-                                <td class="tot-cell text-end align-middle tot-vendita"></td>
-                                <td><input name="Righe[@i].Note" class="form-control form-control-sm" maxlength="200" value="@padre.Note" /></td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-padre" title="Elimina padre e figli">
+                                    <input name="Righe[@i].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@padre.Descrizione" />
+                                    @if (padre.SoloFinale)
+                                    {
+                                        <span class="badge-confronto">solo finale</span>
+                                    }
+                                </td>
+                                <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].UnitaMisura", padre.UnitaMisura))</td>
+                                <td class="col-num">
+                                    <input name="Righe[@i].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" value="@Num(padre.QuantitaPosata)" />
+                                    @if (padre.HaConfronto)
+                                    {
+                                        <div class="delta-riga delta-qty"></div>
+                                    }
+                                </td>
+                                <td class="col-num">
+                                    <input name="Righe[@i].CostoMaterialeServizio" class="form-control form-control-sm text-end costo costo-padre" readonly tabindex="-1" title="Il costo si scrive sulla riga del materiale, sotto il padre." />
+                                </td>
+                                <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+                                <td class="col-num"></td>
+                                <td class="col-num">
+                                    <input name="Righe[@i].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" value="@Num(padre.PrezzoVenditaCliente)" />
+                                    @if (padre.HaConfronto)
+                                    {
+                                        <div class="delta-riga delta-vendita"></div>
+                                    }
+                                </td>
+                                <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
+                                <td><input name="Righe[@i].Note" class="form-control form-control-sm" maxlength="200" value="@padre.Note" /></td>
+                                <td class="text-nowrap">
+                                    @Html.Raw(FlagProforma($"Righe[{i}].MostraInProforma", padre.MostraInProforma))
+                                    <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina padre e figli">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </td>
@@ -229,37 +538,124 @@
                             @for (var f = 0; f < padre.Figli.Count; f++)
                             {
                                 var figlio = padre.Figli[f];
-                                <tr class="riga-contab riga-figlio" data-padre-ix="@i">
+                                <tr class="riga-contab riga-figlio@(figlio.IsPosa ? " riga-posa" : "")" data-padre-ix="@i"@Html.Raw(AttrConfronto(figlio))>
                                     <td class="col-art">
                                         <input type="hidden" name="Righe[@i].Figli.Index" value="@f" />
                                         <input type="hidden" name="Righe[@i].Figli[@f].Id" value="@figlio.Id" />
+                                        <input type="hidden" name="Righe[@i].Figli[@f].IsPosa" value="@(figlio.IsPosa ? "true" : "false")" class="is-posa" />
+                                        <input type="hidden" name="Righe[@i].Figli[@f].PrezzoDaPrezzo" value="false" class="origine-prezzo" />
                                         <div class="cerca-wrap">
                                             <input name="Righe[@i].Figli[@f].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@figlio.CodiceArticolo" />
                                             <div class="cerca-risultati d-none"></div>
                                         </div>
                                     </td>
-                                    <td><input name="Righe[@i].Figli[@f].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@figlio.Descrizione" /></td>
+                                    <td>
+                                        <input name="Righe[@i].Figli[@f].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="@figlio.Descrizione" />
+                                        @if (figlio.SoloFinale)
+                                        {
+                                            <span class="badge-confronto">solo finale</span>
+                                        }
+                                    </td>
                                     <td class="col-um">@Html.Raw(HtmlUm($"Righe[{i}].Figli[{f}].UnitaMisura", figlio.UnitaMisura))</td>
-                                    <td class="col-num"><input name="Righe[@i].Figli[@f].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" value="@Num(figlio.QuantitaPosata)" /></td>
-                                    <td class="col-num"><input name="Righe[@i].Figli[@f].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" value="@Num(figlio.CostoMaterialeServizio)" /></td>
-                                    <td class="tot-cell text-end align-middle tot-costo"></td>
-                                    <td class="col-num"><input name="Righe[@i].Figli[@f].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" value="@Num(figlio.PrezzoVenditaCliente)" /></td>
-                                    <td class="tot-cell text-end align-middle tot-vendita"></td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].Figli[@f].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" value="@Num(figlio.QuantitaPosata)" title="@(figlio.IsPosa ? "Se la lasci vuota, prende la quantità del padre." : null)" />
+                                        @if (figlio.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-qty"></div>
+                                        }
+                                    </td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].Figli[@f].CostoMaterialeServizio" class="form-control form-control-sm text-end num num-edit costo" inputmode="decimal" value="@Num(figlio.CostoMaterialeServizio)" />
+                                        <div class="delta-riga pm-costo" title="Costo presente in tabella per questo articolo"></div>
+                                        @if (figlio.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-costo"></div>
+                                        }
+                                    </td>
+                                    <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+                                    <td class="col-num">
+                                        <input name="Righe[@i].Figli[@f].RicaricoPercentuale" class="form-control form-control-sm text-end num num-edit ricarico" inputmode="decimal" value="@Num(figlio.RicaricoEffettivo)" />
+                                    </td>
+                                    <td class="col-num">
+                                        <div class="prezzo-um-wrap">
+                                            <input class="form-control form-control-sm text-end num num-edit prz-um" inputmode="decimal" autocomplete="off" title="Prezzo di vendita nell'unità di questa riga. Sotto c'è il prezzo rapportato all'unità del padre. Il totale vendita usa quello." />
+                                        </div>
+                                        <div class="delta-riga prz-mq" title="Prezzo rapportato all'unità di misura del padre"></div>
+                                        <input name="Righe[@i].Figli[@f].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" value="@Num(figlio.PrezzoVenditaCliente)" title="Scrivi il prezzo e si aggiorna il ricarico. Scrivi il ricarico e si aggiorna il prezzo." />
+                                        <div class="delta-riga pm-prezzo" title="Prezzo medio di vendita"></div>
+                                        @if (figlio.HaConfronto)
+                                        {
+                                            <div class="delta-riga delta-vendita"></div>
+                                        }
+                                    </td>
+                                    <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
                                     <td><input name="Righe[@i].Figli[@f].Note" class="form-control form-control-sm" maxlength="200" value="@figlio.Note" /></td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-figlio" title="Elimina figlio">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
+                                        @if (!figlio.IsPosa)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-danger btn-elimina-figlio" title="Elimina figlio">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        }
                                     </td>
                                 </tr>
                             }
-                            <tr class="riga-azioni-padre" data-ix="@i">
-                                <td colspan="10" class="py-1">
-                                    <button type="button" class="btn btn-sm btn-outline-primary btn-aggiungi-figlio">
-                                        <i class="bi bi-plus-lg me-1"></i>Aggiungi figlio
-                                    </button>
-                                </td>
+                            @foreach (var assente in padre.Mancanti)
+                            {
+                                <tr class="riga-mancante" data-padre-ix="@i">
+                                    <td>@assente.CodiceArticolo</td>
+                                    <td>@assente.Descrizione <span class="badge-confronto">mancante in finale</span></td>
+                                    <td>@assente.UnitaMisura</td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeQuantita)</div></td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeCostoUnitario)</div></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialePrezzoUnitario, 4)</div></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            }
+                            <tr class="riga-totale-padre" data-ix="@i">
+                                <td colspan="5" class="text-end">Totale costi</td>
+                                <td class="text-end tot-costo-gruppo"></td>
+                                <td colspan="2"></td>
+                                <td class="text-end tot-vendita-manca" title="Quanto manca, sommando le vendite dei figli, per arrivare al totale vendita del padre"></td>
+                                <td colspan="2"></td>
                             </tr>
+                        }
+                        @for (var m = 0; m < Model.RigheSoloIniziale.Count; m++)
+                        {
+                            var assentePadre = Model.RigheSoloIniziale[m];
+                            <tr class="riga-mancante @(m == 0 ? "blocco-mancante" : null)">
+                                <td>@assentePadre.CodiceArticolo</td>
+                                <td>@assentePadre.Descrizione <span class="badge-confronto">mancante in finale</span></td>
+                                <td>@assentePadre.UnitaMisura</td>
+                                <td class="text-end"><div class="delta-riga">@TestoMancante(assentePadre.InizialeQuantita)</div></td>
+                                <td class="text-end"><div class="delta-riga">@TestoMancante(assentePadre.InizialeCostoUnitario)</div></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-end"><div class="delta-riga">@TestoMancante(assentePadre.InizialePrezzoUnitario, 4)</div></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            @foreach (var assente in assentePadre.Figli)
+                            {
+                                <tr class="riga-mancante">
+                                    <td>@assente.CodiceArticolo</td>
+                                    <td>@assente.Descrizione <span class="badge-confronto">mancante in finale</span></td>
+                                    <td>@assente.UnitaMisura</td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeQuantita)</div></td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeCostoUnitario)</div></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialePrezzoUnitario, 4)</div></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            }
                         }
                         </tbody>
                     </table>
@@ -267,27 +663,56 @@
             </div>
         </div>
 
-        <div class="row g-3">
+        <div class="row g-2">
             <div class="col-lg-7">
-                <div class="card h-100">
-                    <div class="card-header">Dati di chiusura</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-8">
+                <div class="card h-100 chiusura-box">
+                    <div class="card-header py-2">Gestione Acconti</div>
+                    <div class="card-body py-2">
+                        <div class="row g-2">
+                            <div class="col-md-6">
                                 <label class="form-label">Riferimento ordine</label>
-                                <input asp-for="RiferimentoOrdine" class="form-control" maxlength="150" />
+                                <input asp-for="RiferimentoOrdine" class="form-control form-control-sm" maxlength="150" />
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Aliquota IVA %</label>
-                                <input asp-for="AliquotaIva" class="form-control num" id="aliquotaIva" inputmode="decimal" />
+                                <input asp-for="AliquotaIva" class="form-control form-control-sm num" id="aliquotaIva" inputmode="decimal" />
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Imponibile acconto</label>
-                                <input asp-for="ImponibileAcconto" class="form-control num" id="imponibileAcconto" inputmode="decimal" />
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label mb-0">Acconti (imponibile)</label>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btnAggiungiAcconto" permission-required="GestioneCantieri:Edit">
+                                        <i class="bi bi-plus-lg me-1"></i>Aggiungi acconto
+                                    </button>
+                                </div>
+                                <div class="row g-1 mb-1 small text-muted">
+                                    <div class="col">Descrizione</div>
+                                    <div class="col-4 text-end pe-2">Imponibile €</div>
+                                    <div class="col-auto" style="width:2.4rem"></div>
+                                </div>
+                                <div id="listaAcconti">
+                                    @for (var a = 0; a < Model.Acconti.Count; a++)
+                                    {
+                                        <div class="row g-1 align-items-center mb-1 riga-acconto">
+                                            <div class="col">
+                                                <input type="hidden" name="Acconti.Index" value="@a" />
+                                                <input type="hidden" name="Acconti[@a].Id" value="@Model.Acconti[a].Id" />
+                                                <input name="Acconti[@a].Descrizione" class="form-control form-control-sm" maxlength="100" value="@Model.Acconti[a].Descrizione" />
+                                            </div>
+                                            <div class="col-4">
+                                                <input name="Acconti[@a].Imponibile" class="form-control form-control-sm text-end num num-edit acconto-importo" inputmode="decimal" value="@Num(Model.Acconti[a].Imponibile)" />
+                                            </div>
+                                            <div class="col-auto">
+                                                <button type="button" class="btn btn-sm btn-danger btn-elimina-acconto" title="Elimina acconto" permission-required="GestioneCantieri:Edit">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Note</label>
-                                <textarea asp-for="Note" class="form-control" rows="3"></textarea>
+                                <textarea asp-for="Note" class="form-control form-control-sm" rows="2"></textarea>
                             </div>
                         </div>
                     </div>
@@ -295,17 +720,39 @@
             </div>
             <div class="col-lg-5">
                 <div class="card h-100">
-                    <div class="card-header">Riepilogo</div>
+                    <div class="card-header">Riepilogo Economico</div>
                     <div class="card-body riepilogo-box">
                         <dl class="row mb-0">
-                            <dt class="col-7">Totale vendita</dt>
+                            <dt class="col-7">
+                                Totale vendita <span class="comp-vendita" id="compVendita"></span>@if (Model.ConfrontaIniziale)
+                                {
+                                    <span class="delta-sotto" id="deltaVendita" title="Totale vendita della finale meno il totale vendita dell'iniziale" data-iniziale="@Inv(Model.TotaleVenditaIniziale)"></span>
+                                }
+                            </dt>
                             <dd class="col-5 text-end" id="totVendita">0,00</dd>
+                            <dt class="col-7">
+                                Totale costi
+                                @if (Model.ConfrontaIniziale)
+                                {
+                                    <span class="delta-sotto" id="deltaCosti" title="Totale costi della finale meno il totale costi dell'iniziale" data-iniziale="@Inv(Model.TotaleCostiIniziale)"></span>
+                                }
+                            </dt>
+                            <dd class="col-5 text-end" id="totCosti">0,00</dd>
+                            <dt class="col-7" title="(totale vendita − totale costi) / totale vendita">Margine</dt>
+                            <dd class="col-5 text-end fw-semibold" id="totMargine" title="(totale vendita − totale costi) / totale vendita">—</dd>
+                            <div class="col-12"><hr class="riepilogo-sep" /></div>
                             <dt class="col-7">Totale vendita posa</dt>
                             <dd class="col-5 text-end" id="totVenditaPosa">0,00</dd>
                             <dt class="col-7">Totale acquisto posa</dt>
                             <dd class="col-5 text-end" id="totAcquistoPosa">0,00</dd>
-                            <dt class="col-7 mt-2">Imponibile acconto</dt>
-                            <dd class="col-5 text-end mt-2" id="totAcconto">0,00</dd>
+                            <dt class="col-7" title="Totale vendita posa meno totale acquisto posa">
+                                Guadagno posa
+                                <div class="margine-piccolo" id="marginePosa" title="(totale vendita posa − totale acquisto posa) / totale vendita posa"></div>
+                            </dt>
+                            <dd class="col-5 text-end fw-semibold" id="totGuadagnoPosa" title="Totale vendita posa meno totale acquisto posa">0,00</dd>
+                            <div class="col-12"><hr class="riepilogo-sep" /></div>
+                            <dt class="col-7">Imponibile acconto</dt>
+                            <dd class="col-5 text-end" id="totAcconto">0,00</dd>
                             <dt class="col-7">Imponibile a saldo</dt>
                             <dd class="col-5 text-end fw-semibold" id="totSaldo">0,00</dd>
                             <dt class="col-7">Totale con IVA</dt>
@@ -316,20 +763,69 @@
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-3 mb-4" permission-required="GestioneCantieri:Edit">
-            <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-secondary">Annulla</a>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg me-1"></i>Salva contabilità @etichettaTipo.ToLower()
-            </button>
-        </div>
     </form>
 </div>
 
-<template id="tplPadre">
+<script type="text/html" id="tplPadre">
     <tr class="riga-contab riga-padre" data-ix="__P__">
         <td class="col-art">
             <input type="hidden" name="Righe.Index" value="__P__" />
             <input type="hidden" name="Righe[__P__].Id" value="0" />
+            <div class="codice-con-figlio">
+                <div class="cerca-wrap">
+                    <input name="Righe[__P__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                    <div class="cerca-risultati d-none"></div>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary btn-aggiungi-figlio" title="Aggiungi figlio">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+        </td>
+        <td><input name="Righe[__P__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" /></td>
+        <td class="col-um">@Html.Raw(HtmlUm("Righe[__P__].UnitaMisura", null))</td>
+        <td class="col-num"><input name="Righe[__P__].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].CostoMaterialeServizio" class="form-control form-control-sm text-end costo costo-padre" readonly tabindex="-1" title="Il costo si scrive sulla riga del materiale, sotto il padre." /></td>
+        <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+        <td class="col-num"></td>
+        <td class="col-num"><input name="Righe[__P__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
+        <td><input name="Righe[__P__].Note" class="form-control form-control-sm" maxlength="200" /></td>
+        <td class="text-nowrap">
+            @Html.Raw(FlagProforma("Righe[__P__].MostraInProforma", true))
+            <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina padre e figli"><i class="bi bi-x-lg"></i></button>
+        </td>
+    </tr>
+    <tr class="riga-totale-padre" data-ix="__P__">
+        <td colspan="5" class="text-end">Totale costi</td>
+        <td class="text-end tot-costo-gruppo"></td>
+        <td colspan="2"></td>
+        <td class="text-end tot-vendita-manca" title="Quanto manca, sommando le vendite dei figli, per arrivare al totale vendita del padre"></td>
+        <td colspan="2"></td>
+    </tr>
+</script>
+
+<script type="text/html" id="tplAcconto">
+    <div class="row g-1 align-items-center mb-1 riga-acconto">
+        <div class="col">
+            <input type="hidden" name="Acconti.Index" value="__I__" />
+            <input type="hidden" name="Acconti[__I__].Id" value="0" />
+            <input name="Acconti[__I__].Descrizione" class="form-control form-control-sm" maxlength="100" />
+        </div>
+        <div class="col-4">
+            <input name="Acconti[__I__].Imponibile" class="form-control form-control-sm text-end num num-edit acconto-importo" inputmode="decimal" />
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-sm btn-danger btn-elimina-acconto" title="Elimina acconto"><i class="bi bi-x-lg"></i></button>
+        </div>
+    </div>
+</script>
+
+<script type="text/html" id="tplArticolo">
+    <tr class="riga-contab riga-padre riga-articolo" data-ix="__P__">
+        <td class="col-art">
+            <input type="hidden" name="Righe.Index" value="__P__" />
+            <input type="hidden" name="Righe[__P__].Id" value="0" />
+            <input type="hidden" name="Righe[__P__].IsArticoloSingolo" value="true" />
             <div class="cerca-wrap">
                 <input name="Righe[__P__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
                 <div class="cerca-risultati d-none"></div>
@@ -337,30 +833,51 @@
         </td>
         <td><input name="Righe[__P__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" /></td>
         <td class="col-um">@Html.Raw(HtmlUm("Righe[__P__].UnitaMisura", null))</td>
-        <td class="col-num"><input name="Righe[__P__].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" /></td>
-        <td class="col-num"><input name="Righe[__P__].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" /></td>
-        <td class="tot-cell text-end align-middle tot-costo"></td>
-        <td class="col-num"><input name="Righe[__P__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" /></td>
-        <td class="tot-cell text-end align-middle tot-vendita"></td>
+        <td class="col-num"><input name="Righe[__P__].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].CostoMaterialeServizio" class="form-control form-control-sm text-end num num-edit costo" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+        <td class="col-num"><input name="Righe[__P__].RicaricoPercentuale" class="form-control form-control-sm text-end num num-edit ricarico" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" /></td>
+        <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
+        <td><input name="Righe[__P__].Note" class="form-control form-control-sm" maxlength="200" /></td>
+        <td class="text-nowrap">
+            @Html.Raw(FlagProforma("Righe[__P__].MostraInProforma", true))
+            <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina articolo"><i class="bi bi-x-lg"></i></button>
+        </td>
+    </tr>
+</script>
+
+<script type="text/html" id="tplSconto">
+    <tr class="riga-contab riga-padre riga-sconto" data-ix="__P__">
+        <td>
+            <input type="hidden" name="Righe.Index" value="__P__" />
+            <input type="hidden" name="Righe[__P__].Id" value="0" />
+            <input type="hidden" name="Righe[__P__].IsSconto" value="true" />
+        </td>
+        <td><input name="Righe[__P__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" value="Sconto" /></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="col-num">
+            <input name="Righe[__P__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" title="Importo dello sconto in euro. Viene sottratto dal totale vendita." />
+        </td>
+        <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
         <td><input name="Righe[__P__].Note" class="form-control form-control-sm" maxlength="200" /></td>
         <td>
-            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-padre" title="Elimina padre e figli"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-sm btn-danger btn-elimina-padre" title="Elimina sconto"><i class="bi bi-x-lg"></i></button>
         </td>
     </tr>
-    <tr class="riga-azioni-padre" data-ix="__P__">
-        <td colspan="10" class="py-1">
-            <button type="button" class="btn btn-sm btn-outline-primary btn-aggiungi-figlio">
-                <i class="bi bi-plus-lg me-1"></i>Aggiungi figlio
-            </button>
-        </td>
-    </tr>
-</template>
+</script>
 
-<template id="tplFiglio">
+<script type="text/html" id="tplFiglio">
     <tr class="riga-contab riga-figlio" data-padre-ix="__P__">
         <td class="col-art">
             <input type="hidden" name="Righe[__P__].Figli.Index" value="__F__" />
             <input type="hidden" name="Righe[__P__].Figli[__F__].Id" value="0" />
+            <input type="hidden" name="Righe[__P__].Figli[__F__].IsPosa" value="false" class="is-posa" />
+            <input type="hidden" name="Righe[__P__].Figli[__F__].PrezzoDaPrezzo" value="false" class="origine-prezzo" />
             <div class="cerca-wrap">
                 <input name="Righe[__P__].Figli[__F__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
                 <div class="cerca-risultati d-none"></div>
@@ -368,26 +885,37 @@
         </td>
         <td><input name="Righe[__P__].Figli[__F__].Descrizione" class="form-control form-control-sm col-desc desc" maxlength="255" /></td>
         <td class="col-um">@Html.Raw(HtmlUm("Righe[__P__].Figli[__F__].UnitaMisura", null))</td>
-        <td class="col-num"><input name="Righe[__P__].Figli[__F__].QuantitaPosata" class="form-control form-control-sm text-end num qty" inputmode="decimal" /></td>
-        <td class="col-num"><input name="Righe[__P__].Figli[__F__].CostoMaterialeServizio" class="form-control form-control-sm text-end num costo" inputmode="decimal" /></td>
-        <td class="tot-cell text-end align-middle tot-costo"></td>
-        <td class="col-num"><input name="Righe[__P__].Figli[__F__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num prz" inputmode="decimal" /></td>
-        <td class="tot-cell text-end align-middle tot-vendita"></td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].QuantitaPosata" class="form-control form-control-sm text-end num num-edit qty" inputmode="decimal" /></td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].CostoMaterialeServizio" class="form-control form-control-sm text-end num num-edit costo" inputmode="decimal" /><div class="delta-riga pm-costo" title="Costo presente in tabella per questo articolo"></div></td>
+        <td class="tot-cell text-end align-middle tot-costo"><span class="tot-val"></span></td>
+        <td class="col-num"><input name="Righe[__P__].Figli[__F__].RicaricoPercentuale" class="form-control form-control-sm text-end num num-edit ricarico" inputmode="decimal" value="30" /></td>
+        <td class="col-num"><div class="prezzo-um-wrap"><input class="form-control form-control-sm text-end num num-edit prz-um" inputmode="decimal" autocomplete="off" title="Prezzo di vendita nell'unità di questa riga. Sotto c'è il prezzo rapportato all'unità del padre. Il totale vendita usa quello." /></div><div class="delta-riga prz-mq" title="Prezzo rapportato all'unità di misura del padre"></div><input name="Righe[__P__].Figli[__F__].PrezzoVenditaCliente" class="form-control form-control-sm text-end num num-edit prz" inputmode="decimal" title="Scrivi il prezzo e si aggiorna il ricarico. Scrivi il ricarico e si aggiorna il prezzo." /><div class="delta-riga pm-prezzo" title="Prezzo medio di vendita"></div></td>
+        <td class="tot-cell text-end align-middle tot-vendita"><span class="tot-val"></span></td>
         <td><input name="Righe[__P__].Figli[__F__].Note" class="form-control form-control-sm" maxlength="200" /></td>
         <td>
-            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-figlio" title="Elimina figlio"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-sm btn-danger btn-elimina-figlio" title="Elimina figlio"><i class="bi bi-x-lg"></i></button>
         </td>
     </tr>
-</template>
+</script>
 
 @section Scripts {
+    <script type="application/json" id="costiArticoliJson">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CostiArticoli))</script>
     <script>
         (function () {
             var urlArticoli = '@Url.Action("CercaArticoliContabilita", "GestioneCantieri")';
             var urlDatiArticolo = '@Url.Action("DatiArticoloContabilita", "GestioneCantieri")';
+            var costiPerCodice = {};
+            try {
+                JSON.parse(document.getElementById('costiArticoliJson').textContent || '[]').forEach(function (r) {
+                    var codice = String(r.Codice || r.codice || '').trim().toUpperCase();
+                    if (codice) costiPerCodice[codice] = r;
+                });
+            } catch (e) { }
             var corpo = document.getElementById('corpoContabilita');
             var form = document.getElementById('formContabilita');
             var prossimoPadre = document.querySelectorAll('tr.riga-padre').length;
+            var prossimoAcconto = document.querySelectorAll('.riga-acconto').length;
+            var confrontaIniziale = @(Model.ConfrontaIniziale ? "true" : "false");
             var timerCerca = null;
             var richiestaCerca = 0;
             var indiceAttivo = -1;
@@ -410,6 +938,100 @@
 
             function formatIta(n, dec) {
                 return n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+            }
+
+            function formatDelta(d, dec) {
+                var fattore = Math.pow(10, dec);
+                var arrotondato = Math.round(d * fattore) / fattore;
+                if (arrotondato === 0)
+                    return formatIta(0, dec);
+                var testo = formatIta(arrotondato, dec);
+                return arrotondato > 0 ? '+' + testo : testo;
+            }
+
+            function scriviConfronto(el, attr, attuale, dec) {
+                if (!el) return;
+                dec = dec || 2;
+                var fattore = Math.pow(10, dec);
+                var iniziale = (attr === null || attr === '') ? 0 : parseNum(attr);
+                var delta = attuale - iniziale;
+                if (Math.round(delta * fattore) / fattore === 0) {
+                    el.textContent = '';
+                    return;
+                }
+                var ini = (attr === null || attr === '') ? '—' : formatIta(iniziale, dec);
+                var segno = document.createElement('span');
+                segno.className = delta > 0 ? 'delta-positivo' : 'delta-negativo';
+                segno.textContent = 'Δ ' + formatDelta(delta, dec);
+                el.textContent = 'iniz. ' + ini + ' · ';
+                el.appendChild(segno);
+            }
+
+            function scriviTotale(cella, valore) {
+                if (!cella) return;
+                var testo = valore ? formatIta(valore, 2) : '';
+                var slot = cella.querySelector('.tot-val');
+                if (slot) slot.textContent = testo;
+                else cella.textContent = testo;
+            }
+
+            function aggiornaDeltaRiga(tr) {
+                if (!tr.hasAttribute('data-iniz-qty')) return;
+                var prz = parseNum(tr.querySelector('.prz')?.value);
+                if (tr.classList.contains('riga-sconto'))
+                    prz = Math.abs(prz);
+                scriviConfronto(tr.querySelector('.delta-qty'), tr.getAttribute('data-iniz-qty'), parseNum(tr.querySelector('.qty')?.value), 2);
+                scriviConfronto(tr.querySelector('.delta-costo'), tr.getAttribute('data-iniz-costo'), parseNum(tr.querySelector('.costo')?.value), 2);
+                var decimaliVendita = (tr.classList.contains('riga-figlio') || tr.classList.contains('riga-sconto')) ? 2 : 4;
+                scriviConfronto(tr.querySelector('.delta-vendita'), tr.getAttribute('data-iniz-vendita'), prz, decimaliVendita);
+            }
+
+            function marcaSoloFinale(tr) {
+                if (!confrontaIniziale || !tr) return;
+                var td = tr.querySelector('input.desc')?.parentElement;
+                if (!td || td.querySelector('.badge-confronto')) return;
+                var badge = document.createElement('span');
+                badge.className = 'badge-confronto';
+                badge.textContent = 'solo finale';
+                td.appendChild(badge);
+            }
+
+            function applicaConfrontoPosa(padre, posa) {
+                if (!confrontaIniziale || !padre || !posa || posa.hasAttribute('data-iniz-qty')) return;
+                if (!padre.hasAttribute('data-iniz-posa-qty')) {
+                    marcaSoloFinale(posa);
+                    return;
+                }
+                posa.setAttribute('data-iniz-qty', padre.getAttribute('data-iniz-posa-qty'));
+                posa.setAttribute('data-iniz-costo', padre.getAttribute('data-iniz-posa-costo') || '0');
+                posa.setAttribute('data-iniz-vendita', padre.getAttribute('data-iniz-posa-vendita') || '0');
+                var qtyTd = posa.querySelector('.qty')?.closest('td');
+                if (qtyTd && !qtyTd.querySelector('.delta-qty')) {
+                    var dq = document.createElement('div');
+                    dq.className = 'delta-riga delta-qty';
+                    qtyTd.appendChild(dq);
+                }
+                [['.costo', 'delta-costo'], ['.prz', 'delta-vendita']].forEach(function (pair) {
+                    var cella = posa.querySelector(pair[0])?.closest('td');
+                    if (!cella || cella.querySelector('.' + pair[1])) return;
+                    var d = document.createElement('div');
+                    d.className = 'delta-riga ' + pair[1];
+                    cella.appendChild(d);
+                });
+            }
+
+            function scriviScostamento(id, attuale) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var delta = attuale - parseNum(el.getAttribute('data-iniziale'));
+                var nascosto = Math.round(delta * 100) / 100 === 0;
+                el.classList.toggle('d-none', nascosto);
+                el.classList.remove('delta-positivo', 'delta-negativo');
+                if (!nascosto)
+                    el.classList.add(delta > 0 ? 'delta-positivo' : 'delta-negativo');
+                if (el.previousElementSibling)
+                    el.previousElementSibling.classList.toggle('d-none', nascosto);
+                el.textContent = nascosto ? '' : formatDelta(delta, 2);
             }
 
             function campo(data, nomeMinuscolo, nomeMaiuscolo) {
@@ -453,6 +1075,13 @@
                 if (inputCodice && codice) inputCodice.value = codice;
                 if (inputDesc && desc && (forza || !inputDesc.value.trim())) inputDesc.value = desc;
                 if (selectUm && um && (forza || !selectUm.value)) impostaUm(selectUm, um);
+                if (tr.classList.contains('riga-articolo')) {
+                    ricalcola();
+                }
+                else if (tr.classList.contains('riga-padre') && !tr.classList.contains('riga-sconto')) {
+                    bloccaCodicePadre(tr);
+                    ricalcola();
+                }
             }
 
             function chiudiRisultati(wrap) {
@@ -546,55 +1175,531 @@
                     .catch(function () { });
             }
 
-            function ricalcola() {
-                var totV = 0, totVenditaPosa = 0, totAcquistoPosa = 0;
-                document.querySelectorAll('tr.riga-contab').forEach(function (tr) {
-                    var qty = parseNum(tr.querySelector('.qty')?.value);
-                    var costo = parseNum(tr.querySelector('.costo')?.value);
-                    var prz = parseNum(tr.querySelector('.prz')?.value);
-                    var rC = qty * costo;
-                    var rV = qty * prz;
-                    if (tr.classList.contains('riga-padre'))
-                        totV += rV;
-                    if (tr.classList.contains('riga-figlio')) {
-                        totVenditaPosa += rV;
-                        totAcquistoPosa += rC;
-                    }
-                    var cC = tr.querySelector('.tot-costo');
-                    var cV = tr.querySelector('.tot-vendita');
-                    if (cC) cC.textContent = rC ? formatIta(rC, 2) : '';
-                    if (cV) cV.textContent = rV ? formatIta(rV, 2) : '';
-                });
-                var acconto = parseNum(document.getElementById('imponibileAcconto')?.value);
-                var iva = parseNum(document.getElementById('aliquotaIva')?.value);
-                var saldo = totV - acconto;
-                var conIva = saldo * (1 + iva / 100);
-                document.getElementById('totVendita').textContent = formatIta(totV, 2);
-                document.getElementById('totVenditaPosa').textContent = formatIta(totVenditaPosa, 2);
-                document.getElementById('totAcquistoPosa').textContent = formatIta(totAcquistoPosa, 2);
-                document.getElementById('totAcconto').textContent = formatIta(acconto, 2);
-                document.getElementById('totSaldo').textContent = formatIta(saldo, 2);
-                document.getElementById('totIva').textContent = formatIta(conIva, 2);
+            function formatDec(n) {
+                if (n === null || isNaN(n)) return '';
+                return n.toFixed(2).replace('.', ',');
             }
 
-            function aggiungiFiglio(ixPadre) {
-                var azioni = corpo.querySelector('tr.riga-azioni-padre[data-ix="' + ixPadre + '"]');
+            function voceCosto(tr) {
+                var codice = (tr?.querySelector('input.codice-art')?.value || '').trim().toUpperCase();
+                return codice ? costiPerCodice[codice] : null;
+            }
+
+            function proponiCosto(tr) {
+                if (!tr || tr.classList.contains('riga-posa')) return;
+                if (tr.classList.contains('riga-padre') && !tr.classList.contains('riga-articolo')) return;
+                var costo = tr.querySelector('input.costo');
+                if (!costo) return;
+                var codice = (tr.querySelector('input.codice-art')?.value || '').trim().toUpperCase();
+                if (!codice || tr.getAttribute('data-costo-da') === codice) return;
+                tr.setAttribute('data-costo-da', codice);
+                if (costo.value.trim()) return;
+                var info = costiPerCodice[codice];
+                var valore = info ? (info.Costo != null ? info.Costo : info.costo) : null;
+                if (valore === null || valore === undefined || isNaN(valore)) return;
+                costo.value = formatDec(valore);
+            }
+
+            function aggiornaPm(padre) {
+                var materiale = corpo.querySelector('tr.riga-materiale[data-padre-ix="' + padre.getAttribute('data-ix') + '"]');
+                if (!materiale) return;
+                var info = voceCosto(materiale);
+                var prezzoMedio = info ? (info.PrezzoMedio != null ? info.PrezzoMedio : info.prezzoMedio) : null;
+                var costoTabella = info ? (info.Costo != null ? info.Costo : info.costo) : null;
+                var slotPrezzo = materiale.querySelector('.pm-prezzo');
+                var slotCosto = materiale.querySelector('.pm-costo');
+                if (slotPrezzo)
+                    slotPrezzo.textContent = (prezzoMedio === null || prezzoMedio === undefined || isNaN(prezzoMedio)) ? '' : ('PM ' + formatDec(prezzoMedio));
+                if (slotCosto)
+                    slotCosto.textContent = (costoTabella === null || costoTabella === undefined || isNaN(costoTabella)) ? '' : ('CT ' + formatDec(costoTabella));
+            }
+
+            function bloccaCodicePadre(padre) {
+                var input = padre.querySelector('input.codice-art');
+                if (!input || !input.value.trim()) return;
+                input.readOnly = true;
+                input.title = 'Il codice non si può più modificare.';
+            }
+
+            function marcaPosa(tr) {
+                if (!tr) return;
+                tr.classList.add('riga-posa');
+                var flag = tr.querySelector('input.is-posa');
+                if (flag) flag.value = 'true';
+                var desc = tr.querySelector('input.desc');
+                if (desc && !desc.value.trim()) desc.value = 'Posa';
+                var qtyPosa = tr.querySelector('.qty');
+                if (qtyPosa) {
+                    qtyPosa.readOnly = false;
+                    qtyPosa.removeAttribute('tabindex');
+                    qtyPosa.classList.remove('num-calc');
+                    qtyPosa.classList.add('num-edit');
+                    qtyPosa.title = 'Segue la quantità del padre. Se la cambi, resta il tuo numero. Se la svuoti, torna quella del padre.';
+                }
+                var ricarico = tr.querySelector('.ricarico');
+                if (ricarico && !ricarico.value.trim()) ricarico.value = '30';
+                tr.querySelector('.btn-elimina-figlio')?.remove();
+            }
+
+            function marcaMateriale(tr) {
+                if (!tr) return;
+                tr.classList.add('riga-materiale');
+                var flagPosa = tr.querySelector('input.is-posa');
+                if (flagPosa && !tr.querySelector('input.is-materiale')) {
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.className = 'is-materiale';
+                    hidden.name = flagPosa.name.replace(/IsPosa$/, 'IsArticoloMateriale');
+                    hidden.value = 'true';
+                    flagPosa.insertAdjacentElement('afterend', hidden);
+                }
+                var codice = tr.querySelector('input.codice-art');
+                if (codice) {
+                    codice.readOnly = true;
+                    codice.title = 'Stesso articolo del padre.';
+                }
+                var desc = tr.querySelector('input.desc');
+                if (desc) desc.readOnly = true;
+                var um = tr.querySelector('select.um');
+                if (um) um.disabled = true;
+                var qty = tr.querySelector('.qty');
+                if (qty) {
+                    qty.readOnly = false;
+                    qty.removeAttribute('tabindex');
+                    qty.classList.remove('num-calc');
+                    qty.classList.add('num-edit');
+                    qty.title = 'Segue la quantità del padre. Se la cambi, resta il tuo numero. Se la svuoti, torna quella del padre.';
+                }
+                tr.querySelector('.btn-elimina-figlio')?.remove();
+            }
+
+            function assicuraMateriale(padre) {
+                var ix = padre.getAttribute('data-ix');
+                var materiale = corpo.querySelector('tr.riga-materiale[data-padre-ix="' + ix + '"]');
+                if (!materiale) {
+                    var codicePadre = (padre.querySelector('input.codice-art')?.value || '').trim().toUpperCase();
+                    if (codicePadre) {
+                        corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]:not(.riga-posa)').forEach(function (figlio) {
+                            if (materiale) return;
+                            var codice = (figlio.querySelector('input.codice-art')?.value || '').trim().toUpperCase();
+                            if (codice === codicePadre) materiale = figlio;
+                        });
+                    }
+                }
+                if (!materiale) {
+                    var figli = corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]');
+                    var ancora = figli.length
+                        ? figli[0]
+                        : corpo.querySelector('tr.riga-totale-padre[data-ix="' + ix + '"]');
+                    if (!ancora) return;
+                    var f = figli.length;
+                    var html = document.getElementById('tplFiglio').innerHTML
+                        .replace(/__P__/g, String(ix))
+                        .replace(/__F__/g, String(f));
+                    ancora.insertAdjacentHTML('beforebegin', html);
+                    materiale = ancora.previousElementSibling;
+                }
+                marcaMateriale(materiale);
+            }
+
+            function allineaMateriale(padre) {
+                var ix = padre.getAttribute('data-ix');
+                var materiale = corpo.querySelector('tr.riga-materiale[data-padre-ix="' + ix + '"]');
+                if (!materiale) return;
+                var codice = materiale.querySelector('input.codice-art');
+                var desc = materiale.querySelector('input.desc');
+                var um = materiale.querySelector('select.um');
+                var qty = materiale.querySelector('.qty');
+                var ricarico = materiale.querySelector('.ricarico');
+                if (codice) codice.value = padre.querySelector('input.codice-art')?.value || '';
+                if (desc) desc.value = padre.querySelector('input.desc')?.value || '';
+                if (um) {
+                    um.disabled = false;
+                    var umPadre = padre.querySelector('select.um')?.value || '';
+                    if (umPadre) impostaUm(um, umPadre);
+                    else um.value = '';
+                    um.disabled = true;
+                }
+                var valoreQtyPadre = padre.querySelector('.qty')?.value || '';
+                if (qty) {
+                    preparaOrigineQty(qty, valoreQtyPadre);
+                    if (qtySegueIlPadre(qty) && document.activeElement !== qty)
+                        qty.value = valoreQtyPadre;
+                }
+                if (ricarico && !ricarico.value.trim()) ricarico.value = '30';
+            }
+
+            function preparaOrigineQty(input, valorePadre) {
+                if (!input || input.hasAttribute('data-qty-origine')) return;
+                var testo = (input.value || '').trim();
+                var padreTesto = (valorePadre || '').trim();
+                var uguali = padreTesto && Math.abs(parseNum(testo) - parseNum(padreTesto)) < 0.0000001;
+                input.setAttribute('data-qty-origine', (!testo || uguali) ? 'padre' : 'manuale');
+            }
+
+            function qtySegueIlPadre(input) {
+                return !!input && input.getAttribute('data-qty-origine') !== 'manuale';
+            }
+
+            function segnaOriginePrezzo(figlio, daPrezzo) {
+                if (!figlio) return;
+                figlio.setAttribute('data-origine', daPrezzo ? 'prezzo' : 'ricarico');
+                var hidden = figlio.querySelector('input.origine-prezzo');
+                if (hidden) hidden.value = daPrezzo ? 'true' : 'false';
+            }
+
+            function segnaOriginePrezzoUm(figlio) {
+                if (!figlio) return;
+                figlio.setAttribute('data-origine', 'prezzo-um');
+                var hidden = figlio.querySelector('input.origine-prezzo');
+                if (hidden) hidden.value = 'false';
+            }
+
+            function prezzoScrittoAMano(figlio) {
+                return figlio.getAttribute('data-origine') === 'prezzo';
+            }
+
+            function prezzoUmScritto(figlio) {
+                return figlio.getAttribute('data-origine') === 'prezzo-um';
+            }
+
+            function umCodice(tr) {
+                return (tr?.querySelector('select.um')?.value || '').trim().toUpperCase();
+            }
+
+            function umDiversaDalPadre(figlio, padre) {
+                if (!figlio || figlio.classList.contains('riga-posa') || figlio.classList.contains('riga-materiale'))
+                    return false;
+                var umFiglio = umCodice(figlio);
+                var umPadre = umCodice(padre);
+                return !!umFiglio && !!umPadre && umFiglio !== umPadre;
+            }
+
+            function scriviIndicazioneMq(figlio, padre, prezzoMq) {
+                var hint = figlio.querySelector('.prz-mq');
+                if (!hint) return;
+                var um = umCodice(figlio);
+                var umPadre = umCodice(padre);
+                if (!um) {
+                    hint.textContent = '';
+                    return;
+                }
+                hint.textContent = prezzoMq ? ('€/' + um + '\n' + prezzoMq + ' €/' + umPadre) : ('€/' + um);
+            }
+
+            function formatRicarico(n) {
+                var arrotondato = Math.round(n * 10000) / 10000;
+                var negativo = arrotondato < 0;
+                var testo = Math.abs(arrotondato).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+                return (negativo ? '-' : '') + testo.replace('.', ',');
+            }
+
+            function allineaVenditaFigli(padre) {
+                var ix = padre.getAttribute('data-ix');
+                var qtyPadreInput = padre.querySelector('.qty');
+                var qtyPadre = parseNum(qtyPadreInput?.value);
+                var haQtyPadre = !!(qtyPadreInput && qtyPadreInput.value.trim() && qtyPadre !== 0);
+                corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]').forEach(function (figlio) {
+                    var qty = figlio.querySelector('.qty');
+                    var costo = figlio.querySelector('.costo');
+                    var ricarico = figlio.querySelector('.ricarico');
+                    var prz = figlio.querySelector('.prz');
+                    var przUm = figlio.querySelector('.prz-um');
+                    if (!prz || !ricarico) return;
+                    var diversa = umDiversaDalPadre(figlio, padre);
+                    figlio.classList.toggle('riga-um-diversa', diversa);
+                    if (!diversa) {
+                        var hintStessa = figlio.querySelector('.prz-mq');
+                        if (hintStessa) hintStessa.textContent = '';
+                        if (prezzoUmScritto(figlio))
+                            segnaOriginePrezzo(figlio, false);
+                    }
+                    var base = parseNum(qty?.value) * parseNum(costo?.value);
+                    if (diversa) {
+                        var costoNum = parseNum(costo?.value);
+                        var qtyNum = parseNum(qty?.value);
+                        var staScrivendoUm = prezzoUmScritto(figlio) && document.activeElement === przUm;
+                        if (prezzoUmScritto(figlio) && przUm && przUm.value.trim() && costoNum) {
+                            var prezzoUm = parseNum(przUm.value);
+                            ricarico.value = formatRicarico((prezzoUm / costoNum - 1) * 100);
+                            prz.value = (haQtyPadre && qty && qty.value.trim())
+                                ? formatDec(qtyNum * prezzoUm / qtyPadre)
+                                : '';
+                            scriviIndicazioneMq(figlio, padre, prz.value);
+                            return;
+                        }
+                        if (staScrivendoUm) return;
+                        if (prezzoUmScritto(figlio))
+                            segnaOriginePrezzo(figlio, false);
+                        if (!ricarico.value.trim()) ricarico.value = '30';
+                        if (!haQtyPadre || !qty || !qty.value.trim() || !costo || !costo.value.trim()) {
+                            if (przUm && document.activeElement !== przUm) przUm.value = '';
+                            prz.value = '';
+                            scriviIndicazioneMq(figlio, padre, '');
+                            return;
+                        }
+                        var prezzoUmCalcolato = costoNum * (1 + parseNum(ricarico.value) / 100);
+                        if (przUm) przUm.value = formatDec(prezzoUmCalcolato);
+                        var prezzoUmVisibile = przUm ? parseNum(przUm.value) : prezzoUmCalcolato;
+                        prz.value = formatDec(qtyNum * prezzoUmVisibile / qtyPadre);
+                        scriviIndicazioneMq(figlio, padre, prz.value);
+                        return;
+                    }
+                    if (prezzoScrittoAMano(figlio) && prz.value.trim() && haQtyPadre && base) {
+                        var ric = (parseNum(prz.value) * qtyPadre / base - 1) * 100;
+                        ricarico.value = formatRicarico(ric);
+                        return;
+                    }
+                    if (prezzoScrittoAMano(figlio) && document.activeElement === prz)
+                        return;
+                    if (prezzoScrittoAMano(figlio))
+                        segnaOriginePrezzo(figlio, false);
+                    if (!ricarico.value.trim()) ricarico.value = '30';
+                    if (!haQtyPadre || !qty || !qty.value.trim() || !costo || !costo.value.trim()) {
+                        prz.value = '';
+                        return;
+                    }
+                    var importo = parseNum(qty.value) * parseNum(costo.value) * (1 + parseNum(ricarico.value) / 100);
+                    prz.value = formatDec(importo / qtyPadre);
+                });
+            }
+
+            function allineaPosa(padre) {
+                var ix = padre.getAttribute('data-ix');
+                var posa = corpo.querySelector('tr.riga-posa[data-padre-ix="' + ix + '"]');
+                if (!posa) return;
+                var qtyPadre = padre.querySelector('.qty');
+                var umPadre = padre.querySelector('select.um');
+                var qtyPosa = posa.querySelector('.qty');
+                var umPosa = posa.querySelector('select.um');
+                if (qtyPosa && qtyPadre) {
+                    preparaOrigineQty(qtyPosa, qtyPadre.value);
+                    if (qtySegueIlPadre(qtyPosa) && document.activeElement !== qtyPosa)
+                        qtyPosa.value = qtyPadre.value;
+                }
+                if (umPosa && umPadre) impostaUm(umPosa, umPadre.value);
+                var ricarico = posa.querySelector('.ricarico');
+                if (ricarico && !ricarico.value.trim()) ricarico.value = '30';
+            }
+
+            function assicuraPosa(ixPadre) {
+                if (corpo.querySelector('tr.riga-posa[data-padre-ix="' + ixPadre + '"]'))
+                    return;
+                var azioni = corpo.querySelector('tr.riga-totale-padre[data-ix="' + ixPadre + '"]');
                 if (!azioni) return;
                 var f = corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ixPadre + '"]').length;
                 var html = document.getElementById('tplFiglio').innerHTML
                     .replace(/__P__/g, String(ixPadre))
                     .replace(/__F__/g, String(f));
                 azioni.insertAdjacentHTML('beforebegin', html);
+                var nuova = azioni.previousElementSibling;
+                marcaPosa(nuova);
+            }
+
+            function ricalcola() {
+                document.querySelectorAll('tr.riga-padre').forEach(function (padre) {
+                    if (padre.classList.contains('riga-sconto')) return;
+                    if (padre.classList.contains('riga-articolo')) {
+                        proponiCosto(padre);
+                        return;
+                    }
+                    var ix = padre.getAttribute('data-ix');
+                    assicuraMateriale(padre);
+                    assicuraPosa(ix);
+                    applicaConfrontoPosa(padre, corpo.querySelector('tr.riga-posa[data-padre-ix="' + ix + '"]'));
+                    allineaMateriale(padre);
+                    allineaPosa(padre);
+                    proponiCosto(corpo.querySelector('tr.riga-materiale[data-padre-ix="' + ix + '"]'));
+                    corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]:not(.riga-posa):not(.riga-materiale)').forEach(proponiCosto);
+                    allineaVenditaFigli(padre);
+                    aggiornaPm(padre);
+                });
+                var totV = 0, totSconto = 0, totCosti = 0, totVenditaPosa = 0, totAcquistoPosa = 0;
+                var costiPerPadre = {};
+                var venditaPadre = {};
+                var venditaFigli = {};
+                document.querySelectorAll('tr.riga-contab').forEach(function (tr) {
+                    if (tr.classList.contains('riga-sconto')) {
+                        var importo = Math.abs(parseNum(tr.querySelector('.prz')?.value));
+                        totSconto += importo;
+                        totV += -importo;
+                        var slotSconto = tr.querySelector('.tot-vendita .tot-val');
+                        if (slotSconto) slotSconto.textContent = importo ? formatIta(-importo, 2) : '';
+                        aggiornaDeltaRiga(tr);
+                        return;
+                    }
+                    var qty = parseNum(tr.querySelector('.qty')?.value);
+                    var costoInput = tr.querySelector('.costo');
+                    var costoBloccato = tr.classList.contains('riga-padre') && !tr.classList.contains('riga-articolo');
+                    if (costoBloccato && costoInput) costoInput.value = '';
+                    var costo = costoBloccato ? 0 : parseNum(costoInput?.value);
+                    var prz = parseNum(tr.querySelector('.prz')?.value);
+                    var rC = qty * costo;
+                    var rV = qty * prz;
+                    if (tr.classList.contains('riga-figlio') && !tr.classList.contains('riga-posa')) {
+                        var padreRiga = corpo.querySelector('tr.riga-padre[data-ix="' + tr.getAttribute('data-padre-ix') + '"]');
+                        rV = parseNum(padreRiga?.querySelector('.qty')?.value) * prz;
+                    }
+                    totCosti += rC;
+                    var ixGruppo = tr.classList.contains('riga-padre')
+                        ? tr.getAttribute('data-ix')
+                        : tr.getAttribute('data-padre-ix');
+                    if (ixGruppo !== null) {
+                        costiPerPadre[ixGruppo] = (costiPerPadre[ixGruppo] || 0) + rC;
+                        if (tr.classList.contains('riga-padre') && !tr.classList.contains('riga-articolo'))
+                            venditaPadre[ixGruppo] = rV;
+                        else
+                            venditaFigli[ixGruppo] = (venditaFigli[ixGruppo] || 0) + rV;
+                    }
+                    if (tr.classList.contains('riga-padre'))
+                        totV += rV;
+                    if (tr.classList.contains('riga-posa')) {
+                        totVenditaPosa += rV;
+                        totAcquistoPosa += rC;
+                    }
+                    scriviTotale(tr.querySelector('.tot-costo'), rC);
+                    scriviTotale(tr.querySelector('.tot-vendita'), rV);
+                    aggiornaDeltaRiga(tr);
+                });
+                document.querySelectorAll('tr.riga-totale-padre').forEach(function (riga) {
+                    var ix = riga.getAttribute('data-ix');
+                    var somma = costiPerPadre[ix] || 0;
+                    var cella = riga.querySelector('.tot-costo-gruppo');
+                    if (cella) cella.textContent = somma ? formatIta(somma, 2) : '';
+                    var mancaCella = riga.querySelector('.tot-vendita-manca');
+                    if (mancaCella) {
+                        var manca = (venditaPadre[ix] || 0) - (venditaFigli[ix] || 0);
+                        if (Math.round(manca * 100) / 100 === 0) {
+                            mancaCella.textContent = '';
+                            mancaCella.classList.remove('delta-negativo');
+                        } else {
+                            mancaCella.textContent = formatIta(manca, 2);
+                            mancaCella.classList.toggle('delta-negativo', manca < 0);
+                        }
+                    }
+                });
+                var acconto = 0;
+                document.querySelectorAll('.acconto-importo').forEach(function (el) { acconto += parseNum(el.value); });
+                var iva = parseNum(document.getElementById('aliquotaIva')?.value);
+                var saldo = totV - acconto;
+                var conIva = saldo * (1 + iva / 100);
+                var margine = document.getElementById('totMargine');
+                document.getElementById('totVendita').textContent = formatIta(totV, 2);
+                var compVendita = document.getElementById('compVendita');
+                if (compVendita)
+                    compVendita.textContent = Math.round(totSconto * 100) / 100 === 0
+                        ? ''
+                        : formatIta(totV + totSconto, 2) + ' − ' + formatIta(totSconto, 2);
+                var deltaVendita = document.getElementById('deltaVendita');
+                if (deltaVendita) {
+                    var deltaV = totV - parseNum(deltaVendita.getAttribute('data-iniziale'));
+                    if (Math.round(deltaV * 100) / 100 === 0) {
+                        deltaVendita.textContent = '';
+                        deltaVendita.className = 'delta-sotto';
+                    } else {
+                        deltaVendita.className = 'delta-sotto ' + (deltaV > 0 ? 'delta-positivo' : 'delta-negativo');
+                        deltaVendita.textContent = 'Δ ' + formatDelta(deltaV, 2);
+                    }
+                }
+                var elCosti = document.getElementById('totCosti');
+                if (elCosti) elCosti.textContent = formatIta(totCosti, 2);
+                var deltaCosti = document.getElementById('deltaCosti');
+                if (deltaCosti) {
+                    var deltaC = totCosti - parseNum(deltaCosti.getAttribute('data-iniziale'));
+                    if (Math.round(deltaC * 100) / 100 === 0) {
+                        deltaCosti.textContent = '';
+                        deltaCosti.className = 'delta-sotto';
+                    } else {
+                        deltaCosti.className = 'delta-sotto ' + (deltaC > 0 ? 'delta-positivo' : 'delta-negativo');
+                        deltaCosti.textContent = 'Δ ' + formatDelta(deltaC, 2);
+                    }
+                }
+                document.getElementById('totVenditaPosa').textContent = formatIta(totVenditaPosa, 2);
+                document.getElementById('totAcquistoPosa').textContent = formatIta(totAcquistoPosa, 2);
+                var guadagnoPosa = totVenditaPosa - totAcquistoPosa;
+                var elGuadagnoPosa = document.getElementById('totGuadagnoPosa');
+                if (elGuadagnoPosa) {
+                    elGuadagnoPosa.textContent = formatIta(guadagnoPosa, 2);
+                    elGuadagnoPosa.classList.toggle('text-danger', guadagnoPosa < 0);
+                }
+                var marginePosa = document.getElementById('marginePosa');
+                if (marginePosa) {
+                    if (totVenditaPosa) {
+                        var percPosa = guadagnoPosa / totVenditaPosa * 100;
+                        marginePosa.className = 'margine-piccolo' + (percPosa < 0 ? ' delta-negativo' : '');
+                        marginePosa.textContent = 'margine ' + formatIta(percPosa, 2) + ' %';
+                    } else {
+                        marginePosa.textContent = '';
+                        marginePosa.className = 'margine-piccolo';
+                    }
+                }
+                if (margine) {
+                    if (totV) {
+                        var perc = (totV - totCosti) / totV * 100;
+                        margine.textContent = formatIta(perc, 2) + ' %';
+                        margine.classList.toggle('text-danger', perc < 0);
+                    } else {
+                        margine.textContent = '—';
+                        margine.classList.remove('text-danger');
+                    }
+                }
+                document.getElementById('totAcconto').textContent = formatIta(acconto, 2);
+                document.getElementById('totSaldo').textContent = formatIta(saldo, 2);
+                document.getElementById('totIva').textContent = formatIta(conIva, 2);
+            }
+
+            function aggiungiFiglio(ixPadre) {
+                var azioni = corpo.querySelector('tr.riga-posa[data-padre-ix="' + ixPadre + '"]')
+                    || corpo.querySelector('tr.riga-totale-padre[data-ix="' + ixPadre + '"]');
+                if (!azioni) return;
+                var f = corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ixPadre + '"]').length;
+                var html = document.getElementById('tplFiglio').innerHTML
+                    .replace(/__P__/g, String(ixPadre))
+                    .replace(/__F__/g, String(f));
+                var posa = corpo.querySelector('tr.riga-posa[data-padre-ix="' + ixPadre + '"]');
+                var ancora = posa || azioni;
+                ancora.insertAdjacentHTML('beforebegin', html);
+                marcaSoloFinale(ancora.previousElementSibling);
                 ricalcola();
             }
+
+            function inserisciPrimaDi(html, selettore) {
+                var ancora = corpo.querySelector(selettore);
+                if (ancora)
+                    ancora.insertAdjacentHTML('beforebegin', html);
+                else
+                    corpo.insertAdjacentHTML('beforeend', html);
+            }
+
+            document.getElementById('btnAggiungiArticolo')?.addEventListener('click', function () {
+                var p = prossimoPadre++;
+                var html = document.getElementById('tplArticolo').innerHTML.replace(/__P__/g, String(p));
+                inserisciPrimaDi(html, 'tr.riga-sconto, tr.blocco-mancante');
+                marcaSoloFinale(corpo.querySelector('tr.riga-articolo[data-ix="' + p + '"]'));
+                ricalcola();
+                var nuovo = corpo.querySelector('tr.riga-articolo[data-ix="' + p + '"] input.codice-art');
+                if (nuovo) nuovo.focus();
+            });
 
             document.getElementById('btnAggiungiPadre')?.addEventListener('click', function () {
                 var p = prossimoPadre++;
                 var html = document.getElementById('tplPadre').innerHTML.replace(/__P__/g, String(p));
-                corpo.insertAdjacentHTML('beforeend', html);
+                inserisciPrimaDi(html, 'tr.riga-sconto, tr.blocco-mancante');
+                marcaSoloFinale(corpo.querySelector('tr.riga-padre[data-ix="' + p + '"]'));
+                assicuraPosa(String(p));
                 ricalcola();
                 var nuovo = corpo.querySelector('tr.riga-padre[data-ix="' + p + '"] input.codice-art');
                 if (nuovo) nuovo.focus();
+            });
+
+            document.getElementById('btnAggiungiSconto')?.addEventListener('click', function () {
+                var p = prossimoPadre++;
+                var html = document.getElementById('tplSconto').innerHTML.replace(/__P__/g, String(p));
+                inserisciPrimaDi(html, 'tr.blocco-mancante');
+                marcaSoloFinale(corpo.querySelector('tr.riga-sconto[data-ix="' + p + '"]'));
+                ricalcola();
+                var importo = corpo.querySelector('tr.riga-sconto[data-ix="' + p + '"] input.prz');
+                if (importo) importo.focus();
             });
 
             form.addEventListener('click', function (e) {
@@ -608,9 +1713,9 @@
                 var btnFiglio = e.target.closest('.btn-aggiungi-figlio');
                 if (btnFiglio) {
                     e.preventDefault();
-                    var azioni = btnFiglio.closest('tr.riga-azioni-padre');
-                    if (!azioni) return;
-                    aggiungiFiglio(azioni.getAttribute('data-ix'));
+                    var padreRiga = btnFiglio.closest('tr.riga-padre');
+                    if (!padreRiga) return;
+                    aggiungiFiglio(padreRiga.getAttribute('data-ix'));
                     return;
                 }
                 if (e.target.closest('.btn-elimina-padre')) {
@@ -618,7 +1723,9 @@
                     if (!padre) return;
                     var ix = padre.getAttribute('data-ix');
                     corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + ix + '"]').forEach(function (r) { r.remove(); });
-                    corpo.querySelector('tr.riga-azioni-padre[data-ix="' + ix + '"]')?.remove();
+                    corpo.querySelectorAll('tr.riga-mancante[data-padre-ix="' + ix + '"]').forEach(function (r) { r.remove(); });
+                    corpo.querySelector('tr.riga-sforamento[data-padre-ix="' + ix + '"]')?.remove();
+                    corpo.querySelector('tr.riga-totale-padre[data-ix="' + ix + '"]')?.remove();
                     padre.remove();
                     ricalcola();
                     return;
@@ -626,17 +1733,44 @@
                 if (e.target.closest('.btn-elimina-figlio')) {
                     e.target.closest('tr')?.remove();
                     ricalcola();
+                    return;
+                }
+                if (e.target.closest('.btn-elimina-acconto')) {
+                    e.target.closest('.riga-acconto')?.remove();
+                    ricalcola();
                 }
             });
 
             form.addEventListener('input', function (e) {
-                if (e.target.classList.contains('num'))
+                if (e.target.classList.contains('qty') && e.target.closest('tr.riga-materiale, tr.riga-posa'))
+                    e.target.setAttribute('data-qty-origine', 'manuale');
+                var rigaFiglio = e.target.closest('tr.riga-figlio');
+                if (rigaFiglio && e.target.classList.contains('prz-um'))
+                    segnaOriginePrezzoUm(rigaFiglio);
+                else if (rigaFiglio && e.target.classList.contains('prz'))
+                    segnaOriginePrezzo(rigaFiglio, true);
+                else if (rigaFiglio && (e.target.classList.contains('ricarico') || e.target.classList.contains('costo') || e.target.classList.contains('qty')))
+                    segnaOriginePrezzo(rigaFiglio, false);
+                else if (e.target.classList.contains('qty')) {
+                    var padreQty = e.target.closest('tr.riga-padre');
+                    if (padreQty && !padreQty.classList.contains('riga-articolo') && !padreQty.classList.contains('riga-sconto')) {
+                        corpo.querySelectorAll('tr.riga-figlio[data-padre-ix="' + padreQty.getAttribute('data-ix') + '"]').forEach(function (figlio) {
+                            segnaOriginePrezzo(figlio, false);
+                        });
+                    }
+                }
+                if (e.target.classList.contains('num') || e.target.classList.contains('desc'))
                     ricalcola();
-                if (e.target.classList.contains('codice-art')) {
+                if (e.target.classList.contains('codice-art') && !e.target.readOnly) {
                     clearTimeout(timerCerca);
                     var input = e.target;
                     timerCerca = setTimeout(function () { cercaArticoli(input); }, 220);
                 }
+            });
+
+            form.addEventListener('change', function (e) {
+                if (e.target.classList.contains('um'))
+                    ricalcola();
             });
 
             form.addEventListener('keydown', function (e) {
@@ -662,11 +1796,35 @@
             });
 
             form.addEventListener('focusout', function (e) {
-                if (!e.target.classList.contains('codice-art')) return;
+                if (e.target.classList.contains('prz-um') && !e.target.value.trim()) {
+                    var rigaPrezzo = e.target.closest('tr.riga-figlio');
+                    if (rigaPrezzo) {
+                        segnaOriginePrezzo(rigaPrezzo, false);
+                        ricalcola();
+                    }
+                }
+                if (e.target.classList.contains('qty')) {
+                    var rigaQty = e.target.closest('tr.riga-materiale, tr.riga-posa');
+                    if (rigaQty && !e.target.value.trim()) {
+                        var padreQty = corpo.querySelector('tr.riga-padre[data-ix="' + rigaQty.getAttribute('data-padre-ix') + '"]');
+                        var valorePadre = padreQty?.querySelector('.qty')?.value || '';
+                        e.target.setAttribute('data-qty-origine', 'padre');
+                        if (valorePadre) {
+                            e.target.value = valorePadre;
+                            ricalcola();
+                        }
+                    }
+                }
+                if (!e.target.classList.contains('codice-art') || e.target.readOnly) return;
                 var input = e.target;
                 setTimeout(function () {
                     if (input.closest('.cerca-wrap')?.contains(document.activeElement)) return;
                     chiudiRisultati(input.closest('.cerca-wrap'));
+                    var padre = input.closest('tr.riga-padre');
+                    if (padre && !padre.classList.contains('riga-sconto') && !padre.classList.contains('riga-articolo')) {
+                        bloccaCodicePadre(padre);
+                        ricalcola();
+                    }
                     if (input.value.trim())
                         caricaDatiArticolo(input.closest('tr'), input.value.trim());
                 }, 180);
@@ -678,12 +1836,32 @@
             });
 
             form.addEventListener('submit', function () {
+                document.querySelectorAll('tr.riga-padre:not(.riga-sconto):not(.riga-articolo)').forEach(function (padre) {
+                    allineaMateriale(padre);
+                    allineaPosa(padre);
+                    allineaVenditaFigli(padre);
+                    var materiale = corpo.querySelector('tr.riga-materiale[data-padre-ix="' + padre.getAttribute('data-ix') + '"] select.um');
+                    if (materiale) materiale.disabled = false;
+                });
                 document.querySelectorAll('#formContabilita input.num').forEach(function (input) {
                     if (!input.value) return;
-                    input.value = String(parseNum(input.value)).replace('.', ',');
+                    var numero = parseNum(input.value);
+                    if (input.closest('tr.riga-sconto'))
+                        numero = Math.abs(numero);
+                    input.value = String(numero).replace('.', ',');
                 });
             });
 
+            document.getElementById('btnAggiungiAcconto')?.addEventListener('click', function () {
+                var i = prossimoAcconto++;
+                var html = document.getElementById('tplAcconto').innerHTML.replace(/__I__/g, String(i));
+                document.getElementById('listaAcconti').insertAdjacentHTML('beforeend', html);
+                var nuovo = document.querySelector('.riga-acconto:last-child input[name$=".Descrizione"]');
+                if (nuovo) nuovo.focus();
+            });
+
+            document.querySelectorAll('tr.riga-posa').forEach(marcaPosa);
+            document.querySelectorAll('tr.riga-padre:not(.riga-sconto):not(.riga-articolo)').forEach(bloccaCodicePadre);
             ricalcola();
         })();
     </script>

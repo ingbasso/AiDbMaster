@@ -35,5 +35,7 @@ namespace AiDbMaster.Models
         public DateTime? DataUltimaModifica { get; set; }
 
         public virtual ICollection<CantiereContabilitaRiga> Righe { get; set; } = new List<CantiereContabilitaRiga>();
+
+        public virtual ICollection<CantiereContabilitaAcconto> Acconti { get; set; } = new List<CantiereContabilitaAcconto>();
     }
 }

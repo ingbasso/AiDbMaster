@@ -1,32 +1,31 @@
 @model AiDbMaster.ViewModels.CantiereSchedaViewModel
 
-<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
 <input type="hidden" asp-for="Codice" />
-<div class="row g-3">
-    <div class="col-md-9">
+<div class="row g-2">
+    <div class="col-md-8">
         <label class="form-label">Nome cantiere <span class="text-danger">*</span></label>
-        <input asp-for="Nome" class="form-control" maxlength="150" required placeholder="Es. Piazza Duomo - Comune di X" />
+        <input asp-for="Nome" class="form-control form-control-sm" maxlength="150" required placeholder="Es. Piazza Duomo" />
         <span asp-validation-for="Nome" class="text-danger"></span>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <label class="form-label">Stato</label>
-        <select asp-for="Stato" class="form-select" asp-items="@(ViewBag.Stati as IEnumerable<SelectListItem>)"></select>
+        <select asp-for="Stato" class="form-select form-select-sm" asp-items="@(ViewBag.Stati as IEnumerable<SelectListItem>)"></select>
     </div>
 </div>
 
-<div class="row g-3 mt-1">
+<div class="row g-2">
     <div class="col-md-8">
         <label class="form-label">Cliente <span class="text-danger">*</span></label>
         @if (Model.Id > 0)
         {
             <input type="hidden" asp-for="CodiceCliente" id="codiceCliente" />
-            <input type="text" class="form-control" value="@Model.ClienteNome" readonly />
-            <div class="form-text">Il cliente non si cambia in scheda: gli ordini restano agganciati a questo conto.</div>
+            <input type="text" class="form-control form-control-sm" value="@Model.ClienteNome" readonly />
         }
         else
         {
-            <select asp-for="CodiceCliente" class="form-select" id="codiceCliente">
+            <select asp-for="CodiceCliente" class="form-select form-select-sm" id="codiceCliente">
                 @if (Model.CodiceCliente.HasValue && !string.IsNullOrWhiteSpace(Model.ClienteNome))
                 {
                     <option value="@Model.CodiceCliente" selected>@Model.ClienteNome</option>
@@ -37,190 +36,111 @@
     </div>
     <div class="col-md-4">
         <label class="form-label">Agente</label>
-        <input asp-for="NomeAgente" class="form-control" id="nomeAgente" readonly placeholder="Si compila dal cliente" />
+        <input asp-for="NomeAgente" class="form-control form-control-sm" id="nomeAgente" readonly />
     </div>
 </div>
 
-<div class="row g-3 mt-1">
+<div class="row g-2">
     <div class="col-md-8">
         <label class="form-label">Destinazione diversa</label>
-        <select asp-for="CodiceDestinazione" class="form-select" id="codiceDestinazione">
+        <select asp-for="CodiceDestinazione" class="form-select form-select-sm" id="codiceDestinazione">
             <option value="">-- indirizzo libero o del cliente --</option>
         </select>
-        <div class="form-text">Se la scegli, copia automaticamente l'indirizzo nella scheda.</div>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Telefono</label>
+        <input asp-for="Telefono" class="form-control form-control-sm" maxlength="18" />
     </div>
 </div>
 
-<div class="row g-3 mt-1">
-    <div class="col-md-6">
-        <label class="form-label">Indirizzo cantiere</label>
-        <input asp-for="Indirizzo" class="form-control" maxlength="70" />
+<div class="row g-2">
+    <div class="col-md-5">
+        <label class="form-label">Indirizzo</label>
+        <input asp-for="Indirizzo" class="form-control form-control-sm" maxlength="70" />
     </div>
     <div class="col-md-2">
         <label class="form-label">CAP</label>
-        <input asp-for="Cap" class="form-control" maxlength="10" />
+        <input asp-for="Cap" class="form-control form-control-sm" maxlength="10" />
     </div>
     <div class="col-md-3">
         <label class="form-label">Località</label>
-        <input asp-for="Localita" class="form-control" maxlength="50" />
+        <input asp-for="Localita" class="form-control form-control-sm" maxlength="50" />
     </div>
-    <div class="col-md-1">
+    <div class="col-md-2">
         <label class="form-label">Prov.</label>
-        <input asp-for="Provincia" class="form-control text-uppercase" maxlength="2" />
+        <input asp-for="Provincia" class="form-control form-control-sm text-uppercase" maxlength="2" />
     </div>
 </div>
 
-<div class="row g-3 mt-1">
+<div class="row g-2">
     <div class="col-md-4">
         <label class="form-label">Impresa di posa</label>
-        <select asp-for="ImpresaPosaId" class="form-select" asp-items="@(ViewBag.ImpresePosa as IEnumerable<SelectListItem>)">
-            <option value="">-- seleziona impresa --</option>
+        <select asp-for="ImpresaPosaId" class="form-select form-select-sm" asp-items="@(ViewBag.ImpresePosa as IEnumerable<SelectListItem>)">
+            <option value="">-- seleziona --</option>
         </select>
-        <div class="form-text">
-            L'elenco si gestisce da
-            <a asp-controller="ImpresePosa" asp-action="Index">Imprese di posa</a>.
-        </div>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">Telefono cantiere</label>
-        <input asp-for="Telefono" class="form-control" maxlength="18" />
-        <div class="form-text">I referenti si collegano sotto, dopo il salvataggio.</div>
+    <div class="col-md-2">
+        <label class="form-label">Inizio</label>
+        <input asp-for="DataInizioPrevista" type="date" class="form-control form-control-sm" />
     </div>
-</div>
-
-<div class="row g-3 mt-1">
-    <div class="col-md-3">
-        <label class="form-label">Inizio previsto</label>
-        <input asp-for="DataInizioPrevista" type="date" class="form-control" />
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Fine prevista</label>
-        <input asp-for="DataFinePrevista" type="date" class="form-control" />
+    <div class="col-md-2">
+        <label class="form-label">Fine</label>
+        <input asp-for="DataFinePrevista" type="date" class="form-control form-control-sm" />
         <span asp-validation-for="DataFinePrevista" class="text-danger"></span>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Cartella documenti</label>
-        <input asp-for="PercorsoDocumenti" class="form-control" maxlength="500" placeholder="\\server\cantieri\..." />
-        <div class="form-text">Percorso della cartella che usate oggi sul file server.</div>
-    </div>
-</div>
-
-<div class="row g-3 mt-1">
-    <div class="col-md-4">
+    <div class="col-md-2">
         <label class="form-label">Trasporto</label>
-        <input asp-for="TipoTrasporto" class="form-control" maxlength="50" placeholder="Es. Motrice, Bilico..." />
+        <input asp-for="TipoTrasporto" class="form-control form-control-sm" maxlength="50" />
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
         <label class="form-label">Magazzino N.</label>
-        <input asp-for="MagazzinoN" class="form-control" maxlength="20" />
-    </div>
-    <div class="col-md-4">
-        <label class="form-label">Pulizia cantiere</label>
-        <div class="form-check mt-2">
-            <input asp-for="PuliziaCantiere" class="form-check-input" />
-            <label class="form-check-label" asp-for="PuliziaCantiere">Sì, prevista / eseguita</label>
-        </div>
+        <input asp-for="MagazzinoN" class="form-control form-control-sm" maxlength="20" />
     </div>
 </div>
 
-<hr class="mt-4" />
-<h6 class="text-uppercase text-muted mb-3"><i class="bi bi-ui-checks me-1"></i>Avvio pratica</h6>
-<div class="row g-3">
-    <div class="col-md-4">
-        <div class="form-check">
-            <input asp-for="CheckAffidabilitaCliente" class="form-check-input" />
-            <label class="form-check-label" asp-for="CheckAffidabilitaCliente">Check affidabilità cliente</label>
-        </div>
-        <div class="form-check mt-2">
-            <input asp-for="ConfermaFirmata" class="form-check-input" />
-            <label class="form-check-label" asp-for="ConfermaFirmata">Conferma firmata</label>
-        </div>
-        <div class="form-check mt-2">
-            <input asp-for="TrasformatoInFavaro1" class="form-check-input" />
-            <label class="form-check-label" asp-for="TrasformatoInFavaro1">Trasformato in Favaro1</label>
-        </div>
-        <div class="form-check mt-2">
-            <input asp-for="AccreditoAcconto" class="form-check-input" />
-            <label class="form-check-label" asp-for="AccreditoAcconto">Accredito acconto</label>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="form-check">
-            <input asp-for="AnagraficaSdiPec" class="form-check-input" />
-            <label class="form-check-label" asp-for="AnagraficaSdiPec">Anagrafica SDI/PEC</label>
-        </div>
-        <div class="form-check mt-2">
-            <input asp-for="DocAgevolazioneIva" class="form-check-input" />
-            <label class="form-check-label" asp-for="DocAgevolazioneIva">Doc. agevolazione IVA</label>
-        </div>
-        <label class="form-label mt-3">Aliquota IVA %</label>
-        <input asp-for="AliquotaIva" class="form-control" type="number" min="0" max="100" step="0.01" />
-    </div>
+<div class="row g-2">
     <div class="col-md-4">
         <label class="form-label">Pagamento</label>
-        <input asp-for="Pagamento" class="form-control" maxlength="100" placeholder="Es. 30 gg d.f.f.m." />
-        <label class="form-label mt-2">Banca</label>
-        <input asp-for="Banca" class="form-control" maxlength="100" />
+        <input asp-for="Pagamento" class="form-control form-control-sm" maxlength="100" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Banca</label>
+        <input asp-for="Banca" class="form-control form-control-sm" maxlength="100" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">IVA %</label>
+        <input asp-for="AliquotaIva" class="form-control form-control-sm" type="number" min="0" max="100" step="0.01" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Fine posa il</label>
+        <input asp-for="FinePosaData" type="date" class="form-control form-control-sm" />
     </div>
 </div>
 
-<hr class="mt-4" />
-<h6 class="text-uppercase text-muted mb-3"><i class="bi bi-hammer me-1"></i>Posa e sicurezza</h6>
-<div class="row g-3">
-    <div class="col-md-3">
-        <div class="form-check">
-            <input asp-for="ContrattoPosatoreFirmato" class="form-check-input" />
-            <label class="form-check-label" asp-for="ContrattoPosatoreFirmato">Contratto posatore firmato</label>
-        </div>
+<div class="checklist-cantiere mt-2">
+    <div class="small text-uppercase text-muted fw-semibold mb-1">Avvio</div>
+    <div class="row g-1">
+        <div class="col-md-3"><div class="form-check"><input asp-for="CheckAffidabilitaCliente" class="form-check-input" /><label class="form-check-label" asp-for="CheckAffidabilitaCliente">Affidabilità cliente</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="ConfermaFirmata" class="form-check-input" /><label class="form-check-label" asp-for="ConfermaFirmata">Conferma firmata</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="TrasformatoInFavaro1" class="form-check-input" /><label class="form-check-label" asp-for="TrasformatoInFavaro1">Trasformato Favaro1</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="AccreditoAcconto" class="form-check-input" /><label class="form-check-label" asp-for="AccreditoAcconto">Accredito acconto</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="AnagraficaSdiPec" class="form-check-input" /><label class="form-check-label" asp-for="AnagraficaSdiPec">Anagrafica SDI/PEC</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="DocAgevolazioneIva" class="form-check-input" /><label class="form-check-label" asp-for="DocAgevolazioneIva">Doc. agevolazione IVA</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="PuliziaCantiere" class="form-check-input" /><label class="form-check-label" asp-for="PuliziaCantiere">Pulizia cantiere</label></div></div>
     </div>
-    <div class="col-md-3">
-        <div class="form-check">
-            <input asp-for="Psc" class="form-check-input" />
-            <label class="form-check-label" asp-for="Psc">PSC</label>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="form-check">
-            <input asp-for="PosFavaro1" class="form-check-input" />
-            <label class="form-check-label" asp-for="PosFavaro1">POS Favaro1</label>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="form-check">
-            <input asp-for="FinePosaFirmato" class="form-check-input" />
-            <label class="form-check-label" asp-for="FinePosaFirmato">Fine posa firmato</label>
-        </div>
-        <label class="form-label mt-2">Fine posa il</label>
-        <input asp-for="FinePosaData" type="date" class="form-control" />
+    <div class="small text-uppercase text-muted fw-semibold mb-1 mt-2">Posa e chiusura</div>
+    <div class="row g-1">
+        <div class="col-md-3"><div class="form-check"><input asp-for="ContrattoPosatoreFirmato" class="form-check-input" /><label class="form-check-label" asp-for="ContrattoPosatoreFirmato">Contratto posatore</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="Psc" class="form-check-input" /><label class="form-check-label" asp-for="Psc">PSC</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="PosFavaro1" class="form-check-input" /><label class="form-check-label" asp-for="PosFavaro1">POS Favaro1</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="FinePosaFirmato" class="form-check-input" /><label class="form-check-label" asp-for="FinePosaFirmato">Fine posa firmato</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="ContabilitaCantiere" class="form-check-input" /><label class="form-check-label" asp-for="ContabilitaCantiere">Contabilità cantiere</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="FatturaSaldoAttivo" class="form-check-input" /><label class="form-check-label" asp-for="FatturaSaldoAttivo">Fattura saldo attivo</label></div></div>
+        <div class="col-md-3"><div class="form-check"><input asp-for="FatturaSaldoPassivo" class="form-check-input" /><label class="form-check-label" asp-for="FatturaSaldoPassivo">Fattura saldo passiva</label></div></div>
     </div>
 </div>
 
-<hr class="mt-4" />
-<h6 class="text-uppercase text-muted mb-3"><i class="bi bi-receipt me-1"></i>Chiusura contabile</h6>
-<div class="row g-3">
-    <div class="col-md-4">
-        <div class="form-check">
-            <input asp-for="ContabilitaCantiere" class="form-check-input" />
-            <label class="form-check-label" asp-for="ContabilitaCantiere">Contabilità di cantiere</label>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="form-check">
-            <input asp-for="FatturaSaldoAttivo" class="form-check-input" />
-            <label class="form-check-label" asp-for="FatturaSaldoAttivo">Fattura saldo attivo</label>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="form-check">
-            <input asp-for="FatturaSaldoPassivo" class="form-check-input" />
-            <label class="form-check-label" asp-for="FatturaSaldoPassivo">Fattura saldo passiva</label>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mt-3">
-    <div class="col-12">
-        <label class="form-label">Note</label>
-        <textarea asp-for="Note" class="form-control" rows="3"></textarea>
-    </div>
+<div class="mt-2">
+    <label class="form-label">Note</label>
+    <textarea asp-for="Note" class="form-control form-control-sm" rows="2"></textarea>
 </div>

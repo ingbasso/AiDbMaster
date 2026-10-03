@@ -79,10 +79,6 @@ namespace AiDbMaster.ViewModels
         [Display(Name = "Note")]
         public string? Note { get; set; }
 
-        [StringLength(500)]
-        [Display(Name = "Cartella documenti")]
-        public string? PercorsoDocumenti { get; set; }
-
         [Display(Name = "Agente")]
         public string? NomeAgente { get; set; }
 
@@ -152,6 +148,24 @@ namespace AiDbMaster.ViewModels
         public bool FatturaSaldoPassivo { get; set; }
 
         public List<CantiereOrdineItemViewModel> Ordini { get; set; } = new();
+
+        public string? CartellaDocumenti { get; set; }
+        public string? ErroreDocumenti { get; set; }
+        public List<CantiereDocumentoItemViewModel> Documenti { get; set; } = new();
+    }
+
+    public class CartellaCantiereInfo
+    {
+        public string? Percorso { get; set; }
+        public string? Errore { get; set; }
+        public List<CantiereDocumentoItemViewModel> File { get; set; } = new();
+    }
+
+    public class CantiereDocumentoItemViewModel
+    {
+        public string Nome { get; set; } = string.Empty;
+        public long Dimensione { get; set; }
+        public DateTime DataModifica { get; set; }
     }
 
     public class CantiereOrdineItemViewModel
@@ -192,8 +206,10 @@ namespace AiDbMaster.ViewModels
         [Display(Name = "Aliquota IVA %")]
         public decimal AliquotaIva { get; set; } = 22;
 
+        public List<ContabilitaAccontoViewModel> Acconti { get; set; } = new();
+
         [Display(Name = "Imponibile acconto")]
-        public decimal ImponibileAcconto { get; set; }
+        public decimal ImponibileAcconto => Acconti.Sum(a => a.Imponibile);
 
         [StringLength(150)]
         [Display(Name = "Riferimento ordine")]
@@ -204,11 +220,36 @@ namespace AiDbMaster.ViewModels
 
         public List<ContabilitaCantiereRigaViewModel> Righe { get; set; } = new();
 
+        /// <summary>
+        /// Costi e prezzi medi letti dalla tabella CostiArticoliCantiere.
+        /// Servono solo a proporre il costo e a mostrare «PM» sul padre. Non vengono salvati con la contabilità.
+        /// </summary>
+        public List<CostoArticoloCantiereVoce> CostiArticoli { get; set; } = new();
+
+        /// <summary>Solo sulla contabilità finale: esistono righe iniziali da confrontare.</summary>
+        public bool ConfrontaIniziale { get; set; }
+
+        public decimal TotaleCostiIniziale { get; set; }
+        public decimal TotaleVenditaIniziale { get; set; }
+
+        /// <summary>Padri presenti nell'iniziale e assenti nella finale. Non vengono salvati.</summary>
+        public List<ContabilitaCantiereRigaViewModel> RigheSoloIniziale { get; set; } = new();
+
         public decimal TotaleVendita => Righe.Sum(r => r.TotaleVendita);
-        public decimal TotaleVenditaPosa => Righe.SelectMany(r => r.Figli).Sum(f => f.TotaleVendita);
-        public decimal TotaleAcquistoPosa => Righe.SelectMany(r => r.Figli).Sum(f => f.TotaleCosto);
+        public decimal TotaleVenditaPosa => Righe.SelectMany(r => r.Figli).Where(f => f.IsPosa).Sum(f => f.TotaleVendita);
+        public decimal TotaleAcquistoPosa => Righe.SelectMany(r => r.Figli).Where(f => f.IsPosa).Sum(f => f.TotaleCosto);
         public decimal ImponibileSaldo => TotaleVendita - ImponibileAcconto;
         public decimal TotaleConIva => Math.Round(ImponibileSaldo * (1 + AliquotaIva / 100m), 2);
+    }
+
+    public class ContabilitaAccontoViewModel
+    {
+        public int Id { get; set; }
+
+        [StringLength(100)]
+        public string? Descrizione { get; set; }
+
+        public decimal Imponibile { get; set; }
     }
 
     public class ContabilitaCantiereRigaViewModel
@@ -227,14 +268,104 @@ namespace AiDbMaster.ViewModels
 
         public decimal? QuantitaPosata { get; set; }
         public decimal? CostoMaterialeServizio { get; set; }
+        public decimal? RicaricoPercentuale { get; set; }
         public decimal? PrezzoVenditaCliente { get; set; }
+
+        /// <summary>
+        /// Vero se in questa riga l'utente ha scritto il prezzo di vendita
+        /// e il ricarico va ricavato da quello. Non è una colonna del database:
+        /// serve solo durante il salvataggio.
+        /// </summary>
+        public bool PrezzoDaPrezzo { get; set; }
+
+        public decimal? RicaricoEffettivo
+        {
+            get
+            {
+                if (IsSconto || IsArticoloSingolo)
+                    return RicaricoPercentuale;
+                if (RicaricoPercentuale.HasValue)
+                    return RicaricoPercentuale;
+                if (!IsPosa && CostoMaterialeServizio is > 0 && PrezzoVenditaCliente.HasValue)
+                    return Math.Round((PrezzoVenditaCliente.Value / CostoMaterialeServizio.Value - 1m) * 100m, 4);
+                return 30m;
+            }
+        }
 
         [StringLength(200)]
         public string? Note { get; set; }
 
+        public bool IsPosa { get; set; }
+
+        /// <summary>
+        /// Riga materiale creata insieme al padre: stesso articolo, quantità e codice.
+        /// Serve solo a riconoscerla nel salvataggio, non è una colonna del database.
+        /// </summary>
+        public bool IsArticoloMateriale { get; set; }
+
+        /// <summary>Riga di sconto: l'importo in cella è positivo e il totale vendita è negativo.</summary>
+        public bool IsSconto { get; set; }
+
+        /// <summary>Articolo singolo, senza figli e senza posa.</summary>
+        public bool IsArticoloSingolo { get; set; }
+
+        /// <summary>
+        /// Se è vero, questa riga compare nella proforma. Vale per il padre e per l'articolo singolo.
+        /// </summary>
+        public bool MostraInProforma { get; set; } = true;
+
+        public bool HaConfronto { get; set; }
+        public bool SoloFinale { get; set; }
+        public decimal? InizialeQuantita { get; set; }
+        public decimal? InizialeCostoUnitario { get; set; }
+        public decimal? InizialePrezzoUnitario { get; set; }
+
+        public bool HaConfrontoPosa { get; set; }
+        public decimal? InizialePosaQuantita { get; set; }
+        public decimal? InizialePosaCostoUnitario { get; set; }
+        public decimal? InizialePosaPrezzoUnitario { get; set; }
+
+        /// <summary>Figli dell'iniziale non trovati sotto questo padre nella finale. Non vengono salvati.</summary>
+        public List<ContabilitaCantiereRigaViewModel> Mancanti { get; set; } = new();
+
         public List<ContabilitaCantiereRigaViewModel> Figli { get; set; } = new();
 
-        public decimal TotaleCosto => (QuantitaPosata ?? 0) * (CostoMaterialeServizio ?? 0);
-        public decimal TotaleVendita => (QuantitaPosata ?? 0) * (PrezzoVenditaCliente ?? 0);
+        public decimal TotaleCosto => IsSconto ? 0 : (QuantitaPosata ?? 0) * (CostoMaterialeServizio ?? 0);
+
+        public decimal TotaleVendita => IsSconto
+            ? -Math.Abs(PrezzoVenditaCliente ?? 0)
+            : (QuantitaPosata ?? 0) * (PrezzoVenditaCliente ?? 0);
+    }
+
+    /// <summary>Voce letta da CostiArticoliCantiere e passata alla griglia.</summary>
+    public class CostoArticoloCantiereVoce
+    {
+        public string Codice { get; set; } = string.Empty;
+        public decimal Costo { get; set; }
+        public decimal PrezzoMedio { get; set; }
+    }
+
+    /// <summary>Maschera di inserimento e modifica di un costo articolo.</summary>
+    public class CostoArticoloCantiereForm
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Il codice articolo è obbligatorio.")]
+        [StringLength(50, ErrorMessage = "Il codice può avere al massimo 50 caratteri.")]
+        [Display(Name = "Codice articolo")]
+        public string CodiceArticolo { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La descrizione è obbligatoria.")]
+        [StringLength(255, ErrorMessage = "La descrizione può avere al massimo 255 caratteri.")]
+        [Display(Name = "Descrizione")]
+        public string Descrizione { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Il costo unitario è obbligatorio.")]
+        [Display(Name = "Costo unitario")]
+        public string? CostoUnitario { get; set; }
+
+        [Required(ErrorMessage = "Il prezzo medio di vendita è obbligatorio.")]
+        [Display(Name = "Prezzo medio di vendita")]
+        public string? PrezzoMedioVendita { get; set; }
     }
 }

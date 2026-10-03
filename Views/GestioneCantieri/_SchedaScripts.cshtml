@@ -12,6 +12,9 @@
         var urlCercaReferenti = '@Url.Action("CercaReferenti", "GestioneCantieri")';
         var urlAggiungiReferente = '@Url.Action("AggiungiReferente", "GestioneCantieri")';
         var urlRimuoviReferente = '@Url.Action("RimuoviReferente", "GestioneCantieri")';
+        var urlCaricaDocumenti = '@Url.Action("CaricaDocumenti", "GestioneCantieri")';
+        var urlEliminaDocumento = '@Url.Action("EliminaDocumento", "GestioneCantieri")';
+        var urlScaricaDocumento = '@Url.Action("ScaricaDocumento", "GestioneCantieri")';
         var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
         var cantiereId = @(Model.Id);
         var destinazioneSelezionata = @(Model.CodiceDestinazione.HasValue ? Model.CodiceDestinazione.Value.ToString() : "null");
@@ -137,15 +140,10 @@
                 }
                 $('#ordiniAlert').addClass('d-none');
                 var o = res.ordine;
-                var posa = o.trasportoPosa
-                    ? '<span class="badge bg-success">Sì</span>'
-                    : '<span class="badge bg-secondary">No</span>';
                 var riga = '<tr data-link-id="' + o.id + '">' +
                     '<td>' + o.numeroOrdine + '</td>' +
                     '<td>' + o.dataOrdine + '</td>' +
-                    '<td>' + (o.riferimento || '—') + '</td>' +
                     '<td><span class="' + o.statoEvasioneCss + '">' + o.statoEvasione + '</span></td>' +
-                    '<td class="text-center">' + posa + '</td>' +
                     '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-ordine" data-id="' + o.id + '" title="Scollega"><i class="bi bi-x-lg"></i></button></td>' +
                     '</tr>';
                 $('#tabellaOrdini tbody').append(riga);
@@ -230,7 +228,6 @@
                 var riga = '<tr data-link-id="' + r.id + '">' +
                     '<td>' + r.nome + '</td>' +
                     '<td>' + (r.telefono || '—') + '</td>' +
-                    '<td>' + (r.email || '—') + '</td>' +
                     '<td>' + (r.ruolo || '—') + '</td>' +
                     '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-referente" data-id="' + r.id + '" title="Scollega"><i class="bi bi-x-lg"></i></button></td>' +
                     '</tr>';
@@ -262,6 +259,84 @@
                 caricaReferentiDisponibili();
             }).fail(function () {
                 mostraAlertReferenti('Errore durante lo scollegamento.');
+            });
+        });
+
+        function mostraAlertDocumenti(messaggio, ok) {
+            var $alert = $('#documentiAlert');
+            if (!$alert.length) return;
+            $alert.removeClass('d-none alert-warning alert-success alert-danger')
+                .addClass(ok ? 'alert-success' : 'alert-warning')
+                .text(messaggio);
+        }
+
+        function rigaDocumento(file) {
+            var href = urlScaricaDocumento + '?id=' + cantiereId + '&nome=' + encodeURIComponent(file.nome);
+            return '<tr data-nome="' + file.nome.replace(/"/g, '&quot;') + '">' +
+                '<td><a href="' + href + '">' + file.nome + '</a></td>' +
+                '<td class="text-nowrap">' + file.dimensione + '</td>' +
+                '<td class="text-center text-nowrap">' +
+                '<a href="' + href + '" class="btn btn-sm btn-outline-secondary" title="Scarica"><i class="bi bi-download"></i></a> ' +
+                '<button type="button" class="btn btn-sm btn-outline-danger btn-elimina-documento" data-nome="' + file.nome.replace(/"/g, '&quot;') + '" title="Elimina"><i class="bi bi-trash"></i></button>' +
+                '</td></tr>';
+        }
+
+        function renderDocumenti(files) {
+            var $body = $('#tabellaDocumenti tbody');
+            $body.empty();
+            (files || []).forEach(function (f) { $body.append(rigaDocumento(f)); });
+            $('#badgeDocumenti').text((files || []).length);
+        }
+
+        $('#btnCopiaPercorso').on('click', function () {
+            var percorso = $('#percorsoDocumenti').val();
+            if (!percorso || !navigator.clipboard) return;
+            navigator.clipboard.writeText(percorso);
+        });
+
+        $('#btnCaricaDocumenti').on('click', function () {
+            var input = document.getElementById('fileDocumenti');
+            if (!input || !input.files || input.files.length === 0) {
+                mostraAlertDocumenti('Seleziona almeno un file da caricare.', false);
+                return;
+            }
+            var dati = new FormData();
+            dati.append('id', cantiereId);
+            dati.append('__RequestVerificationToken', token);
+            for (var i = 0; i < input.files.length; i++)
+                dati.append('files', input.files[i]);
+
+            var $btn = $('#btnCaricaDocumenti').prop('disabled', true);
+            $.ajax({
+                url: urlCaricaDocumenti,
+                type: 'POST',
+                data: dati,
+                processData: false,
+                contentType: false
+            }).done(function (res) {
+                if (res.files) renderDocumenti(res.files);
+                mostraAlertDocumenti(res.message || (res.success ? 'File caricati.' : 'Caricamento non riuscito.'), !!res.success);
+                if (res.success) input.value = '';
+            }).fail(function () {
+                mostraAlertDocumenti('Errore durante il caricamento. Controlla dimensione e permessi cartella.', false);
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
+
+        $(document).on('click', '.btn-elimina-documento', function () {
+            var nome = $(this).data('nome');
+            if (!nome || !confirm('Eliminare il file "' + nome + '" dalla cartella del cantiere?')) return;
+
+            $.post(urlEliminaDocumento, {
+                id: cantiereId,
+                nome: nome,
+                __RequestVerificationToken: token
+            }).done(function (res) {
+                if (res.files) renderDocumenti(res.files);
+                mostraAlertDocumenti(res.message || (res.success ? 'File eliminato.' : 'Eliminazione non riuscita.'), !!res.success);
+            }).fail(function () {
+                mostraAlertDocumenti('Errore durante l\'eliminazione.', false);
             });
         });
     })();

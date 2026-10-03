@@ -11,10 +11,20 @@
 @section Styles {
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <style>
+        .scheda-cantiere .form-label { font-size: .78rem; margin-bottom: .15rem; }
+        .scheda-cantiere .form-check { min-height: 1.35rem; }
+        .scheda-cantiere .form-check-label { font-size: .8rem; }
+        .scheda-cantiere .card-header { padding: .45rem .75rem; font-size: .9rem; }
+        .scheda-cantiere .card-body { padding: .75rem; }
+        .scheda-cantiere .card { margin-bottom: .75rem; }
+        .scheda-cantiere h2 { font-size: 1.25rem; }
+        .scheda-cantiere .table { font-size: .82rem; }
+    </style>
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<div class="container-fluid scheda-cantiere">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <h2 class="mb-0">
             <i class="bi bi-journal-text me-2 text-primary"></i>@titoloScheda
         </h2>
@@ -23,182 +33,215 @@
                 <i class="bi bi-calculator"></i> Contabilità
             </a>
             <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Torna all'elenco
+                <i class="bi bi-arrow-left"></i> Elenco
             </a>
         </div>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show py-2">
             @TempData["ErrorMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    <div class="card mb-3">
-        <div class="card-header"><i class="bi bi-building me-1"></i>Dati cantiere</div>
-        <div class="card-body">
-            <form asp-action="Edit" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="Id" />
-                <partial name="_SchedaForm" model="Model" />
-                <hr />
-                <div class="d-flex justify-content-end gap-2">
-                    <a asp-action="Index" class="btn btn-secondary">
-                        <i class="bi bi-x-lg me-1"></i>Annulla
-                    </a>
-                    <button type="submit" class="btn btn-primary" permission-required="GestioneCantieri:Edit">
-                        <i class="bi bi-check-lg me-1"></i>Salva scheda
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-person-vcard me-1"></i>Referenti di cantiere</span>
-            <span class="badge bg-secondary" id="badgeReferenti">@Model.Referenti.Count</span>
-        </div>
-        <div class="card-body">
-            <p class="text-muted">
-                Un cantiere può avere più referenti. L'anagrafica si gestisce da
-                <a asp-controller="ReferentiCantiere" asp-action="Index">Referenti di cantiere</a>.
-            </p>
-            <div class="row g-2 align-items-end mb-3" permission-required="GestioneCantieri:Edit">
-                <div class="col-md-6">
-                    <label class="form-label">Referente da collegare</label>
-                    <select id="referenteDaAggiungere" class="form-select">
-                        <option value="">-- seleziona un referente --</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Ruolo (facoltativo)</label>
-                    <input type="text" id="ruoloReferente" class="form-control" maxlength="80" placeholder="Es. Capocantiere" />
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-outline-primary" id="btnAggiungiReferente">
-                        <i class="bi bi-plus-lg me-1"></i>Collega
-                    </button>
+    <div class="row g-2">
+        <div class="col-xl-7">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-building me-1"></i>Dati cantiere</div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+                        <partial name="_SchedaForm" model="Model" />
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <a asp-action="Index" class="btn btn-secondary btn-sm">Annulla</a>
+                            <button type="submit" class="btn btn-primary btn-sm" permission-required="GestioneCantieri:Edit">
+                                <i class="bi bi-check-lg me-1"></i>Salva scheda
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div id="referentiAlert" class="alert alert-warning d-none"></div>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped mb-0" id="tabellaReferenti">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nome</th>
-                            <th>Telefono</th>
-                            <th>Email</th>
-                            <th>Ruolo</th>
-                            <th class="text-center" style="width:80px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var refC in Model.Referenti)
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-calculator me-1"></i>Contabilità</span>
+                    <div class="d-flex gap-1">
+                        <a asp-action="Contabilita" asp-route-id="@Model.Id" asp-route-tipo="Iniziale" class="btn btn-primary btn-sm">Iniziale</a>
+                        <a asp-action="Contabilita" asp-route-id="@Model.Id" asp-route-tipo="Finale" class="btn btn-outline-primary btn-sm">Finale</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person-vcard me-1"></i>Referenti</span>
+                    <span class="badge bg-secondary" id="badgeReferenti">@Model.Referenti.Count</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-1 align-items-end mb-2" permission-required="GestioneCantieri:Edit">
+                        <div class="col-6">
+                            <label class="form-label">Referente</label>
+                            <select id="referenteDaAggiungere" class="form-select form-select-sm">
+                                <option value="">-- seleziona --</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Ruolo</label>
+                            <input type="text" id="ruoloReferente" class="form-control form-control-sm" maxlength="80" />
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btnAggiungiReferente">Collega</button>
+                        </div>
+                    </div>
+                    <div id="referentiAlert" class="alert alert-warning py-1 d-none"></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0" id="tabellaReferenti">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Telefono</th>
+                                    <th>Ruolo</th>
+                                    <th style="width:40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var refC in Model.Referenti)
+                            {
+                                <tr data-link-id="@refC.Id">
+                                    <td>@refC.Nome</td>
+                                    <td>@(refC.Telefono ?? "—")</td>
+                                    <td>@(refC.Ruolo ?? "—")</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-referente" data-id="@refC.Id" title="Scollega">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="cardDocumenti">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-folder2-open me-1"></i>Documenti</span>
+                    <span class="badge bg-secondary" id="badgeDocumenti">@Model.Documenti.Count</span>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(Model.ErroreDocumenti))
                     {
-                        <tr data-link-id="@refC.Id">
-                            <td>@refC.Nome</td>
-                            <td>@(refC.Telefono ?? "—")</td>
-                            <td>@(refC.Email ?? "—")</td>
-                            <td>@(refC.Ruolo ?? "—")</td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-referente" data-id="@refC.Id" title="Scollega">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        <div class="alert alert-warning py-1 mb-2" id="documentiAlert">@Model.ErroreDocumenti</div>
                     }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header"><i class="bi bi-calculator me-1"></i>Contabilità di cantiere</div>
-        <div class="card-body">
-            <p class="text-muted mb-3">
-                Come in Excel: tieni una versione <strong>iniziale</strong> (preventivo) e una <strong>finale</strong> (consuntivo),
-                con prezzi cliente, costi materiali e posa in vendita/acquisto.
-            </p>
-            <div class="d-flex flex-wrap gap-2">
-                <a asp-action="Contabilita" asp-route-id="@Model.Id" asp-route-tipo="Iniziale" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-plus me-1"></i>Contabilità iniziale
-                </a>
-                <a asp-action="Contabilita" asp-route-id="@Model.Id" asp-route-tipo="Finale" class="btn btn-outline-primary">
-                    <i class="bi bi-file-earmark-check me-1"></i>Contabilità finale
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-box-seam me-1"></i>Ordini collegati</span>
-            <span class="badge bg-secondary" id="badgeOrdini">@Model.Ordini.Count</span>
-        </div>
-        <div class="card-body">
-            <p class="text-muted">
-                Un cantiere può avere più ordini. Qui vedi solo gli ordini cliente di <strong>@Model.ClienteNome</strong>
-                non ancora collegati a un altro cantiere.
-            </p>
-            <div class="row g-2 align-items-end mb-3" permission-required="GestioneCantieri:Edit">
-                <div class="col-md-8">
-                    <label class="form-label">Ordine da collegare</label>
-                    <select id="ordineDaAggiungere" class="form-select">
-                        <option value="">-- seleziona un ordine --</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <button type="button" class="btn btn-outline-primary" id="btnAggiungiOrdine">
-                        <i class="bi bi-plus-lg me-1"></i>Collega ordine
-                    </button>
-                </div>
-            </div>
-            <div id="ordiniAlert" class="alert alert-warning d-none"></div>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped mb-0" id="tabellaOrdini">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Ordine</th>
-                            <th>Data</th>
-                            <th>Riferimento</th>
-                            <th>Evasione</th>
-                            <th class="text-center">Trasp. posa</th>
-                            <th class="text-center" style="width:80px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var ordine in Model.Ordini)
+                    else
                     {
-                        <tr data-link-id="@ordine.Id">
-                            <td>
-                                <a asp-controller="OrdiniTestate" asp-action="Index" target="_blank">@ordine.NumeroOrdine</a>
-                            </td>
-                            <td>@(ordine.DataOrdine == DateTime.MinValue ? "—" : ordine.DataOrdine.ToString("dd/MM/yyyy"))</td>
-                            <td>@(ordine.Riferimento ?? "—")</td>
-                            <td><span class="@ordine.StatoEvasioneCss">@ordine.StatoEvasione</span></td>
-                            <td class="text-center">
-                                @if (ordine.TrasportoPosa)
-                                {
-                                    <span class="badge bg-success">Sì</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">No</span>
-                                }
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-ordine" data-id="@ordine.Id" title="Scollega">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        <div id="documentiAlert" class="alert alert-warning py-1 d-none"></div>
                     }
-                    </tbody>
-                </table>
+                    @if (!string.IsNullOrWhiteSpace(Model.CartellaDocumenti))
+                    {
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" class="form-control" id="percorsoDocumenti" readonly value="@Model.CartellaDocumenti" />
+                            <button type="button" class="btn btn-outline-secondary" id="btnCopiaPercorso" title="Copia percorso">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    }
+                    <div class="row g-1 align-items-end mb-2" permission-required="GestioneCantieri:Edit">
+                        <div class="col-8">
+                            <input type="file" id="fileDocumenti" class="form-control form-control-sm" multiple />
+                        </div>
+                        <div class="col-4">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btnCaricaDocumenti">
+                                <i class="bi bi-upload me-1"></i>Carica
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0" id="tabellaDocumenti">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>File</th>
+                                    <th style="width:70px;"></th>
+                                    <th style="width:70px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var doc in Model.Documenti)
+                            {
+                                <tr data-nome="@doc.Nome">
+                                    <td>
+                                        <a asp-action="ScaricaDocumento" asp-route-id="@Model.Id" asp-route-nome="@doc.Nome">@doc.Nome</a>
+                                    </td>
+                                    <td class="text-nowrap">@(doc.Dimensione < 1024 ? $"{doc.Dimensione} B" : doc.Dimensione < 1024 * 1024 ? $"{doc.Dimensione / 1024.0:0.#} KB" : $"{doc.Dimensione / (1024.0 * 1024.0):0.#} MB")</td>
+                                    <td class="text-center text-nowrap">
+                                        <a asp-action="ScaricaDocumento" asp-route-id="@Model.Id" asp-route-nome="@doc.Nome" class="btn btn-sm btn-outline-secondary" title="Scarica">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-documento" data-nome="@doc.Nome" title="Elimina" permission-required="GestioneCantieri:Edit">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box-seam me-1"></i>Ordini</span>
+                    <span class="badge bg-secondary" id="badgeOrdini">@Model.Ordini.Count</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-1 align-items-end mb-2" permission-required="GestioneCantieri:Edit">
+                        <div class="col-8">
+                            <select id="ordineDaAggiungere" class="form-select form-select-sm">
+                                <option value="">-- ordine da collegare --</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btnAggiungiOrdine">Collega</button>
+                        </div>
+                    </div>
+                    <div id="ordiniAlert" class="alert alert-warning py-1 d-none"></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0" id="tabellaOrdini">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ordine</th>
+                                    <th>Data</th>
+                                    <th>Evasione</th>
+                                    <th style="width:40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var ordine in Model.Ordini)
+                            {
+                                <tr data-link-id="@ordine.Id">
+                                    <td>
+                                        <a asp-controller="OrdiniTestate" asp-action="Index" target="_blank">@ordine.NumeroOrdine</a>
+                                    </td>
+                                    <td>@(ordine.DataOrdine == DateTime.MinValue ? "—" : ordine.DataOrdine.ToString("dd/MM/yyyy"))</td>
+                                    <td><span class="@ordine.StatoEvasioneCss">@ordine.StatoEvasione</span></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-rimuovi-ordine" data-id="@ordine.Id" title="Scollega">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

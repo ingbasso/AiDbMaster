@@ -1,10 +1,12 @@
 using AiDbMaster.Attributes;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
+using AiDbMaster.Services;
 using AiDbMaster.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 
 namespace AiDbMaster.Controllers
@@ -18,13 +20,19 @@ namespace AiDbMaster.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<GestioneCantieriController> _logger;
+        private readonly CantieriDocumentiService _documenti;
+        private readonly IWebHostEnvironment _env;
 
         public GestioneCantieriController(
             ApplicationDbContext context,
-            ILogger<GestioneCantieriController> logger)
+            ILogger<GestioneCantieriController> logger,
+            CantieriDocumentiService documenti,
+            IWebHostEnvironment env)
         {
             _context = context;
             _logger = logger;
+            _documenti = documenti;
+            _env = env;
         }
 
         public async Task<IActionResult> Index(string? q, CantiereStato? stato)
@@ -120,7 +128,6 @@ namespace AiDbMaster.Controllers
                 DataFinePrevista = model.DataFinePrevista,
                 Stato = model.Stato,
                 Note = NullIfEmpty(model.Note),
-                PercorsoDocumenti = NullIfEmpty(model.PercorsoDocumenti),
                 DataCreazione = DateTime.Now,
                 UtenteCreazione = utente
             };
@@ -148,6 +155,7 @@ namespace AiDbMaster.Controllers
             }
 
             var scheda = await MapToSchedaAsync(cantiere);
+            await CompletaDocumentiAsync(scheda, cantiere.Codice);
             ViewData["Title"] = TitoloScheda(scheda);
             await CaricaListeSchedaAsync(cantiere.Stato, cantiere.ImpresaPosaId);
             return View(scheda);
@@ -179,6 +187,7 @@ namespace AiDbMaster.Controllers
                 model.NomeAgente = await GetNomeAgenteAsync(cantiereError.CodiceCliente);
                 model.Ordini = MapOrdini(cantiereError);
                 model.Referenti = MapReferenti(cantiereError);
+                await CompletaDocumentiAsync(model, cantiereError.Codice);
                 ViewData["Title"] = TitoloScheda(model);
                 await CaricaListeSchedaAsync(model.Stato, model.ImpresaPosaId);
                 return View(model);
@@ -205,7 +214,6 @@ namespace AiDbMaster.Controllers
             existing.DataFinePrevista = model.DataFinePrevista;
             existing.Stato = model.Stato;
             existing.Note = NullIfEmpty(model.Note);
-            existing.PercorsoDocumenti = NullIfEmpty(model.PercorsoDocumenti);
             existing.DataUltimaModifica = DateTime.Now;
             existing.UtenteModifica = GetUtenteCorrente();
             ApplicaChecklist(existing, model);
@@ -500,6 +508,81 @@ namespace AiDbMaster.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// PDF della proforma. Legge solo la contabilità già salvata: le modifiche ancora
+        /// aperte in pagina, e non confermate con Salva, non entrano nel documento.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> Proforma(int id, TipoContabilitaCantiere tipo = TipoContabilitaCantiere.Iniziale)
+        {
+            var model = await CaricaContabilitaViewModelAsync(id, tipo);
+            if (model == null)
+                return NotFound();
+
+            var cantiere = await _context.Cantieri
+                .AsNoTracking()
+                .FirstAsync(c => c.Id == id);
+
+            var cliente = await _context.AnagraficaClienti
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CodiceCliente == cantiere.CodiceCliente);
+
+            model.RiferimentoOrdine = await _context.CantiereContabilita
+                .AsNoTracking()
+                .Where(c => c.CantiereId == id && c.Tipo == tipo)
+                .Select(c => c.RiferimentoOrdine)
+                .FirstOrDefaultAsync();
+
+            var immagine = Path.Combine(_env.WebRootPath, "images", "logo-favaro1-wordmark.png");
+            var pdf = ProformaContabilitaPdf.Crea(model, cantiere, cliente, immagine, DateTime.Today);
+            var nomeFile = NomeFileProforma(cantiere.Codice, tipo);
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"{nomeFile}\"";
+            return File(pdf, "application/pdf");
+        }
+
+        /// <summary>
+        /// Excel della griglia. Come la proforma, usa solo la contabilità già salvata.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> EsportaExcel(int id, TipoContabilitaCantiere tipo = TipoContabilitaCantiere.Iniziale)
+        {
+            var model = await CaricaContabilitaViewModelAsync(id, tipo);
+            if (model == null)
+                return NotFound();
+
+            var cantiere = await _context.Cantieri
+                .AsNoTracking()
+                .FirstAsync(c => c.Id == id);
+
+            model.RiferimentoOrdine = await _context.CantiereContabilita
+                .AsNoTracking()
+                .Where(c => c.CantiereId == id && c.Tipo == tipo)
+                .Select(c => c.RiferimentoOrdine)
+                .FirstOrDefaultAsync();
+
+            var excel = ContabilitaExcel.Crea(model, cantiere.Nome);
+            var nomeFile = NomeFileExcel(cantiere.Codice, tipo);
+            return File(excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", nomeFile);
+        }
+
+        private static string NomeFileExcel(string codice, TipoContabilitaCantiere tipo)
+        {
+            var caratteriVietati = Path.GetInvalidFileNameChars();
+            var codicePulito = new string(codice.Select(c => caratteriVietati.Contains(c) ? '_' : c).ToArray());
+            if (string.IsNullOrWhiteSpace(codicePulito))
+                codicePulito = "cantiere";
+            return $"Contabilita_{codicePulito}_{tipo}_{DateTime.Today:yyyyMMdd}.xlsx";
+        }
+
+        private static string NomeFileProforma(string codice, TipoContabilitaCantiere tipo)
+        {
+            var caratteriVietati = Path.GetInvalidFileNameChars();
+            var codicePulito = new string(codice.Select(c => caratteriVietati.Contains(c) ? '_' : c).ToArray());
+            if (string.IsNullOrWhiteSpace(codicePulito))
+                codicePulito = "cantiere";
+            return $"Proforma_{codicePulito}_{tipo}_{DateTime.Today:yyyyMMdd}.pdf";
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequirePermission("GestioneCantieri", "Edit")]
@@ -511,11 +594,12 @@ namespace AiDbMaster.Controllers
 
             var testata = await GetOrCreateContabilitaAsync(cantiere.Id, model.Tipo);
             testata.AliquotaIva = model.AliquotaIva;
-            testata.ImponibileAcconto = model.ImponibileAcconto;
             testata.RiferimentoOrdine = NullIfEmpty(model.RiferimentoOrdine);
             testata.Note = NullIfEmpty(model.Note);
             testata.DataUltimaModifica = DateTime.Now;
 
+            await SostituisciAccontiAsync(testata.Id, model.Acconti);
+            testata.ImponibileAcconto = model.ImponibileAcconto;
             await SostituisciRigheContabilitaAsync(testata.Id, model.Righe);
 
             if (!cantiere.ContabilitaCantiere)
@@ -610,6 +694,7 @@ namespace AiDbMaster.Controllers
         {
             var iniziale = await _context.CantiereContabilita
                 .Include(c => c.Righe)
+                .Include(c => c.Acconti)
                 .FirstOrDefaultAsync(c => c.CantiereId == id && c.Tipo == TipoContabilitaCantiere.Iniziale);
 
             if (iniziale == null)
@@ -620,12 +705,20 @@ namespace AiDbMaster.Controllers
 
             var finale = await GetOrCreateContabilitaAsync(id, TipoContabilitaCantiere.Finale);
             finale.AliquotaIva = iniziale.AliquotaIva;
-            finale.ImponibileAcconto = iniziale.ImponibileAcconto;
             finale.RiferimentoOrdine = iniziale.RiferimentoOrdine;
             finale.Note = iniziale.Note;
             finale.DataUltimaModifica = DateTime.Now;
 
             await EliminaRigheContabilitaAsync(finale.Id);
+            await SostituisciAccontiAsync(finale.Id, iniziale.Acconti
+                .OrderBy(a => a.Ordine)
+                .Select(a => new ContabilitaAccontoViewModel
+                {
+                    Descrizione = a.Descrizione,
+                    Imponibile = a.Imponibile
+                })
+                .ToList());
+            finale.ImponibileAcconto = iniziale.Acconti.Sum(a => a.Imponibile);
 
             var padri = iniziale.Righe
                 .Where(r => r.PadreId == null)
@@ -655,6 +748,79 @@ namespace AiDbMaster.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Contabilita), new { id, tipo = TipoContabilitaCantiere.Finale });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("GestioneCantieri", "Edit")]
+        [RequestSizeLimit(CantieriDocumentiService.DimensioneMassimaFile * 4)]
+        [RequestFormLimits(MultipartBodyLengthLimit = CantieriDocumentiService.DimensioneMassimaFile * 4)]
+        public async Task<IActionResult> CaricaDocumenti(int id, List<IFormFile>? files)
+        {
+            var cantiere = await _context.Cantieri.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            if (cantiere == null)
+                return Json(new { success = false, message = "Cantiere non trovato." });
+
+            if (files == null || files.Count == 0)
+                return Json(new { success = false, message = "Seleziona almeno un file." });
+
+            var caricati = new List<string>();
+            var errori = new List<string>();
+            foreach (var file in files)
+            {
+                var risultato = await _documenti.SalvaFileAsync(cantiere.Codice, file);
+                if (risultato.Ok && risultato.NomeSalvato != null)
+                    caricati.Add(risultato.NomeSalvato);
+                else
+                    errori.Add($"{file.FileName}: {risultato.Messaggio}");
+            }
+
+            var cartella = await _documenti.CaricaCartellaAsync(cantiere.Codice);
+            return Json(new
+            {
+                success = errori.Count == 0,
+                message = errori.Count == 0
+                    ? $"Caricati {caricati.Count} file."
+                    : string.Join(" ", errori),
+                files = cartella.File.Select(MapDocumentoJson)
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ScaricaDocumento(int id, string nome)
+        {
+            var cantiere = await _context.Cantieri.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            if (cantiere == null)
+                return NotFound();
+
+            var risultato = await _documenti.PercorsoDownloadAsync(cantiere.Codice, nome);
+            if (!risultato.Ok || string.IsNullOrWhiteSpace(risultato.Percorso))
+                return NotFound();
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(risultato.Percorso, out var contentType))
+                contentType = "application/octet-stream";
+
+            return PhysicalFile(risultato.Percorso, contentType, Path.GetFileName(risultato.Percorso));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("GestioneCantieri", "Edit")]
+        public async Task<IActionResult> EliminaDocumento(int id, string nome)
+        {
+            var cantiere = await _context.Cantieri.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            if (cantiere == null)
+                return Json(new { success = false, message = "Cantiere non trovato." });
+
+            var risultato = await _documenti.EliminaFileAsync(cantiere.Codice, nome);
+            var cartella = await _documenti.CaricaCartellaAsync(cantiere.Codice);
+            return Json(new
+            {
+                success = risultato.Ok,
+                message = risultato.Messaggio,
+                files = cartella.File.Select(MapDocumentoJson)
+            });
         }
 
         [HttpGet]
@@ -731,6 +897,33 @@ namespace AiDbMaster.Controllers
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
+        private async Task CompletaDocumentiAsync(CantiereSchedaViewModel scheda, string codice)
+        {
+            var cartella = await _documenti.CaricaCartellaAsync(codice);
+            scheda.CartellaDocumenti = cartella.Percorso;
+            scheda.ErroreDocumenti = cartella.Errore;
+            scheda.Documenti = cartella.File;
+        }
+
+        private static object MapDocumentoJson(CantiereDocumentoItemViewModel file)
+        {
+            return new
+            {
+                nome = file.Nome,
+                dimensione = FormattaDimensione(file.Dimensione),
+                data = file.DataModifica.ToString("dd/MM/yyyy HH:mm")
+            };
+        }
+
+        private static string FormattaDimensione(long bytes)
+        {
+            if (bytes < 1024)
+                return $"{bytes} B";
+            if (bytes < 1024 * 1024)
+                return $"{bytes / 1024.0:0.#} KB";
+            return $"{bytes / (1024.0 * 1024.0):0.#} MB";
+        }
+
         private async Task<CantiereSchedaViewModel> MapToSchedaAsync(Cantiere cantiere)
         {
             return new CantiereSchedaViewModel
@@ -752,7 +945,6 @@ namespace AiDbMaster.Controllers
                 DataFinePrevista = cantiere.DataFinePrevista,
                 Stato = cantiere.Stato,
                 Note = cantiere.Note,
-                PercorsoDocumenti = cantiere.PercorsoDocumenti,
                 NomeAgente = await GetNomeAgenteAsync(cantiere.CodiceCliente),
                 TipoTrasporto = cantiere.TipoTrasporto,
                 PuliziaCantiere = cantiere.PuliziaCantiere,
@@ -929,6 +1121,7 @@ namespace AiDbMaster.Controllers
             var testate = await _context.CantiereContabilita
                 .AsNoTracking()
                 .Include(c => c.Righe)
+                .Include(c => c.Acconti)
                 .Where(c => c.CantiereId == cantiereId)
                 .ToListAsync();
 
@@ -951,10 +1144,20 @@ namespace AiDbMaster.Controllers
                 HaContabilitaFinale = testate.Any(c => c.Tipo == TipoContabilitaCantiere.Finale && c.Righe.Count > 0),
                 NumeroOrdiniCollegati = await _context.CantiereOrdini.CountAsync(o => o.CantiereId == cantiereId),
                 AliquotaIva = corrente?.AliquotaIva ?? cantiere.AliquotaIva ?? 22,
-                ImponibileAcconto = corrente?.ImponibileAcconto ?? 0,
+                Acconti = MappaAcconti(corrente),
                 RiferimentoOrdine = corrente?.RiferimentoOrdine,
                 Note = corrente?.Note,
-                Righe = CostruisciAlberoRighe(corrente?.Righe)
+                Righe = CostruisciAlberoRighe(corrente?.Righe),
+                CostiArticoli = await _context.CostiArticoliCantiere
+                    .AsNoTracking()
+                    .OrderBy(c => c.CodiceArticolo)
+                    .Select(c => new CostoArticoloCantiereVoce
+                    {
+                        Codice = c.CodiceArticolo,
+                        Costo = c.CostoUnitario,
+                        PrezzoMedio = c.PrezzoMedioVendita
+                    })
+                    .ToListAsync()
             };
 
             if (string.IsNullOrWhiteSpace(model.RiferimentoOrdine))
@@ -969,6 +1172,19 @@ namespace AiDbMaster.Controllers
                 {
                     model.RiferimentoOrdine = string.Join("; ", riferimenti
                         .Select(o => $"{o.NumeroOrdineCompleto} del {o.DataOrdine:dd/MM/yyyy}"));
+                }
+            }
+
+            if (tipo == TipoContabilitaCantiere.Finale)
+            {
+                var iniziale = testate.FirstOrDefault(c => c.Tipo == TipoContabilitaCantiere.Iniziale);
+                var alberoIniziale = CostruisciAlberoRighe(iniziale?.Righe);
+                if (alberoIniziale.Count > 0)
+                {
+                    model.ConfrontaIniziale = true;
+                    model.TotaleCostiIniziale = SommaCostiAlbero(alberoIniziale);
+                    model.TotaleVenditaIniziale = alberoIniziale.Sum(r => r.TotaleVendita);
+                    model.RigheSoloIniziale = CollegaConfrontoIniziale(model.Righe, alberoIniziale);
                 }
             }
 
@@ -998,6 +1214,54 @@ namespace AiDbMaster.Controllers
             return testata;
         }
 
+        private static List<ContabilitaAccontoViewModel> MappaAcconti(CantiereContabilita? testata)
+        {
+            var lista = testata?.Acconti
+                .OrderBy(a => a.Ordine)
+                .Select(a => new ContabilitaAccontoViewModel
+                {
+                    Id = a.Id,
+                    Descrizione = a.Descrizione,
+                    Imponibile = a.Imponibile
+                })
+                .ToList() ?? new List<ContabilitaAccontoViewModel>();
+
+            if (lista.Count == 0 && testata?.ImponibileAcconto is > 0)
+            {
+                lista.Add(new ContabilitaAccontoViewModel
+                {
+                    Descrizione = "Acconto",
+                    Imponibile = testata.ImponibileAcconto
+                });
+            }
+
+            return lista;
+        }
+
+        private async Task SostituisciAccontiAsync(int contabilitaId, List<ContabilitaAccontoViewModel>? acconti)
+        {
+            var esistenti = await _context.CantiereContabilitaAcconti
+                .Where(a => a.ContabilitaId == contabilitaId)
+                .ToListAsync();
+            if (esistenti.Count > 0)
+                _context.CantiereContabilitaAcconti.RemoveRange(esistenti);
+
+            var ordine = 1;
+            foreach (var acconto in acconti ?? new List<ContabilitaAccontoViewModel>())
+            {
+                if (string.IsNullOrWhiteSpace(acconto.Descrizione) && acconto.Imponibile == 0)
+                    continue;
+
+                _context.CantiereContabilitaAcconti.Add(new CantiereContabilitaAcconto
+                {
+                    ContabilitaId = contabilitaId,
+                    Ordine = ordine++,
+                    Descrizione = NullIfEmpty(acconto.Descrizione),
+                    Imponibile = acconto.Imponibile
+                });
+            }
+        }
+
         private async Task SostituisciRigheContabilitaAsync(int contabilitaId, List<ContabilitaCantiereRigaViewModel>? righe)
         {
             await EliminaRigheContabilitaAsync(contabilitaId);
@@ -1005,8 +1269,32 @@ namespace AiDbMaster.Controllers
             var ordinePadre = 1;
             foreach (var padreVm in righe ?? new List<ContabilitaCantiereRigaViewModel>())
             {
-                var figliValidi = (padreVm.Figli ?? new List<ContabilitaCantiereRigaViewModel>())
-                    .Where(f => !RigaContabilitaVuota(f))
+                if (padreVm.IsSconto)
+                {
+                    NormalizzaSconto(padreVm);
+                    var sconto = CreaRigaDaViewModel(padreVm, contabilitaId, null, ordinePadre++);
+                    _context.CantiereContabilitaRighe.Add(sconto);
+                    await _context.SaveChangesAsync();
+                    continue;
+                }
+
+                if (padreVm.IsArticoloSingolo)
+                {
+                    if (RigaContabilitaVuota(padreVm))
+                        continue;
+
+                    padreVm.IsPosa = false;
+                    padreVm.IsSconto = false;
+                    padreVm.Figli = new List<ContabilitaCantiereRigaViewModel>();
+                    var articolo = CreaRigaDaViewModel(padreVm, contabilitaId, null, ordinePadre++);
+                    _context.CantiereContabilitaRighe.Add(articolo);
+                    await _context.SaveChangesAsync();
+                    continue;
+                }
+
+                var figliValidi = AllineaRigaPosa(padreVm, padreVm.Figli);
+                figliValidi = figliValidi
+                    .Where(f => f.IsPosa || !RigaContabilitaVuota(f))
                     .ToList();
 
                 if (RigaContabilitaVuota(padreVm) && figliValidi.Count == 0)
@@ -1040,6 +1328,162 @@ namespace AiDbMaster.Controllers
             await _context.SaveChangesAsync();
         }
 
+        private static decimal SommaCostiAlbero(List<ContabilitaCantiereRigaViewModel> padri)
+        {
+            return padri.Sum(p => p.TotaleCosto + p.Figli.Sum(f => f.TotaleCosto));
+        }
+
+        /// <summary>
+        /// Accoppia le righe finali a quelle iniziali: padre con lo stesso codice,
+        /// figlio con lo stesso codice sotto quel padre, posa con la posa del padre.
+        /// </summary>
+        private static List<ContabilitaCantiereRigaViewModel> CollegaConfrontoIniziale(
+            List<ContabilitaCantiereRigaViewModel> finali,
+            List<ContabilitaCantiereRigaViewModel> iniziali)
+        {
+            var usatiPadri = new HashSet<ContabilitaCantiereRigaViewModel>();
+            foreach (var padre in finali)
+            {
+                if (RigaContabilitaVuota(padre))
+                    continue;
+
+                var origine = TrovaCorrispondenza(iniziali, usatiPadri, padre);
+                if (origine == null)
+                {
+                    padre.SoloFinale = true;
+                    foreach (var figlio in padre.Figli.Where(f => !RigaContabilitaVuota(f)))
+                        figlio.SoloFinale = true;
+                    continue;
+                }
+
+                usatiPadri.Add(origine);
+                CopiaNumeriConfronto(padre, origine);
+                CollegaFigliConfronto(padre, origine);
+            }
+
+            return iniziali
+                .Where(p => !usatiPadri.Contains(p) && !RigaContabilitaVuota(p))
+                .Select(PreparaPadreMancante)
+                .ToList();
+        }
+
+        private static void CollegaFigliConfronto(
+            ContabilitaCantiereRigaViewModel padreFinale,
+            ContabilitaCantiereRigaViewModel padreIniziale)
+        {
+            var usati = new HashSet<ContabilitaCantiereRigaViewModel>();
+            var posaFinale = padreFinale.Figli.FirstOrDefault(f => f.IsPosa);
+            var posaIniziale = padreIniziale.Figli.FirstOrDefault(f => f.IsPosa);
+
+            if (posaFinale != null && posaIniziale != null)
+            {
+                CopiaNumeriConfronto(posaFinale, posaIniziale);
+                usati.Add(posaIniziale);
+            }
+            else if (posaFinale != null)
+            {
+                posaFinale.SoloFinale = true;
+            }
+            else if (posaIniziale != null)
+            {
+                padreFinale.HaConfrontoPosa = true;
+                padreFinale.InizialePosaQuantita = posaIniziale.QuantitaPosata;
+                padreFinale.InizialePosaCostoUnitario = posaIniziale.CostoMaterialeServizio;
+                padreFinale.InizialePosaPrezzoUnitario = posaIniziale.PrezzoVenditaCliente;
+                usati.Add(posaIniziale);
+            }
+
+            foreach (var figlio in padreFinale.Figli.Where(f => !f.IsPosa))
+            {
+                if (RigaContabilitaVuota(figlio))
+                    continue;
+
+                var origine = TrovaCorrispondenza(padreIniziale.Figli, usati, figlio);
+                if (origine == null)
+                {
+                    figlio.SoloFinale = true;
+                    continue;
+                }
+
+                usati.Add(origine);
+                CopiaNumeriConfronto(figlio, origine);
+            }
+
+            foreach (var origine in padreIniziale.Figli.Where(f => !usati.Contains(f) && !RigaContabilitaVuota(f)))
+            {
+                var copia = new ContabilitaCantiereRigaViewModel
+                {
+                    CodiceArticolo = origine.CodiceArticolo,
+                    Descrizione = origine.Descrizione,
+                    UnitaMisura = origine.UnitaMisura,
+                    IsPosa = origine.IsPosa
+                };
+                CopiaNumeriConfronto(copia, origine);
+                padreFinale.Mancanti.Add(copia);
+            }
+        }
+
+        private static ContabilitaCantiereRigaViewModel PreparaPadreMancante(ContabilitaCantiereRigaViewModel origine)
+        {
+            CopiaNumeriConfronto(origine, origine);
+            foreach (var figlio in origine.Figli.Where(f => !RigaContabilitaVuota(f)))
+                CopiaNumeriConfronto(figlio, figlio);
+
+            origine.Figli = origine.Figli.Where(f => f.HaConfronto).ToList();
+            return origine;
+        }
+
+        private static ContabilitaCantiereRigaViewModel? TrovaCorrispondenza(
+            IEnumerable<ContabilitaCantiereRigaViewModel> candidati,
+            HashSet<ContabilitaCantiereRigaViewModel> usati,
+            ContabilitaCantiereRigaViewModel cercata)
+        {
+            if (cercata.IsSconto)
+                return candidati.FirstOrDefault(c => !usati.Contains(c) && c.IsSconto);
+
+            if (cercata.IsArticoloSingolo)
+            {
+                var chiaveArticolo = ChiaveRiga(cercata);
+                if (chiaveArticolo.Length == 0)
+                    return null;
+                return candidati.FirstOrDefault(c =>
+                    !usati.Contains(c) && c.IsArticoloSingolo && ChiaveRiga(c) == chiaveArticolo);
+            }
+
+            if (cercata.IsPosa)
+                return candidati.FirstOrDefault(c => !usati.Contains(c) && c.IsPosa);
+
+            var chiave = ChiaveRiga(cercata);
+            if (chiave.Length == 0)
+                return null;
+
+            return candidati.FirstOrDefault(c =>
+                !usati.Contains(c) && !c.IsPosa && !c.IsSconto && !c.IsArticoloSingolo && ChiaveRiga(c) == chiave);
+        }
+
+        private static string ChiaveRiga(ContabilitaCantiereRigaViewModel riga)
+        {
+            var codice = (riga.CodiceArticolo ?? string.Empty).Trim();
+            if (codice.Length > 0)
+                return "C:" + codice.ToUpperInvariant();
+
+            var descrizione = (riga.Descrizione ?? string.Empty).Trim();
+            if (descrizione.Length > 0)
+                return "D:" + descrizione.ToUpperInvariant();
+
+            return string.Empty;
+        }
+
+        private static void CopiaNumeriConfronto(
+            ContabilitaCantiereRigaViewModel destinazione,
+            ContabilitaCantiereRigaViewModel origine)
+        {
+            destinazione.HaConfronto = true;
+            destinazione.InizialeQuantita = origine.QuantitaPosata;
+            destinazione.InizialeCostoUnitario = origine.CostoMaterialeServizio;
+            destinazione.InizialePrezzoUnitario = origine.PrezzoVenditaCliente;
+        }
+
         private static List<ContabilitaCantiereRigaViewModel> CostruisciAlberoRighe(ICollection<CantiereContabilitaRiga>? righe)
         {
             if (righe == null || righe.Count == 0)
@@ -1058,7 +1502,15 @@ namespace AiDbMaster.Controllers
             foreach (var padre in padri)
             {
                 if (perPadre.TryGetValue(padre.Id, out var figli))
-                    padre.Figli = figli;
+                {
+                    var posa = figli.FirstOrDefault(f => f.IsPosa)
+                        ?? figli.FirstOrDefault(f => ÈDescrizionePosa(f.Descrizione));
+                    if (posa != null)
+                        posa.IsPosa = true;
+                    padre.Figli = figli
+                        .OrderBy(f => f.IsPosa)
+                        .ToList();
+                }
             }
 
             return padri;
@@ -1075,8 +1527,13 @@ namespace AiDbMaster.Controllers
                 UnitaMisura = riga.UnitaMisura,
                 QuantitaPosata = riga.QuantitaPosata,
                 CostoMaterialeServizio = riga.CostoMaterialeServizio,
+                RicaricoPercentuale = riga.RicaricoPercentuale,
                 PrezzoVenditaCliente = riga.PrezzoVenditaCliente,
-                Note = riga.Note
+                Note = riga.Note,
+                IsPosa = riga.IsPosa,
+                IsSconto = riga.IsSconto,
+                IsArticoloSingolo = riga.IsArticoloSingolo,
+                MostraInProforma = riga.MostraInProforma
             };
         }
 
@@ -1098,9 +1555,30 @@ namespace AiDbMaster.Controllers
                 UnitaMisura = NullIfEmpty(riga.UnitaMisura),
                 QuantitaPosata = riga.QuantitaPosata,
                 CostoMaterialeServizio = riga.CostoMaterialeServizio,
+                RicaricoPercentuale = riga.RicaricoPercentuale,
                 PrezzoVenditaCliente = riga.PrezzoVenditaCliente,
-                Note = NullIfEmpty(riga.Note)
+                Note = NullIfEmpty(riga.Note),
+                IsPosa = riga.IsSconto ? false : riga.IsPosa,
+                IsSconto = riga.IsSconto && padreId == null,
+                IsArticoloSingolo = riga.IsArticoloSingolo && padreId == null && !riga.IsSconto,
+                MostraInProforma = riga.MostraInProforma
             };
+        }
+
+        private static void NormalizzaSconto(ContabilitaCantiereRigaViewModel riga)
+        {
+            riga.IsSconto = true;
+            riga.IsPosa = false;
+            riga.Figli = new List<ContabilitaCantiereRigaViewModel>();
+            riga.CodiceArticolo = null;
+            riga.UnitaMisura = null;
+            riga.QuantitaPosata = null;
+            riga.CostoMaterialeServizio = null;
+            riga.RicaricoPercentuale = null;
+            if (string.IsNullOrWhiteSpace(riga.Descrizione))
+                riga.Descrizione = "Sconto";
+            if (riga.PrezzoVenditaCliente.HasValue)
+                riga.PrezzoVenditaCliente = Math.Abs(riga.PrezzoVenditaCliente.Value);
         }
 
         private static CantiereContabilitaRiga CopiaRigaContabilita(
@@ -1118,9 +1596,126 @@ namespace AiDbMaster.Controllers
                 UnitaMisura = origine.UnitaMisura,
                 QuantitaPosata = origine.QuantitaPosata,
                 CostoMaterialeServizio = origine.CostoMaterialeServizio,
+                RicaricoPercentuale = origine.RicaricoPercentuale,
                 PrezzoVenditaCliente = origine.PrezzoVenditaCliente,
-                Note = origine.Note
+                Note = origine.Note,
+                IsPosa = origine.IsPosa,
+                IsSconto = origine.IsSconto,
+                IsArticoloSingolo = origine.IsArticoloSingolo,
+                MostraInProforma = origine.MostraInProforma
             };
+        }
+
+        private static List<ContabilitaCantiereRigaViewModel> AllineaRigaPosa(
+            ContabilitaCantiereRigaViewModel padre,
+            List<ContabilitaCantiereRigaViewModel>? figli)
+        {
+            var lista = figli ?? new List<ContabilitaCantiereRigaViewModel>();
+            var posa = lista.FirstOrDefault(f => f.IsPosa)
+                ?? lista.FirstOrDefault(f => ÈDescrizionePosa(f.Descrizione));
+
+            if (posa == null)
+            {
+                posa = new ContabilitaCantiereRigaViewModel();
+                lista.Add(posa);
+            }
+
+            padre.CostoMaterialeServizio = null;
+
+            posa.IsPosa = true;
+            posa.IsArticoloMateriale = false;
+            if (string.IsNullOrWhiteSpace(posa.Descrizione))
+                posa.Descrizione = "Posa";
+            posa.QuantitaPosata ??= padre.QuantitaPosata;
+            posa.UnitaMisura = padre.UnitaMisura;
+
+            var materiale = lista.FirstOrDefault(f => !f.IsPosa && f.IsArticoloMateriale)
+                ?? lista.FirstOrDefault(f => !f.IsPosa && StessoCodice(f.CodiceArticolo, padre.CodiceArticolo));
+            if (materiale == null)
+            {
+                materiale = new ContabilitaCantiereRigaViewModel();
+                lista.Insert(0, materiale);
+            }
+
+            materiale.IsPosa = false;
+            materiale.IsArticoloMateriale = true;
+            materiale.CodiceArticolo = padre.CodiceArticolo;
+            materiale.Descrizione = padre.Descrizione ?? string.Empty;
+            materiale.UnitaMisura = padre.UnitaMisura;
+            materiale.QuantitaPosata ??= padre.QuantitaPosata;
+
+            foreach (var figlio in lista.Where(f => !f.IsPosa && !f.IsArticoloMateriale))
+                AllineaPrezzoERicarico(padre, figlio);
+
+            AllineaPrezzoERicarico(padre, materiale);
+            AllineaPrezzoERicarico(padre, posa);
+
+            return lista
+                .OrderBy(f => f.IsPosa ? 2 : f.IsArticoloMateriale ? 0 : 1)
+                .ToList();
+        }
+
+        private static bool StessoCodice(string? a, string? b)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+                return false;
+            return string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Se l'utente ha scritto il prezzo, quello resta e il ricarico si ricava.
+        /// Altrimenti resta il ricarico (30 se la cella è vuota) e si ricava il prezzo.
+        /// </summary>
+        private static void AllineaPrezzoERicarico(
+            ContabilitaCantiereRigaViewModel padre,
+            ContabilitaCantiereRigaViewModel figlio)
+        {
+            if (figlio.PrezzoDaPrezzo
+                && figlio.PrezzoVenditaCliente.HasValue
+                && figlio.CostoMaterialeServizio is > 0
+                && figlio.QuantitaPosata is > 0
+                && padre.QuantitaPosata is > 0)
+            {
+                var prezzo = Math.Round(figlio.PrezzoVenditaCliente.Value, 2, MidpointRounding.AwayFromZero);
+                var baseCosto = figlio.QuantitaPosata.Value * figlio.CostoMaterialeServizio.Value;
+                figlio.PrezzoVenditaCliente = prezzo;
+                figlio.RicaricoPercentuale = Math.Round(
+                    (prezzo * padre.QuantitaPosata.Value / baseCosto - 1m) * 100m,
+                    4,
+                    MidpointRounding.AwayFromZero);
+                return;
+            }
+
+            figlio.RicaricoPercentuale ??= 30m;
+            figlio.PrezzoVenditaCliente = PrezzoVenditaRipartito(padre, figlio);
+        }
+
+        /// <summary>
+        /// Il costo del figlio è per la sua unità (MC, sacchetti, rotoli).
+        /// Il prezzo vendita è quel costo, con ricarico, diviso per la quantità del padre:
+        /// così è confrontabile con il prezzo vendita del padre.
+        /// </summary>
+        private static decimal? PrezzoVenditaRipartito(
+            ContabilitaCantiereRigaViewModel padre,
+            ContabilitaCantiereRigaViewModel figlio)
+        {
+            if (figlio.CostoMaterialeServizio is null
+                || figlio.RicaricoPercentuale is null
+                || figlio.QuantitaPosata is null
+                || padre.QuantitaPosata is not > 0)
+                return null;
+
+            var importoConRicarico = figlio.QuantitaPosata.Value
+                * figlio.CostoMaterialeServizio.Value
+                * (1 + figlio.RicaricoPercentuale.Value / 100m);
+            return Math.Round(importoConRicarico / padre.QuantitaPosata.Value, 2, MidpointRounding.AwayFromZero);
+        }
+
+        private static bool ÈDescrizionePosa(string? descrizione)
+        {
+            var testo = (descrizione ?? string.Empty).Trim();
+            return testo.Equals("Posa", StringComparison.OrdinalIgnoreCase)
+                || testo.StartsWith("Posa ", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool RigaContabilitaVuota(ContabilitaCantiereRigaViewModel riga)
