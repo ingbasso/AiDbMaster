@@ -163,7 +163,7 @@
                             </a>
                             <div class="collapse" id="consegneSubmenu">
                                 <ul class="sidebar-submenu">
-                                    <li class="sidebar-item">
+                                    <li class="sidebar-item" permission-required="ComposizioneViaggi:View">
                                         <a class="sidebar-link" asp-controller="ComposizioneViaggi" asp-action="Index">
                                             <i class="bi bi-puzzle"></i>
                                             <span>Composizione Viaggi</span>
@@ -693,6 +693,15 @@
     <!-- Script avanzato per sidebar -->
     <script>
         $(document).ready(function() {
+            // Nasconde i gruppi di menu rimasti senza nessuna pagina visibile
+            $($('.sidebar-nav li.sidebar-item').get().reverse()).each(function() {
+                var $li = $(this);
+                if ($li.children('a.sidebar-toggle').length === 0) return;
+                if ($li.find('a.sidebar-link:not(.sidebar-toggle)').length === 0) {
+                    $li.hide();
+                }
+            });
+
             console.log('jQuery loaded, DOM ready!'); // Debug
             
             // Verifica che gli elementi esistano

@@ -1,3 +1,4 @@
+using AiDbMaster.Attributes;
 using AiDbMaster.Data;
 using AiDbMaster.Models;
 using AiDbMaster.Services;
@@ -8,6 +9,10 @@ using Microsoft.EntityFrameworkCore;
 namespace AiDbMaster.Controllers
 {
     [Authorize]
+    [RegisterResource("ComposizioneViaggi", "Composizione Viaggi",
+        Description = "Composizione dei viaggi di consegna",
+        MenuIcon = "bi-puzzle", MenuOrder = 0)]
+    [RequirePermission("ComposizioneViaggi", "View")]
     public class ComposizioneViaggiController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -918,6 +923,7 @@ namespace AiDbMaster.Controllers
         /// Aggiorna il costo di un mezzo esterno direttamente dalla composizione viaggi
         /// </summary>
         [HttpPost]
+        [RequirePermission("ComposizioneViaggi", "Edit")]
         public async Task<IActionResult> UpdateCostoMezzoEsterno([FromBody] UpdateCostoMezzoEsternoRequest request)
         {
             try
@@ -1061,6 +1067,7 @@ namespace AiDbMaster.Controllers
         /// Crea un nuovo viaggio con le righe selezionate
         /// </summary>
         [HttpPost]
+        [RequirePermission("ComposizioneViaggi", "Create")]
         public async Task<IActionResult> CreaViaggio([FromBody] CreaViaggioRequest request)
         {
             try
@@ -1180,6 +1187,7 @@ namespace AiDbMaster.Controllers
         /// Crea una spedizione manuale (viaggio virtuale con IsManuale = true)
         /// </summary>
         [HttpPost]
+        [RequirePermission("ComposizioneViaggi", "Create")]
         public async Task<IActionResult> CreaSpedizioneManuale([FromBody] SpedizioneManualeRequest request)
         {
             try
@@ -1589,6 +1597,7 @@ namespace AiDbMaster.Controllers
         /// Modifica un viaggio esistente: aggiorna dati e righe (aggiunge, rimuove, modifica quantità)
         /// </summary>
         [HttpPost]
+        [RequirePermission("ComposizioneViaggi", "Edit")]
         public async Task<IActionResult> ModificaViaggio([FromBody] ModificaViaggioRequest request)
         {
             try

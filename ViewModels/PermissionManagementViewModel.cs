@@ -37,6 +37,33 @@ namespace AiDbMaster.ViewModels
         /// Numero di risorse non configurate
         /// </summary>
         public int UnconfiguredResourcesCount { get; set; }
+
+        /// <summary>
+        /// Pagine raggruppate come nel menu laterale.
+        /// </summary>
+        public List<PermissionMenuNode> Menu { get; set; } = new List<PermissionMenuNode>();
+    }
+
+    /// <summary>
+    /// Voce della tabella permessi: un'area di menu oppure una pagina.
+    /// </summary>
+    public class PermissionMenuNode
+    {
+        public int ResourceId { get; set; }
+        public string ResourceName { get; set; } = string.Empty;
+        public string? MenuIcon { get; set; }
+        public bool IsMenuGroup { get; set; }
+        public bool IsConfigured { get; set; } = true;
+        public PermissionFlags Permission { get; set; } = new PermissionFlags();
+        public List<PermissionMenuNode> Children { get; set; } = new List<PermissionMenuNode>();
+    }
+
+    public class PermissionFlags
+    {
+        public bool CanView { get; set; }
+        public bool CanCreate { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanDelete { get; set; }
     }
 
     /// <summary>

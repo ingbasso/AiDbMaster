@@ -37,17 +37,22 @@
             background-color: #f8f9fa;
         }
         
-        /* Stile per risorse principali (menu group) */
+        /* Area di menu (Interrogazioni DB, Produzione, ...) */
         .resource-main {
             background-color: #f0f4f8;
             font-weight: 600;
             font-size: 1.05em;
         }
+
+        /* Sottogruppo (Tabelle e Utilità, Anagrafiche) */
+        .resource-subgroup {
+            background-color: #fff8f0;
+            font-weight: 600;
+        }
         
-        /* Stile per risorse figlie (sottomenu) */
+        /* Pagina dentro un gruppo */
         .resource-child {
             background-color: #ffffff;
-            padding-left: 40px !important;
         }
         
         .resource-name {
@@ -61,6 +66,15 @@
             font-size: 1.2em;
             color: #3498db;
             min-width: 20px;
+        }
+
+        .menu-toggle {
+            color: #3498db;
+            min-width: 16px;
+        }
+
+        .resource-main[data-collapsed] .resource-name {
+            cursor: pointer;
         }
         
         .permission-checkbox {
@@ -217,6 +231,10 @@
                 <p class="mt-3">Caricamento permessi...</p>
             </div>
 
+            <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                I gruppi del menu sono chiusi: clicca il nome per aprirli. Se spunti <strong>Visualizza</strong>, <strong>Crea</strong>, <strong>Modifica</strong> o <strong>Elimina</strong> su un gruppo, la stessa spunta si accende su tutte le pagine sotto, anche se il gruppo è chiuso. Se la togli, si spegne anche sotto.
+            </p>
             <table class="permission-table" id="permissionTable">
                 <thead>
                     <tr>
@@ -350,63 +368,166 @@
         /**
          * Costruisce la tabella dei permessi
          */
+        let rigaProgressivo = 0;
+
         function costruisciTabella(resources) {
             const tbody = document.getElementById('permissionTableBody');
             tbody.innerHTML = '';
+            rigaProgressivo = 0;
 
-            resources.forEach(resource => {
-                // Aggiungi riga per risorsa principale
-                tbody.appendChild(creaRigaPermesso(resource, false));
+            resources.forEach(resource => aggiungiNodo(resource, 0, ''));
+            aggiornaStatoGruppi();
+            aggiornaVisibilitaRighe();
+        }
 
-                // Aggiungi righe per risorse figlie
-                if (resource.children && resource.children.length > 0) {
-                    resource.children.forEach(child => {
-                        tbody.appendChild(creaRigaPermesso(child, true));
-                    });
-                }
-            });
+        function aggiungiNodo(resource, level, antenati) {
+            const rowId = 'r' + (++rigaProgressivo);
+            const tbody = document.getElementById('permissionTableBody');
+            const haFigli = (resource.children || []).length > 0;
+            tbody.appendChild(creaRigaPermesso(resource, level, rowId, antenati, haFigli));
+
+            const catena = antenati ? antenati + ' ' + rowId : rowId;
+            (resource.children || []).forEach(child => aggiungiNodo(child, level + 1, catena));
         }
 
         /**
-         * Crea una riga della tabella permessi
+         * Crea una riga della tabella permessi.
+         * La riga di un gruppo non viene salvata: le sue caselle servono solo a accendere o spegnere le pagine sotto.
          */
-        function creaRigaPermesso(resource, isChild) {
+        function creaRigaPermesso(resource, level, rowId, antenati, haFigli) {
             const tr = document.createElement('tr');
-            tr.className = isChild ? 'resource-child' : 'resource-main';
-            tr.dataset.resourceId = resource.resourceId;
+            tr.dataset.rowId = rowId;
+            tr.dataset.ancestors = antenati;
+            tr.dataset.isGroup = resource.isMenuGroup ? 'true' : 'false';
+            tr.dataset.resourceId = resource.resourceId || '0';
+            const gruppoPrincipale = level === 0 && resource.isMenuGroup && haFigli;
+            if (gruppoPrincipale) {
+                tr.dataset.collapsed = 'true';
+            }
 
-            // Colonna nome risorsa
+            if (level === 0) {
+                tr.className = 'resource-main';
+            } else if (resource.isMenuGroup) {
+                tr.className = 'resource-subgroup';
+            } else {
+                tr.className = 'resource-child';
+            }
+
             const tdName = document.createElement('td');
             tdName.className = 'resource-name';
-            tdName.innerHTML = `
+            tdName.style.paddingLeft = (12 + level * 26) + 'px';
+            if (gruppoPrincipale) {
+                const freccia = document.createElement('i');
+                freccia.className = 'bi bi-chevron-right menu-toggle';
+                tdName.appendChild(freccia);
+                tdName.title = 'Clicca per aprire o chiudere';
+                tdName.addEventListener('click', function () {
+                    alternaGruppo(tr);
+                });
+            }
+            tdName.insertAdjacentHTML('beforeend', `
                 ${resource.menuIcon ? `<i class="${resource.menuIcon} resource-icon"></i>` : ''}
                 <span>${resource.resourceName}</span>
                 ${!resource.isConfigured ? '<span class="badge bg-warning ms-2">Non Configurato</span>' : ''}
-            `;
+            `);
             tr.appendChild(tdName);
 
-            // Colonne checkbox permessi
             const permissions = ['canView', 'canCreate', 'canEdit', 'canDelete'];
             permissions.forEach(perm => {
                 const td = document.createElement('td');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'permission-checkbox';
-                checkbox.dataset.resourceId = resource.resourceId;
+                checkbox.dataset.resourceId = resource.resourceId || '0';
                 checkbox.dataset.permission = perm;
-                checkbox.checked = resource.permission[perm];
-                
-                // I menu group non hanno permessi CRUD, solo View
-                if (resource.isMenuGroup && perm !== 'canView') {
-                    checkbox.disabled = true;
-                    checkbox.style.visibility = 'hidden';
+                checkbox.checked = !!(resource.permission && resource.permission[perm]);
+                if (resource.isMenuGroup) {
+                    checkbox.title = 'Applica a tutte le pagine di questo gruppo';
                 }
+
+                checkbox.addEventListener('change', function () {
+                    if (tr.dataset.isGroup === 'true') {
+                        applicaAiDiscendenti(tr.dataset.rowId, checkbox.dataset.permission, checkbox.checked);
+                    } else {
+                        allineaRigheStessaRisorsa(checkbox.dataset.resourceId, checkbox.dataset.permission, checkbox.checked);
+                    }
+                    aggiornaStatoGruppi();
+                });
 
                 td.appendChild(checkbox);
                 tr.appendChild(td);
             });
 
             return tr;
+        }
+
+        function alternaGruppo(row) {
+            const chiuso = row.dataset.collapsed !== 'true';
+            row.dataset.collapsed = chiuso ? 'true' : 'false';
+            const freccia = row.querySelector('.menu-toggle');
+            if (freccia) {
+                freccia.className = chiuso ? 'bi bi-chevron-right menu-toggle' : 'bi bi-chevron-down menu-toggle';
+            }
+            aggiornaVisibilitaRighe();
+        }
+
+        function aggiornaVisibilitaRighe() {
+            const righe = Array.from(document.querySelectorAll('#permissionTableBody tr'));
+            const perId = new Map(righe.map(row => [row.dataset.rowId, row]));
+
+            righe.forEach(row => {
+                const antenati = (row.dataset.ancestors || '').split(' ').filter(Boolean);
+                const nascosta = antenati.some(id => {
+                    const padre = perId.get(id);
+                    return padre && padre.dataset.collapsed === 'true';
+                });
+                row.style.display = nascosta ? 'none' : '';
+            });
+        }
+
+        function discendeDa(row, rowId) {
+            return (' ' + (row.dataset.ancestors || '') + ' ').includes(' ' + rowId + ' ');
+        }
+
+        function foglieSotto(rowId) {
+            return Array.from(document.querySelectorAll('#permissionTableBody tr[data-is-group="false"]'))
+                .filter(row => discendeDa(row, rowId));
+        }
+
+        function applicaAiDiscendenti(rowId, permission, checked) {
+            const giaAllineate = new Set();
+            foglieSotto(rowId).forEach(row => {
+                const cb = row.querySelector('input[data-permission="' + permission + '"]');
+                if (!cb) return;
+                cb.checked = checked;
+                const resourceId = cb.dataset.resourceId;
+                if (resourceId && resourceId !== '0' && !giaAllineate.has(resourceId)) {
+                    giaAllineate.add(resourceId);
+                    allineaRigheStessaRisorsa(resourceId, permission, checked);
+                }
+            });
+        }
+
+        function allineaRigheStessaRisorsa(resourceId, permission, checked) {
+            if (!resourceId || resourceId === '0') return;
+            document.querySelectorAll('#permissionTableBody tr[data-is-group="false"][data-resource-id="' + resourceId + '"] input[data-permission="' + permission + '"]')
+                .forEach(cb => { cb.checked = checked; });
+        }
+
+        function aggiornaStatoGruppi() {
+            document.querySelectorAll('#permissionTableBody tr[data-is-group="true"]').forEach(groupRow => {
+                const rowId = groupRow.dataset.rowId;
+                ['canView', 'canCreate', 'canEdit', 'canDelete'].forEach(perm => {
+                    const boxes = foglieSotto(rowId)
+                        .map(row => row.querySelector('input[data-permission="' + perm + '"]'))
+                        .filter(Boolean);
+                    const master = groupRow.querySelector('input[data-permission="' + perm + '"]');
+                    if (!master || boxes.length === 0) return;
+                    const checkedCount = boxes.filter(cb => cb.checked).length;
+                    master.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+                    master.checked = checkedCount === boxes.length;
+                });
+            });
         }
 
         /**
@@ -428,7 +549,11 @@
                 const permissionsMap = new Map();
 
                 checkboxes.forEach(cb => {
-                    const resourceId = parseInt(cb.dataset.resourceId);
+                    const row = cb.closest('tr');
+                    if (row && row.dataset.isGroup === 'true') return;
+
+                    const resourceId = parseInt(cb.dataset.resourceId, 10);
+                    if (!resourceId) return;
                     const permission = cb.dataset.permission;
                     const checked = cb.checked;
 

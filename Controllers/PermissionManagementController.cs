@@ -77,54 +77,12 @@ namespace AiDbMaster.Controllers
                 }
 
                 var viewModel = await BuildViewModelAsync(roleId);
-                
-                // Costruisci la risposta JSON con i permessi
+
                 var response = new
                 {
                     success = true,
                     roleName = viewModel.CurrentRoleName,
-                    resources = viewModel.ResourceTree.Select(node => new
-                    {
-                        resourceId = node.Resource.Id,
-                        resourceName = node.Resource.DisplayName,
-                        menuIcon = node.Resource.MenuIcon,
-                        isMenuGroup = node.Resource.IsMenuGroup,
-                        isConfigured = node.Resource.IsConfigured,
-                        permission = viewModel.Permissions.TryGetValue(node.Resource.Id, out var perm) ? new
-                        {
-                            canView = perm.CanView,
-                            canCreate = perm.CanCreate,
-                            canEdit = perm.CanEdit,
-                            canDelete = perm.CanDelete
-                        } : new
-                        {
-                            canView = false,
-                            canCreate = false,
-                            canEdit = false,
-                            canDelete = false
-                        },
-                        children = node.Children.Select(child => new
-                        {
-                            resourceId = child.Id,
-                            resourceName = child.DisplayName,
-                            menuIcon = child.MenuIcon,
-                            isMenuGroup = child.IsMenuGroup,
-                            isConfigured = child.IsConfigured,
-                            permission = viewModel.Permissions.TryGetValue(child.Id, out var childPerm) ? new
-                            {
-                                canView = childPerm.CanView,
-                                canCreate = childPerm.CanCreate,
-                                canEdit = childPerm.CanEdit,
-                                canDelete = childPerm.CanDelete
-                            } : new
-                            {
-                                canView = false,
-                                canCreate = false,
-                                canEdit = false,
-                                canDelete = false
-                            }
-                        }).ToList()
-                    }).ToList(),
+                    resources = viewModel.Menu,
                     unconfiguredCount = viewModel.UnconfiguredResourcesCount
                 };
 
@@ -485,34 +443,144 @@ namespace AiDbMaster.Controllers
                 .OrderBy(r => r.MenuOrder)
                 .ToListAsync();
 
-            // Costruisci l'albero gerarchico (solo risorse di primo livello)
-            var rootResources = allResources.Where(r => r.ParentResourceId == null).ToList();
-            
-            foreach (var root in rootResources)
-            {
-                var node = new ResourceTreeNode
-                {
-                    Resource = root,
-                    Children = allResources
-                        .Where(r => r.ParentResourceId == root.Id)
-                        .OrderBy(r => r.MenuOrder)
-                        .ToList()
-                };
-                viewModel.ResourceTree.Add(node);
-            }
-
             // Carica i permessi per il ruolo corrente
             var permissions = await _context.Permissions
                 .Where(p => p.RoleId == roleId)
                 .ToListAsync();
 
             viewModel.Permissions = permissions.ToDictionary(p => p.ResourceId);
+            viewModel.Menu = BuildMenu(allResources, viewModel.Permissions);
 
             // Conta le risorse non configurate
             viewModel.UnconfiguredResourcesCount = await _context.Resources
                 .CountAsync(r => !r.IsConfigured && r.IsActive);
 
             return viewModel;
+        }
+
+        /// <summary>
+        /// Mette le pagine nell'ordine del menu laterale.
+        /// Le pagine presenti nel database ma assenti dal menu restano in fondo, sotto "Altre pagine".
+        /// </summary>
+        private static List<PermissionMenuNode> BuildMenu(
+            List<Resource> allResources,
+            Dictionary<int, Permission> permissions)
+        {
+            var byName = allResources
+                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var usedIds = new HashSet<int>();
+            var roots = new List<PermissionMenuNode>();
+
+            foreach (var entry in PermissionMenuCatalog.Entries)
+            {
+                var node = MapMenuEntry(entry, byName, permissions, usedIds);
+                if (node != null)
+                {
+                    roots.Add(node);
+                }
+            }
+
+            var others = allResources
+                .Where(r => !r.IsMenuGroup && !usedIds.Contains(r.Id))
+                .OrderBy(r => r.DisplayName)
+                .Select(r => ToMenuNode(r, r.DisplayName, r.MenuIcon, permissions))
+                .ToList();
+
+            if (others.Count > 0)
+            {
+                roots.Add(new PermissionMenuNode
+                {
+                    ResourceName = "Altre pagine",
+                    MenuIcon = "bi-folder2",
+                    IsMenuGroup = true,
+                    IsConfigured = true,
+                    Children = others
+                });
+            }
+
+            return roots;
+        }
+
+        private static PermissionMenuNode? MapMenuEntry(
+            PermissionMenuEntry entry,
+            Dictionary<string, Resource> byName,
+            Dictionary<int, Permission> permissions,
+            HashSet<int> usedIds)
+        {
+            if (entry.IsGroup)
+            {
+                var children = new List<PermissionMenuNode>();
+                foreach (var child in entry.Children)
+                {
+                    var mapped = MapMenuEntry(child, byName, permissions, usedIds);
+                    if (mapped != null)
+                    {
+                        children.Add(mapped);
+                    }
+                }
+
+                if (children.Count == 0)
+                {
+                    return null;
+                }
+
+                var group = new PermissionMenuNode
+                {
+                    ResourceName = entry.DisplayName,
+                    MenuIcon = entry.Icon,
+                    IsMenuGroup = true,
+                    IsConfigured = true,
+                    Children = children
+                };
+
+                if (!string.IsNullOrEmpty(entry.ResourceName) &&
+                    byName.TryGetValue(entry.ResourceName, out var groupResource))
+                {
+                    group.ResourceId = groupResource.Id;
+                    group.MenuIcon = entry.Icon ?? groupResource.MenuIcon;
+                    group.IsConfigured = groupResource.IsConfigured;
+                    usedIds.Add(groupResource.Id);
+                }
+
+                return group;
+            }
+
+            if (string.IsNullOrEmpty(entry.ResourceName) ||
+                !byName.TryGetValue(entry.ResourceName, out var resource))
+            {
+                return null;
+            }
+
+            usedIds.Add(resource.Id);
+            return ToMenuNode(resource, entry.DisplayName, entry.Icon ?? resource.MenuIcon, permissions);
+        }
+
+        private static PermissionMenuNode ToMenuNode(
+            Resource resource,
+            string displayName,
+            string? icon,
+            Dictionary<int, Permission> permissions)
+        {
+            var flags = new PermissionFlags();
+            if (permissions.TryGetValue(resource.Id, out var permission))
+            {
+                flags.CanView = permission.CanView;
+                flags.CanCreate = permission.CanCreate;
+                flags.CanEdit = permission.CanEdit;
+                flags.CanDelete = permission.CanDelete;
+            }
+
+            return new PermissionMenuNode
+            {
+                ResourceId = resource.Id,
+                ResourceName = displayName,
+                MenuIcon = icon,
+                IsMenuGroup = false,
+                IsConfigured = resource.IsConfigured,
+                Permission = flags
+            };
         }
 
         #endregion
