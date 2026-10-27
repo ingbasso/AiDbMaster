@@ -86,6 +86,10 @@ namespace AiDbMaster.Models
         [Column("Note")]
         public string? Note { get; set; }
 
+        [Display(Name = "Note Problemi Cantiere")]
+        [Column("NoteProblemiCantiere")]
+        public string? NoteProblemiCantiere { get; set; }
+
         [StringLength(500)]
         [Display(Name = "Cartella documenti")]
         [Column("PercorsoDocumenti")]
@@ -108,6 +112,10 @@ namespace AiDbMaster.Models
         [Display(Name = "Pagamento")]
         [Column("Pagamento")]
         public string? Pagamento { get; set; }
+
+        [Display(Name = "Data Pagamento")]
+        [Column("DataPagamento")]
+        public DateTime? DataPagamento { get; set; }
 
         [Display(Name = "Conferma firmata")]
         [Column("ConfermaFirmata")]
@@ -138,6 +146,14 @@ namespace AiDbMaster.Models
         [Display(Name = "Aliquota IVA %")]
         [Column("AliquotaIva", TypeName = "decimal(5,2)")]
         public decimal? AliquotaIva { get; set; }
+
+        /// <summary>
+        /// Margine di commessa scritto a mano. Non è calcolato dai costi:
+        /// serve a mostrarlo agli agenti, anche se non coincide con quello reale.
+        /// </summary>
+        [Display(Name = "Margine Cantiere")]
+        [Column("MargineFittizio", TypeName = "decimal(6,2)")]
+        public decimal? MargineFittizio { get; set; }
 
         [Display(Name = "Doc. agevolazione IVA")]
         [Column("DocAgevolazioneIva")]

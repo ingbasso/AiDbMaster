@@ -117,7 +117,8 @@
                                         <i class="bi bi-journal-text"></i>
                                     </a>
                                     <a asp-action="Contabilita" asp-route-id="@item.Id" asp-route-tipo="Iniziale"
-                                       class="btn btn-sm btn-outline-secondary me-1" title="Contabilità">
+                                       class="btn btn-sm btn-outline-secondary me-1" title="Contabilità"
+                                       permission-required="ContabilitaCantieri:View">
                                         <i class="bi bi-calculator"></i>
                                     </a>
                                     <button type="button" class="btn btn-sm btn-outline-danger"

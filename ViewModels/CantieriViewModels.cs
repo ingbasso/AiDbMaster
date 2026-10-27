@@ -79,6 +79,9 @@ namespace AiDbMaster.ViewModels
         [Display(Name = "Note")]
         public string? Note { get; set; }
 
+        [Display(Name = "Note Problemi Cantiere")]
+        public string? NoteProblemiCantiere { get; set; }
+
         [Display(Name = "Agente")]
         public string? NomeAgente { get; set; }
 
@@ -95,6 +98,10 @@ namespace AiDbMaster.ViewModels
         [StringLength(100)]
         [Display(Name = "Pagamento")]
         public string? Pagamento { get; set; }
+
+        [Display(Name = "Data Pagamento")]
+        [DataType(DataType.Date)]
+        public DateTime? DataPagamento { get; set; }
 
         [Display(Name = "Conferma firmata")]
         public bool ConfermaFirmata { get; set; }
@@ -118,6 +125,9 @@ namespace AiDbMaster.ViewModels
 
         [Display(Name = "Aliquota IVA %")]
         public decimal? AliquotaIva { get; set; }
+
+        [Display(Name = "Margine Cantiere")]
+        public decimal? MargineFittizio { get; set; }
 
         [Display(Name = "Doc. agevolazione IVA")]
         public bool DocAgevolazioneIva { get; set; }
@@ -194,6 +204,7 @@ namespace AiDbMaster.ViewModels
     {
         public int CantiereId { get; set; }
         public string Titolo { get; set; } = string.Empty;
+        public string Nome { get; set; } = string.Empty;
         public string? ClienteNome { get; set; }
         public string? ImpresaPosa { get; set; }
         public string? NomeAgente { get; set; }
@@ -205,6 +216,12 @@ namespace AiDbMaster.ViewModels
 
         [Display(Name = "Aliquota IVA %")]
         public decimal AliquotaIva { get; set; } = 22;
+
+        /// <summary>
+        /// Percentuale scritta a mano sulla commessa. È la stessa per la contabilità iniziale e finale.
+        /// </summary>
+        [Display(Name = "Margine Cantiere")]
+        public decimal? MargineFittizioPercentuale { get; set; }
 
         public List<ContabilitaAccontoViewModel> Acconti { get; set; } = new();
 
@@ -259,6 +276,11 @@ namespace AiDbMaster.ViewModels
 
         [StringLength(50)]
         public string? CodiceArticolo { get; set; }
+
+        /// <summary>
+        /// Contropartita vendite letta dall'anagrafica articoli. Non viene salvata con la contabilità.
+        /// </summary>
+        public short? ContropVendite { get; set; }
 
         [StringLength(255)]
         public string Descrizione { get; set; } = string.Empty;

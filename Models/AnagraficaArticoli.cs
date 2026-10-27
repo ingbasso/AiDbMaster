@@ -212,6 +212,20 @@ namespace AiDbMaster.Models
         [Column("GiorniAsciugaturaExtra")]
         public int GiorniAsciugaturaExtra { get; set; }
 
+        /// <summary>
+        /// Contropartita di vendita. Zero o vuoto significa che non è ancora indicata.
+        /// </summary>
+        [Display(Name = "Contropartita vendite")]
+        [Column("ContropVendite")]
+        public short? ContropVendite { get; set; }
+
+        /// <summary>
+        /// Contropartita di acquisto. Zero o vuoto significa che non è ancora indicata.
+        /// </summary>
+        [Display(Name = "Contropartita acquisti")]
+        [Column("ContropAcquisti")]
+        public short? ContropAcquisti { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

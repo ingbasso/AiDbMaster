@@ -105,6 +105,8 @@ namespace AiDbMaster.Services
                     }
                 }
 
+                await EnsureContabilitaCantiereAsync(context, roleManager, logger);
+
                 result.Success = true;
                 logger.LogInformation($"✅ Auto-registrazione completata: {result.RegisteredResources.Count} nuove, {result.SkippedResources.Count} saltate");
             }
@@ -116,6 +118,126 @@ namespace AiDbMaster.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// La contabilità non è la scheda cantiere: ha un permesso suo.
+        /// Chi già apriva i cantieri lo riceve, tranne il ruolo Gestione Cantieri,
+        /// che può vedere e modificare la scheda ma non creare cantieri e non entrare in contabilità.
+        /// </summary>
+        private static async Task EnsureContabilitaCantiereAsync(
+            ApplicationDbContext context,
+            RoleManager<IdentityRole> roleManager,
+            ILogger logger)
+        {
+            const string nomeRisorsa = "ContabilitaCantieri";
+            const string ruoloScheda = "Gestione Cantieri";
+
+            var risorsa = await context.Resources.FirstOrDefaultAsync(r => r.Name == nomeRisorsa);
+            if (risorsa == null)
+            {
+                risorsa = new Resource
+                {
+                    Name = nomeRisorsa,
+                    DisplayName = "Contabilità cantiere",
+                    Description = "Contabilità iniziale e finale del cantiere",
+                    MenuIcon = "bi-calculator",
+                    MenuOrder = 2,
+                    IsMenuGroup = false,
+                    IsActive = true,
+                    IsConfigured = true,
+                    CreatedDate = DateTime.Now,
+                    CreatedBy = "System"
+                };
+                context.Resources.Add(risorsa);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Risorsa Contabilità cantiere registrata.");
+            }
+
+            var giaConPermessi = await context.Permissions.AnyAsync(p => p.ResourceId == risorsa.Id);
+            if (!giaConPermessi)
+            {
+                var elenco = await context.Resources.FirstOrDefaultAsync(r => r.Name == "GestioneCantieri");
+                if (elenco != null)
+                {
+                    var permessiElenco = await context.Permissions
+                        .Where(p => p.ResourceId == elenco.Id)
+                        .Join(context.Roles, p => p.RoleId, r => r.Id, (p, r) => new { Permesso = p, r.Name })
+                        .ToListAsync();
+
+                    foreach (var voce in permessiElenco)
+                    {
+                        if (string.Equals(voce.Name, ruoloScheda, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        context.Permissions.Add(new Permission
+                        {
+                            RoleId = voce.Permesso.RoleId,
+                            ResourceId = risorsa.Id,
+                            CanView = voce.Permesso.CanView,
+                            CanCreate = voce.Permesso.CanCreate,
+                            CanEdit = voce.Permesso.CanEdit,
+                            CanDelete = voce.Permesso.CanDelete,
+                            CreatedDate = DateTime.Now,
+                            ModifiedBy = "System"
+                        });
+                    }
+
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            var ruolo = await roleManager.FindByNameAsync(ruoloScheda);
+            if (ruolo == null)
+                return;
+
+            await ImpostaPermessoAsync(context, ruolo.Id, "GestioneCantieri",
+                puoVedere: true, puoCreare: false, puoModificare: true, puoCancellare: false);
+            await ImpostaPermessoAsync(context, ruolo.Id, nomeRisorsa,
+                puoVedere: false, puoCreare: false, puoModificare: false, puoCancellare: false);
+        }
+
+        private static async Task ImpostaPermessoAsync(
+            ApplicationDbContext context,
+            string roleId,
+            string nomeRisorsa,
+            bool puoVedere,
+            bool puoCreare,
+            bool puoModificare,
+            bool puoCancellare)
+        {
+            var risorsa = await context.Resources.FirstOrDefaultAsync(r => r.Name == nomeRisorsa);
+            if (risorsa == null)
+                return;
+
+            var permesso = await context.Permissions
+                .FirstOrDefaultAsync(p => p.RoleId == roleId && p.ResourceId == risorsa.Id);
+
+            if (permesso == null)
+            {
+                context.Permissions.Add(new Permission
+                {
+                    RoleId = roleId,
+                    ResourceId = risorsa.Id,
+                    CanView = puoVedere,
+                    CanCreate = puoCreare,
+                    CanEdit = puoModificare,
+                    CanDelete = puoCancellare,
+                    CreatedDate = DateTime.Now,
+                    ModifiedBy = "System"
+                });
+            }
+            else
+            {
+                permesso.CanView = puoVedere;
+                permesso.CanCreate = puoCreare;
+                permesso.CanEdit = puoModificare;
+                permesso.CanDelete = puoCancellare;
+                permesso.ModifiedDate = DateTime.Now;
+                permesso.ModifiedBy = "System";
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 

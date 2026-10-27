@@ -99,11 +99,15 @@
 </div>
 
 <div class="row g-2">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">Pagamento</label>
         <input asp-for="Pagamento" class="form-control form-control-sm" maxlength="100" />
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
+        <label class="form-label">Data Pagamento</label>
+        <input asp-for="DataPagamento" type="date" class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-3">
         <label class="form-label">Banca</label>
         <input asp-for="Banca" class="form-control form-control-sm" maxlength="100" />
     </div>
@@ -143,4 +147,9 @@
 <div class="mt-2">
     <label class="form-label">Note</label>
     <textarea asp-for="Note" class="form-control form-control-sm" rows="2"></textarea>
+</div>
+
+<div class="mt-2">
+    <label class="form-label">Note Problemi Cantiere</label>
+    <textarea asp-for="NoteProblemiCantiere" class="form-control form-control-sm" rows="3"></textarea>
 </div>

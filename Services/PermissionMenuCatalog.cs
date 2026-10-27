@@ -43,6 +43,7 @@ namespace AiDbMaster.Services
 
             Group("Gestione Cantieri", "bi-building", null,
                 Page("GestioneCantieri", "Elenco Cantieri", "bi-list-ul"),
+                Page("ContabilitaCantieri", "Contabilità cantiere", "bi-calculator"),
                 Page("ImpresePosa", "Imprese di posa", "bi-person-workspace"),
                 Page("ReferentiCantiere", "Referenti di cantiere", "bi-person-vcard"),
                 Page("CostiArticoliCantiere", "Costi articoli", "bi-cash-coin")),

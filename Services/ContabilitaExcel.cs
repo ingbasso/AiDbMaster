@@ -121,7 +121,7 @@ namespace AiDbMaster.Services
             var padreReale = padre == null && !voce.IsSconto && !voce.IsArticoloSingolo;
             var figlio = padre != null;
 
-            foglio.Cells[riga, 1].Value = voce.CodiceArticolo;
+            ScriviCodice(foglio, riga, voce, padreReale);
             var descrizione = foglio.Cells[riga, 2];
             descrizione.Value = voce.IsSconto && string.IsNullOrWhiteSpace(voce.Descrizione)
                 ? "Sconto"
@@ -163,7 +163,7 @@ namespace AiDbMaster.Services
             foglio.Cells[riga, 10].Value = voce.Note;
 
             if (padreReale || voce.IsArticoloSingolo)
-                foglio.Cells[riga, 1, riga, Colonne].Style.Font.Bold = padreReale;
+                foglio.Cells[riga, 2, riga, Colonne].Style.Font.Bold = padreReale;
 
             if (voce.IsPosa)
             {
@@ -177,6 +177,28 @@ namespace AiDbMaster.Services
             }
 
             return riga + 1;
+        }
+
+        private static void ScriviCodice(ExcelWorksheet foglio, int riga, ContabilitaCantiereRigaViewModel voce, bool grassetto)
+        {
+            var cella = foglio.Cells[riga, 1];
+            var codice = voce.CodiceArticolo ?? string.Empty;
+            if (voce.ContropVendite is not > 0)
+            {
+                cella.Value = codice;
+                cella.Style.Font.Bold = grassetto;
+                return;
+            }
+
+            cella.Style.WrapText = true;
+            cella.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+            var prima = cella.RichText.Add(codice);
+            prima.Bold = grassetto;
+            var seconda = cella.RichText.Add("\n" + voce.ContropVendite.Value);
+            seconda.Size = 8;
+            seconda.Bold = false;
+            seconda.Color = Color.FromArgb(108, 117, 125);
+            foglio.Row(riga).Height = 28;
         }
 
         /// <summary>

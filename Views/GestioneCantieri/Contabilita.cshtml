@@ -16,6 +16,12 @@
         return valore.Value.ToString("0.####", it);
     }
 
+    string EtichettaControp(short? valore)
+    {
+        var testo = valore is > 0 ? "CV: " + valore.Value.ToString(it) : "";
+        return $"<div class=\"controp-vendite\" title=\"Contropartita vendite\">{testo}</div>";
+    }
+
     string FlagProforma(string nome, bool acceso)
     {
         var spunta = acceso ? " checked" : "";
@@ -143,6 +149,14 @@
             padding-left: .35rem;
             padding-right: .35rem;
         }
+        .controp-vendite {
+            font-size: .68rem;
+            line-height: 1.1;
+            color: #6c757d;
+            margin-top: 1px;
+            padding-left: .15rem;
+        }
+        .controp-vendite:empty { display: none; }
         .cerca-risultati {
             position: absolute;
             z-index: 30;
@@ -280,16 +294,25 @@
             background: #1d6f42;
             border-color: #1d6f42;
         }
+        .sottotitolo-cliente { margin-top: .1rem; font-size: .85rem; line-height: 1.2; color: #6c757d; }
+        .margine-fittizio .form-label { font-size: .78rem; margin-bottom: 0; color: #212529; white-space: nowrap; }
+        .margine-fittizio .input-group { width: 7.5rem; }
     </style>
 }
 
 <div class="container-fluid pagina-contabilita">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-        <h2 class="mb-0 fs-4">
-            <i class="bi bi-calculator me-2 text-primary"></i>Contabilità @etichettaTipo
-            <span class="fw-normal text-muted fs-5">— @Model.Titolo</span>
+        <h2 class="mb-0 fs-4 d-flex align-items-baseline flex-wrap">
+            <span><i class="bi bi-calculator me-2 text-primary"></i>Contabilità @etichettaTipo</span>
+            <span class="fw-normal text-muted fs-5 ms-2">
+                <span class="d-block">— @Model.Nome</span>
+                @if (!string.IsNullOrWhiteSpace(Model.ClienteNome))
+                {
+                    <span class="d-block sottotitolo-cliente ms-3">@Model.ClienteNome</span>
+                }
+            </span>
         </h2>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
             <a asp-action="Edit" asp-route-id="@Model.CantiereId" class="btn btn-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Torna alla scheda
             </a>
@@ -318,22 +341,34 @@
         </div>
     }
 
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Iniziale ? "active" : null)"
-               asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Iniziale">
-                Iniziale
-                @if (Model.HaContabilitaIniziale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Finale ? "active" : null)"
-               asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Finale">
-                Finale
-                @if (Model.HaContabilitaFinale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
-            </a>
-        </li>
-    </ul>
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+        <ul class="nav nav-tabs mb-0">
+            <li class="nav-item">
+                <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Iniziale ? "active" : null)"
+                   asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Iniziale">
+                    Iniziale
+                    @if (Model.HaContabilitaIniziale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.Tipo == TipoContabilitaCantiere.Finale ? "active" : null)"
+                   asp-action="Contabilita" asp-route-id="@Model.CantiereId" asp-route-tipo="Finale">
+                    Finale
+                    @if (Model.HaContabilitaFinale) { <span class="badge bg-success-subtle text-success ms-1">ok</span> }
+                </a>
+            </li>
+        </ul>
+        <div class="margine-fittizio d-flex align-items-center gap-2 mb-2">
+            <label class="form-label" for="margineFittizio">Margine Cantiere</label>
+            <div class="input-group input-group-sm">
+                <input id="margineFittizio" name="MargineFittizioPercentuale" form="formContabilita"
+                       class="form-control text-end num" inputmode="decimal" autocomplete="off"
+                       title="Margine della commessa, in percentuale."
+                       value="@Num(Model.MargineFittizioPercentuale)" />
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
 
     <form asp-action="SalvaContabilita" method="post" id="formContabilita">
         @Html.AntiForgeryToken()
@@ -438,6 +473,7 @@
                                         <input type="hidden" name="Righe[@i].IsArticoloSingolo" value="true" />
                                         <div class="cerca-wrap">
                                             <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" />
+                                            @Html.Raw(EtichettaControp(padre.ContropVendite))
                                             <div class="cerca-risultati d-none"></div>
                                         </div>
                                     </td>
@@ -492,6 +528,7 @@
                                     <div class="codice-con-figlio">
                                         <div class="cerca-wrap">
                                             <input name="Righe[@i].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@padre.CodiceArticolo" @(string.IsNullOrWhiteSpace(padre.CodiceArticolo) ? null : "readonly") title="@(string.IsNullOrWhiteSpace(padre.CodiceArticolo) ? "Codice articolo. Dopo la scelta non si può più modificare." : "Il codice non si può più modificare.")" />
+                                            @Html.Raw(EtichettaControp(padre.ContropVendite))
                                             <div class="cerca-risultati d-none"></div>
                                         </div>
                                         <button type="button" class="btn btn-sm btn-primary btn-aggiungi-figlio" title="Aggiungi figlio">
@@ -546,6 +583,7 @@
                                         <input type="hidden" name="Righe[@i].Figli[@f].PrezzoDaPrezzo" value="false" class="origine-prezzo" />
                                         <div class="cerca-wrap">
                                             <input name="Righe[@i].Figli[@f].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" value="@figlio.CodiceArticolo" />
+                                            @Html.Raw(EtichettaControp(figlio.ContropVendite))
                                             <div class="cerca-risultati d-none"></div>
                                         </div>
                                     </td>
@@ -603,7 +641,7 @@
                             @foreach (var assente in padre.Mancanti)
                             {
                                 <tr class="riga-mancante" data-padre-ix="@i">
-                                    <td>@assente.CodiceArticolo</td>
+                                    <td>@assente.CodiceArticolo@Html.Raw(EtichettaControp(assente.ContropVendite))</td>
                                     <td>@assente.Descrizione <span class="badge-confronto">mancante in finale</span></td>
                                     <td>@assente.UnitaMisura</td>
                                     <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeQuantita)</div></td>
@@ -628,7 +666,7 @@
                         {
                             var assentePadre = Model.RigheSoloIniziale[m];
                             <tr class="riga-mancante @(m == 0 ? "blocco-mancante" : null)">
-                                <td>@assentePadre.CodiceArticolo</td>
+                                <td>@assentePadre.CodiceArticolo@Html.Raw(EtichettaControp(assentePadre.ContropVendite))</td>
                                 <td>@assentePadre.Descrizione <span class="badge-confronto">mancante in finale</span></td>
                                 <td>@assentePadre.UnitaMisura</td>
                                 <td class="text-end"><div class="delta-riga">@TestoMancante(assentePadre.InizialeQuantita)</div></td>
@@ -643,7 +681,7 @@
                             @foreach (var assente in assentePadre.Figli)
                             {
                                 <tr class="riga-mancante">
-                                    <td>@assente.CodiceArticolo</td>
+                                    <td>@assente.CodiceArticolo@Html.Raw(EtichettaControp(assente.ContropVendite))</td>
                                     <td>@assente.Descrizione <span class="badge-confronto">mancante in finale</span></td>
                                     <td>@assente.UnitaMisura</td>
                                     <td class="text-end"><div class="delta-riga">@TestoMancante(assente.InizialeQuantita)</div></td>
@@ -774,6 +812,7 @@
             <div class="codice-con-figlio">
                 <div class="cerca-wrap">
                     <input name="Righe[__P__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                    <div class="controp-vendite" title="Contropartita vendite"></div>
                     <div class="cerca-risultati d-none"></div>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary btn-aggiungi-figlio" title="Aggiungi figlio">
@@ -828,6 +867,7 @@
             <input type="hidden" name="Righe[__P__].IsArticoloSingolo" value="true" />
             <div class="cerca-wrap">
                 <input name="Righe[__P__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                <div class="controp-vendite" title="Contropartita vendite"></div>
                 <div class="cerca-risultati d-none"></div>
             </div>
         </td>
@@ -880,6 +920,7 @@
             <input type="hidden" name="Righe[__P__].Figli[__F__].PrezzoDaPrezzo" value="false" class="origine-prezzo" />
             <div class="cerca-wrap">
                 <input name="Righe[__P__].Figli[__F__].CodiceArticolo" class="form-control form-control-sm codice-art" maxlength="40" autocomplete="off" placeholder="Codice" />
+                <div class="controp-vendite" title="Contropartita vendite"></div>
                 <div class="cerca-risultati d-none"></div>
             </div>
         </td>
@@ -1073,6 +1114,7 @@
                 var inputDesc = tr.querySelector('input.desc');
                 var selectUm = tr.querySelector('select.um');
                 if (inputCodice && codice) inputCodice.value = codice;
+                mostraControp(tr, campo(data, 'contropVendite', 'ContropVendite'));
                 if (inputDesc && desc && (forza || !inputDesc.value.trim())) inputDesc.value = desc;
                 if (selectUm && um && (forza || !selectUm.value)) impostaUm(selectUm, um);
                 if (tr.classList.contains('riga-articolo')) {
@@ -1082,6 +1124,13 @@
                     bloccaCodicePadre(tr);
                     ricalcola();
                 }
+            }
+
+            function mostraControp(tr, valore) {
+                var box = tr?.querySelector('.controp-vendite');
+                if (!box) return;
+                var numero = parseInt(String(valore || '').replace(/\D/g, ''), 10);
+                box.textContent = numero > 0 ? 'CV: ' + numero : '';
             }
 
             function chiudiRisultati(wrap) {
@@ -1117,7 +1166,8 @@
                 applicaArticolo(tr, {
                     id: voce.getAttribute('data-id'),
                     descrizione: voce.getAttribute('data-desc'),
-                    unitaMisura: voce.getAttribute('data-um')
+                    unitaMisura: voce.getAttribute('data-um'),
+                    contropVendite: voce.getAttribute('data-controp')
                 }, true);
                 chiudiRisultati(input.closest('.cerca-wrap'));
             }
@@ -1141,8 +1191,9 @@
                     var id = campo(a, 'id', 'Id');
                     var desc = campo(a, 'descrizione', 'Descrizione');
                     var um = campo(a, 'unitaMisura', 'UnitaMisura');
+                    var controp = campo(a, 'contropVendite', 'ContropVendite');
                     return '<button type="button" class="cerca-item" data-id="' + escapeHtml(id) + '" data-desc="' +
-                        escapeHtml(desc) + '" data-um="' + escapeHtml(um) +
+                        escapeHtml(desc) + '" data-um="' + escapeHtml(um) + '" data-controp="' + escapeHtml(controp) +
                         '"><div class="cod">' + escapeHtml(id) + '</div><div class="dsc">' +
                         escapeHtml(desc) + (um ? ' · ' + escapeHtml(um) : '') + '</div></button>';
                 }).join('');
@@ -1171,7 +1222,10 @@
                 if (!codice) return;
                 fetch(urlDatiArticolo + '?codice=' + encodeURIComponent(codice))
                     .then(function (r) { return r.json(); })
-                    .then(function (dati) { applicaArticolo(tr, dati); })
+                    .then(function (dati) {
+                        if (!dati) mostraControp(tr, null);
+                        else applicaArticolo(tr, dati);
+                    })
                     .catch(function () { });
             }
 
@@ -1312,6 +1366,7 @@
                 var qty = materiale.querySelector('.qty');
                 var ricarico = materiale.querySelector('.ricarico');
                 if (codice) codice.value = padre.querySelector('input.codice-art')?.value || '';
+                mostraControp(materiale, padre.querySelector('.controp-vendite')?.textContent || '');
                 if (desc) desc.value = padre.querySelector('input.desc')?.value || '';
                 if (um) {
                     um.disabled = false;
@@ -1843,7 +1898,7 @@
                     var materiale = corpo.querySelector('tr.riga-materiale[data-padre-ix="' + padre.getAttribute('data-ix') + '"] select.um');
                     if (materiale) materiale.disabled = false;
                 });
-                document.querySelectorAll('#formContabilita input.num').forEach(function (input) {
+                document.querySelectorAll('#formContabilita input.num, input.num[form="formContabilita"]').forEach(function (input) {
                     if (!input.value) return;
                     var numero = parseNum(input.value);
                     if (input.closest('tr.riga-sconto'))

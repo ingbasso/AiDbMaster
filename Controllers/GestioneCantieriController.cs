@@ -128,6 +128,7 @@ namespace AiDbMaster.Controllers
                 DataFinePrevista = model.DataFinePrevista,
                 Stato = model.Stato,
                 Note = NullIfEmpty(model.Note),
+                NoteProblemiCantiere = NullIfEmpty(model.NoteProblemiCantiere),
                 DataCreazione = DateTime.Now,
                 UtenteCreazione = utente
             };
@@ -214,6 +215,7 @@ namespace AiDbMaster.Controllers
             existing.DataFinePrevista = model.DataFinePrevista;
             existing.Stato = model.Stato;
             existing.Note = NullIfEmpty(model.Note);
+            existing.NoteProblemiCantiere = NullIfEmpty(model.NoteProblemiCantiere);
             existing.DataUltimaModifica = DateTime.Now;
             existing.UtenteModifica = GetUtenteCorrente();
             ApplicaChecklist(existing, model);
@@ -498,7 +500,7 @@ namespace AiDbMaster.Controllers
             return Json(new { success = true });
         }
 
-        [RequirePermission("GestioneCantieri", "View")]
+        [RequirePermission("ContabilitaCantieri", "View")]
         public async Task<IActionResult> Contabilita(int id, TipoContabilitaCantiere tipo = TipoContabilitaCantiere.Iniziale)
         {
             var model = await CaricaContabilitaViewModelAsync(id, tipo);
@@ -513,6 +515,7 @@ namespace AiDbMaster.Controllers
         /// aperte in pagina, e non confermate con Salva, non entrano nel documento.
         /// </summary>
         [HttpGet]
+        [RequirePermission("ContabilitaCantieri", "View")]
         public async Task<IActionResult> Proforma(int id, TipoContabilitaCantiere tipo = TipoContabilitaCantiere.Iniziale)
         {
             var model = await CaricaContabilitaViewModelAsync(id, tipo);
@@ -544,6 +547,7 @@ namespace AiDbMaster.Controllers
         /// Excel della griglia. Come la proforma, usa solo la contabilità già salvata.
         /// </summary>
         [HttpGet]
+        [RequirePermission("ContabilitaCantieri", "View")]
         public async Task<IActionResult> EsportaExcel(int id, TipoContabilitaCantiere tipo = TipoContabilitaCantiere.Iniziale)
         {
             var model = await CaricaContabilitaViewModelAsync(id, tipo);
@@ -585,7 +589,7 @@ namespace AiDbMaster.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequirePermission("GestioneCantieri", "Edit")]
+        [RequirePermission("ContabilitaCantieri", "Edit")]
         public async Task<IActionResult> SalvaContabilita(ContabilitaCantiereViewModel model)
         {
             var cantiere = await _context.Cantieri.FirstOrDefaultAsync(c => c.Id == model.CantiereId);
@@ -605,13 +609,16 @@ namespace AiDbMaster.Controllers
             if (!cantiere.ContabilitaCantiere)
                 cantiere.ContabilitaCantiere = true;
 
+            if (!ModelState.TryGetValue(nameof(model.MargineFittizioPercentuale), out var margine) || margine.Errors.Count == 0)
+                cantiere.MargineFittizio = model.MargineFittizioPercentuale;
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Contabilita), new { id = cantiere.Id, tipo = model.Tipo });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequirePermission("GestioneCantieri", "Edit")]
+        [RequirePermission("ContabilitaCantieri", "Edit")]
         public async Task<IActionResult> ImportaDaOrdini(int id, TipoContabilitaCantiere tipo)
         {
             var cantiere = await _context.Cantieri.FirstOrDefaultAsync(c => c.Id == id);
@@ -689,7 +696,7 @@ namespace AiDbMaster.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequirePermission("GestioneCantieri", "Edit")]
+        [RequirePermission("ContabilitaCantieri", "Edit")]
         public async Task<IActionResult> CopiaInizialeSuFinale(int id)
         {
             var iniziale = await _context.CantiereContabilita
@@ -824,6 +831,7 @@ namespace AiDbMaster.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("ContabilitaCantieri", "View")]
         public async Task<IActionResult> CercaArticoliContabilita(string term)
         {
             if (string.IsNullOrWhiteSpace(term) || term.Trim().Length < 2)
@@ -843,7 +851,8 @@ namespace AiDbMaster.Controllers
                     id = a.CodiceArticolo,
                     text = a.CodiceArticolo + " - " + a.Descrizione,
                     descrizione = a.Descrizione,
-                    unitaMisura = a.UnitaMisura
+                    unitaMisura = a.UnitaMisura,
+                    contropVendite = a.ContropVendite > 0 ? a.ContropVendite : null
                 })
                 .ToListAsync();
 
@@ -851,6 +860,7 @@ namespace AiDbMaster.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("ContabilitaCantieri", "View")]
         public async Task<IActionResult> DatiArticoloContabilita(string codice)
         {
             if (string.IsNullOrWhiteSpace(codice))
@@ -865,7 +875,8 @@ namespace AiDbMaster.Controllers
                     id = a.CodiceArticolo,
                     text = a.CodiceArticolo + " - " + a.Descrizione,
                     descrizione = a.Descrizione,
-                    unitaMisura = a.UnitaMisura
+                    unitaMisura = a.UnitaMisura,
+                    contropVendite = a.ContropVendite > 0 ? a.ContropVendite : null
                 })
                 .FirstOrDefaultAsync();
 
@@ -945,11 +956,13 @@ namespace AiDbMaster.Controllers
                 DataFinePrevista = cantiere.DataFinePrevista,
                 Stato = cantiere.Stato,
                 Note = cantiere.Note,
+                NoteProblemiCantiere = cantiere.NoteProblemiCantiere,
                 NomeAgente = await GetNomeAgenteAsync(cantiere.CodiceCliente),
                 TipoTrasporto = cantiere.TipoTrasporto,
                 PuliziaCantiere = cantiere.PuliziaCantiere,
                 CheckAffidabilitaCliente = cantiere.CheckAffidabilitaCliente,
                 Pagamento = cantiere.Pagamento,
+                DataPagamento = cantiere.DataPagamento,
                 ConfermaFirmata = cantiere.ConfermaFirmata,
                 TrasformatoInFavaro1 = cantiere.TrasformatoInFavaro1,
                 MagazzinoN = cantiere.MagazzinoN,
@@ -957,6 +970,7 @@ namespace AiDbMaster.Controllers
                 AnagraficaSdiPec = cantiere.AnagraficaSdiPec,
                 Banca = cantiere.Banca,
                 AliquotaIva = cantiere.AliquotaIva,
+                MargineFittizio = cantiere.MargineFittizio,
                 DocAgevolazioneIva = cantiere.DocAgevolazioneIva,
                 ContrattoPosatoreFirmato = cantiere.ContrattoPosatoreFirmato,
                 Psc = cantiere.Psc,
@@ -976,6 +990,7 @@ namespace AiDbMaster.Controllers
             cantiere.PuliziaCantiere = model.PuliziaCantiere;
             cantiere.CheckAffidabilitaCliente = model.CheckAffidabilitaCliente;
             cantiere.Pagamento = NullIfEmpty(model.Pagamento);
+            cantiere.DataPagamento = model.DataPagamento;
             cantiere.ConfermaFirmata = model.ConfermaFirmata;
             cantiere.TrasformatoInFavaro1 = model.TrasformatoInFavaro1;
             cantiere.MagazzinoN = NullIfEmpty(model.MagazzinoN);
@@ -1135,6 +1150,7 @@ namespace AiDbMaster.Controllers
             {
                 CantiereId = cantiere.Id,
                 Titolo = titolo,
+                Nome = cantiere.Nome,
                 ClienteNome = clienteNome,
                 ImpresaPosa = cantiere.ImpresaPosa?.Nome,
                 NomeAgente = await GetNomeAgenteAsync(cantiere.CodiceCliente),
@@ -1144,6 +1160,7 @@ namespace AiDbMaster.Controllers
                 HaContabilitaFinale = testate.Any(c => c.Tipo == TipoContabilitaCantiere.Finale && c.Righe.Count > 0),
                 NumeroOrdiniCollegati = await _context.CantiereOrdini.CountAsync(o => o.CantiereId == cantiereId),
                 AliquotaIva = corrente?.AliquotaIva ?? cantiere.AliquotaIva ?? 22,
+                MargineFittizioPercentuale = cantiere.MargineFittizio,
                 Acconti = MappaAcconti(corrente),
                 RiferimentoOrdine = corrente?.RiferimentoOrdine,
                 Note = corrente?.Note,
@@ -1191,7 +1208,61 @@ namespace AiDbMaster.Controllers
             if (model.Righe.Count == 0)
                 model.Righe.Add(new ContabilitaCantiereRigaViewModel());
 
+            await CompilaContropartiteAsync(model);
             return model;
+        }
+
+        /// <summary>
+        /// Scrive sulla griglia la contropartita vendite dell'anagrafica.
+        /// Il valore 0 non viene mostrato: in anagrafica significa che non è ancora indicata.
+        /// </summary>
+        private async Task CompilaContropartiteAsync(ContabilitaCantiereViewModel model)
+        {
+            var codici = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            RaccogliCodici(model.Righe, codici);
+            RaccogliCodici(model.RigheSoloIniziale, codici);
+            if (codici.Count == 0)
+                return;
+
+            var lista = codici.ToList();
+            var trovate = await _context.AnagraficaArticoli
+                .AsNoTracking()
+                .Where(a => lista.Contains(a.CodiceArticolo) && a.ContropVendite != null && a.ContropVendite != 0)
+                .Select(a => new { a.CodiceArticolo, a.ContropVendite })
+                .ToListAsync();
+
+            var perCodice = trovate
+                .GroupBy(a => a.CodiceArticolo, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().ContropVendite, StringComparer.OrdinalIgnoreCase);
+
+            ApplicaContropartite(model.Righe, perCodice);
+            ApplicaContropartite(model.RigheSoloIniziale, perCodice);
+        }
+
+        private static void RaccogliCodici(IEnumerable<ContabilitaCantiereRigaViewModel> righe, HashSet<string> codici)
+        {
+            foreach (var riga in righe)
+            {
+                if (!string.IsNullOrWhiteSpace(riga.CodiceArticolo))
+                    codici.Add(riga.CodiceArticolo.Trim());
+                RaccogliCodici(riga.Figli, codici);
+                RaccogliCodici(riga.Mancanti, codici);
+            }
+        }
+
+        private static void ApplicaContropartite(
+            IEnumerable<ContabilitaCantiereRigaViewModel> righe,
+            Dictionary<string, short?> perCodice)
+        {
+            foreach (var riga in righe)
+            {
+                if (!string.IsNullOrWhiteSpace(riga.CodiceArticolo)
+                    && perCodice.TryGetValue(riga.CodiceArticolo.Trim(), out var valore))
+                    riga.ContropVendite = valore;
+
+                ApplicaContropartite(riga.Figli, perCodice);
+                ApplicaContropartite(riga.Mancanti, perCodice);
+            }
         }
 
         private async Task<CantiereContabilita> GetOrCreateContabilitaAsync(int cantiereId, TipoContabilitaCantiere tipo)

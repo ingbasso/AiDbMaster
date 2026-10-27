@@ -45,10 +45,9 @@ namespace AiDbMaster.Services
             var foglio = new Div().SetBorder(Bordo).SetPadding(8);
             foglio.Add(Intestazione(cantiere, cliente, percorsoIntestazione, normale, grassetto));
             foglio.Add(Titolo(dataDocumento, grassetto));
-            foglio.Add(RigaPagamento(cantiere.Pagamento, normale, grassetto));
+            foglio.Add(RigaPagamento(cantiere.Pagamento, cantiere.DataPagamento, normale, grassetto));
             foglio.Add(TabellaRighe(contabilita, normale, grassetto));
-            foglio.Add(RigaAcconti(contabilita, normale));
-            foglio.Add(Totali(contabilita, grassetto));
+            foglio.Add(Totali(contabilita, normale, grassetto));
             foglio.Add(new Paragraph(FraseLegale)
                 .SetFont(normale)
                 .SetFontSize(8)
@@ -222,15 +221,16 @@ namespace AiDbMaster.Services
                 .SetBorderBottom(Bordo);
         }
 
-        private static Table RigaPagamento(string? pagamento, PdfFont normale, PdfFont grassetto)
+        private static Table RigaPagamento(string? pagamento, DateTime? dataPagamento, PdfFont normale, PdfFont grassetto)
         {
             var testo = string.IsNullOrWhiteSpace(pagamento) ? string.Empty : pagamento.Trim();
+            var scadenza = dataPagamento?.ToString("dd/MM/yyyy", Italiano) ?? string.Empty;
             var tabella = new Table(UnitValue.CreatePercentArray(new[] { 38f, 34f, 28f }))
                 .UseAllAvailableWidth()
                 .SetMargin(0);
 
             tabella.AddCell(CellaMista("PAGAMENTO: ", testo, grassetto, normale));
-            tabella.AddCell(CellaMista("SCADENZA: ", testo, grassetto, normale));
+            tabella.AddCell(CellaMista("SCADENZA: ", scadenza, grassetto, normale));
             tabella.AddCell(CellaMista("CIG: ", "---    CUP: ---", grassetto, normale));
             return tabella;
         }
@@ -316,51 +316,71 @@ namespace AiDbMaster.Services
             return !vuota;
         }
 
-        private static Paragraph RigaAcconti(ContabilitaCantiereViewModel contabilita, PdfFont normale)
+        private static Table Totali(ContabilitaCantiereViewModel contabilita, PdfFont normale, PdfFont grassetto)
         {
-            if (contabilita.ImponibileAcconto == 0)
-                return new Paragraph().SetMargin(0).SetFontSize(1);
+            // Nei totali della proforma entrano solo gli articoli col flag "Mostra in proforma".
+            // Quelli senza flag non vengono né stampati né conteggiati.
+            var imponibileTotale = contabilita.Righe
+                .Where(r => !r.IsPosa && r.MostraInProforma)
+                .Sum(r => r.TotaleVendita);
+            var acconto = contabilita.ImponibileAcconto;
+            var imponibileSaldo = imponibileTotale - acconto;
+            var totale = Math.Round(imponibileSaldo * (1 + contabilita.AliquotaIva / 100m), 2);
+            var iva = totale - imponibileSaldo;
 
-            return new Paragraph($"Acconti già ricevuti: {Euro(contabilita.ImponibileAcconto)}")
-                .SetFont(normale)
-                .SetFontSize(8)
-                .SetTextAlignment(TextAlignment.RIGHT)
-                .SetMargin(0)
-                .SetPaddingTop(3)
-                .SetPaddingBottom(2);
-        }
-
-        private static Table Totali(ContabilitaCantiereViewModel contabilita, PdfFont grassetto)
-        {
-            var imponibile = contabilita.ImponibileSaldo;
-            var totale = contabilita.TotaleConIva;
-            var iva = totale - imponibile;
-
-            var tabella = new Table(UnitValue.CreatePercentArray(new[] { 34f, 33f, 33f }))
+            // Il riepilogo viene allineato a destra: una colonna vuota a sinistra
+            // e il blocco voci/importi a destra.
+            var contenitore = new Table(UnitValue.CreatePercentArray(new[] { 55f, 45f }))
                 .UseAllAvailableWidth()
                 .SetMargin(0)
-                .SetMarginTop(2);
+                .SetMarginTop(4)
+                .SetBorder(Border.NO_BORDER);
 
-            tabella.AddCell(CellaTotale("IMPONIBILE", Euro(imponibile), grassetto));
-            tabella.AddCell(CellaTotale("IVA", Euro(iva), grassetto));
-            tabella.AddCell(CellaTotale("TOTALE EURO", Euro(totale), grassetto));
-            return tabella;
+            contenitore.AddCell(new Cell().SetBorder(Border.NO_BORDER));
+
+            var griglia = new Table(UnitValue.CreatePercentArray(new[] { 58f, 42f }))
+                .UseAllAvailableWidth()
+                .SetMargin(0)
+                .SetBorder(Bordo);
+
+            if (acconto != 0)
+            {
+                AggiungiRigaTotale(griglia, "Imponibile totale articoli", Euro(imponibileTotale), normale, 8f, false);
+                AggiungiRigaTotale(griglia, "Acconti già ricevuti", "− " + Euro(acconto), normale, 8f, false);
+                AggiungiRigaTotale(griglia, "Imponibile a saldo", Euro(imponibileSaldo), grassetto, 8f, true);
+            }
+            else
+            {
+                AggiungiRigaTotale(griglia, "Imponibile", Euro(imponibileSaldo), grassetto, 8f, false);
+            }
+
+            AggiungiRigaTotale(griglia, $"IVA {TestoIva(contabilita.AliquotaIva)}", Euro(iva), normale, 8f, false);
+            AggiungiRigaTotale(griglia, "TOTALE EURO", Euro(totale), grassetto, 11f, true);
+
+            var cellaRiepilogo = new Cell().SetBorder(Border.NO_BORDER).SetPadding(0).Add(griglia);
+            contenitore.AddCell(cellaRiepilogo);
+            return contenitore;
         }
 
-        private static Cell CellaTotale(string etichetta, string valore, PdfFont grassetto)
+        private static void AggiungiRigaTotale(Table griglia, string etichetta, string valore, PdfFont font, float size, bool bordoSopra)
         {
-            var paragrafo = new Paragraph()
-                .SetMargin(0)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetMultipliedLeading(1.15f);
-            paragrafo.Add(new Text(etichetta + "\n").SetFont(grassetto).SetFontSize(8));
-            paragrafo.Add(new Text(valore).SetFont(grassetto).SetFontSize(11));
-            return new Cell()
-                .Add(paragrafo)
-                .SetBorder(Bordo)
-                .SetPadding(4)
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetVerticalAlignment(VerticalAlignment.MIDDLE);
+            var bordo = bordoSopra ? Bordo : Border.NO_BORDER;
+
+            griglia.AddCell(new Cell()
+                .Add(new Paragraph(etichetta).SetFont(font).SetFontSize(size).SetMargin(0).SetMultipliedLeading(1.1f))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderTop(bordo)
+                .SetPadding(3)
+                .SetTextAlignment(TextAlignment.LEFT)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE));
+
+            griglia.AddCell(new Cell()
+                .Add(new Paragraph(valore).SetFont(font).SetFontSize(size).SetMargin(0).SetMultipliedLeading(1.1f))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderTop(bordo)
+                .SetPadding(3)
+                .SetTextAlignment(TextAlignment.RIGHT)
+                .SetVerticalAlignment(VerticalAlignment.MIDDLE));
         }
 
         private static Cell IntestazioneColonna(string testo, PdfFont grassetto)
